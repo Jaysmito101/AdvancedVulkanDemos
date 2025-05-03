@@ -19,6 +19,8 @@ typedef struct PS_Vulkan {
     VkInstance instance;
     VkDevice device;
     VkPhysicalDevice physicalDevice;
+    VkSurfaceKHR surface;
+
 #ifdef PS_DEBUG
     VkDebugUtilsMessengerEXT debugMessenger;
 #endif

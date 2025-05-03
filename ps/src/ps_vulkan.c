@@ -180,9 +180,22 @@ static bool __psVulkanCreateInstance(PS_GameState* gameState) {
     return true;
 }
 
+static bool __psVulkanCreateSurface(PS_GameState *gameState) {
+    if (glfwCreateWindowSurface(gameState->vulkan.instance, gameState->window.window, NULL, &gameState->vulkan.surface) != VK_SUCCESS) {
+        PS_LOG("Failed to create Vulkan surface\n");
+        return false;
+    }
+    return true;
+}
+
 bool psVulkanInit(PS_GameState *gameState) {
     if (!__psVulkanCreateInstance(gameState)) {
         PS_LOG("Vulkan initialization failed\n");
+        return false;
+    }
+
+    if (!__psVulkanCreateSurface(gameState)) {
+        PS_LOG("Failed to create Vulkan surface\n");
         return false;
     }
 
@@ -205,6 +218,9 @@ void psVulkanShutdown(PS_GameState *gameState) {
     }
 #endif
 
+    vkDestroySurfaceKHR(gameState->vulkan.instance, gameState->vulkan.surface, NULL);   
+    gameState->vulkan.surface = VK_NULL_HANDLE;
+    
     vkDestroyInstance(gameState->vulkan.instance, NULL);
     gameState->vulkan.instance = VK_NULL_HANDLE;
 }
