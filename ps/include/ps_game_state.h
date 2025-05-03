@@ -17,12 +17,20 @@ typedef struct PS_Window {
 
 typedef struct PS_Vulkan {
     VkInstance instance;
-    VkDevice device;
     VkPhysicalDevice physicalDevice;
     VkSurfaceKHR surface;
+    VkDevice device;
+    VkQueue graphicsQueue;
+    VkQueue computeQueue;
+    VkCommandPool graphicsCommandPool;
+    VkCommandPool computeCommandPool;
+
+    int32_t graphicsQueueFamilyIndex;
+    int32_t computeQueueFamilyIndex;
 
 #ifdef PS_DEBUG
     VkDebugUtilsMessengerEXT debugMessenger;
+    bool debugLayersEnabled;
 #endif
 } PS_Vulkan;
 
