@@ -74,6 +74,7 @@ add_executable(ps
     ./ps/src/main.c
     ./ps/src/ps_application.c
     ./ps/src/ps_window.c
+    ./ps/src/ps_vulkan.c
 )
 target_link_libraries(ps
     glfw
@@ -82,7 +83,10 @@ target_link_libraries(ps
     optimized $ENV{VULKAN_SDK}/Lib/shaderc_combined.lib
 )
 
-
+target_compile_definitions(ps PRIVATE
+    $<$<CONFIG:Debug>:PS_DEBUG>          # Define PS_DEBUG for Debug builds
+    $<$<NOT:$<CONFIG:Debug>>:PS_RELEASE> # Define PS_RELEASE for non-Debug builds
+)
 
 
 if (WIN32)

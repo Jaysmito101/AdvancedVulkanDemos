@@ -1,6 +1,9 @@
 #ifndef PS_GAME_STATE_H
 #define PS_GAME_STATE_H
 
+#define API_VERSION VK_API_VERSION_1_2
+#include <vulkan/vulkan.h>
+
 struct GLFWwindow;
 
 typedef struct PS_Window {
@@ -12,8 +15,18 @@ typedef struct PS_Window {
     int32_t framebufferHeight;
 } PS_Window;
 
+typedef struct PS_Vulkan {
+    VkInstance instance;
+    VkDevice device;
+    VkPhysicalDevice physicalDevice;
+#ifdef PS_DEBUG
+    VkDebugUtilsMessengerEXT debugMessenger;
+#endif
+} PS_Vulkan;
+
 typedef struct PS_GameState {
     PS_Window window;
+    PS_Vulkan vulkan;
 
     bool running;
 } PS_GameState;

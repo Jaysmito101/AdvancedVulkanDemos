@@ -1,5 +1,6 @@
 #include "ps_application.h"
 #include "ps_window.h"
+#include "ps_vulkan.h"
 
 bool psApplicationInit(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
@@ -11,6 +12,11 @@ bool psApplicationInit(PS_GameState *gameState) {
         return false;
     }
 
+    if(!psVulkanInit(gameState)) {
+        PS_LOG("Failed to initialize Vulkan\n");
+        return false;
+    }
+
     // Initialize other application components here
 
     return true;
@@ -18,7 +24,7 @@ bool psApplicationInit(PS_GameState *gameState) {
 
 void psApplicationShutdown(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
-
+    psVulkanShutdown(gameState);    
     psWindowShutdown(gameState);
 }
 
