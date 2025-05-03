@@ -29,9 +29,12 @@ bool psApplicationIsRunning(PS_GameState *gameState) {
 
 void psApplicationUpdate(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
-
     psWindowPollEvents(gameState);
+    psApplicationUpdateWithoutPolling(gameState);
+}
 
 
-    return true;
+
+void psApplicationUpdateWithoutPolling(PS_GameState *gameState) {
+        
 }

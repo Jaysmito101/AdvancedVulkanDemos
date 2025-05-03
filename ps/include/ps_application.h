@@ -9,6 +9,7 @@ void psApplicationShutdown(PS_GameState *gameState);
 
 bool psApplicationIsRunning(PS_GameState *gameState);
 void psApplicationUpdate(PS_GameState *gameState);
+void psApplicationUpdateWithoutPolling(PS_GameState *gameState);
 
 
 #endif // PS_APPLICATION_H
