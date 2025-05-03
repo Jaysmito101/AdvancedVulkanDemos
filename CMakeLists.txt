@@ -72,7 +72,8 @@ add_executable(ps
     ${ps_headers}
 # game
     ./ps/src/main.c
-
+    ./ps/src/ps_application.c
+    ./ps/src/ps_window.c
 )
 target_link_libraries(ps
     glfw
