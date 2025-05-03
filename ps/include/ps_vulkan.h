@@ -24,6 +24,10 @@ bool psVulkanPresentationInit(PS_GameState *gameState);
 void psVulkanPresentationDestroy(PS_GameState *gameState); 
 bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex);
 
+bool psVulkanSceneInit(PS_GameState *gameState);
+void psVulkanSceneDestroy(PS_GameState *gameState); 
+bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex);
+
 bool psVulkanFramebufferAttachmentIsDepth(PS_VulkanFramebufferAttachment *attachment);
 bool psVulkanFramebufferAttachmentIsStencil(PS_VulkanFramebufferAttachment *attachment);
 bool psVulkanFramebufferAttachmentIsDepthStencil(PS_VulkanFramebufferAttachment *attachment);

@@ -509,9 +509,15 @@ bool psVulkanInit(PS_GameState *gameState)
         return false;
     }
 
-    if (!psVulkanFramebufferCreate(gameState, &gameState->vulkan.sceneFramebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT))
+    if (!psVulkanFramebufferCreate(gameState, &gameState->vulkan.renderer.sceneFramebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT))
     {
         PS_LOG("Failed to create Vulkan framebuffer\n");
+        return false;
+    }
+
+    if (!psVulkanSceneInit(gameState))
+    {
+        PS_LOG("Failed to create Vulkan render resources\n");
         return false;
     }
 
@@ -522,8 +528,9 @@ void psVulkanShutdown(PS_GameState *gameState)
 {
     vkDeviceWaitIdle(gameState->vulkan.device);
 
-    psVulkanFramebufferDestroy(gameState, &gameState->vulkan.sceneFramebuffer);
+    psVulkanFramebufferDestroy(gameState, &gameState->vulkan.renderer.sceneFramebuffer);
 
+    psVulkanSceneDestroy(gameState);
     psVulkanPresentationDestroy(gameState);
     
     psVulkanRendererDestroy(gameState);

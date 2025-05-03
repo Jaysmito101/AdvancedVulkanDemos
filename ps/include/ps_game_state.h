@@ -72,6 +72,12 @@ typedef struct PS_VulkanRenderer {
     VkPipelineLayout presentationPipelineLayout;
     VkShaderModule presentationVertexShaderModule;
     VkShaderModule presentationFragmentShaderModule;
+
+    PS_VulkanFramebuffer sceneFramebuffer;
+    VkPipeline scenePipeline;
+    VkPipelineLayout scenePipelineLayout;
+    VkShaderModule sceneVertexShaderModule;
+    VkShaderModule sceneFragmentShaderModule;
 } PS_VulkanRenderer;
 
 typedef struct PS_Vulkan {
@@ -86,7 +92,6 @@ typedef struct PS_Vulkan {
     PS_VulkanSwapchain swapchain;
     PS_VulkanRenderer renderer;
 
-    PS_VulkanFramebuffer sceneFramebuffer;
 
     int32_t graphicsQueueFamilyIndex;
     int32_t computeQueueFamilyIndex;

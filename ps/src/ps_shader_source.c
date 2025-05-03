@@ -1,6 +1,8 @@
 
 #include "ps_shader.h"
 
+// ---------------------------------------  PRESENTATION SHADER ---------------------------------------
+
 const char* psShader_PresentationVertex = ""
 "#version 450\n"
 "\n"
@@ -34,4 +36,40 @@ const char* psShader_PresentationFragment = ""
 "\n"
 "void main() {\n"
 "    fragColor = vec4(1.0, 0.0, 1.0, 1.0);\n"
+"}\n";
+
+// ---------------------------------------  SCENE SHADER ---------------------------------------
+
+const char* psShader_SceneVertex = ""
+"#version 450\n"
+"\n"
+"#pragma shader_stage(vertex)\n"
+"\n"
+"layout(location = 0) out vec3 fragColor;\n"
+"\n"
+"const vec2 positions[3] = vec2[3](\n"
+"    vec2(-0.5, -0.5),\n"
+"    vec2(0.5,  -0.5),\n"
+"    vec2(0.0, 0.5)\n"
+");\n"
+"const vec3 colors[3] = vec3[3](\n"
+"    vec3(1.0, 0.0, 0.0),\n"
+"    vec3(0.0, 1.0, 0.0),\n"
+"    vec3(0.0, 0.0, 1.0)\n"
+");\n"
+"\n"
+"void main() {\n"
+"    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);\n"
+"    fragColor = colors[gl_VertexIndex];\n"
+"}\n";
+
+const char* psShader_SceneFragment = ""
+"#version 450\n"
+"\n"
+"#pragma shader_stage(fragment)\n"
+"\n"
+"layout(location  = 0) out vec4 fragColor;\n"
+"\n"
+"void main() {\n"
+"    fragColor = vec4(0.02, 0.0, 5.0, 1.0);\n"
 "}\n";

@@ -227,6 +227,15 @@ void psVulkanRendererRender(PS_GameState *gameState)
         return; // do not render this frame
     }
 
+    if(!psVulkanSceneRender(gameState, imageIndex)) {
+        PS_LOG("Failed to render presentation pass\n");
+        vkResetFences(gameState->vulkan.device, 1, &gameState->vulkan.renderer.resources[currentFrameIndex].renderFence);
+        __psVulkanRendererNextInflightFrame(gameState);
+        return; // do not render this frame
+    }
+
+    // TODO: Add a barrier here
+
     if(!psVulkanPresentationRender(gameState, imageIndex)) {
         PS_LOG("Failed to render presentation pass\n");
         vkResetFences(gameState->vulkan.device, 1, &gameState->vulkan.renderer.resources[currentFrameIndex].renderFence);

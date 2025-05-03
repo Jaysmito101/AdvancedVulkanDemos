@@ -83,6 +83,7 @@ add_executable(ps
     ./ps/src/ps_utils.c
     ./ps/src/ps_shader.c
     ./ps/src/ps_shader_source.c
+    ./ps/src/ps_vulkan_scene.c
 )
 target_link_libraries(ps
     glfw
