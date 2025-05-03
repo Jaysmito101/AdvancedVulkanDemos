@@ -59,10 +59,20 @@ static bool __psVulkanSwapchainChooseExtent(PS_GameState* gameState) {
 
     if (capabilities.currentExtent.width != UINT32_MAX) {
         gameState->vulkan.swapchain.extent = capabilities.currentExtent;
-    } else {
-        gameState->vulkan.swapchain.extent.width = (uint32_t)gameState->window.framebufferWidth;
-        gameState->vulkan.swapchain.extent.height = (uint32_t)gameState->window.framebufferHeight;
+        return true;
     }
+
+    uint32_t minWidth = capabilities.minImageExtent.width;
+    uint32_t maxWidth = capabilities.maxImageExtent.width;
+
+    uint32_t minHeight = capabilities.minImageExtent.height;
+    uint32_t maxHeight = capabilities.maxImageExtent.height;
+
+    uint32_t width = PS_CLAMP((uint32_t)gameState->window.width, minWidth, maxWidth);
+    uint32_t height = PS_CLAMP((uint32_t)gameState->window.height, minHeight, maxHeight);
+
+    gameState->vulkan.swapchain.extent.width = width;
+    gameState->vulkan.swapchain.extent.height = height;
 
     return true;
 }
@@ -176,7 +186,7 @@ static bool __psVulkanSwapchainCreateFramebuffers(PS_GameState* gameState) {
     return true;
 }
 
-static bool __psVulkanSwapchainKHRCreate(PS_GameState* gameState) {
+static bool __psVulkanSwapchainKHRCreate(PS_GameState* gameState, VkSwapchainKHR oldSwapchain) {
     uint32_t queueFamilyIndices[1] = {gameState->vulkan.graphicsQueueFamilyIndex};
     
     VkSwapchainCreateInfoKHR swapchainInfo = {0};
@@ -195,13 +205,19 @@ static bool __psVulkanSwapchainKHRCreate(PS_GameState* gameState) {
     swapchainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     swapchainInfo.presentMode = gameState->vulkan.swapchain.presentMode;
     swapchainInfo.clipped = VK_TRUE;
-    swapchainInfo.oldSwapchain = VK_NULL_HANDLE;
+    swapchainInfo.oldSwapchain = oldSwapchain;
     
     VkResult result = vkCreateSwapchainKHR(gameState->vulkan.device, &swapchainInfo, NULL, &gameState->vulkan.swapchain.swapchain);
     if (result != VK_SUCCESS) {
         PS_LOG("Failed to create swapchain\n");
         return false;
-    }    
+    }
+
+    if (oldSwapchain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(gameState->vulkan.device, oldSwapchain, NULL);
+    }
+    PS_LOG("Swapchain created successfully\n");
+
     return true;
 }
 
@@ -267,7 +283,7 @@ bool psVulkanSwapchainCreate(PS_GameState *gameState) {
         return false;
     }
 
-    if (!__psVulkanSwapchainKHRCreate(gameState)) {
+    if (!__psVulkanSwapchainKHRCreate(gameState, VK_NULL_HANDLE)) {
         PS_LOG("Failed to create swapchain\n");
         return false;
     }
@@ -293,6 +309,7 @@ bool psVulkanSwapchainCreate(PS_GameState *gameState) {
     }
 
     gameState->vulkan.swapchain.swapchainReady = true;
+    gameState->vulkan.swapchain.swapchainRecreateRequired = false;
     return true;
 }
 
@@ -313,6 +330,11 @@ bool psVulkanSwapchainRecreate(PS_GameState *gameState) {
         return false;
     }    
 
+    if (!__psVulkanSwapchainKHRCreate(gameState, gameState->vulkan.swapchain.swapchain)) {
+        PS_LOG("Failed to create swapchain\n");
+        return false;
+    }
+
     if (!__psVulkanSwapchainQueryImages(gameState)) {
         PS_LOG("Failed to query swapchain images\n");
         return false;
@@ -330,7 +352,10 @@ bool psVulkanSwapchainRecreate(PS_GameState *gameState) {
 
     
     gameState->vulkan.swapchain.swapchainReady = true;
+    gameState->vulkan.swapchain.swapchainRecreateRequired = false;
     
+    vkDeviceWaitIdle(gameState->vulkan.device);
+
     return true;
 }
 

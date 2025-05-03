@@ -59,6 +59,12 @@ static void __psGLFWWindowSizeCallback(GLFWwindow *window, int width, int height
     PS_GameState *gameState = (PS_GameState *)glfwGetWindowUserPointer(window);
     gameState->window.width = width;
     gameState->window.height = height;
+    gameState->vulkan.swapchain.swapchainRecreateRequired = true;
+    if (width == 0 || height == 0) {
+        gameState->window.isMinimized = true;
+    } else {
+        gameState->window.isMinimized = false;
+    }
 }
 
 static void __psGLFWCursorEnterCallback(GLFWwindow *window, int entered)
@@ -71,7 +77,6 @@ static void __psGLFWCursorEnterCallback(GLFWwindow *window, int entered)
 static void __psGLFWWindowCloseCallback(GLFWwindow *window)
 {
     PS_GameState *gameState = (PS_GameState *)glfwGetWindowUserPointer(window);
-    PS_LOG("Window close requested.\n");
     gameState->running = false; // Signal the main loop to exit
 }
 
@@ -88,6 +93,12 @@ static void __psGLFWFramebufferSizeCallback(GLFWwindow *window, int width, int h
     // TODO: Handle framebuffer size changes (important for rendering viewport)
     gameState->window.framebufferWidth = width;
     gameState->window.framebufferHeight = height;
+    gameState->vulkan.swapchain.swapchainRecreateRequired = true;
+    if (width == 0 || height == 0) {
+        gameState->window.isMinimized = true;
+    } else {
+        gameState->window.isMinimized = false;
+    }
 }
 
 static void __psGLFWWindowMaximizeCallback(GLFWwindow *window, int maximized)
@@ -142,7 +153,7 @@ bool psWindowInit(PS_GameState *gameState) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    gameState->window.window = glfwCreateWindow(1280, 720, "Pixel Space", NULL, NULL);
+    gameState->window.window = glfwCreateWindow(1280, 720, "Pastel Shadows", NULL, NULL);
     if (!gameState->window.window) {
         PS_LOG("Failed to create GLFW window\n");
         glfwTerminate(); // Terminate GLFW if window creation fails
@@ -150,6 +161,7 @@ bool psWindowInit(PS_GameState *gameState) {
     }
     gameState->window.width = 1280; // Store initial size
     gameState->window.height = 720;
+    gameState->window.isMinimized = false;
     glfwSetWindowUserPointer(gameState->window.window, gameState);
 
     __psSetupWindowEvents(gameState); // Setup callbacks
