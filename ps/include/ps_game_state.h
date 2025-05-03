@@ -39,6 +39,29 @@ typedef struct PS_VulkanRendererResources {
     VkFence renderFence;
 } PS_VulkanRendererResources;
 
+typedef struct PS_VulkanFramebufferAttachment {
+    VkImage image;
+    VkDeviceMemory memory;
+    VkImageView imageView;
+    VkFormat format;
+    VkImageSubresourceRange subresourceRange;
+    VkAttachmentDescription attachmentDescription;
+} PS_VulkanFramebufferAttachment;
+
+typedef struct PS_VulkanFramebuffer {
+    VkFramebuffer framebuffer;
+    VkRenderPass renderPass;
+    bool hasDepthStencil;
+
+    PS_VulkanFramebufferAttachment colorAttachment;
+    PS_VulkanFramebufferAttachment depthStencilAttachment;
+
+    VkSampler sampler;
+    
+    uint32_t width;
+    uint32_t height;
+} PS_VulkanFramebuffer;
+
 typedef struct PS_VulkanRenderer {
     PS_VulkanRendererResources resources[16];
     uint32_t numInFlightFrames;
@@ -62,6 +85,8 @@ typedef struct PS_Vulkan {
 
     PS_VulkanSwapchain swapchain;
     PS_VulkanRenderer renderer;
+
+    PS_VulkanFramebuffer sceneFramebuffer;
 
     int32_t graphicsQueueFamilyIndex;
     int32_t computeQueueFamilyIndex;

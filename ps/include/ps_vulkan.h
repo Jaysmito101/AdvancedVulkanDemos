@@ -8,6 +8,7 @@
 
 bool psVulkanInit(PS_GameState *gameState); 
 void psVulkanShutdown(PS_GameState *gameState);
+uint32_t psVulkanFindMemoryType(PS_GameState *gameState, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 bool psVulkanSwapchainCreate(PS_GameState *gameState);
 bool psVulkanSwapchainRecreate(PS_GameState *gameState);
@@ -23,5 +24,10 @@ bool psVulkanPresentationInit(PS_GameState *gameState);
 void psVulkanPresentationDestroy(PS_GameState *gameState); 
 bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex);
 
+bool psVulkanFramebufferAttachmentIsDepth(PS_VulkanFramebufferAttachment *attachment);
+bool psVulkanFramebufferAttachmentIsStencil(PS_VulkanFramebufferAttachment *attachment);
+bool psVulkanFramebufferAttachmentIsDepthStencil(PS_VulkanFramebufferAttachment *attachment);
+bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer, int32_t width, int32_t height, bool hasDepthStencil, VkFormat colorFormat, VkFormat depthStencilFormat);
+void psVulkanFramebufferDestroy(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer);
 
 #endif // PS_VULKAN_H

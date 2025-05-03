@@ -509,12 +509,20 @@ bool psVulkanInit(PS_GameState *gameState)
         return false;
     }
 
+    if (!psVulkanFramebufferCreate(gameState, &gameState->vulkan.sceneFramebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT))
+    {
+        PS_LOG("Failed to create Vulkan framebuffer\n");
+        return false;
+    }
+
     return true;
 }
 
 void psVulkanShutdown(PS_GameState *gameState)
 {
     vkDeviceWaitIdle(gameState->vulkan.device);
+
+    psVulkanFramebufferDestroy(gameState, &gameState->vulkan.sceneFramebuffer);
 
     psVulkanPresentationDestroy(gameState);
     
@@ -549,4 +557,18 @@ void psVulkanShutdown(PS_GameState *gameState)
 
     vkDestroyInstance(gameState->vulkan.instance, NULL);
     gameState->vulkan.instance = VK_NULL_HANDLE;
+}
+
+uint32_t psVulkanFindMemoryType(PS_GameState *gameState, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties = {0};
+    vkGetPhysicalDeviceMemoryProperties(gameState->vulkan.physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    PS_LOG("Failed to find suitable memory type\n");
+    return UINT32_MAX;
 }

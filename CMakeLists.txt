@@ -78,6 +78,7 @@ add_executable(ps
     ./ps/src/ps_vulkan_swapchain.c
     ./ps/src/ps_vulkan_renderer.c
     ./ps/src/ps_vulkan_presentation.c
+    ./ps/src/ps_vulkan_framebuffer.c
     ./ps/src/ps_shader_compiler.c
     ./ps/src/ps_utils.c
     ./ps/src/ps_shader.c

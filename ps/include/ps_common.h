@@ -31,6 +31,9 @@
 #define PS_ASSERT(condition) assert(condition)
 #define PS_LOG(msg, ...) printf(msg, ##__VA_ARGS__)
 
+#define GAME_WIDTH 1920
+#define GAME_HEIGHT 1080
+
 // common functions
 uint32_t psHashBuffer(const void *buffer, size_t size);
 uint32_t psHashString(const char *str);
