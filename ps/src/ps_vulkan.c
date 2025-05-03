@@ -503,6 +503,12 @@ bool psVulkanInit(PS_GameState *gameState)
         return false;
     }
 
+    if (!psVulkanPresentationInit(gameState))
+    {
+        PS_LOG("Failed to create Vulkan render resources\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -510,6 +516,8 @@ void psVulkanShutdown(PS_GameState *gameState)
 {
     vkDeviceWaitIdle(gameState->vulkan.device);
 
+    psVulkanPresentationDestroy(gameState);
+    
     psVulkanRendererDestroy(gameState);
 
     vkDestroyCommandPool(gameState->vulkan.device, gameState->vulkan.graphicsCommandPool, NULL);

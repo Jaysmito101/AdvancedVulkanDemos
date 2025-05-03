@@ -43,6 +43,12 @@ typedef struct PS_VulkanRenderer {
     PS_VulkanRendererResources resources[16];
     uint32_t numInFlightFrames;
     uint32_t currentFrameIndex;
+
+
+    VkPipeline presentationPipeline;
+    VkPipelineLayout presentationPipelineLayout;
+    VkShaderModule presentationVertexShaderModule;
+    VkShaderModule presentationFragmentShaderModule;
 } PS_VulkanRenderer;
 
 typedef struct PS_Vulkan {

@@ -18,7 +18,10 @@ VkResult psVulkanSwapchainPresent(PS_GameState *gameState, uint32_t imageIndex, 
 bool psVulkanRendererCreate(PS_GameState *gameState);
 void psVulkanRendererDestroy(PS_GameState *gameState);
 void psVulkanRendererRender(PS_GameState *gameState);
-bool psVulkanRendererRenderPresentationPass(PS_GameState *gameState, uint32_t imageIndex);
+
+bool psVulkanPresentationInit(PS_GameState *gameState);
+void psVulkanPresentationDestroy(PS_GameState *gameState); 
+bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex);
 
 
 #endif // PS_VULKAN_H

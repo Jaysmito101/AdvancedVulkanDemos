@@ -77,6 +77,11 @@ add_executable(ps
     ./ps/src/ps_vulkan.c
     ./ps/src/ps_vulkan_swapchain.c
     ./ps/src/ps_vulkan_renderer.c
+    ./ps/src/ps_vulkan_presentation.c
+    ./ps/src/ps_shader_compiler.c
+    ./ps/src/ps_utils.c
+    ./ps/src/ps_shader.c
+    ./ps/src/ps_shader_source.c
 )
 target_link_libraries(ps
     glfw
@@ -108,4 +113,6 @@ if( MSVC )
     else()
         set_property( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ps )
     endif()
+
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
 endif()

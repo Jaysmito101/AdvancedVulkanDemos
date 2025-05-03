@@ -17,7 +17,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <signal.h>
-
+ 
 // ps includes
 #include "ps_game_state.h"
 
@@ -30,5 +30,11 @@
 #define PS_OFFSET_OF(type, member) ((size_t)&(((type *)0)->member))
 #define PS_ASSERT(condition) assert(condition)
 #define PS_LOG(msg, ...) printf(msg, ##__VA_ARGS__)
+
+// common functions
+uint32_t psHashBuffer(const void *buffer, size_t size);
+uint32_t psHashString(const char *str);
+
+const char* psGetTempDirPath(void);
 
 #endif // PS_COMMON_H

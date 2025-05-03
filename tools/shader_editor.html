@@ -1,0 +1,602 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Tab Shader Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/min/vs/loader.js"></script>
+    <style>
+        /* Basic styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f3f4f6; /* Light gray background */
+            padding: 1rem;
+            box-sizing: border-box;
+            margin: 0;
+        }
+        .editor-area {
+            width: 100%;
+            max-width: 900px; /* Slightly wider for tabs */
+            display: flex;
+            flex-direction: column;
+        }
+        #tab-bar {
+            display: flex;
+            border-bottom: 1px solid #d1d5db; /* Separator line */
+            background-color: #e5e7eb; /* Tab bar background */
+            border-radius: 0.375rem 0.375rem 0 0; /* Rounded top corners */
+            overflow-x: auto; /* Allow horizontal scrolling if many tabs */
+            /* Ensure buttons don't shrink */
+            flex-shrink: 0;
+        }
+        .tab {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-right: 1px solid #d1d5db;
+            background-color: #f9fafb; /* Default tab background */
+            color: #4b5563; /* Default tab text color */
+            white-space: nowrap; /* Prevent tab text wrapping */
+            transition: background-color 0.2s ease-in-out;
+            position: relative; /* For close button positioning */
+            flex-shrink: 0; /* Prevent tabs from shrinking */
+        }
+        .tab:hover {
+            background-color: #f3f4f6; /* Lighter background on hover */
+        }
+        .tab.active {
+            background-color: #ffffff; /* White background for active tab */
+            color: #1f2937; /* Darker text for active tab */
+            border-bottom: 1px solid #ffffff; /* Hide bottom border part */
+            margin-bottom: -1px; /* Pull active tab content up slightly */
+        }
+        .tab-close-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 16px;
+            height: 16px;
+            line-height: 14px; /* Center the 'x' */
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+            background-color: transparent;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none; /* Hidden by default */
+        }
+        .tab:hover .tab-close-btn {
+            display: inline-block; /* Show on tab hover */
+            color: #6b7280;
+        }
+        .tab.active:hover .tab-close-btn {
+             color: #4b5563;
+        }
+        .tab-close-btn:hover {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        #new-tab-button {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            background-color: #d1d5db; /* Slightly darker background */
+            color: #374151;
+            border: none;
+            font-weight: bold;
+            flex-shrink: 0; /* Prevent '+' button shrinking */
+        }
+        #new-tab-button:hover {
+            background-color: #9ca3af;
+        }
+        #editor-container {
+            width: 100%;
+            height: 450px; /* Adjusted height */
+            border: 1px solid #d1d5db;
+            border-top: none; /* Remove top border as tab bar has bottom border */
+            border-radius: 0 0 0.375rem 0.375rem; /* Rounded bottom corners */
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        #output-area {
+             width: 100%;
+             max-width: 900px; /* Match editor width */
+             height: 150px; /* Adjusted height */
+             border: 1px solid #d1d5db;
+             border-radius: 0.375rem;
+             font-family: monospace;
+             font-size: 0.875rem;
+             background-color: #e5e7eb;
+             resize: none;
+             margin-top: 1rem; /* Space above output */
+        }
+        /* Ensure html, body take full height */
+        html, body {
+            height: 100%;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex flex-col items-center p-4">
+
+    <h1 class="text-2xl font-bold mb-4 text-gray-800">Multi-Tab Shader Editor</h1>
+
+    <div class="editor-area">
+        <div id="tab-bar">
+            <button id="new-tab-button" title="New Shader Tab">+</button>
+        </div>
+
+        <div id="editor-container"></div>
+    </div>
+
+    <button id="convert-copy-button" class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out shadow-md mb-2">
+        Convert Active Tab & Copy to Clipboard
+    </button>
+
+    <p id="status-message" class="text-sm text-gray-600 font-medium h-5 mb-2"></p>
+
+    <label for="output-area" class="text-lg font-semibold mb-2 text-gray-700 self-start" style="max-width: 900px; width: 100%;">Converted C-String Output:</label>
+    <textarea id="output-area" readonly class="p-2 bg-gray-200 border border-gray-300 rounded shadow-inner"></textarea>
+
+    <script>
+        let editor; // Single editor instance
+        let tabs = []; // Array to hold tab data: { id: string, name: string, model: ITextModel, viewState: IEditorViewState | null }
+        let activeTabId = null;
+        let saveTimeout = null; // For debouncing saves
+        const LOCAL_STORAGE_KEY = 'monacoShaderTabs';
+
+        // Default shader code for new tabs
+        const defaultShaderCode = `#version 450
+#pragma shader_stage(vertex) // or fragment, compute, etc.
+
+layout(location = 0) out vec3 fragColor; // Example output
+
+void main() {
+    // Default shader code
+    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+    fragColor = vec3(0.5, 0.5, 0.5); // Gray
+}`;
+
+        // --- Monaco Editor Setup ---
+        require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.48.0/min/vs' }});
+        require(['vs/editor/editor.main'], function() {
+            // Initialize the single editor instance
+            editor = monaco.editor.create(document.getElementById('editor-container'), {
+                value: '', // Initial value is empty, will be set by the first tab's model
+                language: 'cpp', // Default language (good for GLSL)
+                theme: 'vs-dark',
+                automaticLayout: true, // Critical for resizing
+                minimap: { enabled: true }
+            });
+
+            // Load tabs from local storage or create a default one
+            loadTabs(); // This will also render UI and switch to the active tab
+
+            // --- Event Listener for Content Changes (Auto-Save) ---
+            editor.onDidChangeModelContent(() => {
+                // Debounce saving to local storage
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    saveTabs(); // Save all tabs state
+                    console.log(`Content changed and saved for tab: ${activeTabId}`);
+                }, 500); // Save 500ms after the last change
+            });
+
+             // --- Event Listeners for View State Changes (Scroll/Cursor) ---
+             // Save view state when scroll or cursor position changes in the active tab
+             editor.onDidScrollChange(() => saveActiveTabViewState());
+             editor.onDidChangeCursorPosition(() => saveActiveTabViewState());
+             editor.onDidDispose(() => { // Clean up listener on dispose
+                 clearTimeout(saveTimeout);
+             });
+
+            console.log("Monaco editor initialized.");
+        });
+
+        // --- DOM Element References ---
+        const tabBar = document.getElementById('tab-bar');
+        const newTabButton = document.getElementById('new-tab-button');
+        const convertCopyButton = document.getElementById('convert-copy-button');
+        const statusMessage = document.getElementById('status-message');
+        const outputArea = document.getElementById('output-area');
+
+        // --- Utility Functions ---
+        function generateUniqueId() {
+            // Simple unique ID generator for tabs
+            return `tab_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        }
+
+        // --- Local Storage Functions ---
+        function saveTabs() {
+            // This function saves the state of all tabs (ID, name, current content)
+            // and the ID of the currently active tab to the browser's local storage.
+            // Each tab's content is stored separately within the JSON structure.
+            if (!tabs.length) {
+                 localStorage.removeItem(LOCAL_STORAGE_KEY);
+                 console.log("Local storage cleared as no tabs exist.");
+                 return;
+            }
+            // Store necessary data (id, name, content from the model)
+            const dataToSave = tabs.map(tab => ({
+                id: tab.id,
+                name: tab.name,
+                content: tab.model.getValue() // Get current content directly from the model
+            }));
+            try {
+                 // Save the array of tab data and the current active tab ID
+                 localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ activeTabId, tabs: dataToSave }));
+                 console.log(`Tabs saved to local storage. Active tab: ${activeTabId}`);
+            } catch (e) {
+                console.error("Error saving tabs to local storage:", e);
+                statusMessage.textContent = "Error saving tabs.";
+                statusMessage.className = 'text-sm text-red-600 font-medium h-5 mb-2';
+            }
+        }
+
+        function loadTabs() {
+            console.log("Loading tabs from local storage...");
+            const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+            let loadedTabsData = [];
+            let loadedActiveTabId = null;
+
+            if (savedData) {
+                try {
+                    const parsedData = JSON.parse(savedData);
+                    // Basic validation of loaded data
+                    if (parsedData && Array.isArray(parsedData.tabs)) {
+                        loadedTabsData = parsedData.tabs;
+                        loadedActiveTabId = parsedData.activeTabId;
+                        console.log(`Loaded ${loadedTabsData.length} tabs. Last active: ${loadedActiveTabId}`);
+                    } else {
+                         console.warn("Invalid data format found in local storage.");
+                    }
+                } catch (e) {
+                    console.error("Error parsing tabs from local storage:", e);
+                    localStorage.removeItem(LOCAL_STORAGE_KEY); // Clear corrupted data
+                }
+            } else {
+                 console.log("No saved tabs found in local storage.");
+            }
+
+            tabs = []; // Clear existing in-memory tabs before loading
+
+            if (loadedTabsData.length > 0) {
+                loadedTabsData.forEach(tabData => {
+                    // Validate tab data before creating model
+                    if (typeof tabData.id === 'string' && typeof tabData.name === 'string' && typeof tabData.content === 'string') {
+                        const model = monaco.editor.createModel(tabData.content, 'cpp');
+                        tabs.push({
+                            id: tabData.id,
+                            name: tabData.name,
+                            model: model,
+                            viewState: null // View state is not persisted in this version
+                        });
+                    } else {
+                         console.warn("Skipping invalid tab data:", tabData);
+                    }
+                });
+                // Validate the loaded activeTabId exists in the loaded tabs
+                activeTabId = tabs.some(t => t.id === loadedActiveTabId) ? loadedActiveTabId : (tabs.length > 0 ? tabs[0].id : null);
+            }
+
+            // If no valid tabs were loaded or found, create a default initial tab
+            if (tabs.length === 0) {
+                console.log("No valid tabs loaded, creating a new default tab.");
+                createNewTab(true); // true indicates this is the initial tab, sets activeTabId
+            }
+
+            // Render the UI based on the loaded/created tabs
+            renderTabsUI();
+
+            // Switch the editor to the determined active tab
+            if (activeTabId) {
+                switchTab(activeTabId, true); // true indicates this is the initial switch
+            } else {
+                 console.error("Failed to determine an active tab after loading.");
+            }
+             console.log("Tab loading process finished.");
+        }
+
+        // --- Tab Management Functions ---
+        function createNewTab(isInitial = false) {
+            console.log(`Creating new tab. Is initial: ${isInitial}`);
+            const newId = generateUniqueId();
+            // Find the highest existing tab number to avoid duplicates like "Shader 1" if "Shader 1" was deleted
+            let maxNum = 0;
+            tabs.forEach(tab => {
+                const match = tab.name.match(/^Shader (\d+)$/);
+                if (match && parseInt(match[1]) > maxNum) {
+                    maxNum = parseInt(match[1]);
+                }
+            });
+            const newName = `Shader ${maxNum + 1}`;
+
+            const newModel = monaco.editor.createModel(defaultShaderCode, 'cpp');
+
+            const newTab = {
+                id: newId,
+                name: newName,
+                model: newModel,
+                viewState: null
+            };
+            tabs.push(newTab);
+            console.log(`Created new tab: ID=${newId}, Name=${newName}`);
+
+            if (isInitial) {
+                 activeTabId = newId; // Set the first tab as active
+                 // Don't call render/switch here, loadTabs handles it after calling this
+            } else {
+                 // For non-initial tabs, immediately switch and save
+                 activeTabId = newId; // Set as active *before* calling switchTab
+                 renderTabsUI(); // Update UI first
+                 switchTab(newId); // Activate the new tab's model and view
+                 saveTabs(); // Save immediately after creation
+            }
+            return newId; // Return the ID of the newly created tab
+        }
+
+        function switchTab(tabId, isInitialSwitch = false) {
+            console.log(`Attempting to switch to tab: ${tabId}. Current active: ${activeTabId}. Is initial: ${isInitialSwitch}`);
+            if (!editor) {
+                console.warn("SwitchTab called before editor initialized.");
+                return; // Editor not ready
+            }
+            // Avoid unnecessary work if already active, unless it's the very first switch
+            if (!isInitialSwitch && activeTabId === tabId) {
+                 console.log("SwitchTab called for already active tab.");
+                 editor.focus(); // Ensure editor has focus
+                 return;
+            }
+
+            // Save view state of the outgoing tab (if there was one)
+            if (!isInitialSwitch && activeTabId) {
+                saveActiveTabViewState();
+            }
+
+            const tabToActivate = tabs.find(t => t.id === tabId);
+            if (!tabToActivate) {
+                console.error(`Tab with id ${tabId} not found during switch.`);
+                // Attempt to recover by switching to the first available tab
+                if (tabs.length > 0) {
+                    console.warn(`Attempting recovery: switching to first tab: ${tabs[0].id}`);
+                    switchTab(tabs[0].id);
+                } else {
+                    console.error("No tabs available to switch to.");
+                    // Optionally create a new tab here if desired
+                }
+                return;
+            }
+
+            console.log(`Found tab to activate: ${tabToActivate.name} (ID: ${tabId})`);
+
+            // Update the active tab ID state
+            activeTabId = tabId;
+
+            // Set the editor's model to the new tab's model
+            // This is the core action that changes the editor content
+            editor.setModel(tabToActivate.model);
+            console.log(`Set editor model to tab: ${tabId}`);
+
+            // Restore the view state (scroll position, cursor) if available
+            if (tabToActivate.viewState) {
+                editor.restoreViewState(tabToActivate.viewState);
+                console.log(`Restored view state for tab: ${tabId}`);
+            } else {
+                 // If no view state, reset scroll position to top (optional)
+                 // editor.setScrollTop(0);
+                 console.log(`No view state to restore for tab: ${tabId}`);
+            }
+
+            // Update the visual appearance of the tabs
+            renderTabsUI();
+
+            // Focus the editor to allow immediate typing
+            editor.focus();
+
+            // Clear the output area as it relates to the previous tab's content
+            clearOutput();
+
+            // Save the new active tab ID state to local storage
+            // (Content saving happens via onDidChangeModelContent)
+            if (!isInitialSwitch) { // Avoid saving during initial load sequence if preferred
+                 saveTabs();
+            }
+            console.log(`Successfully switched to tab: ${tabId}`);
+        }
+
+         function saveActiveTabViewState() {
+            // Saves the current scroll position and cursor position of the active tab
+            if (editor && activeTabId) {
+                const currentTab = tabs.find(t => t.id === activeTabId);
+                if (currentTab) {
+                    currentTab.viewState = editor.saveViewState();
+                    // console.log(`Saved view state for tab: ${activeTabId}`); // Verbose logging
+                    // Note: View state is NOT persisted to localStorage in this version.
+                    // Saving it would require serializing/deserializing the view state object.
+                }
+            }
+        }
+
+        function closeTab(tabId, event) {
+             event.stopPropagation(); // Prevent the click from triggering a tab switch
+             console.log(`Attempting to close tab: ${tabId}`);
+
+             const tabIndex = tabs.findIndex(t => t.id === tabId);
+             if (tabIndex === -1) {
+                 console.error(`Cannot close tab: ID ${tabId} not found.`);
+                 return;
+             }
+
+             const closingTabName = tabs[tabIndex].name;
+
+             // Dispose the Monaco model associated with the tab to free up resources
+             tabs[tabIndex].model.dispose();
+             console.log(`Disposed model for tab: ${closingTabName} (ID: ${tabId})`);
+
+             // Remove the tab from the in-memory array
+             tabs.splice(tabIndex, 1);
+             console.log(`Removed tab ${closingTabName} from tabs array.`);
+
+             let nextActiveId = null;
+             // Determine the next active tab
+             if (activeTabId === tabId) {
+                 // If the closed tab was the active one, choose a new active tab
+                 if (tabs.length > 0) {
+                     // Try to activate the tab to the left (or the new first tab if the first was closed)
+                     const nextActiveIndex = Math.max(0, tabIndex - 1);
+                     nextActiveId = tabs[nextActiveIndex].id;
+                     console.log(`Closed active tab. New active tab will be: ${tabs[nextActiveIndex].name} (ID: ${nextActiveId})`);
+                 } else {
+                      // No tabs left, will create a new one below
+                      console.log("Closed the last tab.");
+                      activeTabId = null; // Explicitly clear activeTabId
+                 }
+             } else {
+                  // If the closed tab was not the active one, the activeTabId remains the same
+                  nextActiveId = activeTabId;
+                   console.log(`Closed inactive tab. Active tab remains: ${activeTabId}`);
+             }
+
+             // If no tabs remain after closing, create a new default one
+             if (tabs.length === 0) {
+                 createNewTab(true); // Create as initial, sets activeTabId internally
+                 nextActiveId = activeTabId; // Get the ID of the newly created tab
+                 console.log(`Created new default tab after closing the last one. New active ID: ${nextActiveId}`);
+             }
+
+             // Update the UI immediately
+             renderTabsUI();
+
+             // Switch to the determined next active tab if necessary
+             if (nextActiveId && activeTabId !== nextActiveId) {
+                  switchTab(nextActiveId);
+             } else if (nextActiveId && activeTabId === nextActiveId && activeTabId === tabId) {
+                  // This case handles closing the *only* tab and creating a new one
+                  switchTab(nextActiveId, true); // Force switch even if ID is the same conceptually (new model)
+             } else if (!nextActiveId && tabs.length > 0) {
+                  // Fallback if nextActiveId logic failed somehow
+                  console.warn("Fallback: Switching to the first available tab.");
+                  switchTab(tabs[0].id);
+             }
+
+
+             // Save the changes (removed tab, possibly new active tab)
+             saveTabs();
+        }
+
+
+        // --- UI Rendering ---
+        function renderTabsUI() {
+            console.log(`Rendering UI, expecting active tab: ${activeTabId}`);
+            // Clear existing tab elements (but not the '+' button)
+            const existingTabElements = Array.from(tabBar.children).filter(el => el !== newTabButton);
+            existingTabElements.forEach(el => tabBar.removeChild(el));
+
+            // Render each tab based on the current 'tabs' array
+            tabs.forEach(tab => {
+                const tabElement = document.createElement('div');
+                tabElement.className = 'tab'; // Base class
+                if (tab.id === activeTabId) {
+                    tabElement.classList.add('active'); // Add active class if it's the active tab
+                }
+                tabElement.textContent = tab.name;
+                tabElement.title = tab.name; // Tooltip for full name
+                tabElement.dataset.tabId = tab.id; // Store ID for the click listener
+
+                // Click listener for switching tabs
+                tabElement.addEventListener('click', () => {
+                    // Only switch if the clicked tab is not already active
+                    if (tab.id !== activeTabId) {
+                        switchTab(tab.id);
+                    } else {
+                        editor.focus(); // If already active, just focus the editor
+                    }
+                });
+
+                // Add close button ('x')
+                const closeButton = document.createElement('button');
+                closeButton.className = 'tab-close-btn';
+                closeButton.innerHTML = '&times;'; // Use HTML entity for 'x'
+                closeButton.title = 'Close Tab';
+                closeButton.addEventListener('click', (e) => closeTab(tab.id, e)); // Pass tab ID and event
+                tabElement.appendChild(closeButton);
+
+                // Insert the new tab element before the '+' button
+                tabBar.insertBefore(tabElement, newTabButton);
+            });
+             console.log("UI Rendering finished.");
+        }
+
+        function clearOutput() {
+            // Clears the C-string output area and status message
+            outputArea.value = '';
+            statusMessage.textContent = '';
+        }
+
+        // --- Event Listeners Setup ---
+        // Add listener for the 'New Tab' button
+        newTabButton.addEventListener('click', () => createNewTab());
+
+        // Add listener for the 'Convert & Copy' button
+        convertCopyButton.addEventListener('click', () => {
+            statusMessage.textContent = ''; // Clear previous status
+            outputArea.value = ''; // Clear previous output
+
+            if (!editor || !activeTabId) {
+                console.error("Convert button clicked but editor or active tab not ready.");
+                statusMessage.textContent = "Error: Editor or active tab not ready.";
+                statusMessage.className = 'text-sm text-red-600 font-medium h-5 mb-2';
+                return;
+            }
+
+            const activeTab = tabs.find(t => t.id === activeTabId);
+            if (!activeTab) {
+                 console.error("Convert button clicked but active tab data not found.");
+                 statusMessage.textContent = "Error: Active tab data missing.";
+                 statusMessage.className = 'text-sm text-red-600 font-medium h-5 mb-2';
+                 return;
+            }
+
+            // Get the current code from the active tab's Monaco model
+            const currentCode = activeTab.model.getValue();
+
+            // --- C-String Conversion Logic ---
+            const lines = currentCode.split('\n');
+            const formattedLines = lines.map(line => {
+                // Escape backslashes first, then double quotes
+                const escapedLine = line.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                // Format as "line content\n" with indentation
+                return `    "${escapedLine}\\n"`;
+            });
+            // Join the lines, starting with "" for proper C multiline string syntax
+            const finalString = `""\n${formattedLines.join('\n')};`;
+            // --- End Conversion Logic ---
+
+            // Display the converted string in the output textarea
+            outputArea.value = finalString;
+            console.log("Converted string generated for active tab and displayed.");
+
+            // Attempt to copy the converted string to the clipboard
+            navigator.clipboard.writeText(finalString).then(() => {
+                console.log('Code copied to clipboard!');
+                statusMessage.textContent = 'Converted string displayed below and copied to clipboard!';
+                statusMessage.className = 'text-sm text-green-600 font-medium h-5 mb-2'; // Green for success
+                setTimeout(() => { statusMessage.textContent = ''; }, 4000); // Clear message after 4s
+            }).catch(err => {
+                console.error('Failed to copy code automatically: ', err);
+                statusMessage.textContent = 'Converted string displayed below. Auto-copy failed.';
+                statusMessage.className = 'text-sm text-yellow-600 font-medium h-5 mb-2'; // Yellow for warning
+                 setTimeout(() => { statusMessage.textContent = ''; }, 5000); // Clear message after 5s
+            });
+        });
+
+    </script>
+</body>
+</html>

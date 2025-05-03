@@ -227,7 +227,7 @@ void psVulkanRendererRender(PS_GameState *gameState)
         return; // do not render this frame
     }
 
-    if(!psVulkanRendererRenderPresentationPass(gameState, imageIndex)) {
+    if(!psVulkanPresentationRender(gameState, imageIndex)) {
         PS_LOG("Failed to render presentation pass\n");
         vkResetFences(gameState->vulkan.device, 1, &gameState->vulkan.renderer.resources[currentFrameIndex].renderFence);
         __psVulkanRendererNextInflightFrame(gameState);
@@ -273,38 +273,4 @@ void psVulkanRendererRender(PS_GameState *gameState)
     }
 
     __psVulkanRendererNextInflightFrame(gameState);
-}
-
-bool psVulkanRendererRenderPresentationPass(PS_GameState *gameState, uint32_t imageIndex)
-{
-    PS_ASSERT(gameState != NULL);
-    uint32_t currentFrameIndex = gameState->vulkan.renderer.currentFrameIndex;
-    VkCommandBuffer commandBuffer = gameState->vulkan.renderer.resources[currentFrameIndex].commandBuffer;
-
-    static VkClearValue clearColor[2] = {0};
-    clearColor[0].color.float32[0] = 0.1f;
-    clearColor[0].color.float32[1] = 0.1f;
-    clearColor[0].color.float32[2] = 0.1f;
-    clearColor[0].color.float32[3] = 1.0f;
-
-    clearColor[1].depthStencil.depth = 1.0f;
-    clearColor[1].depthStencil.stencil = 0;
-
-    VkRenderPassBeginInfo renderPassInfo = {0};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = gameState->vulkan.swapchain.renderPass;
-    renderPassInfo.framebuffer = gameState->vulkan.swapchain.framebuffers[imageIndex];
-    renderPassInfo.renderArea.offset.x = 0;
-    renderPassInfo.renderArea.offset.y = 0;
-    renderPassInfo.renderArea.extent = gameState->vulkan.swapchain.extent;
-    renderPassInfo.clearValueCount = 2;
-    renderPassInfo.pClearValues = clearColor;
-
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    // TODO: Add rendering commands here
-
-    vkCmdEndRenderPass(commandBuffer);
-
-    return true;
 }
