@@ -208,7 +208,7 @@ static bool __psVulkanCreateInstance(PS_GameState *gameState)
 
 static bool __psVulkanCreateSurface(PS_GameState *gameState)
 {
-    if (glfwCreateWindowSurface(gameState->vulkan.instance, gameState->window.window, NULL, &gameState->vulkan.surface) != VK_SUCCESS)
+    if (glfwCreateWindowSurface(gameState->vulkan.instance, gameState->window.window, NULL, &gameState->vulkan.swapchain.surface) != VK_SUCCESS)
     {
         PS_LOG("Failed to create Vulkan surface\n");
         return false;
@@ -348,7 +348,7 @@ static int32_t __psVulkanFindQueueFamilyIndex(VkPhysicalDevice device, VkQueueFl
 
 static bool __psVulkanCreateDevice(PS_GameState *gameState)
 {
-    int32_t graphicsQueueFamilyIndex = __psVulkanFindQueueFamilyIndex(gameState->vulkan.physicalDevice, VK_QUEUE_GRAPHICS_BIT, gameState->vulkan.surface, -1);
+    int32_t graphicsQueueFamilyIndex = __psVulkanFindQueueFamilyIndex(gameState->vulkan.physicalDevice, VK_QUEUE_GRAPHICS_BIT, gameState->vulkan.swapchain.surface, -1);
     if (graphicsQueueFamilyIndex < 0)
     {
         PS_LOG("Failed to find graphics queue family index\n");
@@ -490,6 +490,13 @@ bool psVulkanInit(PS_GameState *gameState)
         return false;
     }
 
+    gameState->vulkan.swapchain.swapchainReady = false;
+    if (!psVulkanSwapchainCreate(gameState))
+    {
+        PS_LOG("Failed to create Vulkan swapchain\n");
+        return false;
+    }
+
     return true;
 }
 
@@ -502,6 +509,8 @@ void psVulkanShutdown(PS_GameState *gameState)
 
     vkDestroyCommandPool(gameState->vulkan.device, gameState->vulkan.computeCommandPool, NULL);
     gameState->vulkan.computeCommandPool = VK_NULL_HANDLE;
+
+    psVulkanSwapchainDestroy(gameState);
 
     vkDestroyDevice(gameState->vulkan.device, NULL);
     gameState->vulkan.device = VK_NULL_HANDLE;
@@ -519,8 +528,8 @@ void psVulkanShutdown(PS_GameState *gameState)
     }
 #endif
 
-    vkDestroySurfaceKHR(gameState->vulkan.instance, gameState->vulkan.surface, NULL);
-    gameState->vulkan.surface = VK_NULL_HANDLE;
+    vkDestroySurfaceKHR(gameState->vulkan.instance, gameState->vulkan.swapchain.surface, NULL);
+    gameState->vulkan.swapchain.surface = VK_NULL_HANDLE;
 
     vkDestroyInstance(gameState->vulkan.instance, NULL);
     gameState->vulkan.instance = VK_NULL_HANDLE;

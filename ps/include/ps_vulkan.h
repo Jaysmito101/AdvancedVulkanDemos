@@ -9,5 +9,8 @@
 bool psVulkanInit(PS_GameState *gameState); 
 void psVulkanShutdown(PS_GameState *gameState);
 
+bool psVulkanSwapchainCreate(PS_GameState *gameState);
+bool psVulkanSwapchainRecreate(PS_GameState *gameState);
+void psVulkanSwapchainDestroy(PS_GameState *gameState);
 
 #endif // PS_VULKAN_H

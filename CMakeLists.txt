@@ -75,6 +75,7 @@ add_executable(ps
     ./ps/src/ps_application.c
     ./ps/src/ps_window.c
     ./ps/src/ps_vulkan.c
+    ./ps/src/ps_vulkan_swapchain.c
 )
 target_link_libraries(ps
     glfw

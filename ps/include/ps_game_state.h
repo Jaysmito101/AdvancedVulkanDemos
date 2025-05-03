@@ -15,15 +15,33 @@ typedef struct PS_Window {
     int32_t framebufferHeight;
 } PS_Window;
 
+typedef struct PS_VulkanSwapchain {
+    VkSurfaceKHR surface;
+    VkSwapchainKHR swapchain;
+    VkImage images[64];
+    VkImageView imageViews[64];
+    VkFramebuffer framebuffers[64];
+    VkSurfaceFormatKHR surfaceFormat;
+    VkPresentModeKHR presentMode;
+    uint32_t imageCount;
+    VkExtent2D extent;
+    VkRenderPass renderPass;
+
+
+    bool swapchainReady;
+} PS_VulkanSwapchain;
+
 typedef struct PS_Vulkan {
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
-    VkSurfaceKHR surface;
     VkDevice device;
     VkQueue graphicsQueue;
     VkQueue computeQueue;
     VkCommandPool graphicsCommandPool;
     VkCommandPool computeCommandPool;
+
+
+    PS_VulkanSwapchain swapchain;
 
     int32_t graphicsQueueFamilyIndex;
     int32_t computeQueueFamilyIndex;
