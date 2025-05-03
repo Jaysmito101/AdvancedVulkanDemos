@@ -346,11 +346,44 @@ void psVulkanSwapchainDestroy(PS_GameState *gameState) {
     vkDestroyRenderPass(gameState->vulkan.device, gameState->vulkan.swapchain.renderPass, NULL);
     gameState->vulkan.swapchain.renderPass = VK_NULL_HANDLE;
     
-    for (int i = 0; i < gameState->vulkan.swapchain.imageCount; ++i) {
+    for (uint32_t i = 0; i < gameState->vulkan.swapchain.imageCount; ++i) {
         vkDestroyImageView(gameState->vulkan.device, gameState->vulkan.swapchain.imageViews[i], NULL);
         vkDestroyFramebuffer(gameState->vulkan.device, gameState->vulkan.swapchain.framebuffers[i], NULL);
     }
     
     vkDestroySwapchainKHR(gameState->vulkan.device, gameState->vulkan.swapchain.swapchain, NULL);
     gameState->vulkan.swapchain.swapchainReady = false;
+}
+
+VkResult psVulkanSwapchainAcquireNextImage(PS_GameState *gameState, uint32_t *imageIndex) {
+    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(imageIndex != NULL);
+
+    VkResult result = vkAcquireNextImageKHR(gameState->vulkan.device, gameState->vulkan.swapchain.swapchain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE, imageIndex);
+    if (result != VK_SUCCESS) {
+        PS_LOG("Failed to acquire next image from swapchain\n");
+        return result;
+    }
+
+    return VK_SUCCESS;
+}
+
+bool psVulkanSwapchainPresent(PS_GameState *gameState, uint32_t imageIndex, VkSemaphore waitSemaphore) {
+    PS_ASSERT(gameState != NULL);
+
+    VkPresentInfoKHR presentInfo = {0};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = &waitSemaphore;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &gameState->vulkan.swapchain.swapchain;
+    presentInfo.pImageIndices = &imageIndex;
+
+    VkResult result = vkQueuePresentKHR(gameState->vulkan.graphicsQueue, &presentInfo);
+    if (result != VK_SUCCESS) {
+        PS_LOG("Failed to present image to swapchain\n");
+        return false;
+    }
+
+    return true;
 }
