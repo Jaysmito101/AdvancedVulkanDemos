@@ -497,12 +497,20 @@ bool psVulkanInit(PS_GameState *gameState)
         return false;
     }
 
+    if(!psVulkanRendererCreate(gameState))
+    {
+        PS_LOG("Failed to create Vulkan renderer\n");
+        return false;
+    }
+
     return true;
 }
 
 void psVulkanShutdown(PS_GameState *gameState)
 {
     vkDeviceWaitIdle(gameState->vulkan.device);
+
+    psVulkanRendererDestroy(gameState);
 
     vkDestroyCommandPool(gameState->vulkan.device, gameState->vulkan.graphicsCommandPool, NULL);
     gameState->vulkan.graphicsCommandPool = VK_NULL_HANDLE;

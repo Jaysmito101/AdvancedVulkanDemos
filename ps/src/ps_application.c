@@ -83,9 +83,6 @@ void psApplicationRender(PS_GameState *gameState) {
     if (gameState->window.isMinimized) {
         return;
     }    
-
-    if(gameState->vulkan.swapchain.swapchainRecreateRequired) {
-        PS_LOG("Swapchain recreate required\n");
-        psVulkanSwapchainRecreate(gameState);
-    }
+       
+    psVulkanRendererRender(gameState);
 }

@@ -32,11 +32,17 @@ typedef struct PS_VulkanSwapchain {
     bool swapchainReady;
 } PS_VulkanSwapchain;
 
-typedef struct PS_VulkanRenderer {
+typedef struct PS_VulkanRendererResources {
     VkCommandBuffer commandBuffer;
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
     VkFence renderFence;
+} PS_VulkanRendererResources;
+
+typedef struct PS_VulkanRenderer {
+    PS_VulkanRendererResources resources[16];
+    uint32_t numInFlightFrames;
+    uint32_t currentFrameIndex;
 } PS_VulkanRenderer;
 
 typedef struct PS_Vulkan {
@@ -48,8 +54,8 @@ typedef struct PS_Vulkan {
     VkCommandPool graphicsCommandPool;
     VkCommandPool computeCommandPool;
 
-    
     PS_VulkanSwapchain swapchain;
+    PS_VulkanRenderer renderer;
 
     int32_t graphicsQueueFamilyIndex;
     int32_t computeQueueFamilyIndex;
