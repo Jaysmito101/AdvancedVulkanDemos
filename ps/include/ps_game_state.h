@@ -39,6 +39,12 @@ typedef struct PS_VulkanRendererResources {
     VkFence renderFence;
 } PS_VulkanRendererResources;
 
+typedef struct PS_VulkanBuffer {
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+    VkDescriptorBufferInfo descriptorBufferInfo;
+} PS_VulkanBuffer;
+
 typedef struct PS_VulkanImage {
     VkImage image;
     VkDeviceMemory memory;

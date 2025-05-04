@@ -34,8 +34,14 @@ bool psVulkanFormatIsDepthStencil(VkFormat format);
 bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer, int32_t width, int32_t height, bool hasDepthStencil, VkFormat colorFormat, VkFormat depthStencilFormat);
 void psVulkanFramebufferDestroy(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer);
 
+bool psVulkanBufferCreate(PS_GameState *gameState, PS_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+void psVulkanBufferDestroy(PS_GameState *gameState, PS_VulkanBuffer *buffer);
+
 bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height);
 bool psVulkanImageTransitionLayout(PS_GameState *gameState, PS_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 void psVulkanImageDestroy(PS_GameState *gameState, PS_VulkanImage *image);
+bool psVulkanBufferMap(PS_GameState *gameState, PS_VulkanBuffer *buffer, void **data);
+void psVulkanBufferUnmap(PS_GameState *gameState, PS_VulkanBuffer *buffer);
+bool psVulkanBufferUpload(PS_GameState *gameState, PS_VulkanBuffer *buffer, const void *srcData, VkDeviceSize size);
 
 #endif // PS_VULKAN_H
