@@ -6,25 +6,16 @@
 "    float windowWidth;\n" \
 "    float windowHeight;\n" \
 "    float time;\n" \
+"    float backgroundImageWidth;\n" \
+"    float backgroundImageHeight;\n" \
+"    float buttonImageWidth;\n" \
+"    float buttonImageHeight;\n" \
 "};\n" \
 "\n" \
 "layout(push_constant) uniform PushConstants {\n" \
 "    PushConstantsData data;\n" \
 "} pushConstants;\n" \
 "\n" \
-
-#define PS_SDF_FUNCTIONS "" \
-"\n" \
-"float sdBox(vec2 p, vec2 b) {\n" \
-"    vec2 d = abs(p) - b;\n" \
-"    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);\n" \
-"}\n" \
-"float opSmoothUnion( float d1, float d2, float k ) {\n" \
-"    float h = clamp( 0.5 + 0.5*(d2-d1)/k, 0.0, 1.0 );\n" \
-"    return mix( d2, d1, h ) - k*h*(1.0-h);\n" \
-"}\n" \
-"\n"
-
 
 const char* psShader_MainMenuVertex = ""
 "#version 450\n"
@@ -56,33 +47,87 @@ const char* psShader_MainMenuFragment = ""
 "#pragma shader_stage(fragment)\n"
 "layout(location = 0) in vec2 inUV;\n"
 "layout(location = 0) out vec4 outColor;\n"
-PS_SHADER_MAIN_MENU_PUSH_CONSTANTS 
-PS_SDF_FUNCTIONS
-"void main() {\n"
-"    vec2 fragCoord = inUV * vec2(pushConstants.data.windowWidth, pushConstants.data.windowHeight);\n"
-"    vec2 center = vec2(pushConstants.data.windowWidth, pushConstants.data.windowHeight) * 0.5;\n"
-"    vec2 p = fragCoord - center;\n"
-
-"    float aspect = pushConstants.data.windowWidth / pushConstants.data.windowHeight;\n"
-"    p.x /= aspect; // Adjust for aspect ratio \n"
-"    vec2 buttonSize = vec2(pushConstants.data.windowHeight * 0.3, pushConstants.data.windowHeight * 0.06); // Width based on height for consistency \n"
-"    float buttonSpacing = pushConstants.data.windowHeight * 0.08;\n"
-"    vec2 buttonPositions[4];\n"
-"    buttonPositions[0] = vec2(0.0, buttonSpacing * 1.5); // New Game (Top) \n"
-"    buttonPositions[1] = vec2(0.0, buttonSpacing * 0.5); // Continue \n"
-"    buttonPositions[2] = vec2(0.0, -buttonSpacing * 0.5); // Options \n"
-"    buttonPositions[3] = vec2(0.0, -buttonSpacing * 1.5); // Exit (Bottom) \n"
-"    float d = 1e10; // Initialize with a large distance\n"
-"    for (int i = 0; i < 4; ++i) {\n"
-"        float buttonDist = sdBox(p - buttonPositions[i], buttonSize);\n"
-"        d = min(d, buttonDist);\n"
+"\n"
+"layout(set = 0, binding = 0) uniform sampler2D backgroundTexture;\n"
+"layout(set = 0, binding = 1) uniform sampler2D newGameButtonTexture;\n"
+"layout(set = 0, binding = 2) uniform sampler2D continueButtonTexture;\n"
+"layout(set = 0, binding = 3) uniform sampler2D optionsButtonTexture;\n"
+"layout(set = 0, binding = 4) uniform sampler2D exitButtonTexture;\n"
+"\n"
+PS_SHADER_MAIN_MENU_PUSH_CONSTANTS
+"\n"
+"const float buttonHeightUV = 0.1;\n"
+"const float buttonCenterYStart = 0.55;\n"
+"const float buttonSpacingY = 0.12;\n"
+"const float buttonCenterX = 0.5;\n"
+"\n"
+"vec4 sampleButton(vec2 uv, vec2 center, vec2 size, sampler2D tex) {\n"
+"    vec2 halfSize = size * 0.5;\n"
+"    vec2 minBound = center - halfSize;\n"
+"    vec2 maxBound = center + halfSize;\n"
+"\n"
+"    if (uv.x >= minBound.x && uv.x <= maxBound.x && uv.y >= minBound.y && uv.y <= maxBound.y) {\n"
+"        vec2 buttonUV = (uv - minBound) / size;\n"
+"        return texture(tex, buttonUV);\n"
 "    }\n"
-
-"    vec3 col = vec3(40.0/255.0, 40.0/255.0, 40.0/255.0); // Dark grey background \n"
-
-"    vec3 buttonColor = vec3(0.6, 0.6, 0.6); // Grey buttons \n"
-"    float edgeSmoothness = 2.0; // Adjust for desired edge sharpness \n"
-"    col = mix(buttonColor, col, smoothstep(0.0, edgeSmoothness, d));\n"
-
-"    outColor = vec4(col, 1.0);\n"
+"    return vec4(0.0);\n"
+"}\n"
+"\n"
+"void main() {\n"
+"    vec2 flippedUV = vec2(inUV.x, 1.0 - inUV.y);\n"
+"\n"
+"    float screenAspect = pushConstants.data.windowWidth / pushConstants.data.windowHeight;\n"
+"    float targetAspect = pushConstants.data.backgroundImageWidth / pushConstants.data.backgroundImageHeight;\n"
+"    vec2 scale = vec2(1.0, 1.0);\n"
+"    vec2 offset = vec2(0.0, 0.0);\n"
+"\n"
+"    if (screenAspect > targetAspect) {\n"
+"        scale.x = targetAspect / screenAspect;\n"
+"        offset.x = (1.0 - scale.x) * 0.5;\n"
+"    } else {\n"
+"        scale.y = screenAspect / targetAspect;\n"
+"        offset.y = (1.0 - scale.y) * 0.5;\n"
+"    }\n"
+"\n"
+"    vec2 backgroundUV = (flippedUV - offset) / scale;\n"
+"    vec4 bgColor = vec4(0.0, 0.0, 0.0, 0.0);\n"
+"    if (backgroundUV.x >= 0.0 && backgroundUV.x <= 1.0 && backgroundUV.y >= 0.0 && backgroundUV.y <= 1.0) {\n"
+"        bgColor = texture(backgroundTexture, backgroundUV);\n"
+"    }\n"
+"\n"
+"    vec4 finalColor = bgColor;\n"
+"\n"
+"    float buttonImageAspect = pushConstants.data.buttonImageWidth / pushConstants.data.buttonImageHeight;\n"
+"    float buttonWidthUV = buttonHeightUV * buttonImageAspect * (pushConstants.data.windowHeight / pushConstants.data.windowWidth);\n"
+"    vec2 correctedButtonSize = vec2(buttonWidthUV, buttonHeightUV);\n"
+"\n"
+"    vec2 buttonPositions[4];\n"
+"    buttonPositions[0] = vec2(buttonCenterX, buttonCenterYStart + buttonSpacingY * 0.0);\n"
+"    buttonPositions[1] = vec2(buttonCenterX, buttonCenterYStart + buttonSpacingY * 1.0);\n"
+"    buttonPositions[2] = vec2(buttonCenterX, buttonCenterYStart + buttonSpacingY * 2.0);\n"
+"    buttonPositions[3] = vec2(buttonCenterX, buttonCenterYStart + buttonSpacingY * 3.0);\n"
+"\n"
+"    vec4 btnColor = vec4(0.0);\n"
+"\n"
+"    btnColor = sampleButton(flippedUV, buttonPositions[0], correctedButtonSize, newGameButtonTexture);\n"
+"    if (btnColor.a > 0.0) {\n"
+"        finalColor = mix(finalColor, btnColor, btnColor.a);\n"
+"    }\n"
+"\n"
+"    btnColor = sampleButton(flippedUV, buttonPositions[1], correctedButtonSize, continueButtonTexture);\n"
+"    if (btnColor.a > 0.0) {\n"
+"        finalColor = mix(finalColor, btnColor, btnColor.a);\n"
+"    }\n"
+"\n"
+"    btnColor = sampleButton(flippedUV, buttonPositions[2], correctedButtonSize, optionsButtonTexture);\n"
+"    if (btnColor.a > 0.0) {\n"
+"        finalColor = mix(finalColor, btnColor, btnColor.a);\n"
+"    }\n"
+"\n"
+"    btnColor = sampleButton(flippedUV, buttonPositions[3], correctedButtonSize, exitButtonTexture);\n"
+"    if (btnColor.a > 0.0) {\n"
+"        finalColor = mix(finalColor, btnColor, btnColor.a);\n"
+"    }\n"
+"\n"
+"    outColor = finalColor;\n"
 "}\n";

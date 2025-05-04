@@ -177,6 +177,18 @@ typedef struct PS_MainMenuScene {
     VkShaderModule fragmentShaderModule;
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
+
+    // Textures
+    PS_VulkanImage backgroundTexture;
+    PS_VulkanImage newGameButtonTexture;
+    PS_VulkanImage continueButtonTexture;
+    PS_VulkanImage optionsButtonTexture;
+    PS_VulkanImage exitButtonTexture;
+
+    // Descriptor Set for Textures
+    VkDescriptorSetLayout textureDescriptorSetLayout; // Renamed for clarity
+    VkDescriptorSet textureDescriptorSet;           // Renamed for clarity
+
 } PS_MainMenuScene;
 
 #define PS_TOTAL_SCENES 6

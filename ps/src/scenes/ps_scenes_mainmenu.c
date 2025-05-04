@@ -3,37 +3,85 @@
 
 // Push constant struct matching shader data
 typedef struct PS_MainMenuPushConstants {
-    float windowWidth;
-    float windowHeight;
+    float windowWidth;      
+    float windowHeight;     
     float time;
+    float backgroundImageWidth;
+    float backgroundImageHeight;
+    float buttonImageWidth;
+    float buttonImageHeight;
 } PS_MainMenuPushConstants;
 
 bool psScenesMainMenuInit(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
     PS_MainMenuScene *scene = &gameState->scene.mainMenuScene;
 
-    // Create shader modules
+    // --- Load Textures ---
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen.png", &scene->backgroundTexture)) return false;
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_new_game.png", &scene->newGameButtonTexture)) return false;
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_continue.png", &scene->continueButtonTexture)) return false;
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_options.png", &scene->optionsButtonTexture)) return false;
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_exit.png", &scene->exitButtonTexture)) return false;
+
+    // --- Create Shader Modules ---
     VkShaderModule vert = psShaderModuleCreate(gameState, psShader_MainMenuVertex, VK_SHADER_STAGE_VERTEX_BIT, "main_menu_vertex_shader.glsl");
-    if (vert == VK_NULL_HANDLE) return false;
+    if (vert == VK_NULL_HANDLE) {
+        PS_LOG("Failed to create main menu vertex shader module\n");
+        return false;
+    }
     scene->vertexShaderModule = vert;
 
     VkShaderModule frag = psShaderModuleCreate(gameState, psShader_MainMenuFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "main_menu_fragment_shader.glsl");
     if (frag == VK_NULL_HANDLE) {
-        vkDestroyShaderModule(gameState->vulkan.device, vert, NULL);
+        PS_LOG("Failed to create main menu fragment shader module\n");
         return false;
     }
     scene->fragmentShaderModule = frag;
 
-    // Pipeline layout (push constants only)
+    VkDescriptorSetLayoutBinding bindings[5] = {0};
+    // Background Texture
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[0].descriptorCount = 1;
+    bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    // Button Textures
+    bindings[1].binding = 1; // New Game
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[1].descriptorCount = 1;
+    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[2].binding = 2; // Continue
+    bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[2].descriptorCount = 1;
+    bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[3].binding = 3; // Options
+    bindings[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[3].descriptorCount = 1;
+    bindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[4].binding = 4; // Exit
+    bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[4].descriptorCount = 1;
+    bindings[4].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo setLayoutInfo = {0};
+    setLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    setLayoutInfo.bindingCount = PS_ARRAY_COUNT(bindings);
+    setLayoutInfo.pBindings = bindings;
+
+    if (vkCreateDescriptorSetLayout(gameState->vulkan.device, &setLayoutInfo, NULL, &scene->textureDescriptorSetLayout) != VK_SUCCESS) {
+        PS_LOG("Failed to create main menu texture descriptor set layout\n");
+        return false;
+    }
+
+    // --- Pipeline Layout ---
     VkPushConstantRange pushRange = {0};
-    pushRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    pushRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; // Only fragment shader uses push constants now
     pushRange.offset = 0;
     pushRange.size = sizeof(PS_MainMenuPushConstants);
 
     VkPipelineLayoutCreateInfo layoutInfo = {0};
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    layoutInfo.setLayoutCount = 0;
-    layoutInfo.pSetLayouts = NULL;
+    layoutInfo.setLayoutCount = 1; // Use the texture descriptor set layout
+    layoutInfo.pSetLayouts = &scene->textureDescriptorSetLayout;
     layoutInfo.pushConstantRangeCount = 1;
     layoutInfo.pPushConstantRanges = &pushRange;
 
@@ -42,15 +90,67 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
         return false;
     }
 
-    // Graphics pipeline (Similar to loading screen, no vertex input)
+    // --- Allocate Descriptor Set ---
+    VkDescriptorSetAllocateInfo allocInfo = {0};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = gameState->vulkan.descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &scene->textureDescriptorSetLayout;
+
+    if (vkAllocateDescriptorSets(gameState->vulkan.device, &allocInfo, &scene->textureDescriptorSet) != VK_SUCCESS) {
+        PS_LOG("Failed to allocate main menu texture descriptor set\n");
+        return false;
+    }
+
+    // --- Update Descriptor Set ---
+    VkWriteDescriptorSet writes[5] = {0};
+
+    writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[0].dstSet = scene->textureDescriptorSet;
+    writes[0].dstBinding = 0;
+    writes[0].descriptorCount = 1;
+    writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[0].pImageInfo = &scene->backgroundTexture.descriptorImageInfo;
+
+    writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[1].dstSet = scene->textureDescriptorSet;
+    writes[1].dstBinding = 1;
+    writes[1].descriptorCount = 1;
+    writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[1].pImageInfo = &scene->newGameButtonTexture.descriptorImageInfo;
+
+    writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[2].dstSet = scene->textureDescriptorSet;
+    writes[2].dstBinding = 2;
+    writes[2].descriptorCount = 1;
+    writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[2].pImageInfo = &scene->continueButtonTexture.descriptorImageInfo;
+
+    writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[3].dstSet = scene->textureDescriptorSet;
+    writes[3].dstBinding = 3;
+    writes[3].descriptorCount = 1;
+    writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[3].pImageInfo = &scene->optionsButtonTexture.descriptorImageInfo;
+
+    writes[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[4].dstSet = scene->textureDescriptorSet;
+    writes[4].dstBinding = 4;
+    writes[4].descriptorCount = 1;
+    writes[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[4].pImageInfo = &scene->exitButtonTexture.descriptorImageInfo;
+
+    vkUpdateDescriptorSets(gameState->vulkan.device, PS_ARRAY_COUNT(writes), writes, 0, NULL);
+
+    // --- Graphics pipeline ---
     VkPipelineShaderStageCreateInfo shaderStages[2] = {0};
     shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    shaderStages[0].module = scene->vertexShaderModule;
+    shaderStages[0].module = vert; // Use the temporary handle
     shaderStages[0].pName = "main";
     shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStages[1].module = scene->fragmentShaderModule;
+    shaderStages[1].module = frag; // Use the temporary handle
     shaderStages[1].pName = "main";
 
     VkPipelineVertexInputStateCreateInfo vertexInput = {0};
@@ -121,7 +221,7 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlendState;
     pipelineInfo.pDynamicState = &dynamicState;
-    pipelineInfo.layout = scene->pipelineLayout;
+    pipelineInfo.layout = scene->pipelineLayout; // Use the updated layout
     pipelineInfo.renderPass = gameState->vulkan.renderer.sceneFramebuffer.renderPass;
     pipelineInfo.subpass = 0;
 
@@ -130,16 +230,35 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
         return false;
     }
 
+
     return true;
 }
 
 void psScenesMainMenuShutdown(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
     PS_MainMenuScene *scene = &gameState->scene.mainMenuScene;
+
+    // Destroy pipeline and layout first
     vkDestroyPipeline(gameState->vulkan.device, scene->pipeline, NULL);
     vkDestroyPipelineLayout(gameState->vulkan.device, scene->pipelineLayout, NULL);
+
+    
+    // Cleanup shader modules now they are linked to the pipeline
     vkDestroyShaderModule(gameState->vulkan.device, scene->vertexShaderModule, NULL);
+    scene->fragmentShaderModule = VK_NULL_HANDLE;
+
     vkDestroyShaderModule(gameState->vulkan.device, scene->fragmentShaderModule, NULL);
+    scene->vertexShaderModule = VK_NULL_HANDLE; // Mark as destroyed
+
+    // Destroy descriptor set layout (descriptor set is implicitly freed with pool)
+    vkDestroyDescriptorSetLayout(gameState->vulkan.device, scene->textureDescriptorSetLayout, NULL);
+
+    // Destroy textures
+    psVulkanImageDestroy(gameState, &scene->backgroundTexture);
+    psVulkanImageDestroy(gameState, &scene->newGameButtonTexture);
+    psVulkanImageDestroy(gameState, &scene->continueButtonTexture);
+    psVulkanImageDestroy(gameState, &scene->optionsButtonTexture);
+    psVulkanImageDestroy(gameState, &scene->exitButtonTexture);
 }
 
 bool psScenesMainMenuSwitch(PS_GameState *gameState) {
@@ -158,7 +277,7 @@ bool psScenesMainMenuRender(PS_GameState *gameState) {
     uint32_t idx = gameState->vulkan.renderer.currentFrameIndex;
     VkCommandBuffer cmd = gameState->vulkan.renderer.resources[idx].commandBuffer;
 
-    // Begin scene render pass (clears to dark grey)
+    // Begin scene render pass
     VkRenderPassBeginInfo rpInfo = {0};
     rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     rpInfo.renderPass = gameState->vulkan.renderer.sceneFramebuffer.renderPass;
@@ -168,10 +287,11 @@ bool psScenesMainMenuRender(PS_GameState *gameState) {
     rpInfo.renderArea.extent.width = gameState->vulkan.renderer.sceneFramebuffer.width;
     rpInfo.renderArea.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
     VkClearValue clears[2] = {0};
-    clears[0].color.float32[0] = 40.0f/255.0f;
-    clears[0].color.float32[1] = 40.0f/255.0f;
-    clears[0].color.float32[2] = 40.0f/255.0f;
-    clears[0].color.float32[3] = 1.0f;
+    
+    clears[0].color.float32[0] = 208.0f / 255.0f;
+    clears[0].color.float32[1] = 166.0f / 255.0f;
+    clears[0].color.float32[2] = 228.0f / 255.0f;
+    clears[0].color.float32[3] = 1.0f; 
     clears[1].depthStencil.depth = 1.0f;
     rpInfo.clearValueCount = 2;
     rpInfo.pClearValues = clears;
@@ -197,14 +317,25 @@ bool psScenesMainMenuRender(PS_GameState *gameState) {
     // Bind pipeline
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, scene->pipeline);
 
-    // Push constants
+    // Bind Descriptor Set
+    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, scene->pipelineLayout,
+                            0, // firstSet
+                            1, // setCount
+                            &scene->textureDescriptorSet,
+                            0, NULL); // dynamicOffsets
+
+    // Push constants - Use scene framebuffer dimensions and image dimensions
     PS_MainMenuPushConstants pc = {
-        .windowWidth = (float)gameState->window.framebufferWidth, // Use framebuffer size
-        .windowHeight = (float)gameState->window.framebufferHeight,
-        .time = (float)gameState->framerate.currentTime
+        .windowWidth = (float)gameState->vulkan.renderer.sceneFramebuffer.width,
+        .windowHeight = (float)gameState->vulkan.renderer.sceneFramebuffer.height,
+        .time = (float)gameState->framerate.currentTime,
+        .backgroundImageWidth = (float)scene->backgroundTexture.width,
+        .backgroundImageHeight = (float)scene->backgroundTexture.height,
+        .buttonImageWidth = (float)scene->newGameButtonTexture.width, // Assuming all buttons have the same dimensions
+        .buttonImageHeight = (float)scene->newGameButtonTexture.height
     };
     vkCmdPushConstants(cmd, scene->pipelineLayout,
-                       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                       VK_SHADER_STAGE_FRAGMENT_BIT,
                        0, sizeof(pc), &pc);
 
     // Draw full screen quad (6 vertices)
