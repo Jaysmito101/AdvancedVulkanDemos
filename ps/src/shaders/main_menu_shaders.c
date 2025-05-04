@@ -63,6 +63,7 @@ const char* psShader_MainMenuFragment = ""
 "layout(set = 0, binding = 8) uniform sampler2D mascotFriendTexture;\n"
 "\n"
 PS_SHADER_MAIN_MENU_PUSH_CONSTANTS
+PS_SHADER_ACES
 "\n"
 "const float buttonHeightUV = 0.1;\n"
 "const float buttonCenterYStart = 0.55;\n"
@@ -168,4 +169,6 @@ PS_SHADER_MAIN_MENU_PUSH_CONSTANTS
 "    if (btnColor.a > 0.0) { finalColor = mix(finalColor, btnColor, btnColor.a); }\n"
 "\n"
 "    outColor = finalColor;\n"
+"    outColor.rgb = pow(outColor.rgb, vec3(1.8));\n"
+"    outColor.rgb = aces(outColor.rgb);\n"
 "}\n";
