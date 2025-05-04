@@ -67,6 +67,15 @@ const char* psShader_PresentationFragment = ""
 "\n"
 PS_SHADER_PRESENTATION_PUSH_CONSTANTS
 "\n"
+"vec3 aces(vec3 x) {\n"
+"    const float a = 2.51;\n"
+"    const float b = 0.03;\n"
+"    const float c = 2.43;\n"
+"    const float d = 0.59;\n"
+"    const float e = 0.14;\n"
+"    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);\n"
+"}\n"
+"\n"
 "void main() \n"
 "{\n" 
 "    vec2 ndc = inUV * 2.0 - 1.0;\n" // Convert UV to NDC [-1, 1]\n"
@@ -99,5 +108,7 @@ PS_SHADER_PRESENTATION_PUSH_CONSTANTS
 "        float opacity = 1.0 - smoothstep(0.1, 0.15, pushConstants.data.circleRadius);\n"
 "        outColor = mix(outColor, iconColor, iconColor.a * opacity);\n"
 "    }\n"
+"    outColor.rgb = pow(outColor.rgb, vec3(1.8));\n"
+"    outColor.rgb = aces(outColor.rgb);\n"
 "}\n";
 
