@@ -13,6 +13,9 @@ static void __psSwitchScene(PS_GameState *gameState, PS_SceneType sceneType)
     case PS_SCENE_TYPE_SPLASH:
         psScenesSplashSwitch(gameState);
         break;
+    case PS_SCENE_TYPE_LOADING: // Added loading scene switch
+        psScenesLoadingSwitch(gameState);
+        break;
     default:
         PS_LOG("Unknown scene type for switch: %d\n", sceneType);
         break;
@@ -40,6 +43,11 @@ bool psScenesInit(PS_GameState *gameState)
         PS_LOG("Failed to initialize splash scene\n");
         return false;
     }
+    if (!psScenesLoadingInit(gameState)) // Added loading scene init
+    {
+        PS_LOG("Failed to initialize loading scene\n");
+        return false;
+    }
 
     return true;
 }
@@ -49,6 +57,7 @@ void psScenesShutdown(PS_GameState *gameState)
     PS_ASSERT(gameState != NULL);
 
     psScenesSplashShutdown(gameState);
+    psScenesLoadingShutdown(gameState); // Added loading scene shutdown
 }
 
 bool psScenesUpdate(PS_GameState *gameState)
@@ -96,6 +105,8 @@ bool psScenesUpdate(PS_GameState *gameState)
     {
     case PS_SCENE_TYPE_SPLASH:
         return psScenesSplashUpdate(gameState);
+    case PS_SCENE_TYPE_LOADING: // Added loading update
+        return psScenesLoadingUpdate(gameState);
     case PS_SCENE_TYPE_NONE:
         return true;
     default:
@@ -130,6 +141,8 @@ bool psScenesRender(PS_GameState *gameState)
     {
     case PS_SCENE_TYPE_SPLASH:
         return psScenesSplashRender(gameState);
+    case PS_SCENE_TYPE_LOADING: // Added loading render
+        return psScenesLoadingRender(gameState);
     case PS_SCENE_TYPE_NONE:
          return true;
     default:

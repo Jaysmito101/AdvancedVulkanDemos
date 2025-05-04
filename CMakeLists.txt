@@ -88,9 +88,11 @@ add_executable(ps
 
     ./ps/src/shaders/splash_scene_shaders.c
     ./ps/src/shaders/presentation_shaders.c
+    ./ps/src/shaders/loading_scene_shaders.c
     
     ./ps/src/ps_scenes.c
     ./ps/src/scenes/ps_scenes_splash.c
+    ./ps/src/scenes/ps_scenes_loading.c
 )
 target_link_libraries(ps
     glfw

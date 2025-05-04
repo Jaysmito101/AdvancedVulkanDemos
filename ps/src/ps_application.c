@@ -49,8 +49,15 @@ bool psApplicationInit(PS_GameState *gameState) {
 
     __psApplicationUpdateFramerateCalculation(gameState);
 
-    if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_SPLASH)) {
-        PS_LOG("Failed to switch to splash scene\n");
+    // this is for prod
+    // if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_SPLASH)) {
+    //     PS_LOG("Failed to switch to splash scene\n");
+    //     return false;
+    // }
+
+    // this is for dev/testing
+    if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_LOADING)) {
+        PS_LOG("Failed to switch to loading scene\n");
         return false;
     }
 

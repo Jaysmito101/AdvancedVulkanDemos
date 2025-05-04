@@ -453,8 +453,7 @@ bool psScenesSplashUpdate(PS_GameState *gameState)
     gameState->scene.splashScene.currentOpacity = opacity;
 
 	if (t_total >= totalSceneDuration && !gameState->scene.isSwitchingScene) {
-        psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH);
-		gameState->scene.splashScene.sceneStartTime = now;
+        psScenesSwitch(gameState, PS_SCENE_TYPE_LOADING);
     }
 
     return true;
