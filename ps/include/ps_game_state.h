@@ -160,11 +160,12 @@ typedef struct PS_SplashScene {
 } PS_SplashScene;
 
 typedef struct PS_Scene {
+    PS_SceneType previousScene;
     PS_SceneType currentScene;
     
     bool isSwitchingScene;
     double sceneSwitchStartTime;
-    double sceneSwitchDurationLeft;
+    double sceneSwitchDuration;
 
     PS_SplashScene splashScene;
 } PS_Scene;

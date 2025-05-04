@@ -19,7 +19,6 @@ static bool __psVulkanFramebufferAttachmentCreate(PS_GameState *gameState, PS_Vu
         return false;
     }
     
-
     attachment->attachmentDescription.flags = 0;
     attachment->attachmentDescription.format = format;
     attachment->attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -211,6 +210,20 @@ bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *fr
         PS_LOG("Failed to create color attachment\n");
         return false;
     }
+
+    // transition image layout to SHADER_READ_ONLY_OPTIMAL
+    if(!psVulkanImageTransitionLayoutWithoutCommandBuffer(
+        gameState,
+        &framebuffer->colorAttachment.image,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
+    )) {
+        PS_LOG("Failed to transition image layout\n");
+        return false;
+    }
+
 
     if (hasDepthStencil)
     {

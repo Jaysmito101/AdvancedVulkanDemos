@@ -1,6 +1,5 @@
 #include "ps_vulkan.h"
 #include "ps_shader.h"
-#include "ps_game_state.h" // Include game state for access to descriptor pool etc.
 
 // Define the push constant struct matching the shader layout
 typedef struct PS_VulkanPresentationPushConstants {
@@ -14,8 +13,6 @@ typedef struct PS_VulkanPresentationPushConstants {
     float time;
 } PS_VulkanPresentationPushConstants;
 
-// Forward declaration
-static bool __psVulkanPresentationSetupDescriptors(PS_GameState *gameState);
 
 static bool __psVulkanPresentationCreatePipelineLayout(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
@@ -44,7 +41,6 @@ static bool __psVulkanPresentationCreatePipelineLayout(PS_GameState *gameState) 
     VkResult result = vkCreatePipelineLayout(gameState->vulkan.device, &pipelineLayoutInfo, NULL, &gameState->vulkan.renderer.presentation.pipelineLayout);
     if (result != VK_SUCCESS) {
         PS_LOG("Failed to create pipeline layout\n");
-        // Layouts are cleaned up in the caller (psVulkanPresentationInit or psVulkanPresentationDestroy)
         return false;
     }
 
@@ -77,7 +73,7 @@ static bool __psVulkanPresentationCreatePipeline(PS_GameState *gameState) {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;\
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {0};
     inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -283,6 +279,8 @@ bool psVulkanPresentationInit(PS_GameState *gameState) {
         return false;
     }
 
+        gameState->vulkan.renderer.presentation.circleRadius = 1.5f; 
+
     return true;
 }
 
@@ -354,16 +352,13 @@ bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex)
     scissor.extent = gameState->vulkan.swapchain.extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    // Define a radius (e.g., 0.8 for 80% of the adjusted screen space)
-    float circleRadius = 0.1f; 
-
     // Populate the push constant struct
     PS_VulkanPresentationPushConstants pushConstants = {
         .windowWidth = (float)gameState->vulkan.swapchain.extent.width,
         .windowHeight = (float)gameState->vulkan.swapchain.extent.height,
         .framebufferWidth = (float)gameState->vulkan.renderer.sceneFramebuffer.width,
         .framebufferHeight = (float)gameState->vulkan.renderer.sceneFramebuffer.height,
-        .circleRadius = circleRadius,
+        .circleRadius = gameState->vulkan.renderer.presentation.circleRadius,
         .iconWidth = (float)gameState->vulkan.renderer.presentation.iconImage.width,
         .iconHeight = (float)gameState->vulkan.renderer.presentation.iconImage.height,
         .time = (float)gameState->framerate.currentTime

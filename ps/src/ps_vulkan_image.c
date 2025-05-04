@@ -85,7 +85,6 @@ bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkForma
         return false;
     }
 
-    
     VkMemoryRequirements memRequirements = {0};
     vkGetImageMemoryRequirements(gameState->vulkan.device, image->image, &memRequirements);
 
@@ -134,14 +133,14 @@ bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkForma
     }
 
     image->format = format;
-    
+
     image->subresourceRange.aspectMask = aspectMask;
     image->subresourceRange.baseArrayLayer = 0;
     image->subresourceRange.layerCount = 1;
     image->subresourceRange.baseMipLevel = 0;
     image->subresourceRange.levelCount = 1;
-    
-    if (!__psVulkanFramebufferCreateSampler(gameState,  image))
+
+    if (!__psVulkanFramebufferCreateSampler(gameState, image))
     {
         PS_LOG("Failed to create framebuffer sampler\n");
         return false;
@@ -152,7 +151,7 @@ bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkForma
     image->descriptorImageInfo.sampler = image->sampler;
 
     // store dimensions for upload
-    image->width  = width;
+    image->width = width;
     image->height = height;
 
     return true;
@@ -168,7 +167,7 @@ void psVulkanImageDestroy(PS_GameState *gameState, PS_VulkanImage *image)
 
     vkDestroyImage(gameState->vulkan.device, image->image, NULL);
     image->image = VK_NULL_HANDLE;
-    
+
     vkDestroySampler(gameState->vulkan.device, image->sampler, NULL);
     image->sampler = VK_NULL_HANDLE;
 
@@ -176,7 +175,8 @@ void psVulkanImageDestroy(PS_GameState *gameState, PS_VulkanImage *image)
     image->memory = VK_NULL_HANDLE;
 }
 
-bool psVulkanImageTransitionLayout(PS_GameState *gameState, PS_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
+bool psVulkanImageTransitionLayout(PS_GameState *gameState, PS_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+{
     PS_ASSERT(gameState != NULL);
     PS_ASSERT(image != NULL);
     PS_ASSERT(commandBuffer != VK_NULL_HANDLE);
@@ -195,95 +195,96 @@ bool psVulkanImageTransitionLayout(PS_GameState *gameState, PS_VulkanImage *imag
     // before it will be transitioned to the new layout
     switch (oldLayout)
     {
-        case VK_IMAGE_LAYOUT_UNDEFINED:
-            // Image layout is undefined (or does not matter)
-            // Only valid as initial layout
-            // No flags required, listed only for completeness
-            barrier.srcAccessMask = 0;
-            break;
+    case VK_IMAGE_LAYOUT_UNDEFINED:
+        // Image layout is undefined (or does not matter)
+        // Only valid as initial layout
+        // No flags required, listed only for completeness
+        barrier.srcAccessMask = 0;
+        break;
 
-        case VK_IMAGE_LAYOUT_PREINITIALIZED:
-            // Image is preinitialized
-            // Only valid as initial layout for linear images, preserves memory contents
-            // Make sure host writes have been finished
-            barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-            break;
+    case VK_IMAGE_LAYOUT_PREINITIALIZED:
+        // Image is preinitialized
+        // Only valid as initial layout for linear images, preserves memory contents
+        // Make sure host writes have been finished
+        barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+        break;
 
-        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-            // Image is a color attachment
-            // Make sure any writes to the color buffer have been finished
-            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            break;
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        // Image is a color attachment
+        // Make sure any writes to the color buffer have been finished
+        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        break;
 
-        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-            // Image is a depth/stencil attachment
-            // Make sure any writes to the depth/stencil buffer have been finished
-            barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            break;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        // Image is a depth/stencil attachment
+        // Make sure any writes to the depth/stencil buffer have been finished
+        barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        break;
 
-        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-            // Image is a transfer source
-            // Make sure any reads from the image have been finished
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            break;
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        // Image is a transfer source
+        // Make sure any reads from the image have been finished
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        break;
 
-        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-            // Image is a transfer destination
-            // Make sure any writes to the image have been finished
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            break;
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        // Image is a transfer destination
+        // Make sure any writes to the image have been finished
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
 
-        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-            // Image is read by a shader
-            // Make sure any shader reads from the image have been finished
-            barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            break;
-        default:
-            // Other source layouts aren't handled (yet)
-            // PS_LOG("Unhandled old layout transition: %d\n", oldLayout);
-            break;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        // Image is read by a shader
+        // Make sure any shader reads from the image have been finished
+        barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        break;
+    default:
+        // Other source layouts aren't handled (yet)
+        // PS_LOG("Unhandled old layout transition: %d\n", oldLayout);
+        break;
     }
 
     // Target layouts (new)
     // Destination access mask controls the dependency for the new image layout
     switch (newLayout)
     {
-        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-            // Image will be used as a transfer destination
-            // Make sure any writes to the image have been finished
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            break;
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        // Image will be used as a transfer destination
+        // Make sure any writes to the image have been finished
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
 
-        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-            // Image will be used as a transfer source
-            // Make sure any reads from the image have been finished
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            break;
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        // Image will be used as a transfer source
+        // Make sure any reads from the image have been finished
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        break;
 
-        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-            // Image will be used as a color attachment
-            // Make sure any writes to the color buffer have been finished
-            barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            break;
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        // Image will be used as a color attachment
+        // Make sure any writes to the color buffer have been finished
+        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        break;
 
-        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-            // Image layout will be used as a depth/stencil attachment
-            // Make sure any writes to depth/stencil buffer have been finished
-            barrier.dstAccessMask = barrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            break;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        // Image layout will be used as a depth/stencil attachment
+        // Make sure any writes to depth/stencil buffer have been finished
+        barrier.dstAccessMask = barrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        break;
 
-        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-            // Image will be read in a shader (sampler, input attachment)
-            // Make sure any writes to the image have been finished
-            if (barrier.srcAccessMask == 0) {
-                barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-            }
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            break;
-        default:
-            // Other source layouts aren't handled (yet)
-            // PS_LOG("Unhandled new layout transition: %d\n", newLayout);
-            break;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        // Image will be read in a shader (sampler, input attachment)
+        // Make sure any writes to the image have been finished
+        if (barrier.srcAccessMask == 0)
+        {
+            barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        }
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        break;
+    default:
+        // Other source layouts aren't handled (yet)
+        // PS_LOG("Unhandled new layout transition: %d\n", newLayout);
+        break;
     }
 
     vkCmdPipelineBarrier(
@@ -293,46 +294,119 @@ bool psVulkanImageTransitionLayout(PS_GameState *gameState, PS_VulkanImage *imag
         0,
         0, NULL,
         0, NULL,
-        1, &barrier
-    );
+        1, &barrier);
 
     return true;
 }
 
+bool psVulkanImageTransitionLayoutWithoutCommandBuffer(PS_GameState *gameState, PS_VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+{
+    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(image != NULL);
+
+    VkCommandBufferAllocateInfo allocInfo = {0};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = gameState->vulkan.graphicsCommandPool; // Use graphics pool for simplicity
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    VkResult allocResult = vkAllocateCommandBuffers(gameState->vulkan.device, &allocInfo, &commandBuffer);
+    if (allocResult != VK_SUCCESS)
+    {
+        PS_LOG("Failed to allocate command buffer for image layout transition\n");
+        return false;
+    }
+
+    VkCommandBufferBeginInfo beginInfo = {0};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    VkResult beginResult = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    if (beginResult != VK_SUCCESS)
+    {
+        PS_LOG("Failed to begin command buffer for image layout transition\n");
+        return false;
+    }
+
+    bool transitionResult = psVulkanImageTransitionLayout(gameState, image, commandBuffer, oldLayout, newLayout, srcStageMask, dstStageMask);
+
+    VkResult endResult = vkEndCommandBuffer(commandBuffer);
+    if (endResult != VK_SUCCESS)
+    {
+        PS_LOG("Failed to end command buffer for image layout transition\n");
+        return false;
+    }
+
+    if (!transitionResult)
+    {
+        PS_LOG("Image layout transition command recording failed\n");
+        return false;
+    }
+
+    VkSubmitInfo submitInfo = {0};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    VkResult submitResult = vkQueueSubmit(gameState->vulkan.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    if (submitResult != VK_SUCCESS)
+    {
+        PS_LOG("Failed to submit command buffer for image layout transition\n");
+        return false;
+    }
+
+    VkResult waitResult = vkQueueWaitIdle(gameState->vulkan.graphicsQueue);
+    if (waitResult != VK_SUCCESS)
+    {
+        PS_LOG("Failed to wait for queue idle after image layout transition\n");
+        return false;
+    }
+
+    vkFreeCommandBuffers(gameState->vulkan.device, gameState->vulkan.graphicsCommandPool, 1, &commandBuffer);
+    return true;
+}
+
 // simple 2D image upload via staging buffer
-bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, const void *srcData) {
+bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, const void *srcData)
+{
     PS_ASSERT(gameState && image && srcData);
 
     // infer bytes per pixel from format
     uint32_t bpp;
-    switch (image->format) {
-        case VK_FORMAT_R8G8B8A8_UNORM:
-        case VK_FORMAT_B8G8R8A8_UNORM:
-        case VK_FORMAT_R8G8B8A8_SRGB:
-        case VK_FORMAT_B8G8R8A8_SRGB:
-        case VK_FORMAT_R32G32B32A32_SFLOAT:
-            bpp = 4; break;
-        case VK_FORMAT_R8G8B8_UNORM:
-        case VK_FORMAT_B8G8R8_UNORM:
-        case VK_FORMAT_R8G8B8_SRGB:
-        case VK_FORMAT_B8G8R8_SRGB:
-        case VK_FORMAT_R32G32B32_SFLOAT:
-            bpp = 3; break;
-        default:
-            PS_LOG("Unsupported image format for upload: %d\n", image->format);
-            return false;
+    switch (image->format)
+    {
+    case VK_FORMAT_R8G8B8A8_UNORM:
+    case VK_FORMAT_B8G8R8A8_UNORM:
+    case VK_FORMAT_R8G8B8A8_SRGB:
+    case VK_FORMAT_B8G8R8A8_SRGB:
+    case VK_FORMAT_R32G32B32A32_SFLOAT:
+        bpp = 4;
+        break;
+    case VK_FORMAT_R8G8B8_UNORM:
+    case VK_FORMAT_B8G8R8_UNORM:
+    case VK_FORMAT_R8G8B8_SRGB:
+    case VK_FORMAT_B8G8R8_SRGB:
+    case VK_FORMAT_R32G32B32_SFLOAT:
+        bpp = 3;
+        break;
+    default:
+        PS_LOG("Unsupported image format for upload: %d\n", image->format);
+        return false;
     }
     VkDeviceSize imageSize = (VkDeviceSize)image->width * image->height * bpp;
 
     // create and fill staging buffer
     PS_VulkanBuffer staging = {0};
     if (!psVulkanBufferCreate(gameState, &staging, imageSize,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                              VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+    {
         return false;
     }
     void *mapped = NULL;
-    if (!psVulkanBufferMap(gameState, &staging, &mapped)) {
+    if (!psVulkanBufferMap(gameState, &staging, &mapped))
+    {
         psVulkanBufferDestroy(gameState, &staging);
         return false;
     }
@@ -355,10 +429,10 @@ bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, c
 
     // transition to transfer dst
     psVulkanImageTransitionLayout(gameState, image, cmd,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT);
+                                  VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT);
 
     // copy buffer to image
     VkBufferImageCopy region = {0};
@@ -372,17 +446,17 @@ bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, c
     region.imageExtent.width = image->width;
     region.imageExtent.height = image->height;
     region.imageExtent.depth = 1;
-    region.imageOffset = (VkOffset3D){0,0,0};
+    region.imageOffset = (VkOffset3D){0, 0, 0};
     region.imageExtent = (VkExtent3D){image->width, image->height, 1};
     vkCmdCopyBufferToImage(cmd, staging.buffer, image->image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
     // transition to shader read
     psVulkanImageTransitionLayout(gameState, image, cmd,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
     vkEndCommandBuffer(cmd);
 
@@ -407,7 +481,8 @@ bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, c
 }
 
 // load image file (8‑bit or HDR float), create Vulkan image and upload
-bool psVulkanImageLoadFromFile(PS_GameState *gameState, const char *filename, PS_VulkanImage *image) {
+bool psVulkanImageLoadFromFile(PS_GameState *gameState, const char *filename, PS_VulkanImage *image)
+{
     PS_ASSERT(gameState && filename && image);
 
     int width, height, origChannels;
@@ -416,17 +491,22 @@ bool psVulkanImageLoadFromFile(PS_GameState *gameState, const char *filename, PS
     VkFormat format;
 
     // force load as RGBA (4 components)
-    if (isHDR) {
+    if (isHDR)
+    {
         float *fdata = stbi_loadf(filename, &width, &height, &origChannels, 4);
-        if (!fdata) {
+        if (!fdata)
+        {
             PS_LOG("Failed to load HDR image: %s\n", filename);
             return false;
         }
         format = VK_FORMAT_R32G32B32A32_SFLOAT;
         pixels = fdata;
-    } else {
+    }
+    else
+    {
         unsigned char *cdata = stbi_load(filename, &width, &height, &origChannels, 4);
-        if (!cdata) {
+        if (!cdata)
+        {
             PS_LOG("Failed to load image: %s\n", filename);
             return false;
         }
@@ -438,14 +518,16 @@ bool psVulkanImageLoadFromFile(PS_GameState *gameState, const char *filename, PS
     if (!psVulkanImageCreate(
             gameState, image, format,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            (uint32_t)width, (uint32_t)height)) {
+            (uint32_t)width, (uint32_t)height))
+    {
         PS_LOG("Failed to create Vulkan image for file: %s\n", filename);
         stbi_image_free(pixels);
         return false;
     }
 
     // upload pixel data
-    if (!psVulkanImageUploadSimple(gameState, image, pixels)) {
+    if (!psVulkanImageUploadSimple(gameState, image, pixels))
+    {
         PS_LOG("Failed to upload image data: %s\n", filename);
         stbi_image_free(pixels);
         return false;

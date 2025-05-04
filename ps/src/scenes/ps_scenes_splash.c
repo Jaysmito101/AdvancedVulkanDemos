@@ -225,21 +225,18 @@ bool psScenesSplashInit(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
 
-    // Load splash image
     if (!psVulkanImageLoadFromFile(gameState, "./assets/splash.png", &gameState->scene.splashScene.splashImage))
     {
         PS_LOG("Failed to load splash image\n");
         return false;
     }
 
-    // Create descriptor set layout
     if (!__psCreateDescriptorSetLayout(gameState))
     {
         PS_LOG("Failed to create descriptor set layout\n");
         return false;
     }
 
-    // Create descriptor set
     if (!__psCreateDescriptorSet(gameState))
     {
         PS_LOG("Failed to create descriptor set\n");
@@ -282,10 +279,8 @@ void psScenesSplashShutdown(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
 
-    // Clean up image resources
     psVulkanImageDestroy(gameState, &gameState->scene.splashScene.splashImage);
 
-    // Destroy descriptor resources
     vkDestroyDescriptorSetLayout(gameState->vulkan.device, gameState->scene.splashScene.descriptorSetLayout, NULL);
 
     vkDestroyPipeline(gameState->vulkan.device, gameState->scene.splashScene.pipeline, NULL);
@@ -307,7 +302,7 @@ bool psScenesSplashSwitch(PS_GameState *gameState)
 
     gameState->scene.currentScene = PS_SCENE_TYPE_SPLASH;
     gameState->scene.splashScene.sceneStartTime = gameState->framerate.currentTime;
-    gameState->scene.splashScene.sceneDurationLeft = 25.0; // 5 seconds duration
+    gameState->scene.splashScene.sceneDurationLeft = 25.0;
 
     return true;
 }
@@ -390,9 +385,12 @@ bool psScenesSplashUpdate(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
 
-    float sceneDuration = 2.0f;
-    float fadeInTime = 0.6f;
-    float scaleBounceTime = 0.8f;
+    float delayTime = 1.0f;
+    float animationDuration = 2.0f;
+    float totalSceneDuration = delayTime + animationDuration;
+
+    float fadeInTime = 0.5f;
+    float scaleBounceTime = 0.7f;
     float holdDuration = 0.5f;
     float fadeOutTime = 0.3f;
 
@@ -402,53 +400,61 @@ bool psScenesSplashUpdate(PS_GameState *gameState)
     float fadeOutStartTime = holdEndTime;
 
     float initialScale = 0.0f;
-    float targetScale = 1.0f; 
+    float targetScale = 1.0f;
     float overshootScale = targetScale * 1.5f;
 
     double now = gameState->framerate.currentTime;
     double start = gameState->scene.splashScene.sceneStartTime;
-    float t = (float)(now - start);
+    float t_total = (float)(now - start);
 
     float opacity = 0.0f;
     float scale = initialScale;
 
-    if (t < fadeInTime) {
-        float nt = t / fadeInTime;
-        opacity = nt * nt;
-        float scale_nt = 1.0f - powf(1.0f - nt, 3.0f);
-        scale = initialScale + (overshootScale - initialScale) * scale_nt;
-
-    } else if (t < bounceEndTime) {
-        opacity = 1.0f;
-        float nt = (t - scaleUpEndTime) / scaleBounceTime;
-
-        const float c1 = 1.70158f;
-        const float c3 = c1 + 1.0f;
-        float nt_inv = 1.0f - nt;
-        float factor = 1.0f - (c3 * nt_inv * nt_inv * nt_inv - c1 * nt_inv * nt_inv); 
-        scale = targetScale + (overshootScale - targetScale) * (1.0f - factor);
-
-    } else if (t < holdEndTime) {
-        opacity = 1.0f;
-        scale = targetScale;
-    } else if (t < sceneDuration) {
-        float nt = (t - fadeOutStartTime) / fadeOutTime;
-        opacity = 1.0f - (nt * nt);
-        scale = targetScale; 
+    if (t_total < delayTime) {
+        opacity = 0.1f;
+        scale = initialScale;
     } else {
-        opacity = 0.0f;
-        scale = targetScale;
-        t = sceneDuration; 
+        float t_anim = t_total - delayTime;
+
+        if (t_anim < fadeInTime) {
+            float nt = t_anim / fadeInTime;
+            opacity = nt * nt;
+            float scale_nt = 1.0f - powf(1.0f - nt, 3.0f);
+            scale = initialScale + (overshootScale - initialScale) * scale_nt;
+
+        } else if (t_anim < bounceEndTime) {
+            opacity = 1.0f;
+            float nt = (t_anim - scaleUpEndTime) / scaleBounceTime;
+
+            const float c1 = 1.70158f;
+            const float c3 = c1 + 1.0f;
+            float nt_inv = 1.0f - nt;
+            float factor = 1.0f - (c3 * nt_inv * nt_inv * nt_inv - c1 * nt_inv * nt_inv);
+            scale = targetScale + (overshootScale - targetScale) * (1.0f - factor);
+
+        } else if (t_anim < holdEndTime) {
+            opacity = 1.0f;
+            scale = targetScale;
+        } else if (t_anim < animationDuration) {
+            float nt = (t_anim - fadeOutStartTime) / fadeOutTime;
+            opacity = 1.0f - (nt * nt);
+            scale = targetScale;
+        } else {
+            opacity = 0.0f;
+            scale = targetScale;
+            t_anim = animationDuration;
+        }
+        opacity = PS_CLAMP(opacity, 0.0f, 1.0f);
+        scale = PS_MAX(scale, 0.0f);
     }
 
-    opacity = PS_CLAMP(opacity, 0.0f, 1.0f);
-    scale = PS_MAX(scale, 0.0f);
 
     gameState->scene.splashScene.currentScale = scale;
     gameState->scene.splashScene.currentOpacity = opacity;
 
-    if (t >= sceneDuration) {
+	if (t_total >= totalSceneDuration && !gameState->scene.isSwitchingScene) {
         psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH);
+		gameState->scene.splashScene.sceneStartTime = now;
     }
 
     return true;
