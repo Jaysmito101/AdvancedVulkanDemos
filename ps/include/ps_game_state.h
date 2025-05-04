@@ -183,6 +183,15 @@ typedef struct PS_LoadingScene {
     float progress;
 } PS_LoadingScene;
 
+typedef enum PS_MainMenuButtonType {
+    PS_MAIN_MENU_BUTTON_NONE,
+    PS_MAIN_MENU_BUTTON_NEW_GAME,
+    PS_MAIN_MENU_BUTTON_CONTINUE,
+    PS_MAIN_MENU_BUTTON_OPTIONS,
+    PS_MAIN_MENU_BUTTON_EXIT,
+    PS_MAIN_MENU_BUTTON_COUNT,
+} PS_MainMenuButtonType;
+
 typedef struct PS_MainMenuScene {
     VkShaderModule vertexShaderModule;
     VkShaderModule fragmentShaderModule;
@@ -203,6 +212,11 @@ typedef struct PS_MainMenuScene {
     // Descriptor Set for Textures
     VkDescriptorSetLayout textureDescriptorSetLayout;
     VkDescriptorSet textureDescriptorSet;
+
+    // Interaction State
+    PS_MainMenuButtonType hoveredButton;
+    bool wasMouseClicked;
+    bool continueDisabled;
 
 } PS_MainMenuScene;
 

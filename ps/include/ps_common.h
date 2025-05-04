@@ -18,6 +18,10 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <signal.h>
+
+// third party includes
+#include "glfw/glfw3.h"
+#include "vulkan/vulkan.h"
  
 // ps includes
 #include "ps_game_state.h"

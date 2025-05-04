@@ -10,6 +10,10 @@
 "    float backgroundImageHeight;\n" \
 "    float buttonImageWidth;\n" \
 "    float buttonImageHeight;\n" \
+"    float hoverScaleFactor;\n" \
+"    float hoverOffsetY;\n" \
+"    int hoveredButton; // 0: None, 1: New Game, 2: Continue, 3: Options, 4: Exit\n" \
+"    int continueDisabled; // 0: Enabled, 1: Disabled\n" \
 "};\n" \
 "\n" \
 "layout(push_constant) uniform PushConstants {\n" \
@@ -127,8 +131,15 @@ PS_SHADER_MAIN_MENU_PUSH_CONSTANTS
 "    if (mascotColor.a > 0.0) { finalColor = mix(finalColor, mascotColor, mascotColor.a); }\n"
 "\n"
 "    float buttonImageAspect = pushConstants.data.buttonImageWidth / pushConstants.data.buttonImageHeight;\n"
-"    float buttonWidthUV = buttonHeightUV * buttonImageAspect * (pushConstants.data.windowHeight / pushConstants.data.windowWidth);\n"
+"    float windowAspect = pushConstants.data.windowWidth / pushConstants.data.windowHeight;\n"
+"    float buttonWidthUV = buttonHeightUV * buttonImageAspect / windowAspect;\n"
 "    vec2 correctedButtonSize = vec2(buttonWidthUV, buttonHeightUV);\n"
+"\n"
+"   float buttonScale[4];\n"
+"    buttonScale[0] = 1.0;\n"
+"    buttonScale[1] = 1.0;\n"
+"    buttonScale[2] = 1.0;\n"
+"    buttonScale[3] = 1.0;\n"
 "\n"
 "    vec2 buttonPositions[4];\n"
 "    buttonPositions[0] = vec2(buttonCenterX, buttonCenterYStart + buttonSpacingY * 0.0);\n"
@@ -136,18 +147,24 @@ PS_SHADER_MAIN_MENU_PUSH_CONSTANTS
 "    buttonPositions[2] = vec2(buttonCenterX, buttonCenterYStart + buttonSpacingY * 2.0);\n"
 "    buttonPositions[3] = vec2(buttonCenterX, buttonCenterYStart + buttonSpacingY * 3.0);\n"
 "\n"
+"    if (pushConstants.data.hoveredButton > 0 && pushConstants.data.hoveredButton <= 4) {\n"
+"        int hoveredButton = pushConstants.data.hoveredButton - 1;\n"
+"        buttonScale[hoveredButton] *= pushConstants.data.hoverScaleFactor;\n"
+"        buttonPositions[hoveredButton].y += pushConstants.data.hoverOffsetY;\n"
+"    }\n"
+"\n"
 "    vec4 btnColor = vec4(0.0);\n"
 "\n"
-"    btnColor = sampleRect(flippedUV, buttonPositions[0], correctedButtonSize, newGameButtonTexture);\n"
+"    btnColor = sampleRect(flippedUV, buttonPositions[0], correctedButtonSize * buttonScale[0], newGameButtonTexture);\n"
 "    if (btnColor.a > 0.0) { finalColor = mix(finalColor, btnColor, btnColor.a); }\n"
 "\n"
-"    btnColor = sampleRect(flippedUV, buttonPositions[1], correctedButtonSize, continueButtonTexture);\n"
+"    btnColor = sampleRect(flippedUV, buttonPositions[1], correctedButtonSize * buttonScale[1], continueButtonTexture);\n"
+"    if (btnColor.a > 0.0) { finalColor = mix(finalColor, btnColor, btnColor.a * (pushConstants.data.continueDisabled == 1 ? 0.5 : 1.0)); }\n"
+"\n"
+"    btnColor = sampleRect(flippedUV, buttonPositions[2], correctedButtonSize * buttonScale[2], optionsButtonTexture);\n"
 "    if (btnColor.a > 0.0) { finalColor = mix(finalColor, btnColor, btnColor.a); }\n"
 "\n"
-"    btnColor = sampleRect(flippedUV, buttonPositions[2], correctedButtonSize, optionsButtonTexture);\n"
-"    if (btnColor.a > 0.0) { finalColor = mix(finalColor, btnColor, btnColor.a); }\n"
-"\n"
-"    btnColor = sampleRect(flippedUV, buttonPositions[3], correctedButtonSize, exitButtonTexture);\n"
+"    btnColor = sampleRect(flippedUV, buttonPositions[3], correctedButtonSize * buttonScale[3], exitButtonTexture);\n"
 "    if (btnColor.a > 0.0) { finalColor = mix(finalColor, btnColor, btnColor.a); }\n"
 "\n"
 "    outColor = finalColor;\n"

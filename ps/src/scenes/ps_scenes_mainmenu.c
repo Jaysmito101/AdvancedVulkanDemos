@@ -10,6 +10,10 @@ typedef struct PS_MainMenuPushConstants {
     float backgroundImageHeight;
     float buttonImageWidth;
     float buttonImageHeight;
+    float hoverScaleFactor;
+    float hoverOffsetY;
+    int32_t hoveredButton; // 0: None, 1: New Game, 2: Continue, 3: Options, 4: Exit
+    int32_t continueDisabled; // 0: Enabled, 1: Disabled
 } PS_MainMenuPushConstants;
 
 bool psScenesMainMenuInit(PS_GameState *gameState) {
@@ -283,6 +287,8 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
     vkDestroyShaderModule(gameState->vulkan.device, scene->fragmentShaderModule, NULL);
     scene->vertexShaderModule = VK_NULL_HANDLE;
     scene->fragmentShaderModule = VK_NULL_HANDLE;
+    scene->wasMouseClicked = false;
+    scene->continueDisabled = true; // Disable continue button by default 
 
     return true;
 }
@@ -296,8 +302,8 @@ void psScenesMainMenuShutdown(PS_GameState *gameState) {
     vkDestroyPipelineLayout(gameState->vulkan.device, scene->pipelineLayout, NULL);
 
     // Cleanup shader modules now they are linked to the pipeline
-    if (scene->vertexShaderModule != VK_NULL_HANDLE) vkDestroyShaderModule(gameState->vulkan.device, scene->vertexShaderModule, NULL);
-    if (scene->fragmentShaderModule != VK_NULL_HANDLE) vkDestroyShaderModule(gameState->vulkan.device, scene->fragmentShaderModule, NULL);
+    vkDestroyShaderModule(gameState->vulkan.device, scene->vertexShaderModule, NULL);
+    vkDestroyShaderModule(gameState->vulkan.device, scene->fragmentShaderModule, NULL);
 
     // Destroy descriptor set layout (descriptor set is implicitly freed with pool)
     vkDestroyDescriptorSetLayout(gameState->vulkan.device, scene->textureDescriptorSetLayout, NULL);
@@ -321,10 +327,66 @@ bool psScenesMainMenuSwitch(PS_GameState *gameState) {
 
 bool psScenesMainMenuUpdate(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
+    PS_MainMenuScene *scene = &gameState->scene.mainMenuScene;
 
-    PS_LOG("Mouse X: %f, Y: %f\n", gameState->input.mouseX, gameState->input.mouseY);
+    float mx = gameState->input.mouseX * 0.5f + 0.5f;
+    float my = gameState->input.mouseY * 0.5f + 0.5f;
 
+    // Button layout constants
+    const float buttonHeightUV     = 0.1f;
+    const float buttonCenterX      = 0.5f;
+    const float buttonCenterYStart = 0.45f;
+    const float buttonSpacingY     = 0.12f;
 
+    // Compute button width in UV (accounting for window aspect & image aspect)
+    float buttonImageAspect = (float)scene->newGameButtonTexture.width / scene->newGameButtonTexture.height;
+    float windowAspect = (float)gameState->vulkan.renderer.sceneFramebuffer.width / (float)gameState->vulkan.renderer.sceneFramebuffer.height;
+    float buttonWidthUV = buttonImageAspect * buttonHeightUV / windowAspect;
+    
+    
+    
+    for (int i = 0; i < PS_MAIN_MENU_BUTTON_COUNT; ++i) {
+        float buttonCenterY = buttonCenterYStart - (buttonSpacingY * i);
+        float buttonXMin = buttonCenterX - (buttonWidthUV / 2.0f);
+        float buttonXMax = buttonCenterX + (buttonWidthUV / 2.0f);
+        float buttonYMin = buttonCenterY - (buttonHeightUV / 2.0f);
+        float buttonYMax = buttonCenterY + (buttonHeightUV / 2.0f);
+        
+        if (mx >= buttonXMin && mx <= buttonXMax && my >= buttonYMin && my <= buttonYMax) {
+            scene->hoveredButton = i + 1; 
+            break;
+        } else {
+            scene->hoveredButton = PS_MAIN_MENU_BUTTON_NONE;
+        }
+    }
+
+    // Check if the continue button is disabled then set hovered button to none
+    if (scene->hoveredButton == PS_MAIN_MENU_BUTTON_CONTINUE && scene->continueDisabled) {
+        scene->hoveredButton = PS_MAIN_MENU_BUTTON_NONE;
+    }
+
+    bool isMouseClicked = gameState->input.mouseButtonState[GLFW_MOUSE_BUTTON_LEFT];
+    if (isMouseClicked && !scene->wasMouseClicked) {
+        switch (scene->hoveredButton) {
+            case PS_MAIN_MENU_BUTTON_NEW_GAME:
+                psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH);
+                break;
+            case PS_MAIN_MENU_BUTTON_CONTINUE:
+                PS_LOG("Options button clicked [NOT IMPLEMENTED YET!]\n");
+                break;
+            case PS_MAIN_MENU_BUTTON_OPTIONS:
+                PS_LOG("Options button clicked [NOT IMPLEMENTED YET!]\n");
+                break;
+            case PS_MAIN_MENU_BUTTON_EXIT:
+                PS_LOG("Exit button clicked\n");
+                gameState->running = false;
+                break;
+            default:
+                break;
+        }
+    }
+    scene->wasMouseClicked = isMouseClicked;
+    
     return true;
 }
 
@@ -381,15 +443,19 @@ bool psScenesMainMenuRender(PS_GameState *gameState) {
                             &scene->textureDescriptorSet,
                             0, NULL); // dynamicOffsets
 
-    // Push constants - Use scene framebuffer dimensions and image dimensions
+    bool isMouseClicked = gameState->input.mouseButtonState[GLFW_MOUSE_BUTTON_LEFT];
     PS_MainMenuPushConstants pc = {
         .windowWidth = (float)gameState->vulkan.renderer.sceneFramebuffer.width,
         .windowHeight = (float)gameState->vulkan.renderer.sceneFramebuffer.height,
         .time = (float)gameState->framerate.currentTime,
         .backgroundImageWidth = (float)scene->backgroundTexture.width,
         .backgroundImageHeight = (float)scene->backgroundTexture.height,
-        .buttonImageWidth = (float)scene->newGameButtonTexture.width, // Assuming all buttons have the same dimensions
-        .buttonImageHeight = (float)scene->newGameButtonTexture.height
+        .buttonImageWidth = (float)scene->newGameButtonTexture.width,
+        .buttonImageHeight = (float)scene->newGameButtonTexture.height,
+        .hoverScaleFactor = !isMouseClicked ? 1.05f : 0.95f,
+        .hoverOffsetY = isMouseClicked ? 0.005f : -0.005f,
+        .hoveredButton = scene->hoveredButton,
+        .continueDisabled = scene->continueDisabled ? 1 : 0,
     };
     vkCmdPushConstants(cmd, scene->pipelineLayout,
                        VK_SHADER_STAGE_FRAGMENT_BIT,

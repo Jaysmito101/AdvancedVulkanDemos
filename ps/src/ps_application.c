@@ -49,23 +49,23 @@ bool psApplicationInit(PS_GameState *gameState) {
 
     __psApplicationUpdateFramerateCalculation(gameState);
 
-    // // this is for prod
-    // if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_SPLASH)) {
-    // PS_LOG("Failed to switch to splash scene\n");
-    //     return false;
-    // }
+    // this is for prod
+    if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_SPLASH)) {
+    PS_LOG("Failed to switch to splash scene\n");
+        return false;
+    }
 
     memset(&gameState->input, 0, sizeof(PS_Input));
 
-    // this is for dev/testing
-    if(!psScenesMainMenuInit(gameState)) {
-        PS_LOG("Failed to switch to loading scene\n");
-        return false;
-    }
-    if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_MAIN_MENU)) {
-        PS_LOG("Failed to switch to debug scene\n");
-        return false;
-    }
+    // // this is for dev/testing
+    // if(!psScenesMainMenuInit(gameState)) {
+    //     PS_LOG("Failed to switch to loading scene\n");
+    //     return false;
+    // }
+    // if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_MAIN_MENU)) {
+    //     PS_LOG("Failed to switch to debug scene\n");
+    //     return false;
+    // }
 
     return true;
 }
@@ -112,7 +112,7 @@ void psApplicationRender(PS_GameState *gameState) {
     // to not render if the window is minimized
     if (gameState->window.isMinimized) {
         return;
-    }    
+    }
 
     psVulkanRendererRender(gameState);
 }
