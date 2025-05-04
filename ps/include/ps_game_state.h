@@ -168,9 +168,11 @@ typedef struct PS_LoadingScene {
     VkShaderModule fragmentShaderModule;
 
     float sceneStartTime;
-    
+
     float progress; // loading progress 0.0 to 1.0
 } PS_LoadingScene;
+
+#define PS_TOTAL_SCENES 6
 
 typedef struct PS_Scene {
     PS_SceneType previousScene;
@@ -179,6 +181,10 @@ typedef struct PS_Scene {
     bool isSwitchingScene;
     double sceneSwitchStartTime;
     double sceneSwitchDuration;
+
+    bool contentScenesLoaded[64];
+    bool allContentScenesLoaded;
+    float loadingProgress;
 
     PS_SplashScene splashScene;
     PS_LoadingScene loadingScene; // Added loading scene

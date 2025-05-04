@@ -386,13 +386,13 @@ bool psScenesSplashUpdate(PS_GameState *gameState)
     PS_ASSERT(gameState != NULL);
 
     float delayTime = 1.0f;
-    float animationDuration = 2.5f;
-    float totalSceneDuration = delayTime + animationDuration;
+    float animationDuration = 3.0f;
+    float totalSceneDuration = delayTime + animationDuration - 0.5f;
 
     float fadeInTime = 0.5f;
     float scaleBounceTime = 0.7f;
-    float holdDuration = 1.0f;
-    float fadeOutTime = 0.3f;
+    float holdDuration = 1.5f;
+    float fadeOutTime = 1.2f;
 
     float scaleUpEndTime = fadeInTime;
     float bounceEndTime = scaleUpEndTime + scaleBounceTime;

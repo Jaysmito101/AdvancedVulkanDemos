@@ -32,7 +32,7 @@ bool psScenesInit(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
 
-    gameState->scene.previousScene = PS_SCENE_TYPE_NONE;    
+    gameState->scene.previousScene = PS_SCENE_TYPE_NONE;
     gameState->scene.currentScene = PS_SCENE_TYPE_NONE;
     gameState->scene.isSwitchingScene = false;
     gameState->scene.sceneSwitchStartTime = 0.0;
@@ -43,11 +43,16 @@ bool psScenesInit(PS_GameState *gameState)
         PS_LOG("Failed to initialize splash scene\n");
         return false;
     }
+
     if (!psScenesLoadingInit(gameState)) // Added loading scene init
     {
         PS_LOG("Failed to initialize loading scene\n");
         return false;
     }
+
+    memset(gameState->scene.contentScenesLoaded, 0, sizeof(gameState->scene.contentScenesLoaded));
+    gameState->scene.allContentScenesLoaded = false;
+    gameState->scene.loadingProgress = 0.0f;
 
     return true;
 }
@@ -64,7 +69,7 @@ bool psScenesUpdate(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
 
-    PS_SceneType sceneToUpdate = gameState->scene.currentScene;
+    static PS_SceneType sceneToUpdate = PS_SCENE_TYPE_NONE;
     const double midPointDuration = gameState->scene.sceneSwitchDuration / 2.0;
 
     if (gameState->scene.isSwitchingScene)
@@ -99,6 +104,9 @@ bool psScenesUpdate(PS_GameState *gameState)
             gameState->scene.previousScene = PS_SCENE_TYPE_NONE;
             gameState->vulkan.renderer.presentation.circleRadius = PS_SCENE_CHANGE_MAX_CIRCLE_RADIUS;
         }
+    }
+    else {
+		sceneToUpdate = gameState->scene.currentScene;
     }
 
     switch (sceneToUpdate)
@@ -144,7 +152,7 @@ bool psScenesRender(PS_GameState *gameState)
     case PS_SCENE_TYPE_LOADING: // Added loading render
         return psScenesLoadingRender(gameState);
     case PS_SCENE_TYPE_NONE:
-         return true;
+        return true;
     default:
         PS_LOG("Unknown scene type for render: %d\n", sceneToRender);
         break;
@@ -156,7 +164,8 @@ bool psScenesSwitch(PS_GameState *gameState, PS_SceneType sceneType)
 {
     PS_ASSERT(gameState != NULL);
 
-    if (gameState->scene.isSwitchingScene) {
+    if (gameState->scene.isSwitchingScene)
+    {
         PS_LOG("Warning: Attempted to switch scene while already switching.\n");
         return false;
     }
@@ -182,5 +191,42 @@ bool psScenesSwitchWithoutTransition(PS_GameState *gameState, PS_SceneType scene
     gameState->scene.sceneSwitchDuration = 0.0;
     gameState->vulkan.renderer.presentation.circleRadius = PS_SCENE_CHANGE_MAX_CIRCLE_RADIUS;
     __psSwitchScene(gameState, sceneType);
+    return true;
+}
+
+#define PS_LOAD_CONTENT_SCENE(index, name, code)  \
+    if (!gameState->scene.contentScenesLoaded[index]) {  \
+        if(!code) {  \
+            PS_LOG("Failed to load content scene %d [%s]\n", index, name);  \
+            return false;  \
+        } \
+        gameState->scene.contentScenesLoaded[index] = true;  \
+        gameState->scene.loadingProgress = (float)(index + 1) / PS_TOTAL_SCENES;  \
+        PS_LOG("Loaded content scene %d [%s]\n", index, name);  \
+        if (gameState->scene.allContentScenesLoaded) {  \
+            PS_LOG("All content scenes loaded\n");  \
+        }  \
+        return true; \
+    }
+
+
+bool fakeLoad() {
+    _sleep(100);
+    return true;
+}
+
+// NOTE: This is a crap way to do this, but I dont wanna spend too much time on it building a proper asset loader/manager
+bool psScenesLoadContentScenesAsyncPoll(PS_GameState *gameState)
+{
+    PS_ASSERT(gameState != NULL);
+
+    PS_LOAD_CONTENT_SCENE(0, "Dummy 1", fakeLoad());
+    PS_LOAD_CONTENT_SCENE(1, "Dummy 2", fakeLoad());
+    PS_LOAD_CONTENT_SCENE(2, "Dummy 5", fakeLoad());
+    PS_LOAD_CONTENT_SCENE(3, "Dummy 4", fakeLoad());
+    PS_LOAD_CONTENT_SCENE(4, "Dummy 54", fakeLoad());
+    PS_LOAD_CONTENT_SCENE(5, "Dummy 12", fakeLoad());
+
+    gameState->scene.allContentScenesLoaded = true;
     return true;
 }

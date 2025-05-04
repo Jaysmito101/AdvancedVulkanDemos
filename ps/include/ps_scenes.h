@@ -10,8 +10,8 @@ bool psScenesUpdate(PS_GameState *gameState);
 bool psScenesRender(PS_GameState *gameState);
 bool psScenesSwitch(PS_GameState *gameState, PS_SceneType sceneType);
 bool psScenesSwitchWithoutTransition(PS_GameState *gameState, PS_SceneType sceneType);
+bool psScenesLoadContentScenesAsyncPoll(PS_GameState *gameState);
 
-// Loading scene function declarations
 bool psScenesLoadingInit(PS_GameState *gameState);
 void psScenesLoadingShutdown(PS_GameState *gameState);
 bool psScenesLoadingSwitch(PS_GameState *gameState);

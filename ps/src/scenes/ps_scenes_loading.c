@@ -2,8 +2,6 @@
 #include "ps_shader.h"
 #include <string.h>
 
-#define PS_LOADING_SCENE_DURATION 5.0f
-
 typedef struct PushConstantData {
     float windowWidth;
     float windowHeight;
@@ -170,9 +168,16 @@ bool psScenesLoadingSwitch(PS_GameState *gameState) {
 bool psScenesLoadingUpdate(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
     PS_LoadingScene *scene = &gameState->scene.loadingScene;
-    double now = gameState->framerate.currentTime;
-    float t = (float)((now - scene->sceneStartTime) / PS_LOADING_SCENE_DURATION);
-    scene->progress = fminf(fmaxf(t, 0.0f), 1.0f);
+    
+    double elapsedTime = gameState->framerate.currentTime - scene->sceneStartTime;
+    if (elapsedTime < 1.0) return true; // Wait for at least 1 sec for the scene transition to finish
+
+    psScenesLoadContentScenesAsyncPoll(gameState);
+    scene->progress = gameState->scene.loadingProgress;
+
+    if (gameState->scene.allContentScenesLoaded && !gameState->scene.isSwitchingScene) {
+        psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH);
+    }
     return true;
 }
 
