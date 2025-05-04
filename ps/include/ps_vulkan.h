@@ -28,10 +28,13 @@ bool psVulkanSceneInit(PS_GameState *gameState);
 void psVulkanSceneDestroy(PS_GameState *gameState); 
 bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex);
 
-bool psVulkanFramebufferAttachmentIsDepth(PS_VulkanFramebufferAttachment *attachment);
-bool psVulkanFramebufferAttachmentIsStencil(PS_VulkanFramebufferAttachment *attachment);
-bool psVulkanFramebufferAttachmentIsDepthStencil(PS_VulkanFramebufferAttachment *attachment);
+bool psVulkanFormatIsDepth(VkFormat format);
+bool psVulkanFormatIsStencil(VkFormat format);
+bool psVulkanFormatIsDepthStencil(VkFormat format);
 bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer, int32_t width, int32_t height, bool hasDepthStencil, VkFormat colorFormat, VkFormat depthStencilFormat);
 void psVulkanFramebufferDestroy(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer);
+
+bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height);
+void psVulkanImageDestroy(PS_GameState *gameState, PS_VulkanImage *image);
 
 #endif // PS_VULKAN_H

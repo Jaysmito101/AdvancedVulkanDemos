@@ -186,11 +186,6 @@ static bool __psVulkanSceneCreateDescriptors(PS_GameState *gameState) {
         return false;
     }
 
-    VkDescriptorImageInfo imageInfo = {0};
-    imageInfo.sampler = gameState->vulkan.renderer.scene.framebuffer.sampler;
-    imageInfo.imageView = gameState->vulkan.renderer.scene.framebuffer.colorAttachment.imageView;
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
     VkWriteDescriptorSet writeDescriptorSet = {0};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptorSet.dstSet = gameState->vulkan.renderer.scene.framebufferColorDescriptorSet;
@@ -198,7 +193,7 @@ static bool __psVulkanSceneCreateDescriptors(PS_GameState *gameState) {
     writeDescriptorSet.dstArrayElement = 0;
     writeDescriptorSet.descriptorCount = 1;
     writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writeDescriptorSet.pImageInfo = &imageInfo;
+    writeDescriptorSet.pImageInfo = &gameState->vulkan.renderer.scene.framebuffer.colorAttachment.image.descriptorImageInfo;
     writeDescriptorSet.pBufferInfo = NULL;
     writeDescriptorSet.pTexelBufferView = NULL;
     vkUpdateDescriptorSets(gameState->vulkan.device, 1, &writeDescriptorSet, 0, NULL);

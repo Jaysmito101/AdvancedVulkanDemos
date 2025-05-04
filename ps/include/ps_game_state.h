@@ -39,12 +39,18 @@ typedef struct PS_VulkanRendererResources {
     VkFence renderFence;
 } PS_VulkanRendererResources;
 
-typedef struct PS_VulkanFramebufferAttachment {
+typedef struct PS_VulkanImage {
     VkImage image;
     VkDeviceMemory memory;
     VkImageView imageView;
     VkFormat format;
     VkImageSubresourceRange subresourceRange;
+    VkSampler sampler;
+    VkDescriptorImageInfo descriptorImageInfo;
+} PS_VulkanImage;
+
+typedef struct PS_VulkanFramebufferAttachment {
+    PS_VulkanImage image;
     VkAttachmentDescription attachmentDescription;
 } PS_VulkanFramebufferAttachment;
 
@@ -56,8 +62,6 @@ typedef struct PS_VulkanFramebuffer {
     PS_VulkanFramebufferAttachment colorAttachment;
     PS_VulkanFramebufferAttachment depthStencilAttachment;
 
-    VkSampler sampler;
-    
     uint32_t width;
     uint32_t height;
 } PS_VulkanFramebuffer;
@@ -90,6 +94,7 @@ typedef struct PS_VulkanRenderer {
     PS_VulkanPresentation presentation;
     PS_VulkanScene scene;
 } PS_VulkanRenderer;
+
 
 typedef struct PS_Vulkan {
     VkInstance instance;
@@ -127,10 +132,36 @@ typedef struct PS_Frametime {
     double lastSecondTime;
 } PS_Frametime;
 
+typedef enum PS_SceneType {
+    PS_SCENE_TYPE_NONE,
+    PS_SCENE_TYPE_SPLASH,
+} PS_SceneType;
+
+typedef struct PS_SplashScene {
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
+    VkShaderModule vertexShaderModule;
+    VkShaderModule fragmentShaderModule;
+
+    VkDescriptorSet framebufferColorDescriptorSet;
+    VkDescriptorSetLayout framebufferColorDescriptorSetLayout;
+
+    VkImage image;
+    VkDeviceMemory imageMemory;
+    VkImageView imageView;
+    VkSampler sampler;
+} PS_SplashScene;
+
+typedef struct PS_Scene {
+    PS_SceneType currentScene;
+    PS_SplashScene splashScene;
+} PS_Scene;
+
 typedef struct PS_GameState {
     PS_Window window;
     PS_Vulkan vulkan;
     PS_Frametime framerate;
+    PS_Scene scene;
 
     bool running;
 } PS_GameState;
