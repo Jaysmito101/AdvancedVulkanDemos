@@ -19,8 +19,8 @@ Pastel Shadows is an open-source game development project aiming to create a fun
 ## Screenshots
 
 <p align="center">
-  <img src="./images/ss2.png" alt="Splash Screen" width="400"/>
-  <img src="./images/ss1.png" alt="Main Menu" width="400"/>
+  <img src="./images/00_splashScreen.png" alt="Splash Screen" width="400"/>
+  <img src="./images/01_mainMenu.png" alt="Main Menu" width="400"/>
 </p>
 *(More screenshots coming soon!)*
 
