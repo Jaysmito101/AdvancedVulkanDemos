@@ -12,7 +12,7 @@
 
 ## About The Project
 
-Pastel Shadows is a fully open-source game I am developing from scratch just to have fun plying with Vulkan features and game engine development and SDF!!!! Literally, most of the elements in this game are or would be SDFs. The game is designed to be super cute and fun, with a focus on simplicity and minimalism. The project is built purely using C11 and Vulkan 1.2, with no external dependencies (except glfw, stb... must haves).
+Pastel Shadows is a fully open-source game I am developing from scratch just to have fun playing around with Vulkan, game engine development and SDFs. Literally, most of the elements in this game are or would be SDFs. The game is designed to be super cute and fun, with a focus on simplicity and minimalism. The project is built purely using C11 and Vulkan 1.2, with no external dependencies (except glfw, stb... must haves).
 
 ### NOTE: Proper README file coming soon!
 
