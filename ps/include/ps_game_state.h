@@ -143,13 +143,10 @@ typedef struct PS_SplashScene {
     VkShaderModule vertexShaderModule;
     VkShaderModule fragmentShaderModule; 
 
-    VkDescriptorSet framebufferColorDescriptorSet;
-    VkDescriptorSetLayout framebufferColorDescriptorSetLayout;
+    VkDescriptorSetLayout descriptorSetLayout;
+    VkDescriptorSet descriptorSet;
 
-    VkImage image;
-    VkDeviceMemory imageMemory;
-    VkImageView imageView;
-    VkSampler sampler;
+    PS_VulkanImage splashImage;
 
     double sceneStartTime;
     double sceneDurationLeft;

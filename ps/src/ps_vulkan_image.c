@@ -1,6 +1,7 @@
 #include "ps_vulkan.h"
 #include "ps_game_state.h"
 #include <string.h>
+#include "stb_image.h"
 
 static bool __psVulkanFramebufferCreateSampler(PS_GameState *gameState, PS_VulkanImage *image)
 {
@@ -58,11 +59,9 @@ bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkForma
     }
     else
     {
-        PS_LOG("Invalid image usage flags\n");
-        return false;
+        // fallback to color if no specific usage is set
+        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     }
-
-    PS_ASSERT(aspectMask != VK_IMAGE_ASPECT_NONE);
 
     VkImageCreateInfo imageInfo = {0};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -404,5 +403,54 @@ bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, c
 
     vkFreeCommandBuffers(gameState->vulkan.device, gameState->vulkan.graphicsCommandPool, 1, &cmd);
     psVulkanBufferDestroy(gameState, &staging);
+    return true;
+}
+
+// load image file (8‑bit or HDR float), create Vulkan image and upload
+bool psVulkanImageLoadFromFile(PS_GameState *gameState, const char *filename, PS_VulkanImage *image) {
+    PS_ASSERT(gameState && filename && image);
+
+    int width, height, origChannels;
+    void *pixels = NULL;
+    bool isHDR = stbi_is_hdr(filename);
+    VkFormat format;
+
+    // force load as RGBA (4 components)
+    if (isHDR) {
+        float *fdata = stbi_loadf(filename, &width, &height, &origChannels, 4);
+        if (!fdata) {
+            PS_LOG("Failed to load HDR image: %s\n", filename);
+            return false;
+        }
+        format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        pixels = fdata;
+    } else {
+        unsigned char *cdata = stbi_load(filename, &width, &height, &origChannels, 4);
+        if (!cdata) {
+            PS_LOG("Failed to load image: %s\n", filename);
+            return false;
+        }
+        format = VK_FORMAT_R8G8B8A8_UNORM;
+        pixels = cdata;
+    }
+
+    // create Vulkan image
+    if (!psVulkanImageCreate(
+            gameState, image, format,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            (uint32_t)width, (uint32_t)height)) {
+        PS_LOG("Failed to create Vulkan image for file: %s\n", filename);
+        stbi_image_free(pixels);
+        return false;
+    }
+
+    // upload pixel data
+    if (!psVulkanImageUploadSimple(gameState, image, pixels)) {
+        PS_LOG("Failed to upload image data: %s\n", filename);
+        stbi_image_free(pixels);
+        return false;
+    }
+
+    stbi_image_free(pixels);
     return true;
 }

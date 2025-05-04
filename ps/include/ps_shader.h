@@ -8,8 +8,8 @@
 extern const char* psShader_PresentationVertex;
 extern const char* psShader_PresentationFragment;
 
-extern const char* psShader_SceneVertex;
-extern const char* psShader_SceneFragment;
+extern const char* psShader_SplashSceneVertex;
+extern const char* psShader_SplashSceneFragment;
  
 
 VkShaderModule psShaderModuleCreate(PS_GameState *gameState, const char* shaderCode, VkShaderStageFlagBits shaderType, const char* inputFileName);
