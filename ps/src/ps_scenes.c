@@ -33,6 +33,7 @@ bool psScenesInit(PS_GameState *gameState)
     gameState->scene.currentScene = PS_SCENE_TYPE_NONE;
     gameState->scene.isSwitchingScene = false;
     gameState->scene.sceneSwitchStartTime = 0.0;
+    gameState->scene.sceneSwitchDuration = 0.0; // Initialize duration
 
     if (!psScenesSplashInit(gameState))
     {
@@ -54,7 +55,7 @@ bool psScenesUpdate(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
 
-    static PS_SceneType lastScene = PS_SCENE_TYPE_NONE;
+    PS_SceneType sceneToUpdate = gameState->scene.currentScene;
     const double midPointDuration = gameState->scene.sceneSwitchDuration / 2.0;
 
     if (gameState->scene.isSwitchingScene)
@@ -64,24 +65,25 @@ bool psScenesUpdate(PS_GameState *gameState)
         {
             double progress = elapsedTime / midPointDuration;
             gameState->vulkan.renderer.presentation.circleRadius = PS_SCENE_CHANGE_MAX_CIRCLE_RADIUS * __psSceneChageDriverCurve(1.0f - (float)progress);
-            lastScene = gameState->scene.previousScene;
+            sceneToUpdate = gameState->scene.previousScene;
         }
         else if (elapsedTime < gameState->scene.sceneSwitchDuration)
         {
-            if (lastScene != gameState->scene.currentScene)
+            if (sceneToUpdate != gameState->scene.currentScene) // Check if switch already happened
             {
                 __psSwitchScene(gameState, gameState->scene.currentScene);
+                sceneToUpdate = gameState->scene.currentScene; // Update sceneToUpdate after switch
             }
 
             double progress = (elapsedTime - midPointDuration) / midPointDuration;
-            gameState->vulkan.renderer.presentation.circleRadius = PS_SCENE_CHANGE_MAX_CIRCLE_RADIUS * __psSceneChageDriverCurve((float)progress); 
-            lastScene = gameState->scene.currentScene;
+            gameState->vulkan.renderer.presentation.circleRadius = PS_SCENE_CHANGE_MAX_CIRCLE_RADIUS * __psSceneChageDriverCurve((float)progress);
         }
         else
         {
-            if (lastScene != gameState->scene.currentScene)
+            if (sceneToUpdate != gameState->scene.currentScene) // Check if switch already happened
             {
                 __psSwitchScene(gameState, gameState->scene.currentScene);
+                sceneToUpdate = gameState->scene.currentScene; // Update sceneToUpdate after switch
             }
 
             gameState->scene.isSwitchingScene = false;
@@ -89,18 +91,15 @@ bool psScenesUpdate(PS_GameState *gameState)
             gameState->vulkan.renderer.presentation.circleRadius = PS_SCENE_CHANGE_MAX_CIRCLE_RADIUS;
         }
     }
-    else {
-		lastScene = gameState->scene.currentScene;
-    }
 
-    switch (lastScene)
+    switch (sceneToUpdate)
     {
     case PS_SCENE_TYPE_SPLASH:
         return psScenesSplashUpdate(gameState);
     case PS_SCENE_TYPE_NONE:
         return true;
     default:
-        PS_LOG("Unknown scene type for update: %d\n", lastScene);
+        PS_LOG("Unknown scene type for update: %d\n", sceneToUpdate);
         break;
     }
     return true;
@@ -120,6 +119,11 @@ bool psScenesRender(PS_GameState *gameState)
         {
             sceneToRender = gameState->scene.previousScene;
         }
+    }
+    else
+    {
+        // Ensure the presentation circle is fully open if not transitioning
+        gameState->vulkan.renderer.presentation.circleRadius = PS_SCENE_CHANGE_MAX_CIRCLE_RADIUS;
     }
 
     switch (sceneToRender)
@@ -148,7 +152,22 @@ bool psScenesSwitch(PS_GameState *gameState, PS_SceneType sceneType)
     gameState->scene.currentScene = sceneType;
     gameState->scene.isSwitchingScene = true;
     gameState->scene.sceneSwitchStartTime = gameState->framerate.currentTime;
-    gameState->scene.sceneSwitchDuration = 3.0;
+    gameState->scene.sceneSwitchDuration = PS_SCENE_CHANGE_DURATION;
+    gameState->vulkan.renderer.presentation.circleRadius = PS_SCENE_CHANGE_MAX_CIRCLE_RADIUS;
 
-    return true; 
+    return true;
+}
+
+bool psScenesSwitchWithoutTransition(PS_GameState *gameState, PS_SceneType sceneType)
+{
+    PS_ASSERT(gameState != NULL);
+
+    gameState->scene.previousScene = PS_SCENE_TYPE_NONE;
+    gameState->scene.currentScene = sceneType;
+    gameState->scene.isSwitchingScene = false;
+    gameState->scene.sceneSwitchStartTime = 0.0;
+    gameState->scene.sceneSwitchDuration = 0.0;
+    gameState->vulkan.renderer.presentation.circleRadius = PS_SCENE_CHANGE_MAX_CIRCLE_RADIUS;
+    __psSwitchScene(gameState, sceneType);
+    return true;
 }

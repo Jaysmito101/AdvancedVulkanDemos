@@ -9,6 +9,7 @@ void psScenesShutdown(PS_GameState *gameState);
 bool psScenesUpdate(PS_GameState *gameState);
 bool psScenesRender(PS_GameState *gameState);
 bool psScenesSwitch(PS_GameState *gameState, PS_SceneType sceneType);
+bool psScenesSwitchWithoutTransition(PS_GameState *gameState, PS_SceneType sceneType);
 
 bool psScenesSplashInit(PS_GameState *gameState);
 void psScenesSplashShutdown(PS_GameState *gameState);
