@@ -1,41 +1,50 @@
 #include "ps_vulkan.h"
 #include "ps_shader.h"
+#include "ps_game_state.h" // Include game state for access to descriptor pool etc.
+
+// Define the push constant struct matching the shader layout
+typedef struct PS_VulkanPresentationPushConstants {
+    float windowWidth;
+    float windowHeight;
+    float framebufferWidth;
+    float framebufferHeight;
+    float circleRadius;
+    float iconWidth;
+    float iconHeight;
+    float time;
+} PS_VulkanPresentationPushConstants;
+
+// Forward declaration
+static bool __psVulkanPresentationSetupDescriptors(PS_GameState *gameState);
 
 static bool __psVulkanPresentationCreatePipelineLayout(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
+    // Ensure descriptor set layouts are created before this function is called
+    PS_ASSERT(gameState->vulkan.renderer.presentation.descriptorSetLayout != VK_NULL_HANDLE);
+    PS_ASSERT(gameState->vulkan.renderer.presentation.iconDescriptorSetLayout != VK_NULL_HANDLE);
 
     VkPushConstantRange pushConstantRanges[1] = {0};
     pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRanges[0].offset = 0;
-    pushConstantRanges[0].size = sizeof(float) * 4; // Assuming 4 floats for the push constant range
+    pushConstantRanges[0].size = sizeof(PS_VulkanPresentationPushConstants); // Use sizeof the struct
 
-    VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[1] = {0};
-    descriptorSetLayoutBindings[0].binding = 0;
-    descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorSetLayoutBindings[0].descriptorCount = 1;
-    descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {0};
-    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutInfo.bindingCount = PS_ARRAY_COUNT(descriptorSetLayoutBindings);
-    descriptorSetLayoutInfo.pBindings = descriptorSetLayoutBindings;
-
-    VkResult layoutResult = vkCreateDescriptorSetLayout(gameState->vulkan.device, &descriptorSetLayoutInfo, NULL, &gameState->vulkan.renderer.presentation.descriptorSetLayout);
-    if (layoutResult != VK_SUCCESS) {
-        PS_LOG("Failed to create descriptor set layout\n");
-        return false;
-    }
+    // Combine layouts for the pipeline layout
+    VkDescriptorSetLayout setLayouts[] = {
+        gameState->vulkan.renderer.presentation.descriptorSetLayout,
+        gameState->vulkan.renderer.presentation.iconDescriptorSetLayout
+    };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &gameState->vulkan.renderer.presentation.descriptorSetLayout;
-    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;    
+    pipelineLayoutInfo.setLayoutCount = PS_ARRAY_COUNT(setLayouts);
+    pipelineLayoutInfo.pSetLayouts = setLayouts;
+    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;
     pipelineLayoutInfo.pushConstantRangeCount = PS_ARRAY_COUNT(pushConstantRanges);
 
     VkResult result = vkCreatePipelineLayout(gameState->vulkan.device, &pipelineLayoutInfo, NULL, &gameState->vulkan.renderer.presentation.pipelineLayout);
     if (result != VK_SUCCESS) {
         PS_LOG("Failed to create pipeline layout\n");
+        // Layouts are cleaned up in the caller (psVulkanPresentationInit or psVulkanPresentationDestroy)
         return false;
     }
 
@@ -123,12 +132,12 @@ static bool __psVulkanPresentationCreatePipeline(PS_GameState *gameState) {
     viewportStateInfo.pScissors = &scissor;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {0};
-    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.blendEnable = VK_TRUE;
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
@@ -138,7 +147,6 @@ static bool __psVulkanPresentationCreatePipeline(PS_GameState *gameState) {
     colorBlendStateInfo.logicOp = VK_LOGIC_OP_COPY;
     colorBlendStateInfo.attachmentCount = 1;
     colorBlendStateInfo.pAttachments = &colorBlendAttachment;
-
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {0};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -161,7 +169,6 @@ static bool __psVulkanPresentationCreatePipeline(PS_GameState *gameState) {
     pipelineInfo.pViewportState = &viewportStateInfo;
     pipelineInfo.pMultisampleState = &multisampleInfo;
 
-
     VkResult result = vkCreateGraphicsPipelines(gameState->vulkan.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &gameState->vulkan.renderer.presentation.pipeline);
     if (result != VK_SUCCESS) {
         PS_LOG("Failed to create graphics pipeline\n");
@@ -171,7 +178,73 @@ static bool __psVulkanPresentationCreatePipeline(PS_GameState *gameState) {
     return true;
 }
 
+static bool __psVulkanPresentationSetupDescriptors(PS_GameState *gameState) {
+    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(gameState->vulkan.renderer.presentation.iconImage.image != VK_NULL_HANDLE);
+
+    VkDescriptorSetLayoutBinding sceneFramebufferBinding = {0};
+    sceneFramebufferBinding.binding = 0;
+    sceneFramebufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sceneFramebufferBinding.descriptorCount = 1;
+    sceneFramebufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo sceneFramebufferLayoutInfo = {0};
+    sceneFramebufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    sceneFramebufferLayoutInfo.bindingCount = 1;
+    sceneFramebufferLayoutInfo.pBindings = &sceneFramebufferBinding;
+
+    VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(gameState->vulkan.device, &sceneFramebufferLayoutInfo, NULL, &gameState->vulkan.renderer.presentation.descriptorSetLayout);
+    if (sceneLayoutResult != VK_SUCCESS) {
+        PS_LOG("Failed to create scene framebuffer descriptor set layout\n");
+        return false;
+    }
+
+    VkDescriptorSetLayoutBinding iconBinding = {0};
+    iconBinding.binding = 0; 
+    iconBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    iconBinding.descriptorCount = 1;
+    iconBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo iconLayoutInfo = {0};
+    iconLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    iconLayoutInfo.bindingCount = 1;
+    iconLayoutInfo.pBindings = &iconBinding;
+
+    VkResult iconLayoutResult = vkCreateDescriptorSetLayout(gameState->vulkan.device, &iconLayoutInfo, NULL, &gameState->vulkan.renderer.presentation.iconDescriptorSetLayout);
+     if (iconLayoutResult != VK_SUCCESS) {
+        PS_LOG("Failed to create icon descriptor set layout\n");
+        return false;
+    }
+
+    VkDescriptorSetAllocateInfo allocInfo = {0};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = gameState->vulkan.descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &gameState->vulkan.renderer.presentation.iconDescriptorSetLayout;
+
+    VkResult allocResult = vkAllocateDescriptorSets(gameState->vulkan.device, &allocInfo, &gameState->vulkan.renderer.presentation.iconDescriptorSet);
+    if (allocResult != VK_SUCCESS) {
+        PS_LOG("Failed to allocate icon descriptor set\n");
+        return false;
+    }
+
+    // Update the icon descriptor set
+    VkWriteDescriptorSet descriptorWrite = {0};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = gameState->vulkan.renderer.presentation.iconDescriptorSet;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pImageInfo = &gameState->vulkan.renderer.presentation.iconImage.descriptorImageInfo;
+
+    vkUpdateDescriptorSets(gameState->vulkan.device, 1, &descriptorWrite, 0, NULL);
+
+    return true;
+}
+
 bool psVulkanPresentationInit(PS_GameState *gameState) {
+    // Create Shader Modules
     VkShaderModule vertexShaderModule = psShaderModuleCreate(gameState, psShader_PresentationVertex, VK_SHADER_STAGE_VERTEX_BIT, "presentation_vertex_shader.glsl");
     if (vertexShaderModule == VK_NULL_HANDLE) {
         PS_LOG("Failed to create vertex shader module\n");
@@ -179,19 +252,32 @@ bool psVulkanPresentationInit(PS_GameState *gameState) {
     }
     gameState->vulkan.renderer.presentation.vertexShaderModule = vertexShaderModule;
 
-    VkShaderModule fragmentShaderModule = psShaderModuleCreate(gameState, psShader_PresentationFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "presentation_fragment_shader.glsl");    
+    VkShaderModule fragmentShaderModule = psShaderModuleCreate(gameState, psShader_PresentationFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "presentation_fragment_shader.glsl");
     if (fragmentShaderModule == VK_NULL_HANDLE) {
         PS_LOG("Failed to create fragment shader module\n");
-        vkDestroyShaderModule(gameState->vulkan.device, vertexShaderModule, NULL);
         return false;
     }
     gameState->vulkan.renderer.presentation.fragmentShaderModule = fragmentShaderModule;
-    
+
+    // Load the icon image (needed before setting up descriptors)
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/switch_mascot.png", &gameState->vulkan.renderer.presentation.iconImage)) {
+        PS_LOG("Failed to load icon image ./assets/switch_mascot.png\n");
+        return false;
+    }
+
+    // Setup Descriptor Set Layouts and Descriptor Sets
+    if (!__psVulkanPresentationSetupDescriptors(gameState)) {
+         PS_LOG("Failed to setup presentation descriptors\n");
+         return false;
+    }
+
+    // Create Pipeline Layout (depends on descriptor set layouts)
     if(!__psVulkanPresentationCreatePipelineLayout(gameState)) {
         PS_LOG("Failed to create pipeline layout\n");
         return false;
     }
 
+    // Create Graphics Pipeline
     if (!__psVulkanPresentationCreatePipeline(gameState)) {
         PS_LOG("Failed to create presentation pipeline\n");
         return false;
@@ -202,6 +288,10 @@ bool psVulkanPresentationInit(PS_GameState *gameState) {
 
 void psVulkanPresentationDestroy(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
+
+    // Destroy icon image first
+    psVulkanImageDestroy(gameState, &gameState->vulkan.renderer.presentation.iconImage);
+    // Note: Icon descriptor set is implicitly freed when the pool is destroyed.
 
     vkDestroyPipeline(gameState->vulkan.device, gameState->vulkan.renderer.presentation.pipeline, NULL);
     gameState->vulkan.renderer.presentation.pipeline = VK_NULL_HANDLE;
@@ -217,6 +307,9 @@ void psVulkanPresentationDestroy(PS_GameState *gameState) {
 
     vkDestroyDescriptorSetLayout(gameState->vulkan.device, gameState->vulkan.renderer.presentation.descriptorSetLayout, NULL);
     gameState->vulkan.renderer.presentation.descriptorSetLayout = VK_NULL_HANDLE;
+
+    vkDestroyDescriptorSetLayout(gameState->vulkan.device, gameState->vulkan.renderer.presentation.iconDescriptorSetLayout, NULL);
+    gameState->vulkan.renderer.presentation.iconDescriptorSetLayout = VK_NULL_HANDLE;
 }
 
 bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex)
@@ -261,17 +354,31 @@ bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex)
     scissor.extent = gameState->vulkan.swapchain.extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    const float pushConstantData[4] = {
-        (float)gameState->vulkan.swapchain.extent.width, // x
-        (float)gameState->vulkan.swapchain.extent.height, // y
-        (float)gameState->vulkan.renderer.sceneFramebuffer.width, // width
-        (float)gameState->vulkan.renderer.sceneFramebuffer.height // height
+    // Define a radius (e.g., 0.8 for 80% of the adjusted screen space)
+    float circleRadius = 0.1f; 
+
+    // Populate the push constant struct
+    PS_VulkanPresentationPushConstants pushConstants = {
+        .windowWidth = (float)gameState->vulkan.swapchain.extent.width,
+        .windowHeight = (float)gameState->vulkan.swapchain.extent.height,
+        .framebufferWidth = (float)gameState->vulkan.renderer.sceneFramebuffer.width,
+        .framebufferHeight = (float)gameState->vulkan.renderer.sceneFramebuffer.height,
+        .circleRadius = circleRadius,
+        .iconWidth = (float)gameState->vulkan.renderer.presentation.iconImage.width,
+        .iconHeight = (float)gameState->vulkan.renderer.presentation.iconImage.height,
+        .time = (float)gameState->framerate.currentTime
     };
+
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentation.pipeline);
-    vkCmdPushConstants(commandBuffer, gameState->vulkan.renderer.presentation.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstantData), pushConstantData);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentation.pipelineLayout, 0, 1, &gameState->vulkan.renderer.sceneFramebufferColorDescriptorSet, 0, NULL);
+    vkCmdPushConstants(commandBuffer, gameState->vulkan.renderer.presentation.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PS_VulkanPresentationPushConstants), &pushConstants);
+
+    VkDescriptorSet descriptorSetsToBind[] = {
+        gameState->vulkan.renderer.sceneFramebufferColorDescriptorSet, // Set 0
+        gameState->vulkan.renderer.presentation.iconDescriptorSet      // Set 1
+    };
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentation.pipelineLayout, 0, PS_ARRAY_COUNT(descriptorSetsToBind), descriptorSetsToBind, 0, NULL);
+
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
-    
 
     vkCmdEndRenderPass(commandBuffer);
 

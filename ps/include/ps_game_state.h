@@ -81,6 +81,12 @@ typedef struct PS_VulkanPresentation {
     VkShaderModule fragmentShaderModule;
 
     VkDescriptorSetLayout descriptorSetLayout;
+
+    VkDescriptorSetLayout iconDescriptorSetLayout;
+    VkDescriptorSet iconDescriptorSet;
+    PS_VulkanImage iconImage;
+
+    float circleRadius;
 } PS_VulkanPresentation;
 
 typedef struct PS_VulkanRenderer {
@@ -145,7 +151,6 @@ typedef struct PS_SplashScene {
 
     VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorSet descriptorSet;
-
     PS_VulkanImage splashImage;
 
     double sceneStartTime;
@@ -156,6 +161,11 @@ typedef struct PS_SplashScene {
 
 typedef struct PS_Scene {
     PS_SceneType currentScene;
+    
+    bool isSwitchingScene;
+    double sceneSwitchStartTime;
+    double sceneSwitchDurationLeft;
+
     PS_SplashScene splashScene;
 } PS_Scene;
 

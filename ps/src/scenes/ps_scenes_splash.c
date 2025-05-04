@@ -174,7 +174,7 @@ static bool __psCreatePipeline(PS_GameState *gameState)
     viewportStateInfo.pScissors = &scissor;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {0};
-    colorBlendAttachment.blendEnable = VK_FALSE;
+    colorBlendAttachment.blendEnable = VK_TRUE;
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
@@ -448,8 +448,6 @@ bool psScenesSplashUpdate(PS_GameState *gameState)
     gameState->scene.splashScene.currentOpacity = opacity;
 
     if (t >= sceneDuration) {
-        // TODO: Trigger scene switch
-        // PS_LOG("Splash scene finished.\n");
         psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH);
     }
 
