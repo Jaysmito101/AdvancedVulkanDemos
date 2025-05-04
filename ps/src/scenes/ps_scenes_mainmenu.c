@@ -22,6 +22,10 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
     if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_continue.png", &scene->continueButtonTexture)) return false;
     if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_options.png", &scene->optionsButtonTexture)) return false;
     if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_exit.png", &scene->exitButtonTexture)) return false;
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/mascot_hope.png", &scene->mascotHopeTexture)) return false;
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/mascot_crush.png", &scene->mascotCrushTexture)) return false;
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/mascot_monster.png", &scene->mascotMonsterTexture)) return false;
+    if (!psVulkanImageLoadFromFile(gameState, "./assets/mascot_friend.png", &scene->mascotFriendTexture)) return false;
 
     // --- Create Shader Modules ---
     VkShaderModule vert = psShaderModuleCreate(gameState, psShader_MainMenuVertex, VK_SHADER_STAGE_VERTEX_BIT, "main_menu_vertex_shader.glsl");
@@ -38,7 +42,7 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
     }
     scene->fragmentShaderModule = frag;
 
-    VkDescriptorSetLayoutBinding bindings[5] = {0};
+    VkDescriptorSetLayoutBinding bindings[9] = {0};
     // Background Texture
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -61,6 +65,23 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
     bindings[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     bindings[4].descriptorCount = 1;
     bindings[4].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    // Mascot Textures
+    bindings[5].binding = 5; // Hope
+    bindings[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[5].descriptorCount = 1;
+    bindings[5].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[6].binding = 6; // Crush
+    bindings[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[6].descriptorCount = 1;
+    bindings[6].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[7].binding = 7; // Monster
+    bindings[7].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[7].descriptorCount = 1;
+    bindings[7].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[8].binding = 8; // Friend
+    bindings[8].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[8].descriptorCount = 1;
+    bindings[8].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutCreateInfo setLayoutInfo = {0};
     setLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -103,7 +124,7 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
     }
 
     // --- Update Descriptor Set ---
-    VkWriteDescriptorSet writes[5] = {0};
+    VkWriteDescriptorSet writes[9] = {0};
 
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[0].dstSet = scene->textureDescriptorSet;
@@ -139,6 +160,34 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
     writes[4].descriptorCount = 1;
     writes[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writes[4].pImageInfo = &scene->exitButtonTexture.descriptorImageInfo;
+
+    writes[5].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[5].dstSet = scene->textureDescriptorSet;
+    writes[5].dstBinding = 5;
+    writes[5].descriptorCount = 1;
+    writes[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[5].pImageInfo = &scene->mascotHopeTexture.descriptorImageInfo;
+
+    writes[6].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[6].dstSet = scene->textureDescriptorSet;
+    writes[6].dstBinding = 6;
+    writes[6].descriptorCount = 1;
+    writes[6].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[6].pImageInfo = &scene->mascotCrushTexture.descriptorImageInfo;
+
+    writes[7].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[7].dstSet = scene->textureDescriptorSet;
+    writes[7].dstBinding = 7;
+    writes[7].descriptorCount = 1;
+    writes[7].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[7].pImageInfo = &scene->mascotMonsterTexture.descriptorImageInfo;
+
+    writes[8].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writes[8].dstSet = scene->textureDescriptorSet;
+    writes[8].dstBinding = 8;
+    writes[8].descriptorCount = 1;
+    writes[8].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writes[8].pImageInfo = &scene->mascotFriendTexture.descriptorImageInfo;
 
     vkUpdateDescriptorSets(gameState->vulkan.device, PS_ARRAY_COUNT(writes), writes, 0, NULL);
 
@@ -230,6 +279,10 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
         return false;
     }
 
+    vkDestroyShaderModule(gameState->vulkan.device, scene->vertexShaderModule, NULL);
+    vkDestroyShaderModule(gameState->vulkan.device, scene->fragmentShaderModule, NULL);
+    scene->vertexShaderModule = VK_NULL_HANDLE;
+    scene->fragmentShaderModule = VK_NULL_HANDLE;
 
     return true;
 }
@@ -242,13 +295,9 @@ void psScenesMainMenuShutdown(PS_GameState *gameState) {
     vkDestroyPipeline(gameState->vulkan.device, scene->pipeline, NULL);
     vkDestroyPipelineLayout(gameState->vulkan.device, scene->pipelineLayout, NULL);
 
-    
     // Cleanup shader modules now they are linked to the pipeline
-    vkDestroyShaderModule(gameState->vulkan.device, scene->vertexShaderModule, NULL);
-    scene->fragmentShaderModule = VK_NULL_HANDLE;
-
-    vkDestroyShaderModule(gameState->vulkan.device, scene->fragmentShaderModule, NULL);
-    scene->vertexShaderModule = VK_NULL_HANDLE; // Mark as destroyed
+    if (scene->vertexShaderModule != VK_NULL_HANDLE) vkDestroyShaderModule(gameState->vulkan.device, scene->vertexShaderModule, NULL);
+    if (scene->fragmentShaderModule != VK_NULL_HANDLE) vkDestroyShaderModule(gameState->vulkan.device, scene->fragmentShaderModule, NULL);
 
     // Destroy descriptor set layout (descriptor set is implicitly freed with pool)
     vkDestroyDescriptorSetLayout(gameState->vulkan.device, scene->textureDescriptorSetLayout, NULL);
@@ -259,6 +308,10 @@ void psScenesMainMenuShutdown(PS_GameState *gameState) {
     psVulkanImageDestroy(gameState, &scene->continueButtonTexture);
     psVulkanImageDestroy(gameState, &scene->optionsButtonTexture);
     psVulkanImageDestroy(gameState, &scene->exitButtonTexture);
+    psVulkanImageDestroy(gameState, &scene->mascotHopeTexture);
+    psVulkanImageDestroy(gameState, &scene->mascotCrushTexture);
+    psVulkanImageDestroy(gameState, &scene->mascotMonsterTexture);
+    psVulkanImageDestroy(gameState, &scene->mascotFriendTexture);
 }
 
 bool psScenesMainMenuSwitch(PS_GameState *gameState) {

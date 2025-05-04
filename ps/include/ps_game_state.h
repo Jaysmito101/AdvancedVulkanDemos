@@ -184,10 +184,14 @@ typedef struct PS_MainMenuScene {
     PS_VulkanImage continueButtonTexture;
     PS_VulkanImage optionsButtonTexture;
     PS_VulkanImage exitButtonTexture;
+    PS_VulkanImage mascotHopeTexture;  
+    PS_VulkanImage mascotCrushTexture; 
+    PS_VulkanImage mascotMonsterTexture;
+    PS_VulkanImage mascotFriendTexture;
 
     // Descriptor Set for Textures
-    VkDescriptorSetLayout textureDescriptorSetLayout; // Renamed for clarity
-    VkDescriptorSet textureDescriptorSet;           // Renamed for clarity
+    VkDescriptorSetLayout textureDescriptorSetLayout;
+    VkDescriptorSet textureDescriptorSet;
 
 } PS_MainMenuScene;
 
