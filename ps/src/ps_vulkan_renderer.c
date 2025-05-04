@@ -1,4 +1,5 @@
 #include "ps_vulkan.h"
+#include "ps_application.h"
 
 static bool __psVulkanCreateSemaphore(VkDevice device, VkSemaphore *semaphore)
 {
@@ -161,6 +162,53 @@ static bool __psVulkanRendererHandleSwapchainResult(PS_GameState* gameState, VkR
     return true;
 }
 
+static bool __psVulkanSceneCreateDescriptors(PS_GameState *gameState) {
+    PS_ASSERT(gameState != NULL);
+
+    VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[1] = {0};
+    descriptorSetLayoutBindings[0].binding = 0;
+    descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorSetLayoutBindings[0].descriptorCount = 1;
+    descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {0};
+    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutInfo.bindingCount = PS_ARRAY_COUNT(descriptorSetLayoutBindings);
+    descriptorSetLayoutInfo.pBindings = descriptorSetLayoutBindings;
+
+    VkResult result = vkCreateDescriptorSetLayout(gameState->vulkan.device, &descriptorSetLayoutInfo, NULL, &gameState->vulkan.renderer.sceneFramebufferColorDescriptorSetLayout);
+    if (result != VK_SUCCESS) {
+        PS_LOG("Failed to create descriptor set layout\n");
+        return false;
+    }
+
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {0};
+    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocateInfo.descriptorPool = gameState->vulkan.descriptorPool;
+    descriptorSetAllocateInfo.descriptorSetCount = 1;
+    descriptorSetAllocateInfo.pSetLayouts = &gameState->vulkan.renderer.sceneFramebufferColorDescriptorSetLayout;
+
+    result = vkAllocateDescriptorSets(gameState->vulkan.device, &descriptorSetAllocateInfo, &gameState->vulkan.renderer.sceneFramebufferColorDescriptorSet);
+    if (result != VK_SUCCESS) {
+        PS_LOG("Failed to allocate descriptor set\n");
+        return false;
+    }
+
+    VkWriteDescriptorSet writeDescriptorSet = {0};
+    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet.dstSet = gameState->vulkan.renderer.sceneFramebufferColorDescriptorSet;
+    writeDescriptorSet.dstBinding = 0;
+    writeDescriptorSet.dstArrayElement = 0;
+    writeDescriptorSet.descriptorCount = 1;
+    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writeDescriptorSet.pImageInfo = &gameState->vulkan.renderer.sceneFramebuffer.colorAttachment.image.descriptorImageInfo;
+    writeDescriptorSet.pBufferInfo = NULL;
+    writeDescriptorSet.pTexelBufferView = NULL;
+    vkUpdateDescriptorSets(gameState->vulkan.device, 1, &writeDescriptorSet, 0, NULL);
+
+    return true;
+}
+
 bool psVulkanRendererCreate(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
@@ -172,12 +220,29 @@ bool psVulkanRendererCreate(PS_GameState *gameState)
         return false;
     }
 
+    if (!psVulkanFramebufferCreate(gameState, &gameState->vulkan.renderer.sceneFramebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT))
+    {
+        PS_LOG("Failed to create Vulkan framebuffer\n");
+        return false;
+    }
+
+    if (!__psVulkanSceneCreateDescriptors(gameState)) {
+        PS_LOG("Failed to create scene descriptors\n");
+        return false;
+    }
+
     return true;
 }
 
 void psVulkanRendererDestroy(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
+    
+    vkDestroyDescriptorSetLayout(gameState->vulkan.device, gameState->vulkan.renderer.sceneFramebufferColorDescriptorSetLayout, NULL);
+    gameState->vulkan.renderer.sceneFramebufferColorDescriptorSetLayout = VK_NULL_HANDLE;
+
+    psVulkanFramebufferDestroy(gameState, &gameState->vulkan.renderer.sceneFramebuffer);
+    
     __psVulkanRendererDestroyRenderResources(gameState);
 }
 
@@ -227,8 +292,8 @@ void psVulkanRendererRender(PS_GameState *gameState)
         return; // do not render this frame
     }
 
-    if(!psVulkanSceneRender(gameState, imageIndex)) {
-        PS_LOG("Failed to render presentation pass\n");
+    if(!psScenesRender(gameState)) {
+        PS_LOG("Failed to render scenes pass\n");
         vkResetFences(gameState->vulkan.device, 1, &gameState->vulkan.renderer.resources[currentFrameIndex].renderFence);
         __psVulkanRendererNextInflightFrame(gameState);
         return; // do not render this frame

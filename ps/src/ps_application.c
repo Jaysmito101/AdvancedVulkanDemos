@@ -42,13 +42,27 @@ bool psApplicationInit(PS_GameState *gameState) {
         return false;
     }
 
-    // Initialize other application components here
+    if(!psScenesInit(gameState)) {
+        PS_LOG("Failed to initialize scenes\n");
+        return false;
+    }
+
+    if(!psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH)) {
+        PS_LOG("Failed to switch to splash scene\n");
+        return false;
+    }
 
     return true;
 }
 
 void psApplicationShutdown(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
+
+    vkDeviceWaitIdle(gameState->vulkan.device);
+    vkQueueWaitIdle(gameState->vulkan.graphicsQueue);
+    vkQueueWaitIdle(gameState->vulkan.computeQueue);
+
+    psScenesShutdown(gameState);
     psVulkanShutdown(gameState);    
     psWindowShutdown(gameState);
 }
@@ -72,6 +86,7 @@ void psApplicationUpdate(PS_GameState *gameState) {
 void psApplicationUpdateWithoutPolling(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
 
+    psScenesUpdate(gameState);
     psApplicationRender(gameState);
 }
 
@@ -83,6 +98,6 @@ void psApplicationRender(PS_GameState *gameState) {
     if (gameState->window.isMinimized) {
         return;
     }    
-       
+
     psVulkanRendererRender(gameState);
 }

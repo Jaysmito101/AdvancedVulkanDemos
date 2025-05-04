@@ -264,12 +264,12 @@ bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex)
     const float pushConstantData[4] = {
         (float)gameState->vulkan.swapchain.extent.width, // x
         (float)gameState->vulkan.swapchain.extent.height, // y
-        (float)gameState->vulkan.renderer.scene.framebuffer.width, // width
-        (float)gameState->vulkan.renderer.scene.framebuffer.height // height
+        (float)gameState->vulkan.renderer.sceneFramebuffer.width, // width
+        (float)gameState->vulkan.renderer.sceneFramebuffer.height // height
     };
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentation.pipeline);
     vkCmdPushConstants(commandBuffer, gameState->vulkan.renderer.presentation.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstantData), pushConstantData);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentation.pipelineLayout, 0, 1, &gameState->vulkan.renderer.scene.framebufferColorDescriptorSet, 0, NULL);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentation.pipelineLayout, 0, 1, &gameState->vulkan.renderer.sceneFramebufferColorDescriptorSet, 0, NULL);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
     
 

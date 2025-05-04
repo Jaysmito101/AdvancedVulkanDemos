@@ -1,7 +1,7 @@
-#include "ps_vulkan.h"
+#include "ps_scenes.h"
 #include "ps_shader.h"
 
-static bool __psVulkanSceneCreatePipelineLayout(PS_GameState *gameState) {
+static bool __psCreatePipelineLayout(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
 
     VkPushConstantRange pushConstantRanges[1] = {0};
@@ -16,7 +16,7 @@ static bool __psVulkanSceneCreatePipelineLayout(PS_GameState *gameState) {
     pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;    
     pipelineLayoutInfo.pushConstantRangeCount = PS_ARRAY_COUNT(pushConstantRanges);
 
-    VkResult result = vkCreatePipelineLayout(gameState->vulkan.device, &pipelineLayoutInfo, NULL, &gameState->vulkan.renderer.scene.pipelineLayout);
+    VkResult result = vkCreatePipelineLayout(gameState->vulkan.device, &pipelineLayoutInfo, NULL, &gameState->scene.splashScene.pipelineLayout);
     if (result != VK_SUCCESS) {
         PS_LOG("Failed to create pipeline layout\n");
         return false;
@@ -25,18 +25,18 @@ static bool __psVulkanSceneCreatePipelineLayout(PS_GameState *gameState) {
     return true;
 }
 
-static bool __psVulkanSceneCreatePipeline(PS_GameState *gameState) {
+static bool __psCreatePipeline(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
 
     VkPipelineShaderStageCreateInfo shaderStages[2] = {0};
     shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    shaderStages[0].module = gameState->vulkan.renderer.scene.vertexShaderModule;
+    shaderStages[0].module = gameState->scene.splashScene.vertexShaderModule;
     shaderStages[0].pName = "main";
 
     shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStages[1].module = gameState->vulkan.renderer.scene.fragmentShaderModule;
+    shaderStages[1].module = gameState->scene.splashScene.fragmentShaderModule;
     shaderStages[1].pName = "main";
 
     VkDynamicState dynamicStates[2] = {0};
@@ -51,7 +51,7 @@ static bool __psVulkanSceneCreatePipeline(PS_GameState *gameState) {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;\
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {0};
     inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -127,8 +127,8 @@ static bool __psVulkanSceneCreatePipeline(PS_GameState *gameState) {
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = PS_ARRAY_COUNT(shaderStages);
     pipelineInfo.pStages = shaderStages;
-    pipelineInfo.layout = gameState->vulkan.renderer.scene.pipelineLayout;
-    pipelineInfo.renderPass = gameState->vulkan.renderer.scene.framebuffer.renderPass;
+    pipelineInfo.layout = gameState->scene.splashScene.pipelineLayout;
+    pipelineInfo.renderPass = gameState->vulkan.renderer.sceneFramebuffer.renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
@@ -145,7 +145,7 @@ static bool __psVulkanSceneCreatePipeline(PS_GameState *gameState) {
     pipelineInfo.pMultisampleState = &multisampleInfo;
 
 
-    VkResult result = vkCreateGraphicsPipelines(gameState->vulkan.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &gameState->vulkan.renderer.scene.pipeline);
+    VkResult result = vkCreateGraphicsPipelines(gameState->vulkan.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &gameState->scene.splashScene.pipeline);
     if (result != VK_SUCCESS) {
         PS_LOG("Failed to create graphics pipeline\n");
         return false;
@@ -154,71 +154,17 @@ static bool __psVulkanSceneCreatePipeline(PS_GameState *gameState) {
     return true;
 }
 
-static bool __psVulkanSceneCreateDescriptors(PS_GameState *gameState) {
+
+
+bool psScenesSplashInit(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
-
-    VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[1] = {0};
-    descriptorSetLayoutBindings[0].binding = 0;
-    descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorSetLayoutBindings[0].descriptorCount = 1;
-    descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {0};
-    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutInfo.bindingCount = PS_ARRAY_COUNT(descriptorSetLayoutBindings);
-    descriptorSetLayoutInfo.pBindings = descriptorSetLayoutBindings;
-
-    VkResult result = vkCreateDescriptorSetLayout(gameState->vulkan.device, &descriptorSetLayoutInfo, NULL, &gameState->vulkan.renderer.scene.framebufferColorDescriptorSetLayout);
-    if (result != VK_SUCCESS) {
-        PS_LOG("Failed to create descriptor set layout\n");
-        return false;
-    }
-
-    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {0};
-    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocateInfo.descriptorPool = gameState->vulkan.descriptorPool;
-    descriptorSetAllocateInfo.descriptorSetCount = 1;
-    descriptorSetAllocateInfo.pSetLayouts = &gameState->vulkan.renderer.scene.framebufferColorDescriptorSetLayout;
-
-    result = vkAllocateDescriptorSets(gameState->vulkan.device, &descriptorSetAllocateInfo, &gameState->vulkan.renderer.scene.framebufferColorDescriptorSet);
-    if (result != VK_SUCCESS) {
-        PS_LOG("Failed to allocate descriptor set\n");
-        return false;
-    }
-
-    VkWriteDescriptorSet writeDescriptorSet = {0};
-    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeDescriptorSet.dstSet = gameState->vulkan.renderer.scene.framebufferColorDescriptorSet;
-    writeDescriptorSet.dstBinding = 0;
-    writeDescriptorSet.dstArrayElement = 0;
-    writeDescriptorSet.descriptorCount = 1;
-    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writeDescriptorSet.pImageInfo = &gameState->vulkan.renderer.scene.framebuffer.colorAttachment.image.descriptorImageInfo;
-    writeDescriptorSet.pBufferInfo = NULL;
-    writeDescriptorSet.pTexelBufferView = NULL;
-    vkUpdateDescriptorSets(gameState->vulkan.device, 1, &writeDescriptorSet, 0, NULL);
-
-    return true;
-}
-
-bool psVulkanSceneInit(PS_GameState *gameState) {
-    if (!psVulkanFramebufferCreate(gameState, &gameState->vulkan.renderer.scene.framebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT))
-    {
-        PS_LOG("Failed to create Vulkan framebuffer\n");
-        return false;
-    }
-
-    if (!__psVulkanSceneCreateDescriptors(gameState)) {
-        PS_LOG("Failed to create scene descriptors\n");
-        return false;
-    }
 
     VkShaderModule vertexShaderModule = psShaderModuleCreate(gameState, psShader_SceneVertex, VK_SHADER_STAGE_VERTEX_BIT, "scene_vertex_shader.glsl");
     if (vertexShaderModule == VK_NULL_HANDLE) {
         PS_LOG("Failed to create vertex shader module\n");
         return false;
     }
-    gameState->vulkan.renderer.scene.vertexShaderModule = vertexShaderModule;
+    gameState->scene.splashScene.vertexShaderModule = vertexShaderModule;
 
     VkShaderModule fragmentShaderModule = psShaderModuleCreate(gameState, psShader_SceneFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "scene_fragment_shader.glsl");    
     if (fragmentShaderModule == VK_NULL_HANDLE) {
@@ -226,46 +172,53 @@ bool psVulkanSceneInit(PS_GameState *gameState) {
         vkDestroyShaderModule(gameState->vulkan.device, vertexShaderModule, NULL);
         return false;
     }
-    gameState->vulkan.renderer.scene.fragmentShaderModule = fragmentShaderModule;
+    gameState->scene.splashScene.fragmentShaderModule = fragmentShaderModule;
 
     
-    if(!__psVulkanSceneCreatePipelineLayout(gameState)) {
+    if(!__psCreatePipelineLayout(gameState)) {
         PS_LOG("Failed to create pipeline layout\n");
         return false;
     }
 
-    if (!__psVulkanSceneCreatePipeline(gameState)) {
+    if (!__psCreatePipeline(gameState)) {
         PS_LOG("Failed to create scene pipeline\n");
         return false;
     }
 
     return true;
+
 }
 
-void psVulkanSceneDestroy(PS_GameState *gameState) {
+void psScenesSplashShutdown(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
 
-    vkDestroyPipeline(gameState->vulkan.device, gameState->vulkan.renderer.scene.pipeline, NULL);
-    gameState->vulkan.renderer.scene.pipeline = VK_NULL_HANDLE;
+        
+    vkDestroyPipeline(gameState->vulkan.device, gameState->scene.splashScene.pipeline, NULL);
+    gameState->scene.splashScene.pipeline = VK_NULL_HANDLE;
 
-    vkDestroyPipelineLayout(gameState->vulkan.device, gameState->vulkan.renderer.scene.pipelineLayout, NULL);
-    gameState->vulkan.renderer.scene.pipelineLayout = VK_NULL_HANDLE;
+    vkDestroyPipelineLayout(gameState->vulkan.device, gameState->scene.splashScene.pipelineLayout, NULL);
+    gameState->scene.splashScene.pipelineLayout = VK_NULL_HANDLE;
 
-    vkDestroyShaderModule(gameState->vulkan.device, gameState->vulkan.renderer.scene.vertexShaderModule, NULL);
-    gameState->vulkan.renderer.scene.vertexShaderModule = VK_NULL_HANDLE;
+    vkDestroyShaderModule(gameState->vulkan.device, gameState->scene.splashScene.vertexShaderModule, NULL);
+    gameState->scene.splashScene.vertexShaderModule = VK_NULL_HANDLE;
 
-    vkDestroyShaderModule(gameState->vulkan.device, gameState->vulkan.renderer.scene.fragmentShaderModule, NULL);
-    gameState->vulkan.renderer.scene.fragmentShaderModule = VK_NULL_HANDLE;
+    vkDestroyShaderModule(gameState->vulkan.device, gameState->scene.splashScene.fragmentShaderModule, NULL);
+    gameState->scene.splashScene.fragmentShaderModule = VK_NULL_HANDLE;
+}
+ 
+bool psScenesSplashSwitch(PS_GameState *gameState) {
+    PS_ASSERT(gameState != NULL);
 
-    vkDestroyDescriptorSetLayout(gameState->vulkan.device, gameState->vulkan.renderer.scene.framebufferColorDescriptorSetLayout, NULL);
-    gameState->vulkan.renderer.scene.framebufferColorDescriptorSetLayout = VK_NULL_HANDLE;
+    gameState->scene.currentScene = PS_SCENE_TYPE_SPLASH;
+    gameState->scene.splashScene.sceneStartTime = gameState->framerate.currentTime;
+    gameState->scene.splashScene.sceneDurationLeft = 5.0; // 5 seconds duration
 
-    psVulkanFramebufferDestroy(gameState, &gameState->vulkan.renderer.scene.framebuffer);
+    return true;
 }
 
-bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex)
-{
+bool psScenesSplashRender(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
+
     uint32_t currentFrameIndex = gameState->vulkan.renderer.currentFrameIndex;
     VkCommandBuffer commandBuffer = gameState->vulkan.renderer.resources[currentFrameIndex].commandBuffer;
 
@@ -280,12 +233,12 @@ bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex)
 
     VkRenderPassBeginInfo renderPassInfo = {0};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = gameState->vulkan.renderer.scene.framebuffer.renderPass;
-    renderPassInfo.framebuffer = gameState->vulkan.renderer.scene.framebuffer.framebuffer;
+    renderPassInfo.renderPass = gameState->vulkan.renderer.sceneFramebuffer.renderPass;
+    renderPassInfo.framebuffer = gameState->vulkan.renderer.sceneFramebuffer.framebuffer;
     renderPassInfo.renderArea.offset.x = 0;
     renderPassInfo.renderArea.offset.y = 0;
-    renderPassInfo.renderArea.extent.width = gameState->vulkan.renderer.scene.framebuffer.width;
-    renderPassInfo.renderArea.extent.height = gameState->vulkan.renderer.scene.framebuffer.height;
+    renderPassInfo.renderArea.extent.width = gameState->vulkan.renderer.sceneFramebuffer.width;
+    renderPassInfo.renderArea.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
     renderPassInfo.clearValueCount = 2;
     renderPassInfo.pClearValues = clearColor;
 
@@ -294,8 +247,8 @@ bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex)
     VkViewport viewport = {0};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float)gameState->vulkan.renderer.scene.framebuffer.width;
-    viewport.height = (float)gameState->vulkan.renderer.scene.framebuffer.height;
+    viewport.width = (float)gameState->vulkan.renderer.sceneFramebuffer.width;
+    viewport.height = (float)gameState->vulkan.renderer.sceneFramebuffer.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -303,17 +256,23 @@ bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex)
     VkRect2D scissor = {0};
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent.width = gameState->vulkan.renderer.scene.framebuffer.width;
-    scissor.extent.height = gameState->vulkan.renderer.scene.framebuffer.height;
+    scissor.extent.width = gameState->vulkan.renderer.sceneFramebuffer.width;
+    scissor.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     const float pushConstantData[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.scene.pipeline);
-    vkCmdPushConstants(commandBuffer, gameState->vulkan.renderer.scene.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstantData), pushConstantData);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->scene.splashScene.pipeline);
+    vkCmdPushConstants(commandBuffer, gameState->scene.splashScene.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstantData), pushConstantData);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
     
 
     vkCmdEndRenderPass(commandBuffer);
+
+    return true;
+}
+
+bool psScenesSplashUpdate(PS_GameState *gameState) {
+    PS_ASSERT(gameState != NULL);
 
     return true;
 }

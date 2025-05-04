@@ -80,7 +80,6 @@ add_executable(ps
     ./ps/src/ps_vulkan_swapchain.c
     ./ps/src/ps_vulkan_renderer.c
     ./ps/src/ps_vulkan_presentation.c
-    ./ps/src/ps_vulkan_scene.c
     ./ps/src/ps_vulkan_framebuffer.c
     ./ps/src/ps_vulkan_image.c
     ./ps/src/ps_shader_compiler.c
@@ -88,6 +87,8 @@ add_executable(ps
     ./ps/src/ps_shader.c
     ./ps/src/ps_shader_source.c
     ./ps/src/ps_third_party_impls.c
+    ./ps/src/ps_scenes.c
+    ./ps/src/ps_scenes_splash.c
 )
 target_link_libraries(ps
     glfw

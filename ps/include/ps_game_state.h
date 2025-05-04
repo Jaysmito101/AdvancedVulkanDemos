@@ -75,24 +75,16 @@ typedef struct PS_VulkanPresentation {
     VkDescriptorSetLayout descriptorSetLayout;
 } PS_VulkanPresentation;
 
-typedef struct PS_VulkanScene {
-    PS_VulkanFramebuffer framebuffer;
-    VkPipeline pipeline;
-    VkPipelineLayout pipelineLayout;
-    VkShaderModule vertexShaderModule;
-    VkShaderModule fragmentShaderModule;
-
-    VkDescriptorSet framebufferColorDescriptorSet;
-    VkDescriptorSetLayout framebufferColorDescriptorSetLayout;
-} PS_VulkanScene;
-
 typedef struct PS_VulkanRenderer {
     PS_VulkanRendererResources resources[16];
     uint32_t numInFlightFrames;
     uint32_t currentFrameIndex;
 
     PS_VulkanPresentation presentation;
-    PS_VulkanScene scene;
+
+    PS_VulkanFramebuffer sceneFramebuffer;
+    VkDescriptorSet sceneFramebufferColorDescriptorSet;
+    VkDescriptorSetLayout sceneFramebufferColorDescriptorSetLayout;
 } PS_VulkanRenderer;
 
 
@@ -141,7 +133,7 @@ typedef struct PS_SplashScene {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
     VkShaderModule vertexShaderModule;
-    VkShaderModule fragmentShaderModule;
+    VkShaderModule fragmentShaderModule; 
 
     VkDescriptorSet framebufferColorDescriptorSet;
     VkDescriptorSetLayout framebufferColorDescriptorSetLayout;
@@ -150,6 +142,9 @@ typedef struct PS_SplashScene {
     VkDeviceMemory imageMemory;
     VkImageView imageView;
     VkSampler sampler;
+
+    double sceneStartTime;
+    double sceneDurationLeft;
 } PS_SplashScene;
 
 typedef struct PS_Scene {
