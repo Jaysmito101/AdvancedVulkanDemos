@@ -1,6 +1,16 @@
 #include "ps_scenes.h"
 #include "ps_shader.h"
 
+typedef struct PS_SplashPushConstants
+{
+    float framebufferWidth;
+    float framebufferHeight;
+    float imageWidth;
+    float imageHeight;
+    float scale;
+    float opacity;
+} PS_SplashPushConstants;
+
 static bool __psCreateDescriptorSetLayout(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
@@ -63,7 +73,7 @@ static bool __psCreatePipelineLayout(PS_GameState *gameState)
     VkPushConstantRange pushConstantRanges[1] = {0};
     pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRanges[0].offset = 0;
-    pushConstantRanges[0].size = sizeof(float) * 4; // Assuming 4 floats for the push constant range
+    pushConstantRanges[0].size = sizeof(PS_SplashPushConstants);
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -347,19 +357,24 @@ bool psScenesSplashRender(PS_GameState *gameState)
     scissor.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    const float pushConstantData[4] = {
-        (float)gameState->vulkan.renderer.sceneFramebuffer.width,
-        (float)gameState->vulkan.renderer.sceneFramebuffer.height,
-        (float)gameState->scene.splashScene.splashImage.width,
-        (float)gameState->scene.splashScene.splashImage.height
+    // Populate the push constant struct
+    PS_SplashPushConstants pushConstantData = {
+        .framebufferWidth = (float)gameState->vulkan.renderer.sceneFramebuffer.width,
+        .framebufferHeight = (float)gameState->vulkan.renderer.sceneFramebuffer.height,
+        .imageWidth = (float)gameState->scene.splashScene.splashImage.width,
+        .imageHeight = (float)gameState->scene.splashScene.splashImage.height,
+        .scale = 0.4f,         // Example scale
     };
+
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->scene.splashScene.pipeline);
+    // Push the struct
     vkCmdPushConstants(
         commandBuffer,
         gameState->scene.splashScene.pipelineLayout,
+        // Ensure flags cover all stages using the constants
         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        0, sizeof(pushConstantData),
-        pushConstantData
+        0, sizeof(PS_SplashPushConstants), // Use struct size
+        &pushConstantData                  // Pass struct address
     );
 
     // Bind the texture descriptor set

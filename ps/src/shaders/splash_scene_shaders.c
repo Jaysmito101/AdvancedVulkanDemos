@@ -1,17 +1,27 @@
 #include "ps_shader.h"
 
+#define PS_SHADER_SPLASH_SCENE_PUSH_CONSTANTS \
+"struct PushConstantData {\n"   \
+"    float framebufferWidth;\n" \
+"    float framebufferHeight;\n"    \
+"    float imageWidth;\n"   \
+"    float imageHeight;\n"  \
+"    float scale;\n"    \
+"    float opacity;\n"  \
+"};\n"  \
+"\n"    \
+"layout(push_constant) uniform PushConstants {\n"   \
+"    PushConstantData data;\n"  \
+"} pushConstants;\n"    \
+
 const char* psShader_SplashSceneVertex = ""
 "#version 450\n"
 "\n"
 "#pragma shader_stage(vertex)\n"
 "\n"
 "layout(location = 0) out vec2 fragTexCoord;\n"
-"layout(push_constant) uniform PushConstants {\n"
-"    float framebufferWidth;\n"
-"    float framebufferHeight;\n"
-"    float imageWidth;\n"
-"    float imageHeight;\n"
-"} pushConstants;\n"
+"\n"
+PS_SHADER_SPLASH_SCENE_PUSH_CONSTANTS
 "\n"
 "const vec2 positions[6] = vec2[](\n"
 "    vec2(-1.0, -1.0),\n"
@@ -34,14 +44,16 @@ const char* psShader_SplashSceneVertex = ""
 "void main() {\n"
 "    vec2 pos = positions[gl_VertexIndex];\n"
 "    fragTexCoord = texCoords[gl_VertexIndex];\n"
-"    // preserve aspect: compare framebuffer vs image\n"
-"    float fbAspect = pushConstants.framebufferWidth / pushConstants.framebufferHeight;\n"
-"    float imgAspect = pushConstants.imageWidth      / pushConstants.imageHeight;\n"
+"\n"
+"    float fbAspect = pushConstants.data.framebufferWidth / pushConstants.data.framebufferHeight;\n"
+"    float imgAspect = pushConstants.data.imageWidth      / pushConstants.data.imageHeight;\n"
 "    if (fbAspect > imgAspect) {\n"
 "        pos.x *= imgAspect / fbAspect;\n"
 "    } else {\n"
 "        pos.y *= fbAspect / imgAspect;\n"
 "    }\n"
+"\n"
+"    pos *= pushConstants.data.scale;\n"
 "    gl_Position = vec4(pos, 0.0, 1.0);\n"
 "}\n";
 
@@ -52,11 +64,12 @@ const char* psShader_SplashSceneFragment = ""
 "\n"
 "layout(binding = 0) uniform sampler2D texSampler;\n"
 "layout(location = 0) in vec2 fragTexCoord;\n"
+"\n"
+PS_SHADER_SPLASH_SCENE_PUSH_CONSTANTS
+"\n"
 "layout(location = 0) out vec4 outColor;\n"
 "\n"
 "void main() {\n"
 "    vec4 texColor = texture(texSampler, fragTexCoord);\n"
-"    // gamma correction\n"
-//"    texColor.rgb = pow(texColor.rgb, vec3(1.0 / 2.2));\n"
-"    outColor = texColor;\n"
+"    outColor = vec4(texColor.rgb, texColor.a * pushConstants.data.opacity);\n"
 "}\n";
