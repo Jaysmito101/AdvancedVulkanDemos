@@ -13,8 +13,11 @@ static void __psSwitchScene(PS_GameState *gameState, PS_SceneType sceneType)
     case PS_SCENE_TYPE_SPLASH:
         psScenesSplashSwitch(gameState);
         break;
-    case PS_SCENE_TYPE_LOADING: // Added loading scene switch
+    case PS_SCENE_TYPE_LOADING:
         psScenesLoadingSwitch(gameState);
+        break;
+    case PS_SCENE_TYPE_MAIN_MENU:
+        psScenesMainMenuSwitch(gameState);
         break;
     default:
         PS_LOG("Unknown scene type for switch: %d\n", sceneType);
@@ -62,8 +65,10 @@ void psScenesShutdown(PS_GameState *gameState)
     PS_ASSERT(gameState != NULL);
 
     psScenesSplashShutdown(gameState);
-    psScenesLoadingShutdown(gameState); // Added loading scene shutdown
+    psScenesLoadingShutdown(gameState);
+    psScenesMainMenuShutdown(gameState); 
 }
+
 
 bool psScenesUpdate(PS_GameState *gameState)
 {
@@ -113,8 +118,10 @@ bool psScenesUpdate(PS_GameState *gameState)
     {
     case PS_SCENE_TYPE_SPLASH:
         return psScenesSplashUpdate(gameState);
-    case PS_SCENE_TYPE_LOADING: // Added loading update
+    case PS_SCENE_TYPE_LOADING:
         return psScenesLoadingUpdate(gameState);
+    case PS_SCENE_TYPE_MAIN_MENU:
+        return psScenesMainMenuUpdate(gameState);
     case PS_SCENE_TYPE_NONE:
         return true;
     default:
@@ -149,8 +156,10 @@ bool psScenesRender(PS_GameState *gameState)
     {
     case PS_SCENE_TYPE_SPLASH:
         return psScenesSplashRender(gameState);
-    case PS_SCENE_TYPE_LOADING: // Added loading render
+    case PS_SCENE_TYPE_LOADING:
         return psScenesLoadingRender(gameState);
+    case PS_SCENE_TYPE_MAIN_MENU:
+        return psScenesMainMenuRender(gameState);
     case PS_SCENE_TYPE_NONE:
         return true;
     default:
@@ -220,7 +229,7 @@ bool psScenesLoadContentScenesAsyncPoll(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
 
-    PS_LOAD_CONTENT_SCENE(0, "Dummy 1", fakeLoad());
+    PS_LOAD_CONTENT_SCENE(0, "Main Menu", psScenesMainMenuInit(gameState));
     PS_LOAD_CONTENT_SCENE(1, "Dummy 2", fakeLoad());
     PS_LOAD_CONTENT_SCENE(2, "Dummy 5", fakeLoad());
     PS_LOAD_CONTENT_SCENE(3, "Dummy 4", fakeLoad());

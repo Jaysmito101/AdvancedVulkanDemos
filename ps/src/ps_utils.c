@@ -30,3 +30,37 @@ const char* psGetTempDirPath(void) {
 #endif
     return tempDirPath;
 }
+
+// print the  shader code formatted with line number (only one line at a time, use a temp buffer to extract)
+void psPrintShaderWithLineNumbers(const char *shaderCode, const char *shaderName) {
+    if (shaderCode == NULL) {
+        PS_LOG("Shader code is NULL\n");
+        return;
+    }
+
+    PS_LOG("Shader: %s\n", shaderName);
+    const char *lineStart = shaderCode;
+    int lineNumber = 1;
+    while (*lineStart) {
+        const char *lineEnd = strchr(lineStart, '\n');
+        if (lineEnd == NULL) {
+            lineEnd = lineStart + strlen(lineStart);
+        }
+
+        size_t lineLength = lineEnd - lineStart;
+        char *lineBuffer = (char *)malloc(lineLength + 1);
+        if (lineBuffer == NULL) {
+            PS_LOG("Failed to allocate memory for shader line\n");
+            return;
+        }
+
+        strncpy(lineBuffer, lineStart, lineLength);
+        lineBuffer[lineLength] = '\0';
+
+        PS_LOG("%d: %s\n", lineNumber++, lineBuffer);
+
+        free(lineBuffer);
+        lineStart = (*lineEnd == '\0') ? lineEnd : lineEnd + 1;
+    }
+    PS_LOG("\n");
+}

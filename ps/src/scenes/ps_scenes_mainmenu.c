@@ -1,34 +1,34 @@
 #include "ps_scenes.h"
 #include "ps_shader.h"
-#include <string.h>
 
-typedef struct PushConstantData {
+// Push constant struct matching shader data
+typedef struct PS_MainMenuPushConstants {
     float windowWidth;
     float windowHeight;
-    float progress;
-    float padding;
-} PushConstantData;
+    float time;
+} PS_MainMenuPushConstants;
 
-bool psScenesLoadingInit(PS_GameState *gameState) {
+bool psScenesMainMenuInit(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
-    PS_LoadingScene *scene = &gameState->scene.loadingScene;
+    PS_MainMenuScene *scene = &gameState->scene.mainMenuScene;
 
-    VkShaderModule vert = psShaderModuleCreate(gameState, psShader_LoadingVertex, VK_SHADER_STAGE_VERTEX_BIT, "loading_vertex_shader.glsl");
+    // Create shader modules
+    VkShaderModule vert = psShaderModuleCreate(gameState, psShader_MainMenuVertex, VK_SHADER_STAGE_VERTEX_BIT, "main_menu_vertex_shader.glsl");
     if (vert == VK_NULL_HANDLE) return false;
     scene->vertexShaderModule = vert;
 
-    VkShaderModule frag = psShaderModuleCreate(gameState, psShader_LoadingFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "loading_fragment_shader.glsl");
+    VkShaderModule frag = psShaderModuleCreate(gameState, psShader_MainMenuFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "main_menu_fragment_shader.glsl");
     if (frag == VK_NULL_HANDLE) {
         vkDestroyShaderModule(gameState->vulkan.device, vert, NULL);
         return false;
     }
     scene->fragmentShaderModule = frag;
 
-    // Create pipeline layout (push constants only)
+    // Pipeline layout (push constants only)
     VkPushConstantRange pushRange = {0};
     pushRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushRange.offset = 0;
-    pushRange.size = sizeof(PushConstantData);
+    pushRange.size = sizeof(PS_MainMenuPushConstants);
 
     VkPipelineLayoutCreateInfo layoutInfo = {0};
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -38,11 +38,11 @@ bool psScenesLoadingInit(PS_GameState *gameState) {
     layoutInfo.pPushConstantRanges = &pushRange;
 
     if (vkCreatePipelineLayout(gameState->vulkan.device, &layoutInfo, NULL, &scene->pipelineLayout) != VK_SUCCESS) {
-        PS_LOG("Failed to create loading pipeline layout\n");
+        PS_LOG("Failed to create main menu pipeline layout\n");
         return false;
     }
 
-    // Create graphics pipeline
+    // Graphics pipeline (Similar to loading screen, no vertex input)
     VkPipelineShaderStageCreateInfo shaderStages[2] = {0};
     shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -61,32 +61,19 @@ bool psScenesLoadingInit(PS_GameState *gameState) {
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {0};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-    VkViewport viewport = {0};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float)gameState->vulkan.swapchain.extent.width;
-    viewport.height = (float)gameState->vulkan.swapchain.extent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-
-    VkRect2D scissor = {0};
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = gameState->vulkan.swapchain.extent;
+    VkViewport viewport = {0}; // Dynamic state
+    VkRect2D scissor = {0}; // Dynamic state
 
     VkPipelineViewportStateCreateInfo viewportState = {0};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &viewport;
+    viewportState.pViewports = &viewport; // Dynamic
     viewportState.scissorCount = 1;
-    viewportState.pScissors = &scissor;
+    viewportState.pScissors = &scissor; // Dynamic
 
     VkPipelineRasterizationStateCreateInfo rasterizer = {0};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizer.depthClampEnable = VK_FALSE;
-    rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.cullMode = VK_CULL_MODE_NONE;
     rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
@@ -100,8 +87,6 @@ bool psScenesLoadingInit(PS_GameState *gameState) {
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depthStencil.depthTestEnable = VK_FALSE;
     depthStencil.depthWriteEnable = VK_FALSE;
-    depthStencil.depthBoundsTestEnable = VK_FALSE;
-    depthStencil.stencilTestEnable = VK_FALSE;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {0};
     colorBlendAttachment.blendEnable = VK_TRUE;
@@ -118,10 +103,10 @@ bool psScenesLoadingInit(PS_GameState *gameState) {
     colorBlendState.attachmentCount = 1;
     colorBlendState.pAttachments = &colorBlendAttachment;
 
+    VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
     VkPipelineDynamicStateCreateInfo dynamicState = {0};
-    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamicState.dynamicStateCount = 2;
+    dynamicState.dynamicStateCount = PS_ARRAY_COUNT(dynamicStates);
     dynamicState.pDynamicStates = dynamicStates;
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {0};
@@ -141,55 +126,39 @@ bool psScenesLoadingInit(PS_GameState *gameState) {
     pipelineInfo.subpass = 0;
 
     if (vkCreateGraphicsPipelines(gameState->vulkan.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &scene->pipeline) != VK_SUCCESS) {
-        PS_LOG("Failed to create loading graphics pipeline\n");
+        PS_LOG("Failed to create main menu graphics pipeline\n");
         return false;
     }
 
     return true;
 }
 
-void psScenesLoadingShutdown(PS_GameState *gameState) {
+void psScenesMainMenuShutdown(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
-    PS_LoadingScene *scene = &gameState->scene.loadingScene;
+    PS_MainMenuScene *scene = &gameState->scene.mainMenuScene;
     vkDestroyPipeline(gameState->vulkan.device, scene->pipeline, NULL);
     vkDestroyPipelineLayout(gameState->vulkan.device, scene->pipelineLayout, NULL);
     vkDestroyShaderModule(gameState->vulkan.device, scene->vertexShaderModule, NULL);
     vkDestroyShaderModule(gameState->vulkan.device, scene->fragmentShaderModule, NULL);
 }
 
-bool psScenesLoadingSwitch(PS_GameState *gameState) {
+bool psScenesMainMenuSwitch(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
-    PS_LoadingScene *scene = &gameState->scene.loadingScene;
-    scene->progress = 0.0f;
-    scene->sceneStartTime = (float)gameState->framerate.currentTime;
     return true;
 }
 
-bool psScenesLoadingUpdate(PS_GameState *gameState) {
+bool psScenesMainMenuUpdate(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
-    PS_LoadingScene *scene = &gameState->scene.loadingScene;
-    
-    double elapsedTime = gameState->framerate.currentTime - scene->sceneStartTime;
-    if (elapsedTime < 1.0) return true; // Wait for at least 1 sec for the scene transition to finish
-
-    if(!psScenesLoadContentScenesAsyncPoll(gameState)) {
-        PS_LOG("Failed to poll content scenes loading... Aborting.\n");
-        gameState->running = false;
-    }
-    scene->progress = gameState->scene.loadingProgress;
-
-    if (gameState->scene.allContentScenesLoaded && !gameState->scene.isSwitchingScene) {
-        psScenesSwitch(gameState, PS_SCENE_TYPE_MAIN_MENU);
-    }
     return true;
 }
 
-bool psScenesLoadingRender(PS_GameState *gameState) {
+bool psScenesMainMenuRender(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
-    PS_LoadingScene *scene = &gameState->scene.loadingScene;
+    PS_MainMenuScene *scene = &gameState->scene.mainMenuScene;
     uint32_t idx = gameState->vulkan.renderer.currentFrameIndex;
     VkCommandBuffer cmd = gameState->vulkan.renderer.resources[idx].commandBuffer;
 
+    // Begin scene render pass (clears to dark grey)
     VkRenderPassBeginInfo rpInfo = {0};
     rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     rpInfo.renderPass = gameState->vulkan.renderer.sceneFramebuffer.renderPass;
@@ -199,13 +168,11 @@ bool psScenesLoadingRender(PS_GameState *gameState) {
     rpInfo.renderArea.extent.width = gameState->vulkan.renderer.sceneFramebuffer.width;
     rpInfo.renderArea.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
     VkClearValue clears[2] = {0};
-    // Update clear color to match the desired background rgb(208, 166, 228)
-    clears[0].color.float32[0] = 208.0f / 255.0f;
-    clears[0].color.float32[1] = 166.0f / 255.0f;
-    clears[0].color.float32[2] = 228.0f / 255.0f;
+    clears[0].color.float32[0] = 40.0f/255.0f;
+    clears[0].color.float32[1] = 40.0f/255.0f;
+    clears[0].color.float32[2] = 40.0f/255.0f;
     clears[0].color.float32[3] = 1.0f;
     clears[1].depthStencil.depth = 1.0f;
-    clears[1].depthStencil.stencil = 0;
     rpInfo.clearValueCount = 2;
     rpInfo.pClearValues = clears;
 
@@ -227,17 +194,22 @@ bool psScenesLoadingRender(PS_GameState *gameState) {
     scissor.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
+    // Bind pipeline
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, scene->pipeline);
 
-    PushConstantData pc = {
-        .windowWidth = (float)gameState->window. width,
-        .windowHeight = (float)gameState->window.height,
-        .progress = scene->progress,
-        .padding = 0.0f
+    // Push constants
+    PS_MainMenuPushConstants pc = {
+        .windowWidth = (float)gameState->window.framebufferWidth, // Use framebuffer size
+        .windowHeight = (float)gameState->window.framebufferHeight,
+        .time = (float)gameState->framerate.currentTime
     };
-    vkCmdPushConstants(cmd, scene->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pc), &pc);
+    vkCmdPushConstants(cmd, scene->pipelineLayout,
+                       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                       0, sizeof(pc), &pc);
 
+    // Draw full screen quad (6 vertices)
     vkCmdDraw(cmd, 6, 1, 0, 0);
+
     vkCmdEndRenderPass(cmd);
     return true;
 }

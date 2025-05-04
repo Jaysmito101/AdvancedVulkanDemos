@@ -38,7 +38,7 @@
 // common functions
 uint32_t psHashBuffer(const void *buffer, size_t size);
 uint32_t psHashString(const char *str);
-
+void psPrintShaderWithLineNumbers(const char *shaderCode, const char *shaderName);
 const char* psGetTempDirPath(void);
 
 #endif // PS_COMMON_H

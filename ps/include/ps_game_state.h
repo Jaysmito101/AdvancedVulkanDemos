@@ -141,7 +141,8 @@ typedef struct PS_Frametime {
 typedef enum PS_SceneType {
     PS_SCENE_TYPE_NONE,
     PS_SCENE_TYPE_SPLASH,
-    PS_SCENE_TYPE_LOADING, // Added loading scene type
+    PS_SCENE_TYPE_LOADING,
+    PS_SCENE_TYPE_MAIN_MENU,
 } PS_SceneType;
 
 typedef struct PS_SplashScene {
@@ -160,7 +161,6 @@ typedef struct PS_SplashScene {
     float currentOpacity;
 } PS_SplashScene;
 
-// Add loading scene struct
 typedef struct PS_LoadingScene {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
@@ -169,8 +169,15 @@ typedef struct PS_LoadingScene {
 
     float sceneStartTime;
 
-    float progress; // loading progress 0.0 to 1.0
+    float progress;
 } PS_LoadingScene;
+
+typedef struct PS_MainMenuScene {
+    VkShaderModule vertexShaderModule;
+    VkShaderModule fragmentShaderModule;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline pipeline;
+} PS_MainMenuScene;
 
 #define PS_TOTAL_SCENES 6
 
@@ -182,12 +189,13 @@ typedef struct PS_Scene {
     double sceneSwitchStartTime;
     double sceneSwitchDuration;
 
-    bool contentScenesLoaded[64];
+    bool contentScenesLoaded[PS_TOTAL_SCENES]; 
     bool allContentScenesLoaded;
     float loadingProgress;
 
     PS_SplashScene splashScene;
-    PS_LoadingScene loadingScene; // Added loading scene
+    PS_LoadingScene loadingScene;
+    PS_MainMenuScene mainMenuScene;
 } PS_Scene;
 
 typedef struct PS_GameState {

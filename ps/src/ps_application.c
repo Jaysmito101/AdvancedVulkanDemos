@@ -51,7 +51,7 @@ bool psApplicationInit(PS_GameState *gameState) {
 
     // this is for prod
     if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_SPLASH)) {
-        PS_LOG("Failed to switch to splash scene\n");
+    PS_LOG("Failed to switch to splash scene\n");
         return false;
     }
 

@@ -13,6 +13,7 @@ uint32_t* psCompileShader(const char* shaderCode, const char* inputFileName, siz
 
 	shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, shaderCode, strlen(shaderCode), kind, inputFileName, "main", options);
 	if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+		psPrintShaderWithLineNumbers(shaderCode, inputFileName);
 		PS_LOG("Shader compilation failed: %s\n", shaderc_result_get_error_message(result));
 		return NULL;
 	}
