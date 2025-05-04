@@ -47,6 +47,8 @@ bool psApplicationInit(PS_GameState *gameState) {
         return false;
     }
 
+    __psApplicationUpdateFramerateCalculation(gameState);
+
     if(!psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH)) {
         PS_LOG("Failed to switch to splash scene\n");
         return false;

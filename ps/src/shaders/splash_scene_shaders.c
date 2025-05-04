@@ -71,5 +71,7 @@ PS_SHADER_SPLASH_SCENE_PUSH_CONSTANTS
 "\n"
 "void main() {\n"
 "    vec4 texColor = texture(texSampler, fragTexCoord);\n"
-"    outColor = vec4(texColor.rgb, texColor.a * pushConstants.data.opacity);\n"
+"    vec3 color = vec3(215.0f / 255.0f, 204.0f / 255.0f, 246.0f / 255.0f);\n"
+"    texColor.rgb = mix(color, texColor.rgb, pushConstants.data.opacity);\n"
+"    outColor = vec4(texColor.rgb, texColor.a);\n"
 "}\n";

@@ -178,8 +178,8 @@ static bool __psCreatePipeline(PS_GameState *gameState)
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
@@ -307,7 +307,7 @@ bool psScenesSplashSwitch(PS_GameState *gameState)
 
     gameState->scene.currentScene = PS_SCENE_TYPE_SPLASH;
     gameState->scene.splashScene.sceneStartTime = gameState->framerate.currentTime;
-    gameState->scene.splashScene.sceneDurationLeft = 5.0; // 5 seconds duration
+    gameState->scene.splashScene.sceneDurationLeft = 25.0; // 5 seconds duration
 
     return true;
 }
@@ -357,27 +357,24 @@ bool psScenesSplashRender(PS_GameState *gameState)
     scissor.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    // Populate the push constant struct
     PS_SplashPushConstants pushConstantData = {
         .framebufferWidth = (float)gameState->vulkan.renderer.sceneFramebuffer.width,
         .framebufferHeight = (float)gameState->vulkan.renderer.sceneFramebuffer.height,
         .imageWidth = (float)gameState->scene.splashScene.splashImage.width,
         .imageHeight = (float)gameState->scene.splashScene.splashImage.height,
-        .scale = 0.4f,         // Example scale
+        .scale = gameState->scene.splashScene.currentScale,  
+        .opacity = gameState->scene.splashScene.currentOpacity, 
     };
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->scene.splashScene.pipeline);
-    // Push the struct
     vkCmdPushConstants(
         commandBuffer,
         gameState->scene.splashScene.pipelineLayout,
-        // Ensure flags cover all stages using the constants
         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        0, sizeof(PS_SplashPushConstants), // Use struct size
-        &pushConstantData                  // Pass struct address
+        0, sizeof(PS_SplashPushConstants),
+        &pushConstantData
     );
 
-    // Bind the texture descriptor set
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             gameState->scene.splashScene.pipelineLayout, 0, 1,
                             &gameState->scene.splashScene.descriptorSet, 0, NULL);
@@ -392,6 +389,69 @@ bool psScenesSplashRender(PS_GameState *gameState)
 bool psScenesSplashUpdate(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
+
+    float sceneDuration = 2.0f;
+    float fadeInTime = 0.6f;
+    float scaleBounceTime = 0.8f;
+    float holdDuration = 0.5f;
+    float fadeOutTime = 0.3f;
+
+    float scaleUpEndTime = fadeInTime;
+    float bounceEndTime = scaleUpEndTime + scaleBounceTime;
+    float holdEndTime = bounceEndTime + holdDuration;
+    float fadeOutStartTime = holdEndTime;
+
+    float initialScale = 0.0f;
+    float targetScale = 1.0f; 
+    float overshootScale = targetScale * 1.5f;
+
+    double now = gameState->framerate.currentTime;
+    double start = gameState->scene.splashScene.sceneStartTime;
+    float t = (float)(now - start);
+
+    float opacity = 0.0f;
+    float scale = initialScale;
+
+    if (t < fadeInTime) {
+        float nt = t / fadeInTime;
+        opacity = nt * nt;
+        float scale_nt = 1.0f - powf(1.0f - nt, 3.0f);
+        scale = initialScale + (overshootScale - initialScale) * scale_nt;
+
+    } else if (t < bounceEndTime) {
+        opacity = 1.0f;
+        float nt = (t - scaleUpEndTime) / scaleBounceTime;
+
+        const float c1 = 1.70158f;
+        const float c3 = c1 + 1.0f;
+        float nt_inv = 1.0f - nt;
+        float factor = 1.0f - (c3 * nt_inv * nt_inv * nt_inv - c1 * nt_inv * nt_inv); 
+        scale = targetScale + (overshootScale - targetScale) * (1.0f - factor);
+
+    } else if (t < holdEndTime) {
+        opacity = 1.0f;
+        scale = targetScale;
+    } else if (t < sceneDuration) {
+        float nt = (t - fadeOutStartTime) / fadeOutTime;
+        opacity = 1.0f - (nt * nt);
+        scale = targetScale; 
+    } else {
+        opacity = 0.0f;
+        scale = targetScale;
+        t = sceneDuration; 
+    }
+
+    opacity = PS_CLAMP(opacity, 0.0f, 1.0f);
+    scale = PS_MAX(scale, 0.0f);
+
+    gameState->scene.splashScene.currentScale = scale;
+    gameState->scene.splashScene.currentOpacity = opacity;
+
+    if (t >= sceneDuration) {
+        // TODO: Trigger scene switch
+        // PS_LOG("Splash scene finished.\n");
+        psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH);
+    }
 
     return true;
 }

@@ -150,6 +150,8 @@ typedef struct PS_SplashScene {
 
     double sceneStartTime;
     double sceneDurationLeft;
+    float currentScale;
+    float currentOpacity;
 } PS_SplashScene;
 
 typedef struct PS_Scene {
