@@ -5,7 +5,7 @@ static void __psVulkanFramebufferAttachmentDestroy(PS_GameState *gameState, PS_V
     PS_ASSERT(gameState != NULL);
     PS_ASSERT(attachment != NULL);
 
-    
+    psVulkanImageDestroy(gameState, &attachment->image);    
 }
 
 static bool __psVulkanFramebufferAttachmentCreate(PS_GameState *gameState, PS_VulkanFramebufferAttachment *attachment, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
