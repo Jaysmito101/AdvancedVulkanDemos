@@ -35,6 +35,7 @@ bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *fr
 void psVulkanFramebufferDestroy(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer);
 
 bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height);
+bool psVulkanImageTransitionLayout(PS_GameState *gameState, PS_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 void psVulkanImageDestroy(PS_GameState *gameState, PS_VulkanImage *image);
 
 #endif // PS_VULKAN_H
