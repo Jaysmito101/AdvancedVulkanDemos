@@ -62,22 +62,28 @@ typedef struct PS_VulkanFramebuffer {
     uint32_t height;
 } PS_VulkanFramebuffer;
 
+typedef struct PS_VulkanPresentation {
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
+    VkShaderModule vertexShaderModule;
+    VkShaderModule fragmentShaderModule;
+} PS_VulkanPresentation;
+
+typedef struct PS_VulkanScene {
+    PS_VulkanFramebuffer framebuffer;
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
+    VkShaderModule vertexShaderModule;
+    VkShaderModule fragmentShaderModule;
+} PS_VulkanScene;
+
 typedef struct PS_VulkanRenderer {
     PS_VulkanRendererResources resources[16];
     uint32_t numInFlightFrames;
     uint32_t currentFrameIndex;
 
-
-    VkPipeline presentationPipeline;
-    VkPipelineLayout presentationPipelineLayout;
-    VkShaderModule presentationVertexShaderModule;
-    VkShaderModule presentationFragmentShaderModule;
-
-    PS_VulkanFramebuffer sceneFramebuffer;
-    VkPipeline scenePipeline;
-    VkPipelineLayout scenePipelineLayout;
-    VkShaderModule sceneVertexShaderModule;
-    VkShaderModule sceneFragmentShaderModule;
+    PS_VulkanPresentation presentation;
+    PS_VulkanScene scene;
 } PS_VulkanRenderer;
 
 typedef struct PS_Vulkan {
@@ -88,6 +94,8 @@ typedef struct PS_Vulkan {
     VkQueue computeQueue;
     VkCommandPool graphicsCommandPool;
     VkCommandPool computeCommandPool;
+
+    VkDescriptorPool descriptorPool;
 
     PS_VulkanSwapchain swapchain;
     PS_VulkanRenderer renderer;

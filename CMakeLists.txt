@@ -71,7 +71,7 @@ add_executable(ps
 # include headers (we have to do this so that Visual Studio can see them)
     ${ps_headers}
 # game
-    ./ps/src/main.c
+    ./ps/src/ps_main.c
     ./ps/src/ps_application.c
     ./ps/src/ps_window.c
     ./ps/src/ps_vulkan.c

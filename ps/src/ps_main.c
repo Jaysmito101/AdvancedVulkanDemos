@@ -14,5 +14,8 @@ int main() {
     }
 
     psApplicationShutdown(&g_GameState);
+
+    PS_LOG("Application shutdown successfully\n");
+    
     return EXIT_SUCCESS;
 }

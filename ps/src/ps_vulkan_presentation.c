@@ -16,7 +16,7 @@ static bool __psVulkanPresentationCreatePipelineLayout(PS_GameState *gameState) 
     pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;    
     pipelineLayoutInfo.pushConstantRangeCount = PS_ARRAY_COUNT(pushConstantRanges);
 
-    VkResult result = vkCreatePipelineLayout(gameState->vulkan.device, &pipelineLayoutInfo, NULL, &gameState->vulkan.renderer.presentationPipelineLayout);
+    VkResult result = vkCreatePipelineLayout(gameState->vulkan.device, &pipelineLayoutInfo, NULL, &gameState->vulkan.renderer.presentation.pipelineLayout);
     if (result != VK_SUCCESS) {
         PS_LOG("Failed to create pipeline layout\n");
         return false;
@@ -31,12 +31,12 @@ static bool __psVulkanPresentationCreatePipeline(PS_GameState *gameState) {
     VkPipelineShaderStageCreateInfo shaderStages[2] = {0};
     shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    shaderStages[0].module = gameState->vulkan.renderer.presentationVertexShaderModule;
+    shaderStages[0].module = gameState->vulkan.renderer.presentation.vertexShaderModule;
     shaderStages[0].pName = "main";
 
     shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStages[1].module = gameState->vulkan.renderer.presentationFragmentShaderModule;
+    shaderStages[1].module = gameState->vulkan.renderer.presentation.fragmentShaderModule;
     shaderStages[1].pName = "main";
 
     VkDynamicState dynamicStates[2] = {0};
@@ -127,7 +127,7 @@ static bool __psVulkanPresentationCreatePipeline(PS_GameState *gameState) {
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = PS_ARRAY_COUNT(shaderStages);
     pipelineInfo.pStages = shaderStages;
-    pipelineInfo.layout = gameState->vulkan.renderer.presentationPipelineLayout;
+    pipelineInfo.layout = gameState->vulkan.renderer.presentation.pipelineLayout;
     pipelineInfo.renderPass = gameState->vulkan.swapchain.renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -145,7 +145,7 @@ static bool __psVulkanPresentationCreatePipeline(PS_GameState *gameState) {
     pipelineInfo.pMultisampleState = &multisampleInfo;
 
 
-    VkResult result = vkCreateGraphicsPipelines(gameState->vulkan.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &gameState->vulkan.renderer.presentationPipeline);
+    VkResult result = vkCreateGraphicsPipelines(gameState->vulkan.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &gameState->vulkan.renderer.presentation.pipeline);
     if (result != VK_SUCCESS) {
         PS_LOG("Failed to create graphics pipeline\n");
         return false;
@@ -160,7 +160,7 @@ bool psVulkanPresentationInit(PS_GameState *gameState) {
         PS_LOG("Failed to create vertex shader module\n");
         return false;
     }
-    gameState->vulkan.renderer.presentationVertexShaderModule = vertexShaderModule;
+    gameState->vulkan.renderer.presentation.vertexShaderModule = vertexShaderModule;
 
     VkShaderModule fragmentShaderModule = psShaderModuleCreate(gameState, psShader_PresentationFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "presentation_fragment_shader.glsl");    
     if (fragmentShaderModule == VK_NULL_HANDLE) {
@@ -168,7 +168,7 @@ bool psVulkanPresentationInit(PS_GameState *gameState) {
         vkDestroyShaderModule(gameState->vulkan.device, vertexShaderModule, NULL);
         return false;
     }
-    gameState->vulkan.renderer.presentationFragmentShaderModule = fragmentShaderModule;
+    gameState->vulkan.renderer.presentation.fragmentShaderModule = fragmentShaderModule;
     
     if(!__psVulkanPresentationCreatePipelineLayout(gameState)) {
         PS_LOG("Failed to create pipeline layout\n");
@@ -186,17 +186,17 @@ bool psVulkanPresentationInit(PS_GameState *gameState) {
 void psVulkanPresentationDestroy(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
 
-    vkDestroyPipeline(gameState->vulkan.device, gameState->vulkan.renderer.presentationPipeline, NULL);
-    gameState->vulkan.renderer.presentationPipeline = VK_NULL_HANDLE;
+    vkDestroyPipeline(gameState->vulkan.device, gameState->vulkan.renderer.presentation.pipeline, NULL);
+    gameState->vulkan.renderer.presentation.pipeline = VK_NULL_HANDLE;
 
-    vkDestroyPipelineLayout(gameState->vulkan.device, gameState->vulkan.renderer.presentationPipelineLayout, NULL);
-    gameState->vulkan.renderer.presentationPipelineLayout = VK_NULL_HANDLE;
+    vkDestroyPipelineLayout(gameState->vulkan.device, gameState->vulkan.renderer.presentation.pipelineLayout, NULL);
+    gameState->vulkan.renderer.presentation.pipelineLayout = VK_NULL_HANDLE;
 
-    vkDestroyShaderModule(gameState->vulkan.device, gameState->vulkan.renderer.presentationVertexShaderModule, NULL);
-    gameState->vulkan.renderer.presentationVertexShaderModule = VK_NULL_HANDLE;
+    vkDestroyShaderModule(gameState->vulkan.device, gameState->vulkan.renderer.presentation.vertexShaderModule, NULL);
+    gameState->vulkan.renderer.presentation.vertexShaderModule = VK_NULL_HANDLE;
 
-    vkDestroyShaderModule(gameState->vulkan.device, gameState->vulkan.renderer.presentationFragmentShaderModule, NULL);
-    gameState->vulkan.renderer.presentationFragmentShaderModule = VK_NULL_HANDLE;
+    vkDestroyShaderModule(gameState->vulkan.device, gameState->vulkan.renderer.presentation.fragmentShaderModule, NULL);
+    gameState->vulkan.renderer.presentation.fragmentShaderModule = VK_NULL_HANDLE;
 }
 
 bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex)
@@ -242,8 +242,8 @@ bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex)
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     const float pushConstantData[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentationPipeline);
-    vkCmdPushConstants(commandBuffer, gameState->vulkan.renderer.presentationPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstantData), pushConstantData);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentation.pipeline);
+    vkCmdPushConstants(commandBuffer, gameState->vulkan.renderer.presentation.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstantData), pushConstantData);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
     
 

@@ -452,6 +452,34 @@ static bool __psVulkanCreateCommandPools(PS_GameState *gameState)
     return true;
 }   
 
+static bool __psVulkanDescriptorPoolCreate(PS_GameState *gameState)
+{
+    VkDescriptorPoolSize poolSizes[] = {
+        {VK_DESCRIPTOR_TYPE_SAMPLER, 100},
+        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 10},
+    };
+    uint32_t poolSizeCount = PS_ARRAY_COUNT(poolSizes);
+
+    VkDescriptorPoolCreateInfo poolInfo = {0};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = poolSizeCount;
+    poolInfo.pPoolSizes = poolSizes;
+    poolInfo.maxSets = 10000;
+
+    VkResult result = vkCreateDescriptorPool(gameState->vulkan.device, &poolInfo, NULL, &gameState->vulkan.descriptorPool);
+    if (result != VK_SUCCESS)
+    {
+        PS_LOG("Failed to create descriptor pool\n");
+        return false;
+    }
+
+    return true;
+}
+
 bool psVulkanInit(PS_GameState *gameState)
 {
     if (!__psVulkanCreateInstance(gameState))
@@ -490,6 +518,12 @@ bool psVulkanInit(PS_GameState *gameState)
         return false;
     }
 
+    if (!__psVulkanDescriptorPoolCreate(gameState))
+    {
+        PS_LOG("Failed to create Vulkan descriptor pool\n");
+        return false;
+    }
+
     gameState->vulkan.swapchain.swapchainReady = false;
     if (!psVulkanSwapchainCreate(gameState))
     {
@@ -509,7 +543,7 @@ bool psVulkanInit(PS_GameState *gameState)
         return false;
     }
 
-    if (!psVulkanFramebufferCreate(gameState, &gameState->vulkan.renderer.sceneFramebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT))
+    if (!psVulkanFramebufferCreate(gameState, &gameState->vulkan.renderer.scene.framebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT))
     {
         PS_LOG("Failed to create Vulkan framebuffer\n");
         return false;
@@ -528,7 +562,7 @@ void psVulkanShutdown(PS_GameState *gameState)
 {
     vkDeviceWaitIdle(gameState->vulkan.device);
 
-    psVulkanFramebufferDestroy(gameState, &gameState->vulkan.renderer.sceneFramebuffer);
+    psVulkanFramebufferDestroy(gameState, &gameState->vulkan.renderer.scene.framebuffer);
 
     psVulkanSceneDestroy(gameState);
     psVulkanPresentationDestroy(gameState);
@@ -543,8 +577,12 @@ void psVulkanShutdown(PS_GameState *gameState)
 
     psVulkanSwapchainDestroy(gameState);
 
+    vkDestroyDescriptorPool(gameState->vulkan.device, gameState->vulkan.descriptorPool, NULL);
+    gameState->vulkan.descriptorPool = VK_NULL_HANDLE;
+
     vkDestroyDevice(gameState->vulkan.device, NULL);
     gameState->vulkan.device = VK_NULL_HANDLE;
+
 
 #ifdef PS_DEBUG
     if (gameState->vulkan.debugLayersEnabled)
