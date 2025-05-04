@@ -369,13 +369,14 @@ bool psScenesMainMenuUpdate(PS_GameState *gameState) {
     if (isMouseClicked && !scene->wasMouseClicked) {
         switch (scene->hoveredButton) {
             case PS_MAIN_MENU_BUTTON_NEW_GAME:
-                psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH);
+                psScenesSwitch(gameState, PS_SCENE_TYPE_PROLOGUE);
                 break;
             case PS_MAIN_MENU_BUTTON_CONTINUE:
-                PS_LOG("Options button clicked [NOT IMPLEMENTED YET!]\n");
+                PS_LOG("Continue button clicked [NOT IMPLEMENTED YET!]\n");
                 break;
             case PS_MAIN_MENU_BUTTON_OPTIONS:
                 PS_LOG("Options button clicked [NOT IMPLEMENTED YET!]\n");
+                psScenesSwitch(gameState, PS_SCENE_TYPE_SPLASH);
                 break;
             case PS_MAIN_MENU_BUTTON_EXIT:
                 PS_LOG("Exit button clicked\n");

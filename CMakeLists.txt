@@ -91,11 +91,13 @@ add_executable(ps
     ./ps/src/shaders/presentation_shaders.c
     ./ps/src/shaders/loading_scene_shaders.c
     ./ps/src/shaders/main_menu_shaders.c
+    ./ps/src/shaders/prologue_scene_shaders.c
     
     ./ps/src/scenes/ps_scenes.c
     ./ps/src/scenes/ps_scenes_splash.c
     ./ps/src/scenes/ps_scenes_loading.c
     ./ps/src/scenes/ps_scenes_mainmenu.c
+    ./ps/src/scenes/ps_scenes_prologue.c
 )
 target_link_libraries(ps
     glfw

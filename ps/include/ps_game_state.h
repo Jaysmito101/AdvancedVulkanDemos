@@ -154,6 +154,7 @@ typedef enum PS_SceneType {
     PS_SCENE_TYPE_SPLASH,
     PS_SCENE_TYPE_LOADING,
     PS_SCENE_TYPE_MAIN_MENU,
+    PS_SCENE_TYPE_PROLOGUE,
 } PS_SceneType;
 
 typedef struct PS_SplashScene {
@@ -220,6 +221,20 @@ typedef struct PS_MainMenuScene {
 
 } PS_MainMenuScene;
 
+typedef struct PS_PrologueScene {
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
+    VkShaderModule vertexShaderModule;
+    VkShaderModule fragmentShaderModule;
+    
+    float sceneStartTime;
+    float sphereRadius;
+    float spherePosition[3];
+    float cameraPosition[3];
+    float rotation;
+    float time;
+} PS_PrologueScene;
+
 #define PS_TOTAL_SCENES 6
 
 typedef struct PS_Scene {
@@ -237,6 +252,7 @@ typedef struct PS_Scene {
     PS_SplashScene splashScene;
     PS_LoadingScene loadingScene;
     PS_MainMenuScene mainMenuScene;
+    PS_PrologueScene prologueScene;
 } PS_Scene;
 
 typedef struct PS_GameState {

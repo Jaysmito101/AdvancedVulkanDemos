@@ -19,6 +19,9 @@ static void __psSwitchScene(PS_GameState *gameState, PS_SceneType sceneType)
     case PS_SCENE_TYPE_MAIN_MENU:
         psScenesMainMenuSwitch(gameState);
         break;
+    case PS_SCENE_TYPE_PROLOGUE:
+        psScenesPrologueSwitch(gameState);
+        break;
     default:
         PS_LOG("Unknown scene type for switch: %d\n", sceneType);
         break;
@@ -66,7 +69,8 @@ void psScenesShutdown(PS_GameState *gameState)
 
     psScenesSplashShutdown(gameState);
     psScenesLoadingShutdown(gameState);
-    psScenesMainMenuShutdown(gameState); 
+    psScenesMainMenuShutdown(gameState);
+    psScenesPrologueShutdown(gameState);
 }
 
 
@@ -122,6 +126,8 @@ bool psScenesUpdate(PS_GameState *gameState)
         return psScenesLoadingUpdate(gameState);
     case PS_SCENE_TYPE_MAIN_MENU:
         return psScenesMainMenuUpdate(gameState);
+    case PS_SCENE_TYPE_PROLOGUE:
+        return psScenesPrologueUpdate(gameState);
     case PS_SCENE_TYPE_NONE:
         return true;
     default:
@@ -160,6 +166,8 @@ bool psScenesRender(PS_GameState *gameState)
         return psScenesLoadingRender(gameState);
     case PS_SCENE_TYPE_MAIN_MENU:
         return psScenesMainMenuRender(gameState);
+    case PS_SCENE_TYPE_PROLOGUE:
+        return psScenesPrologueRender(gameState);
     case PS_SCENE_TYPE_NONE:
         return true;
     default:
@@ -230,11 +238,11 @@ bool psScenesLoadContentScenesAsyncPoll(PS_GameState *gameState)
     PS_ASSERT(gameState != NULL);
 
     PS_LOAD_CONTENT_SCENE(0, "Main Menu", psScenesMainMenuInit(gameState));
-    PS_LOAD_CONTENT_SCENE(1, "Dummy 2", fakeLoad());
-    PS_LOAD_CONTENT_SCENE(2, "Dummy 5", fakeLoad());
+    PS_LOAD_CONTENT_SCENE(1, "Prologue", psScenesPrologueInit(gameState));
+    PS_LOAD_CONTENT_SCENE(2, "Dummy 2", fakeLoad());
     PS_LOAD_CONTENT_SCENE(3, "Dummy 4", fakeLoad());
-    PS_LOAD_CONTENT_SCENE(4, "Dummy 54", fakeLoad());
-    PS_LOAD_CONTENT_SCENE(5, "Dummy 12", fakeLoad());
+    PS_LOAD_CONTENT_SCENE(4, "Dummy 5", fakeLoad());
+    PS_LOAD_CONTENT_SCENE(5, "Dummy 6", fakeLoad());
 
     gameState->scene.allContentScenesLoaded = true;
     return true;

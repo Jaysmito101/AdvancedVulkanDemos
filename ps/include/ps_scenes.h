@@ -24,11 +24,16 @@ bool psScenesSplashSwitch(PS_GameState *gameState);
 bool psScenesSplashRender(PS_GameState *gameState);
 bool psScenesSplashUpdate(PS_GameState *gameState);
 
-// Add main menu scene declarations
 bool psScenesMainMenuInit(PS_GameState *gameState);
 void psScenesMainMenuShutdown(PS_GameState *gameState);
 bool psScenesMainMenuSwitch(PS_GameState *gameState);
 bool psScenesMainMenuUpdate(PS_GameState *gameState);
 bool psScenesMainMenuRender(PS_GameState *gameState);
+
+bool psScenesPrologueInit(PS_GameState *gameState);
+void psScenesPrologueShutdown(PS_GameState *gameState);
+bool psScenesPrologueSwitch(PS_GameState *gameState);
+bool psScenesPrologueUpdate(PS_GameState *gameState);
+bool psScenesPrologueRender(PS_GameState *gameState);
 
 #endif // PS_SCENES_H
