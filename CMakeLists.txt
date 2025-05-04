@@ -84,6 +84,7 @@ add_executable(ps
     ./ps/src/ps_shader_compiler.c
     ./ps/src/ps_utils.c
     ./ps/src/ps_shader.c
+    ./ps/src/ps_input.c
     ./ps/src/ps_third_party_impls.c
 
     ./ps/src/shaders/splash_scene_shaders.c

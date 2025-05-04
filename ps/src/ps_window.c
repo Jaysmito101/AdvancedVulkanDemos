@@ -12,8 +12,9 @@ static void __psGLFWErrorCallback(int error, const char *description)
 static void __psGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     PS_GameState *gameState = (PS_GameState *)glfwGetWindowUserPointer(window);
-    // TODO: Handle key events
-    // PS_LOG("Key: %d, Scancode: %d, Action: %d, Mods: %d\n", key, scancode, action, mods);
+    if (key >= 0 && key < 1024) {
+        gameState->input.keyState[key] = (action == GLFW_PRESS || action == GLFW_REPEAT);
+    }
 }
 
 static void __psGLFWCharCallback(GLFWwindow *window, unsigned int codepoint)
@@ -43,8 +44,7 @@ static void __psGLFWScrollCallback(GLFWwindow *window, double xoffset, double yo
 static void __psGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 {
     PS_GameState *gameState = (PS_GameState *)glfwGetWindowUserPointer(window);
-    // TODO: Handle cursor position events
-    // PS_LOG("Cursor Pos: x=%.2f, y=%.2f\n", xpos, ypos);
+    psInputCalculateMousePositionFromRaw(gameState, xpos, ypos);
 }
 
 static void __psGLFWWindowPosCallback(GLFWwindow *window, int xpos, int ypos)
@@ -64,6 +64,7 @@ static void __psGLFWWindowSizeCallback(GLFWwindow *window, int width, int height
         gameState->window.isMinimized = true;
     } else {
         gameState->window.isMinimized = false;
+        psInputCalculateMousePositionFromRaw(gameState, gameState->input.rawMouseX, gameState->input.rawMouseY);
     }
 }
 
@@ -83,8 +84,7 @@ static void __psGLFWWindowCloseCallback(GLFWwindow *window)
 static void __psGLFWMouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
 {
     PS_GameState *gameState = (PS_GameState *)glfwGetWindowUserPointer(window);
-    // TODO: Handle mouse button events
-    // PS_LOG("Mouse Button: %d, Action: %d, Mods: %d\n", button, action, mods);
+    gameState->input.mouseButtonState[button] = (action == GLFW_PRESS);
 }
 
 static void __psGLFWFramebufferSizeCallback(GLFWwindow *window, int width, int height)

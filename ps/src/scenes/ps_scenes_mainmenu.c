@@ -321,6 +321,10 @@ bool psScenesMainMenuSwitch(PS_GameState *gameState) {
 
 bool psScenesMainMenuUpdate(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
+
+    PS_LOG("Mouse X: %f, Y: %f\n", gameState->input.mouseX, gameState->input.mouseY);
+
+
     return true;
 }
 

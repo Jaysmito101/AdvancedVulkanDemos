@@ -55,6 +55,8 @@ bool psApplicationInit(PS_GameState *gameState) {
     //     return false;
     // }
 
+    memset(&gameState->input, 0, sizeof(PS_Input));
+
     // this is for dev/testing
     if(!psScenesMainMenuInit(gameState)) {
         PS_LOG("Failed to switch to loading scene\n");

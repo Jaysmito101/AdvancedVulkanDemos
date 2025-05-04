@@ -138,6 +138,17 @@ typedef struct PS_Frametime {
     double lastSecondTime;
 } PS_Frametime;
 
+typedef struct PS_Input {
+    bool keyState[1024];
+    bool mouseButtonState[1024];
+
+    double rawMouseX;
+    double rawMouseY;
+
+    float mouseX;
+    float mouseY;
+} PS_Input;
+
 typedef enum PS_SceneType {
     PS_SCENE_TYPE_NONE,
     PS_SCENE_TYPE_SPLASH,
@@ -219,6 +230,7 @@ typedef struct PS_GameState {
     PS_Vulkan vulkan;
     PS_Frametime framerate;
     PS_Scene scene;
+    PS_Input input;
 
     bool running;
 } PS_GameState;
