@@ -128,7 +128,7 @@ static bool __psVulkanSceneCreatePipeline(PS_GameState *gameState) {
     pipelineInfo.stageCount = PS_ARRAY_COUNT(shaderStages);
     pipelineInfo.pStages = shaderStages;
     pipelineInfo.layout = gameState->vulkan.renderer.scene.pipelineLayout;
-    pipelineInfo.renderPass = gameState->vulkan.swapchain.renderPass;
+    pipelineInfo.renderPass = gameState->vulkan.renderer.scene.framebuffer.renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
@@ -154,7 +154,70 @@ static bool __psVulkanSceneCreatePipeline(PS_GameState *gameState) {
     return true;
 }
 
+static bool __psVulkanSceneCreateDescriptors(PS_GameState *gameState) {
+    PS_ASSERT(gameState != NULL);
+
+    VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[1] = {0};
+    descriptorSetLayoutBindings[0].binding = 0;
+    descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorSetLayoutBindings[0].descriptorCount = 1;
+    descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {0};
+    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutInfo.bindingCount = PS_ARRAY_COUNT(descriptorSetLayoutBindings);
+    descriptorSetLayoutInfo.pBindings = descriptorSetLayoutBindings;
+
+    VkResult result = vkCreateDescriptorSetLayout(gameState->vulkan.device, &descriptorSetLayoutInfo, NULL, &gameState->vulkan.renderer.scene.framebufferColorDescriptorSetLayout);
+    if (result != VK_SUCCESS) {
+        PS_LOG("Failed to create descriptor set layout\n");
+        return false;
+    }
+
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {0};
+    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descriptorSetAllocateInfo.descriptorPool = gameState->vulkan.descriptorPool;
+    descriptorSetAllocateInfo.descriptorSetCount = 1;
+    descriptorSetAllocateInfo.pSetLayouts = &gameState->vulkan.renderer.scene.framebufferColorDescriptorSetLayout;
+
+    result = vkAllocateDescriptorSets(gameState->vulkan.device, &descriptorSetAllocateInfo, &gameState->vulkan.renderer.scene.framebufferColorDescriptorSet);
+    if (result != VK_SUCCESS) {
+        PS_LOG("Failed to allocate descriptor set\n");
+        return false;
+    }
+
+    VkDescriptorImageInfo imageInfo = {0};
+    imageInfo.sampler = gameState->vulkan.renderer.scene.framebuffer.sampler;
+    imageInfo.imageView = gameState->vulkan.renderer.scene.framebuffer.colorAttachment.imageView;
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    VkWriteDescriptorSet writeDescriptorSet = {0};
+    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet.dstSet = gameState->vulkan.renderer.scene.framebufferColorDescriptorSet;
+    writeDescriptorSet.dstBinding = 0;
+    writeDescriptorSet.dstArrayElement = 0;
+    writeDescriptorSet.descriptorCount = 1;
+    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writeDescriptorSet.pImageInfo = &imageInfo;
+    writeDescriptorSet.pBufferInfo = NULL;
+    writeDescriptorSet.pTexelBufferView = NULL;
+    vkUpdateDescriptorSets(gameState->vulkan.device, 1, &writeDescriptorSet, 0, NULL);
+
+    return true;
+}
+
 bool psVulkanSceneInit(PS_GameState *gameState) {
+    if (!psVulkanFramebufferCreate(gameState, &gameState->vulkan.renderer.scene.framebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT))
+    {
+        PS_LOG("Failed to create Vulkan framebuffer\n");
+        return false;
+    }
+
+    if (!__psVulkanSceneCreateDescriptors(gameState)) {
+        PS_LOG("Failed to create scene descriptors\n");
+        return false;
+    }
+
     VkShaderModule vertexShaderModule = psShaderModuleCreate(gameState, psShader_SceneVertex, VK_SHADER_STAGE_VERTEX_BIT, "scene_vertex_shader.glsl");
     if (vertexShaderModule == VK_NULL_HANDLE) {
         PS_LOG("Failed to create vertex shader module\n");
@@ -169,6 +232,7 @@ bool psVulkanSceneInit(PS_GameState *gameState) {
         return false;
     }
     gameState->vulkan.renderer.scene.fragmentShaderModule = fragmentShaderModule;
+
     
     if(!__psVulkanSceneCreatePipelineLayout(gameState)) {
         PS_LOG("Failed to create pipeline layout\n");
@@ -197,6 +261,11 @@ void psVulkanSceneDestroy(PS_GameState *gameState) {
 
     vkDestroyShaderModule(gameState->vulkan.device, gameState->vulkan.renderer.scene.fragmentShaderModule, NULL);
     gameState->vulkan.renderer.scene.fragmentShaderModule = VK_NULL_HANDLE;
+
+    vkDestroyDescriptorSetLayout(gameState->vulkan.device, gameState->vulkan.renderer.scene.framebufferColorDescriptorSetLayout, NULL);
+    gameState->vulkan.renderer.scene.framebufferColorDescriptorSetLayout = VK_NULL_HANDLE;
+
+    psVulkanFramebufferDestroy(gameState, &gameState->vulkan.renderer.scene.framebuffer);
 }
 
 bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex)
@@ -216,11 +285,12 @@ bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex)
 
     VkRenderPassBeginInfo renderPassInfo = {0};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = gameState->vulkan.swapchain.renderPass;
-    renderPassInfo.framebuffer = gameState->vulkan.swapchain.framebuffers[imageIndex];
+    renderPassInfo.renderPass = gameState->vulkan.renderer.scene.framebuffer.renderPass;
+    renderPassInfo.framebuffer = gameState->vulkan.renderer.scene.framebuffer.framebuffer;
     renderPassInfo.renderArea.offset.x = 0;
     renderPassInfo.renderArea.offset.y = 0;
-    renderPassInfo.renderArea.extent = gameState->vulkan.swapchain.extent;
+    renderPassInfo.renderArea.extent.width = gameState->vulkan.renderer.scene.framebuffer.width;
+    renderPassInfo.renderArea.extent.height = gameState->vulkan.renderer.scene.framebuffer.height;
     renderPassInfo.clearValueCount = 2;
     renderPassInfo.pClearValues = clearColor;
 
@@ -229,8 +299,8 @@ bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex)
     VkViewport viewport = {0};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = (float)gameState->vulkan.swapchain.extent.width;
-    viewport.height = (float)gameState->vulkan.swapchain.extent.height;
+    viewport.width = (float)gameState->vulkan.renderer.scene.framebuffer.width;
+    viewport.height = (float)gameState->vulkan.renderer.scene.framebuffer.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -238,7 +308,8 @@ bool psVulkanSceneRender(PS_GameState *gameState, uint32_t imageIndex)
     VkRect2D scissor = {0};
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    scissor.extent = gameState->vulkan.swapchain.extent;
+    scissor.extent.width = gameState->vulkan.renderer.scene.framebuffer.width;
+    scissor.extent.height = gameState->vulkan.renderer.scene.framebuffer.height;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     const float pushConstantData[4] = {0.0f, 0.0f, 0.0f, 0.0f};

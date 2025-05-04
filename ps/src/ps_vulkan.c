@@ -456,7 +456,8 @@ static bool __psVulkanDescriptorPoolCreate(PS_GameState *gameState)
 {
     VkDescriptorPoolSize poolSizes[] = {
         {VK_DESCRIPTOR_TYPE_SAMPLER, 100},
-        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100},
+        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 10},
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10},
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 10},
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10},
@@ -543,12 +544,6 @@ bool psVulkanInit(PS_GameState *gameState)
         return false;
     }
 
-    if (!psVulkanFramebufferCreate(gameState, &gameState->vulkan.renderer.scene.framebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT))
-    {
-        PS_LOG("Failed to create Vulkan framebuffer\n");
-        return false;
-    }
-
     if (!psVulkanSceneInit(gameState))
     {
         PS_LOG("Failed to create Vulkan render resources\n");
@@ -561,8 +556,6 @@ bool psVulkanInit(PS_GameState *gameState)
 void psVulkanShutdown(PS_GameState *gameState)
 {
     vkDeviceWaitIdle(gameState->vulkan.device);
-
-    psVulkanFramebufferDestroy(gameState, &gameState->vulkan.renderer.scene.framebuffer);
 
     psVulkanSceneDestroy(gameState);
     psVulkanPresentationDestroy(gameState);

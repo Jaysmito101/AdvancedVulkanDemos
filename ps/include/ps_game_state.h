@@ -67,6 +67,8 @@ typedef struct PS_VulkanPresentation {
     VkPipelineLayout pipelineLayout;
     VkShaderModule vertexShaderModule;
     VkShaderModule fragmentShaderModule;
+
+    VkDescriptorSetLayout descriptorSetLayout;
 } PS_VulkanPresentation;
 
 typedef struct PS_VulkanScene {
@@ -75,6 +77,9 @@ typedef struct PS_VulkanScene {
     VkPipelineLayout pipelineLayout;
     VkShaderModule vertexShaderModule;
     VkShaderModule fragmentShaderModule;
+
+    VkDescriptorSet framebufferColorDescriptorSet;
+    VkDescriptorSetLayout framebufferColorDescriptorSetLayout;
 } PS_VulkanScene;
 
 typedef struct PS_VulkanRenderer {

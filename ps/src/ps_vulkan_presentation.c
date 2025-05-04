@@ -9,10 +9,27 @@ static bool __psVulkanPresentationCreatePipelineLayout(PS_GameState *gameState) 
     pushConstantRanges[0].offset = 0;
     pushConstantRanges[0].size = sizeof(float) * 4; // Assuming 4 floats for the push constant range
 
+    VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[1] = {0};
+    descriptorSetLayoutBindings[0].binding = 0;
+    descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorSetLayoutBindings[0].descriptorCount = 1;
+    descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {0};
+    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutInfo.bindingCount = PS_ARRAY_COUNT(descriptorSetLayoutBindings);
+    descriptorSetLayoutInfo.pBindings = descriptorSetLayoutBindings;
+
+    VkResult layoutResult = vkCreateDescriptorSetLayout(gameState->vulkan.device, &descriptorSetLayoutInfo, NULL, &gameState->vulkan.renderer.presentation.descriptorSetLayout);
+    if (layoutResult != VK_SUCCESS) {
+        PS_LOG("Failed to create descriptor set layout\n");
+        return false;
+    }
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &gameState->vulkan.renderer.presentation.descriptorSetLayout;
     pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;    
     pipelineLayoutInfo.pushConstantRangeCount = PS_ARRAY_COUNT(pushConstantRanges);
 
@@ -197,6 +214,9 @@ void psVulkanPresentationDestroy(PS_GameState *gameState) {
 
     vkDestroyShaderModule(gameState->vulkan.device, gameState->vulkan.renderer.presentation.fragmentShaderModule, NULL);
     gameState->vulkan.renderer.presentation.fragmentShaderModule = VK_NULL_HANDLE;
+
+    vkDestroyDescriptorSetLayout(gameState->vulkan.device, gameState->vulkan.renderer.presentation.descriptorSetLayout, NULL);
+    gameState->vulkan.renderer.presentation.descriptorSetLayout = VK_NULL_HANDLE;
 }
 
 bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex)
@@ -206,9 +226,9 @@ bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex)
     VkCommandBuffer commandBuffer = gameState->vulkan.renderer.resources[currentFrameIndex].commandBuffer;
 
     static VkClearValue clearColor[2] = {0};
-    clearColor[0].color.float32[0] = 0.1f;
-    clearColor[0].color.float32[1] = 0.1f;
-    clearColor[0].color.float32[2] = 0.1f;
+    clearColor[0].color.float32[0] = 0.0f;
+    clearColor[0].color.float32[1] = 0.0f;
+    clearColor[0].color.float32[2] = 0.0f;
     clearColor[0].color.float32[3] = 1.0f;
 
     clearColor[1].depthStencil.depth = 1.0f;
@@ -241,9 +261,15 @@ bool psVulkanPresentationRender(PS_GameState *gameState, uint32_t imageIndex)
     scissor.extent = gameState->vulkan.swapchain.extent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    const float pushConstantData[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    const float pushConstantData[4] = {
+        (float)gameState->vulkan.swapchain.extent.width, // x
+        (float)gameState->vulkan.swapchain.extent.height, // y
+        (float)gameState->vulkan.renderer.scene.framebuffer.width, // width
+        (float)gameState->vulkan.renderer.scene.framebuffer.height // height
+    };
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentation.pipeline);
     vkCmdPushConstants(commandBuffer, gameState->vulkan.renderer.presentation.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstantData), pushConstantData);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->vulkan.renderer.presentation.pipelineLayout, 0, 1, &gameState->vulkan.renderer.scene.framebufferColorDescriptorSet, 0, NULL);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
     
 
