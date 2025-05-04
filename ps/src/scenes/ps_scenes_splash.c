@@ -310,9 +310,9 @@ bool psScenesSplashRender(PS_GameState *gameState)
     VkCommandBuffer commandBuffer = gameState->vulkan.renderer.resources[currentFrameIndex].commandBuffer;
 
     static VkClearValue clearColor[2] = {0};
-    clearColor[0].color.float32[0] = 215.0 / 255.0f;
-    clearColor[0].color.float32[1] = 204.0 / 255.0f;
-    clearColor[0].color.float32[2] = 246.0 / 255.0f;
+    clearColor[0].color.float32[0] = 215.0f / 255.0f;
+    clearColor[0].color.float32[1] = 204.0f / 255.0f;
+    clearColor[0].color.float32[2] = 246.0f / 255.0f;
     clearColor[0].color.float32[3] = 1.0f;
 
     clearColor[1].depthStencil.depth = 1.0f;
@@ -347,9 +347,20 @@ bool psScenesSplashRender(PS_GameState *gameState)
     scissor.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    const float pushConstantData[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+    const float pushConstantData[4] = {
+        (float)gameState->vulkan.renderer.sceneFramebuffer.width,
+        (float)gameState->vulkan.renderer.sceneFramebuffer.height,
+        (float)gameState->scene.splashScene.splashImage.width,
+        (float)gameState->scene.splashScene.splashImage.height
+    };
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gameState->scene.splashScene.pipeline);
-    vkCmdPushConstants(commandBuffer, gameState->scene.splashScene.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstantData), pushConstantData);
+    vkCmdPushConstants(
+        commandBuffer,
+        gameState->scene.splashScene.pipelineLayout,
+        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        0, sizeof(pushConstantData),
+        pushConstantData
+    );
 
     // Bind the texture descriptor set
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,

@@ -70,9 +70,7 @@ file(GLOB_RECURSE ps_headers
 
 
 add_executable(ps
-# include headers (we have to do this so that Visual Studio can see them)
     ${ps_headers}
-# game
     ./ps/src/ps_main.c
     ./ps/src/ps_application.c
     ./ps/src/ps_window.c
@@ -86,10 +84,13 @@ add_executable(ps
     ./ps/src/ps_shader_compiler.c
     ./ps/src/ps_utils.c
     ./ps/src/ps_shader.c
-    ./ps/src/ps_shader_source.c
     ./ps/src/ps_third_party_impls.c
+
+    ./ps/src/shaders/splash_scene_shaders.c
+    ./ps/src/shaders/presentation_shaders.c
+    
     ./ps/src/ps_scenes.c
-    ./ps/src/ps_scenes_splash.c
+    ./ps/src/scenes/ps_scenes_splash.c
 )
 target_link_libraries(ps
     glfw
