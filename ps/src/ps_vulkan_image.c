@@ -1,4 +1,6 @@
 #include "ps_vulkan.h"
+#include "ps_game_state.h"
+#include <string.h>
 
 static bool __psVulkanFramebufferCreateSampler(PS_GameState *gameState, PS_VulkanImage *image)
 {
@@ -146,10 +148,13 @@ bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkForma
         return false;
     }
 
-
     image->descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     image->descriptorImageInfo.imageView = image->imageView;
     image->descriptorImageInfo.sampler = image->sampler;
+
+    // store dimensions for upload
+    image->width  = width;
+    image->height = height;
 
     return true;
 }
@@ -292,5 +297,112 @@ bool psVulkanImageTransitionLayout(PS_GameState *gameState, PS_VulkanImage *imag
         1, &barrier
     );
 
+    return true;
+}
+
+// simple 2D image upload via staging buffer
+bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, const void *srcData) {
+    PS_ASSERT(gameState && image && srcData);
+
+    // infer bytes per pixel from format
+    uint32_t bpp;
+    switch (image->format) {
+        case VK_FORMAT_R8G8B8A8_UNORM:
+        case VK_FORMAT_B8G8R8A8_UNORM:
+        case VK_FORMAT_R8G8B8A8_SRGB:
+        case VK_FORMAT_B8G8R8A8_SRGB:
+        case VK_FORMAT_R32G32B32A32_SFLOAT:
+            bpp = 4; break;
+        case VK_FORMAT_R8G8B8_UNORM:
+        case VK_FORMAT_B8G8R8_UNORM:
+        case VK_FORMAT_R8G8B8_SRGB:
+        case VK_FORMAT_B8G8R8_SRGB:
+        case VK_FORMAT_R32G32B32_SFLOAT:
+            bpp = 3; break;
+        default:
+            PS_LOG("Unsupported image format for upload: %d\n", image->format);
+            return false;
+    }
+    VkDeviceSize imageSize = (VkDeviceSize)image->width * image->height * bpp;
+
+    // create and fill staging buffer
+    PS_VulkanBuffer staging = {0};
+    if (!psVulkanBufferCreate(gameState, &staging, imageSize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+        return false;
+    }
+    void *mapped = NULL;
+    if (!psVulkanBufferMap(gameState, &staging, &mapped)) {
+        psVulkanBufferDestroy(gameState, &staging);
+        return false;
+    }
+    memcpy(mapped, srcData, imageSize);
+    psVulkanBufferUnmap(gameState, &staging);
+
+    // allocate command buffer
+    VkCommandBufferAllocateInfo bufAlloc = {0};
+    bufAlloc.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    bufAlloc.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    bufAlloc.commandPool = gameState->vulkan.graphicsCommandPool;
+    bufAlloc.commandBufferCount = 1;
+    VkCommandBuffer cmd;
+    vkAllocateCommandBuffers(gameState->vulkan.device, &bufAlloc, &cmd);
+
+    VkCommandBufferBeginInfo beginInfo = {0};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(cmd, &beginInfo);
+
+    // transition to transfer dst
+    psVulkanImageTransitionLayout(gameState, image, cmd,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+    // copy buffer to image
+    VkBufferImageCopy region = {0};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = image->subresourceRange.aspectMask;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageExtent.width = image->width;
+    region.imageExtent.height = image->height;
+    region.imageExtent.depth = 1;
+    region.imageOffset = (VkOffset3D){0,0,0};
+    region.imageExtent = (VkExtent3D){image->width, image->height, 1};
+    vkCmdCopyBufferToImage(cmd, staging.buffer, image->image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+    // transition to shader read
+    psVulkanImageTransitionLayout(gameState, image, cmd,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+
+    vkEndCommandBuffer(cmd);
+
+    // submit with temporary fence
+    VkFenceCreateInfo fenceInfo = {0};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFence fence;
+    vkCreateFence(gameState->vulkan.device, &fenceInfo, NULL, &fence);
+
+    VkSubmitInfo submit = {0};
+    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit.commandBufferCount = 1;
+    submit.pCommandBuffers = &cmd;
+    vkQueueSubmit(gameState->vulkan.graphicsQueue, 1, &submit, fence);
+
+    vkWaitForFences(gameState->vulkan.device, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkDestroyFence(gameState->vulkan.device, fence, NULL);
+
+    vkFreeCommandBuffers(gameState->vulkan.device, gameState->vulkan.graphicsCommandPool, 1, &cmd);
+    psVulkanBufferDestroy(gameState, &staging);
     return true;
 }

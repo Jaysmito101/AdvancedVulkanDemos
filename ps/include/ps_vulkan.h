@@ -43,5 +43,6 @@ void psVulkanImageDestroy(PS_GameState *gameState, PS_VulkanImage *image);
 bool psVulkanBufferMap(PS_GameState *gameState, PS_VulkanBuffer *buffer, void **data);
 void psVulkanBufferUnmap(PS_GameState *gameState, PS_VulkanBuffer *buffer);
 bool psVulkanBufferUpload(PS_GameState *gameState, PS_VulkanBuffer *buffer, const void *srcData, VkDeviceSize size);
+bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, const void *srcData);
 
 #endif // PS_VULKAN_H

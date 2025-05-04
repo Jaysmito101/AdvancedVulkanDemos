@@ -51,6 +51,8 @@ typedef struct PS_VulkanImage {
     VkImageView imageView;
     VkFormat format;
     VkImageSubresourceRange subresourceRange;
+    uint32_t width;
+    uint32_t height;
     VkSampler sampler;
     VkDescriptorImageInfo descriptorImageInfo;
 } PS_VulkanImage;
