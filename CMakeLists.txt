@@ -9,7 +9,7 @@ add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 set(SHADERC_SKIP_TESTS ON)
@@ -58,6 +58,8 @@ include_directories(
     ./ps
     ./ps/include
     ./dep/glfw/include
+    ./dep/stb
+    ./dep/cute_headers
     ${Vulkan_INCLUDE_DIRS}
 )
 
@@ -84,6 +86,7 @@ add_executable(ps
     ./ps/src/ps_shader.c
     ./ps/src/ps_shader_source.c
     ./ps/src/ps_vulkan_scene.c
+    ./ps/src/ps_third_party_impls.c
 )
 target_link_libraries(ps
     glfw
