@@ -20,6 +20,8 @@ add_library(ps_assets STATIC
 
 target_include_directories(ps_assets
     PRIVATE ./generated/include
+    PRIVATE ../ps/include
+    PRIVATE ../dep/glfw/include
 )
 
 target_compile_definitions(ps_assets PRIVATE

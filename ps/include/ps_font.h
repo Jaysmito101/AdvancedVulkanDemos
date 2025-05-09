@@ -1,8 +1,7 @@
 #ifndef PS_PS_FONT_H
 #define PS_PS_FONT_H
 
-#include "ps_common.h"
-#include "ps_vulkan.h"
+#include "ps_base.h"
 
 #ifndef PS_FONT_MAX_GLYPHS
 #define PS_FONT_MAX_GLYPHS 4096
@@ -37,7 +36,7 @@ typedef struct PS_FontAtlasGlyph {
     float advanceX;
     PS_FontAtlasBounds planeBounds;
     PS_FontAtlasBounds atlasBounds;
-};
+} PS_FontAtlasGlyph;
 
 typedef struct PS_FontAtlas {
     PS_FontAtlasInfo info;

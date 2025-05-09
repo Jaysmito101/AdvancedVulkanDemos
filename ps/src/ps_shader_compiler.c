@@ -1,4 +1,5 @@
 #include "ps_shader_compiler.h"
+#include "ps_common.h"
 
 #include "shaderc/shaderc.h"
 
@@ -49,7 +50,7 @@ uint32_t* psCompileShader(const char* shaderCode, const char* inputFileName, siz
 }
 
 uint32_t* psCompileShaderAndCache(const char* shaderCode, const char* inputFileName, size_t* outSize) {
-	static char cacheFilePath[1024 * 2];
+	static char cacheFilePath[1024 * 4];
 	uint32_t shaderHash = psHashString(shaderCode);
 	snprintf(cacheFilePath, sizeof(cacheFilePath), "%s%u.%s.psshader", psGetTempDirPath(), shaderHash, inputFileName);
 

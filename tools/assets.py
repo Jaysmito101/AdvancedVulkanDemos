@@ -1,12 +1,14 @@
 import os
 import shutil
 import re
-import sys
-from tqdm import tqdm
 import hashlib
 from pathlib import Path
+import zipfile
+import urllib.request
+import json
+import subprocess
 
-ALL_ASSETS = {}
+PS_FONT_MAX_GLYPHS_PY = 4096
 
 def find_git_root():
     current_dir = Path(__file__).resolve().parent
@@ -15,6 +17,39 @@ def find_git_root():
             return current_dir
         current_dir = current_dir.parent
     raise RuntimeError("Git root not found.")
+
+def ensure_msdf_atlas_gen(git_root):
+    bins_dir = os.path.join(git_root, 'bins')
+    msdf_exe_path = os.path.join(bins_dir, 'msdf-atlas-gen.exe')
+
+    if not os.path.exists(msdf_exe_path):
+        print("msdf-atlas-gen.exe not found. Downloading...")
+        os.makedirs(bins_dir, exist_ok=True)
+        zip_url = "https://github.com/Chlumsky/msdf-atlas-gen/releases/download/v1.3/msdf-atlas-gen-1.3-win64.zip"
+        zip_path = os.path.join(bins_dir, 'msdf-atlas-gen.zip')
+
+        # Download the zip file
+        urllib.request.urlretrieve(zip_url, zip_path)
+
+        # Extract the zip file
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(bins_dir)
+
+        # Clean up the zip file
+        os.remove(zip_path)
+
+        extracted_dir = os.path.join(bins_dir, 'msdf-atlas-gen')
+        extracted_exe_path = os.path.join(extracted_dir, 'msdf-atlas-gen.exe')
+        if os.path.exists(extracted_exe_path):
+            shutil.move(extracted_exe_path, msdf_exe_path)
+            shutil.rmtree(extracted_dir)
+        else:
+            print(f"Error: {extracted_exe_path} not found after extraction.")
+            return None
+        print(f"msdf-atlas-gen.exe moved to {msdf_exe_path}")
+    else:
+        print(f"msdf-atlas-gen.exe already exists at {msdf_exe_path}")
+    return msdf_exe_path
 
 def clean_directory(directory):
     if os.path.exists(directory):
@@ -32,8 +67,9 @@ def to_correct_case(any_case_with_special_chars):
     any_case_with_special_chars = any_case_with_special_chars.strip('_')
     any_case_with_special_chars = re.sub(r'^[0-9]+', '', any_case_with_special_chars)
     any_case_with_special_chars = any_case_with_special_chars.strip('_')
+    any_case_with_special_chars = any_case_with_special_chars.replace('__', '_')
+    any_case_with_special_chars = any_case_with_special_chars.replace('_', '')
     return any_case_with_special_chars
-
 
 def get_asset_type(file_path):
     if file_path.endswith(('.png', '.jpg', '.jpeg', '.gif')):
@@ -64,6 +100,262 @@ def generate_c_code_for_bytes(data, name):
 def generate_c_code_for_string(text_data, name):
     escaped_text = text_data.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n"\n"')
     return f'static const char {name}[] = "{escaped_text}";'
+
+def generate_c_code_for_ps_font_atlas(font_metrics_data, name):
+    atlas_data = font_metrics_data["atlas"]
+    metrics_data = font_metrics_data["metrics"]
+    glyphs_data = font_metrics_data["glyphs"]
+
+    num_glyphs = len(glyphs_data)
+    if num_glyphs > PS_FONT_MAX_GLYPHS_PY:
+        print(f"Warning: Font has {num_glyphs} glyphs, exceeding PS_FONT_MAX_GLYPHS_PY {PS_FONT_MAX_GLYPHS_PY}. Truncating.")
+        glyphs_data = glyphs_data[:PS_FONT_MAX_GLYPHS_PY]
+        num_glyphs = PS_FONT_MAX_GLYPHS_PY
+
+    lines = [f'static const PS_FontAtlas {name} = {{']
+    lines.append(f'    .info = {{')
+    lines.append(f'        .distanceRange = {float(atlas_data["distanceRange"]):.8f}f,')
+    lines.append(f'        .distanceRangeMiddle = {float(atlas_data["distanceRange"]) / 2.0:.8f}f,')
+    lines.append(f'        .size = {float(atlas_data["size"]):.8f}f,')
+    lines.append(f'        .width = {int(atlas_data["width"])},')
+    lines.append(f'        .height = {int(atlas_data["height"])}')
+    lines.append(f'    }},')
+
+    lines.append(f'    .metrics = {{')
+    lines.append(f'        .emSize = {float(metrics_data["emSize"]):.8f}f,')
+    lines.append(f'        .lineHeight = {float(metrics_data["lineHeight"]):.8f}f,')
+    lines.append(f'        .ascender = {float(metrics_data["ascender"]):.8f}f,')
+    lines.append(f'        .descender = {float(metrics_data["descender"]):.8f}f,')
+    lines.append(f'        .underlineY = {float(metrics_data["underlineY"]):.8f}f,')
+    lines.append(f'        .underlineThickness = {float(metrics_data["underlineThickness"]):.8f}f')
+    lines.append(f'    }},')
+
+    lines.append(f'    .glyphCount = {num_glyphs},')
+    lines.append(f'    .glyphs = {{')
+    for i, glyph in enumerate(glyphs_data):
+        plane_bounds = glyph.get("planeBounds")
+        atlas_bounds = glyph.get("atlasBounds")
+        line = "        {"
+        line += f'.unicodeIndex = {glyph["index"]}, '
+        line += f'.advanceX = {float(glyph["advance"]):.8f}f, '
+        if plane_bounds:
+            line += f'.planeBounds = {{{float(plane_bounds["left"]):.8f}f, {float(plane_bounds["bottom"]):.8f}f, {float(plane_bounds["right"]):.8f}f, {float(plane_bounds["top"]):.8f}f}}, '
+        else:
+            line += f'.planeBounds = {{0.0f, 0.0f, 0.0f, 0.0f}}, '
+        if atlas_bounds:
+            line += f'.atlasBounds = {{{float(atlas_bounds["left"]):.8f}f, {float(atlas_bounds["bottom"]):.8f}f, {float(atlas_bounds["right"]):.8f}f, {float(atlas_bounds["top"]):.8f}f}}'
+        else:
+            line += f'.atlasBounds = {{0.0f, 0.0f, 0.0f, 0.0f}}'
+
+        line += "}"
+        if i < num_glyphs - 1:
+            line += ","
+        lines.append(line)
+    lines.append(f'    }}')
+    lines.append(f'}};')
+    return '\n'.join(lines)
+
+def create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root):
+    print(f"Generating font asset for {file_path} in {output_dir}")
+
+    with open(file_path, "rb") as f:
+        font_bytes = f.read()
+    font_hash = hashlib.sha256(font_bytes).hexdigest()
+    base_name_without_ext = os.path.splitext(os.path.basename(file_path))[0]
+    font_name = to_correct_case(base_name_without_ext)
+
+    all_files = os.listdir(output_dir + "/include") + os.listdir(output_dir + "/src")
+    header_exists = any(f"ps_asset_font_{font_name}_{font_hash}" in file for file in all_files if file.endswith(".h"))
+    source_exists = any(f"ps_asset_font_{font_name}_{font_hash}" in file for file in all_files if file.endswith(".c"))
+    if header_exists and source_exists:
+        print(f"Asset {font_name} already exists with same hash, skipping generation.")
+        return
+
+    for file in all_files:
+        if file.startswith(f"ps_asset_font_{font_name}_") and file.endswith(".h"):
+            os.remove(os.path.join(output_dir, "include", file))
+        if file.startswith(f"ps_asset_font_{font_name}_") and file.endswith(".c"):
+            os.remove(os.path.join(output_dir, "src", file))
+
+    temp_json_path = os.path.join(temp_dir, f"{font_name}.json")
+    temp_png_path = os.path.join(temp_dir, f"{font_name}.png")
+
+    ensure_directory(temp_dir)
+
+    cmd = [
+        msdf_exe_path,
+        "-font", file_path,
+        "-allglyphs",
+        "-type", "mtsdf",
+        "-format", "png",
+        "-dimensions", "2048", "2048",
+        "-json", temp_json_path,
+        "-pxrange", "4",
+        "-imageout", temp_png_path
+    ]
+    print(f"Running msdf-atlas-gen: {' '.join(cmd)}")
+    process = subprocess.run(cmd, capture_output=True, text=True)
+    if process.returncode != 0:
+        print(f"Error generating font atlas for {file_path}:")
+        print(process.stdout)
+        print(process.stderr)
+        return
+    
+    print(f"msdf-atlas-gen output for {font_name}:\n{process.stdout}")
+    if process.stderr:
+        print(f"msdf-atlas-gen stderr for {font_name}:\n{process.stderr}")
+
+    with open(temp_png_path, "rb") as f:
+        atlas_image_bytes = f.read()
+    
+    with open(temp_json_path, "r") as f:
+        font_metrics_data = json.load(f)
+
+    header_source = [
+        f"#ifndef PS_ASSET_FONT_{font_hash.upper()}_H",
+        f"#define PS_ASSET_FONT_{font_hash.upper()}_H",
+        f"\n",
+        f"// This file is auto-generated by the asset generator script.",
+        f"// Do not edit this file directly.",
+        f"\n",
+        f"// Asset Type: \"font\"",
+        f"// Asset Path: {file_path}",
+        f"// Hash: {font_hash}",
+        f"// Name: {font_name}",
+        f"\n",
+        f"#include <stdint.h>",
+        f"#include <stddef.h>",
+        f"#include \"ps_font.h\"",
+        f"\n",
+        f"const uint8_t* psAssetFontAtlas_{font_name}(size_t* size);",
+        f"\n",
+        f"const PS_FontAtlas* psAssetFontMetrics_{font_name}(void);",
+        f"\n",
+        f"#endif // PS_ASSET_FONT_{font_hash.upper()}_H"
+    ]
+
+    header_file_path = os.path.join(output_dir, "include", f"ps_asset_font_{font_name}_{font_hash}.h")
+    with open(header_file_path, "w") as header_file:
+        header_file.write("\n".join(header_source))
+
+    source_source = [
+        f"#include \"ps_asset_font_{font_name}_{font_hash}.h\"",
+        f"\n",
+        f"// This file is auto-generated by the asset generator script.",
+        f"// Do not edit this file directly.",
+        f"\n",
+        f"// Asset Type: \"font\"",
+        f"// Asset Path: {file_path}",
+        f"// Hash: {font_hash}",
+        f"// Name: {font_name}",
+        f"\n",
+        generate_c_code_for_bytes(atlas_image_bytes, f"__psAssetFontAtlas__{font_name}_{font_hash}"),
+        f"\n",
+        f"const uint8_t* psAssetFontAtlas_{font_name}(size_t* size) {{",
+        f"    if (size != NULL) {{",
+        f"        *size = sizeof(__psAssetFontAtlas__{font_name}_{font_hash});",
+        f"    }}",
+        f"   return &__psAssetFontAtlas__{font_name}_{font_hash}[0];",
+        f"}};",
+        f"\n",
+        generate_c_code_for_ps_font_atlas(font_metrics_data, f"__psAssetFontMetrics__{font_name}_{font_hash}"),
+        f"\n",
+        f"const PS_FontAtlas* psAssetFontMetrics_{font_name}(void) {{",
+        f"   return &__psAssetFontMetrics__{font_name}_{font_hash};",
+        f"}};",
+        f"\n"
+    ]
+
+    source_file_path = os.path.join(output_dir, "src", f"ps_asset_font_{font_name}_{font_hash}.c")
+    with open(source_file_path, "w") as source_file:
+        source_file.write("\n".join(source_source))
+        source_file.write("\n")
+    print(f"Generated font asset: {header_file_path}")
+
+def create_font_assets_common_header(output_dir):
+    all_font_headers = os.listdir(output_dir + "/include")
+    all_font_headers = [f for f in all_font_headers if f.endswith(".h") and f.startswith("ps_asset_font_")]
+    all_font_names = sorted(list(set([f.split("_")[3] for f in all_font_headers])))
+
+    common_header_source = [
+        f"#ifndef PS_ASSET_FONT_COMMON_H",
+        f"#define PS_ASSET_FONT_COMMON_H",
+        f"\n",
+        f"// This file is auto-generated by the asset generator script.",
+        f"// Do not edit this file directly.",
+        f"\n",
+        f"#include <stdint.h>",
+        f"#include <string.h>",
+        f"#include <stddef.h>",
+        f"#include \"ps_font.h\"",
+        f"\n",
+        f"// Asset Type: \"font\"",
+        f"\n",
+        *[f"#include \"{header}\"" for header in all_font_headers],
+        "\n",
+        "const uint8_t* psAssetFontAtlas(const char* name, size_t* size); \n",
+        "const PS_FontAtlas* psAssetFontMetrics(const char* name); \n",
+        f"#endif // PS_ASSET_FONT_COMMON_H"
+    ]
+
+    common_header_file_path = os.path.join(output_dir, "include", "ps_asset_font.h")
+    with open(common_header_file_path, "w") as common_header_file:
+        common_header_file.write("\n".join(common_header_source))
+        common_header_file.write("\n")
+
+    source_source = [
+        f"#include \"ps_asset_font.h\"",
+        f"\n",
+        f"#include <stdio.h>",
+        f"#include <string.h>",
+        f"\n",
+        f"// This file is auto-generated by the asset generator script.",
+        f"// Do not edit this file directly.",
+        f"\n",
+        f"// Asset Type: \"font\"",
+        f"\n",
+        f"const uint8_t* psAssetFontAtlas(const char* name, size_t* size) {{",
+        f"    if (size != NULL) {{",
+        f"        *size = 0;",
+        f"    }}",
+        f"    if (name == NULL) return NULL;",
+        f"    if (strcmp(name, \"\") == 0) return NULL;",
+        *[f"    if (strcmp(name, \"{font_name}\") == 0) return psAssetFontAtlas_{font_name}(size);" for font_name in all_font_names],
+        f"    printf(\"Error: Font atlas asset \\\"%s\\\" not found.\\n\", name);",
+        f"    return NULL;",
+        f"}}",
+        f"\n\n",
+        f"const PS_FontAtlas* psAssetFontMetrics(const char* name) {{",
+        f"    if (name == NULL) return NULL;",
+        f"    if (strcmp(name, \"\") == 0) return NULL;",
+        *[f"    if (strcmp(name, \"{font_name}\") == 0) return psAssetFontMetrics_{font_name}();" for font_name in all_font_names],
+        f"    printf(\"Error: Font metrics asset \\\"%s\\\" not found.\\n\", name);",
+        f"    return NULL;",
+        f"}}",
+        f"\n",
+    ]
+    source_file_path = os.path.join(output_dir, "src", "ps_asset_font.c")
+    with open(source_file_path, "w") as source_file:
+        source_file.write("\n".join(source_source))
+        source_file.write("\n")
+
+    print(f"Generated common font header file: {common_header_file_path}")
+
+def create_font_assets(git_root, output_dir, temp_dir, msdf_exe_path):
+    asset_dir = os.path.join(git_root, "assets")
+    all_asset_files = []
+    for root_dir, _, files in os.walk(asset_dir):
+        for file in files:
+            file_path = os.path.join(root_dir, file)
+            asset_type = get_asset_type(file_path)
+            if asset_type == "font":
+                all_asset_files.append(file_path)
+    print(f"Found {len(all_asset_files)} font assets to generate.")
+    
+    for file_path in all_asset_files:
+        create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root)
+
+    create_font_assets_common_header(output_dir)
 
 def create_image_asset(file_path, output_dir):
     print(f"Generating image asset for {file_path} in {output_dir}")
@@ -380,6 +672,7 @@ def create_assets_common_header(output_dir):
         f"\n",
         f"#include \"ps_asset_image.h\"",
         f"#include \"ps_asset_shader.h\"",
+        f"#include \"ps_asset_font.h\"",
         f"\n",
         f"#endif // PS_ASSET_COMMON_H"
     ]
@@ -392,6 +685,7 @@ def create_assets_common_header(output_dir):
 
 def main():
     git_root = find_git_root()
+    msdf_exe_path = ensure_msdf_atlas_gen(git_root)
     temp_dir = os.path.join(git_root, "temp")
     bins_dir = os.path.join(git_root, "bins")
     clean_directory(temp_dir)
@@ -404,6 +698,7 @@ def main():
 
     create_image_assets(git_root, output_dir)
     create_shader_assets(git_root, output_dir)
+    create_font_assets(git_root, output_dir, temp_dir, msdf_exe_path)
     create_assets_common_header(output_dir)
 
 if __name__ == "__main__":
