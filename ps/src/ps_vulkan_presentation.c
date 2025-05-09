@@ -242,14 +242,14 @@ static bool __psVulkanPresentationSetupDescriptors(PS_GameState *gameState) {
 
 bool psVulkanPresentationInit(PS_GameState *gameState) {
     // Create Shader Modules
-    VkShaderModule vertexShaderModule = psShaderModuleCreate(gameState, psShader_PresentationVertex, VK_SHADER_STAGE_VERTEX_BIT, "presentation_vertex_shader.glsl");
+    VkShaderModule vertexShaderModule = psShaderModuleCreate(gameState, psAssetShader("PresentationVert"), VK_SHADER_STAGE_VERTEX_BIT, "presentation_vertex_shader.glsl");
     if (vertexShaderModule == VK_NULL_HANDLE) {
         PS_LOG("Failed to create vertex shader module\n");
         return false;
     }
     gameState->vulkan.renderer.presentation.vertexShaderModule = vertexShaderModule;
 
-    VkShaderModule fragmentShaderModule = psShaderModuleCreate(gameState, psShader_PresentationFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "presentation_fragment_shader.glsl");
+    VkShaderModule fragmentShaderModule = psShaderModuleCreate(gameState, psAssetShader("PresentationFrag"), VK_SHADER_STAGE_FRAGMENT_BIT, "presentation_fragment_shader.glsl");
     if (fragmentShaderModule == VK_NULL_HANDLE) {
         PS_LOG("Failed to create fragment shader module\n");
         return false;

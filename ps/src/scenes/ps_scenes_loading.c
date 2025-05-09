@@ -13,11 +13,11 @@ bool psScenesLoadingInit(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
     PS_LoadingScene *scene = &gameState->scene.loadingScene;
 
-    VkShaderModule vert = psShaderModuleCreate(gameState, psShader_LoadingVertex, VK_SHADER_STAGE_VERTEX_BIT, "loading_vertex_shader.glsl");
+    VkShaderModule vert = psShaderModuleCreate(gameState, psAssetShader("LoadingScreenVert"), VK_SHADER_STAGE_VERTEX_BIT, "loading_vertex_shader.glsl");
     if (vert == VK_NULL_HANDLE) return false;
     scene->vertexShaderModule = vert;
 
-    VkShaderModule frag = psShaderModuleCreate(gameState, psShader_LoadingFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "loading_fragment_shader.glsl");
+    VkShaderModule frag = psShaderModuleCreate(gameState, psAssetShader("LoadingScreenFrag"), VK_SHADER_STAGE_FRAGMENT_BIT, "loading_fragment_shader.glsl");
     if (frag == VK_NULL_HANDLE) {
         vkDestroyShaderModule(gameState->vulkan.device, vert, NULL);
         return false;

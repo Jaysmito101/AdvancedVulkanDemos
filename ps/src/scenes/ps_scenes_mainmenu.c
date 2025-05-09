@@ -33,14 +33,14 @@ bool psScenesMainMenuInit(PS_GameState *gameState) {
     if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("MascotFriend", &imageDataSize), imageDataSize, &scene->mascotFriendTexture)) return false;
 
     // --- Create Shader Modules ---
-    VkShaderModule vert = psShaderModuleCreate(gameState, psShader_MainMenuVertex, VK_SHADER_STAGE_VERTEX_BIT, "main_menu_vertex_shader.glsl");
+    VkShaderModule vert = psShaderModuleCreate(gameState, psAssetShader("MainMenuVert"), VK_SHADER_STAGE_VERTEX_BIT, "main_menu_vertex_shader.glsl");
     if (vert == VK_NULL_HANDLE) {
         PS_LOG("Failed to create main menu vertex shader module\n");
         return false;
     }
     scene->vertexShaderModule = vert;
 
-    VkShaderModule frag = psShaderModuleCreate(gameState, psShader_MainMenuFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "main_menu_fragment_shader.glsl");
+    VkShaderModule frag = psShaderModuleCreate(gameState, psAssetShader("MainMenuFrag"), VK_SHADER_STAGE_FRAGMENT_BIT, "main_menu_fragment_shader.glsl");
     if (frag == VK_NULL_HANDLE) {
         PS_LOG("Failed to create main menu fragment shader module\n");
         return false;

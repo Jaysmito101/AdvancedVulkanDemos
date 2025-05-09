@@ -28,14 +28,14 @@ bool psScenesPrologueInit(PS_GameState *gameState) {
     scene->time = 0.0f;
     scene->sceneStartTime = (float)gameState->framerate.currentTime;
 
-    VkShaderModule vert = psShaderModuleCreate(gameState, psShader_PrologueVertex, VK_SHADER_STAGE_VERTEX_BIT, "prologue_vertex_shader.glsl");
+    VkShaderModule vert = psShaderModuleCreate(gameState, psAssetShader("PrologueVert"), VK_SHADER_STAGE_VERTEX_BIT, "prologue_vertex_shader.glsl");
     if (vert == VK_NULL_HANDLE) {
         PS_LOG("Failed to create prologue vertex shader module\n");
         return false;
     }
     scene->vertexShaderModule = vert;
 
-    VkShaderModule frag = psShaderModuleCreate(gameState, psShader_PrologueFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "prologue_fragment_shader.glsl");
+    VkShaderModule frag = psShaderModuleCreate(gameState, psAssetShader("PrologueFrag") , VK_SHADER_STAGE_FRAGMENT_BIT, "prologue_fragment_shader.glsl");
     if (frag == VK_NULL_HANDLE) {
         PS_LOG("Failed to create prologue fragment shader module\n");
         vkDestroyShaderModule(gameState->vulkan.device, vert, NULL);

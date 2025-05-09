@@ -244,7 +244,7 @@ bool psScenesSplashInit(PS_GameState *gameState)
         return false;
     }
 
-    VkShaderModule vertexShaderModule = psShaderModuleCreate(gameState, psShader_SplashSceneVertex, VK_SHADER_STAGE_VERTEX_BIT, "splash_scene_vertex_shader.glsl");
+    VkShaderModule vertexShaderModule = psShaderModuleCreate(gameState, psAssetShader("SplashVert"), VK_SHADER_STAGE_VERTEX_BIT, "splash_scene_vertex_shader.glsl");
     if (vertexShaderModule == VK_NULL_HANDLE)
     {
         PS_LOG("Failed to create vertex shader module\n");
@@ -252,7 +252,7 @@ bool psScenesSplashInit(PS_GameState *gameState)
     }
     gameState->scene.splashScene.vertexShaderModule = vertexShaderModule;
 
-    VkShaderModule fragmentShaderModule = psShaderModuleCreate(gameState, psShader_SplashSceneFragment, VK_SHADER_STAGE_FRAGMENT_BIT, "splash_scene_fragment_shader.glsl");
+    VkShaderModule fragmentShaderModule = psShaderModuleCreate(gameState, psAssetShader("SplashFrag"), VK_SHADER_STAGE_FRAGMENT_BIT, "splash_scene_fragment_shader.glsl");
     if (fragmentShaderModule == VK_NULL_HANDLE)
     {
         PS_LOG("Failed to create fragment shader module\n");
