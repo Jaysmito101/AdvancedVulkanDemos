@@ -225,7 +225,8 @@ bool psScenesSplashInit(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
 
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/splash.png", &gameState->scene.splashScene.splashImage))
+    size_t imageDataSize = 0;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("SplashPng", &imageDataSize), imageDataSize, &gameState->scene.splashScene.splashImage))
     {
         PS_LOG("Failed to load splash image\n");
         return false;

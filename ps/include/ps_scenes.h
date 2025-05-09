@@ -1,6 +1,7 @@
 #ifndef PS_SCENES_H
 #define PS_SCENES_H
 
+#include "ps_asset.h"
 #include "ps_common.h"
 #include "ps_vulkan.h"
 

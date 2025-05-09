@@ -19,17 +19,18 @@ typedef struct PS_MainMenuPushConstants {
 bool psScenesMainMenuInit(PS_GameState *gameState) {
     PS_ASSERT(gameState != NULL);
     PS_MainMenuScene *scene = &gameState->scene.mainMenuScene;
-
+ 
     // --- Load Textures ---
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen.png", &scene->backgroundTexture)) return false;
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_new_game.png", &scene->newGameButtonTexture)) return false;
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_continue.png", &scene->continueButtonTexture)) return false;
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_options.png", &scene->optionsButtonTexture)) return false;
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/title_screen_exit.png", &scene->exitButtonTexture)) return false;
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/mascot_hope.png", &scene->mascotHopeTexture)) return false;
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/mascot_crush.png", &scene->mascotCrushTexture)) return false;
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/mascot_monster.png", &scene->mascotMonsterTexture)) return false;
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/mascot_friend.png", &scene->mascotFriendTexture)) return false;
+    size_t imageDataSize = 0;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("TitleScreenPng", &imageDataSize), imageDataSize, &scene->backgroundTexture)) return false;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("TitleScreenNewGamePng", &imageDataSize), imageDataSize, &scene->newGameButtonTexture)) return false;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("TitleScreenContinuePng", &imageDataSize), imageDataSize, &scene->continueButtonTexture)) return false;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("TitleScreenOptionsPng", &imageDataSize), imageDataSize, &scene->optionsButtonTexture)) return false;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("TitleScreenExitPng", &imageDataSize), imageDataSize, &scene->exitButtonTexture)) return false;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("MascotHopePng", &imageDataSize), imageDataSize, &scene->mascotHopeTexture)) return false;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("MascotCrushPng", &imageDataSize), imageDataSize, &scene->mascotCrushTexture)) return false;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("MascotMonsterPng", &imageDataSize), imageDataSize, &scene->mascotMonsterTexture)) return false;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("MascotFriendPng", &imageDataSize), imageDataSize, &scene->mascotFriendTexture)) return false;
 
     // --- Create Shader Modules ---
     VkShaderModule vert = psShaderModuleCreate(gameState, psShader_MainMenuVertex, VK_SHADER_STAGE_VERTEX_BIT, "main_menu_vertex_shader.glsl");

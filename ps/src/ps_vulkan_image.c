@@ -536,3 +536,60 @@ bool psVulkanImageLoadFromFile(PS_GameState *gameState, const char *filename, PS
     stbi_image_free(pixels);
     return true;
 }
+
+// load image from memory buffer, create Vulkan image and upload
+bool psVulkanImageLoadFromMemory(PS_GameState *gameState, const void *data, size_t dataSize, PS_VulkanImage *image)
+{
+    PS_ASSERT(gameState && data && image && dataSize > 0);
+
+    int width, height, origChannels;
+    void *pixels = NULL;
+    bool isHDR = stbi_is_hdr_from_memory(data, (int)dataSize);
+    VkFormat format;
+
+    // force load as RGBA (4 components)
+    if (isHDR)
+    {
+        float *fdata = stbi_loadf_from_memory(data, (int)dataSize, &width, &height, &origChannels, 4);
+        if (!fdata)
+        {
+            PS_LOG("Failed to load HDR image from memory\n");
+            return false;
+        }
+        format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        pixels = fdata;
+    }
+    else
+    {
+        unsigned char *cdata = stbi_load_from_memory(data, (int)dataSize, &width, &height, &origChannels, 4);
+        if (!cdata)
+        {
+            PS_LOG("Failed to load image from memory\n");
+            return false;
+        }
+        format = VK_FORMAT_R8G8B8A8_UNORM;
+        pixels = cdata;
+    }
+
+    // create Vulkan image
+    if (!psVulkanImageCreate(
+            gameState, image, format,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            (uint32_t)width, (uint32_t)height))
+    {
+        PS_LOG("Failed to create Vulkan image from memory data\n");
+        stbi_image_free(pixels);
+        return false;
+    }
+
+    // upload pixel data
+    if (!psVulkanImageUploadSimple(gameState, image, pixels))
+    {
+        PS_LOG("Failed to upload image data from memory\n");
+        stbi_image_free(pixels);
+        return false;
+    }
+
+    stbi_image_free(pixels);
+    return true;
+}

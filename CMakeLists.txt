@@ -53,6 +53,29 @@ ELSE()
 ENDIF()
 
 add_subdirectory(dep/glfw)
+add_subdirectory(ps_assets)
+
+find_package(Python COMPONENTS Interpreter REQUIRED)
+
+set(ASSETS_TIMESTAMP_FILE ${CMAKE_SOURCE_DIR}/ps_assets/generated/.asset_timestamp)
+
+file(GLOB_RECURSE ASSET_SOURCE_FILES
+    ${CMAKE_SOURCE_DIR}/ps_assets/*
+    ${CMAKE_SOURCE_DIR}/assets/*
+)
+
+file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/ps_assets/generated)
+
+add_custom_command(
+    OUTPUT ${ASSETS_TIMESTAMP_FILE}
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/assets.py
+    COMMAND ${CMAKE_COMMAND} -E touch ${ASSETS_TIMESTAMP_FILE}
+    DEPENDS ${ASSET_SOURCE_FILES} ${CMAKE_SOURCE_DIR}/tools/assets.py
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Generating assets..."
+)
+
+add_custom_target(generate_assets ALL DEPENDS ${ASSETS_TIMESTAMP_FILE})
 
 include_directories(
     ./ps
@@ -60,10 +83,10 @@ include_directories(
     ./dep/glfw/include
     ./dep/stb
     ./dep/cute_headers
+    ./ps_assets/generated/include
     ${Vulkan_INCLUDE_DIRS}
 )
 
-# glob all the headers(hpp) inside the ps directory
 file(GLOB_RECURSE ps_headers
     ./ps/*.h
 )
@@ -100,11 +123,15 @@ add_executable(ps
     ./ps/src/scenes/ps_scenes_prologue.c
 )
 target_link_libraries(ps
+    ps_assets
     glfw
     ${Vulkan_LIBRARY}
     debug $ENV{VULKAN_SDK}/Lib/shaderc_combinedd.lib
     optimized $ENV{VULKAN_SDK}/Lib/shaderc_combined.lib
 )
+
+# Make the main target depend on the assets
+add_dependencies(ps generate_assets)
 
 target_compile_definitions(ps PRIVATE
     $<$<CONFIG:Debug>:PS_DEBUG>          # Define PS_DEBUG for Debug builds

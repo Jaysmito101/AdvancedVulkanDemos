@@ -1,4 +1,5 @@
 #include "ps_vulkan.h"
+#include "ps_scenes.h"
 #include "ps_shader.h"
 
 // Define the push constant struct matching the shader layout
@@ -256,7 +257,8 @@ bool psVulkanPresentationInit(PS_GameState *gameState) {
     gameState->vulkan.renderer.presentation.fragmentShaderModule = fragmentShaderModule;
 
     // Load the icon image (needed before setting up descriptors)
-    if (!psVulkanImageLoadFromFile(gameState, "./assets/switch_mascot.png", &gameState->vulkan.renderer.presentation.iconImage)) {
+    size_t imageDataSize = 0;
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("SwitchMascotPng", &imageDataSize), imageDataSize, &gameState->vulkan.renderer.presentation.iconImage)) {
         PS_LOG("Failed to load icon image ./assets/switch_mascot.png\n");
         return false;
     }
