@@ -70,9 +70,10 @@ add_custom_command(
     OUTPUT ${ASSETS_TIMESTAMP_FILE}
     COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/assets.py
     COMMAND ${CMAKE_COMMAND} -E touch ${ASSETS_TIMESTAMP_FILE}
+    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR} # Regenerate build files
     DEPENDS ${ASSET_SOURCE_FILES} ${CMAKE_SOURCE_DIR}/tools/assets.py
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "Generating assets..."
+    COMMENT "Generating assets and regenerating build files..."
 )
 
 add_custom_target(generate_assets ALL DEPENDS ${ASSETS_TIMESTAMP_FILE})

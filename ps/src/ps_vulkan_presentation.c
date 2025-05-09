@@ -258,7 +258,7 @@ bool psVulkanPresentationInit(PS_GameState *gameState) {
 
     // Load the icon image (needed before setting up descriptors)
     size_t imageDataSize = 0;
-    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("SwitchMascotPng", &imageDataSize), imageDataSize, &gameState->vulkan.renderer.presentation.iconImage)) {
+    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("SwitchMascot", &imageDataSize), imageDataSize, &gameState->vulkan.renderer.presentation.iconImage)) {
         PS_LOG("Failed to load icon image ./assets/switch_mascot.png\n");
         return false;
     }

@@ -27,10 +27,13 @@ def ensure_directory(directory):
         os.makedirs(directory)
     return directory    
 
-def to_pascal_case(any_case_with_special_chars):
-    s = re.sub(r'[^a-zA-Z0-9]', ' ', any_case_with_special_chars)
-    s = re.sub(r'\s+', ' ', s)
-    return ''.join(word.capitalize() for word in s.split())
+def to_correct_case(any_case_with_special_chars):
+    any_case_with_special_chars = re.sub(r'[^a-zA-Z0-9]', '_', any_case_with_special_chars)
+    any_case_with_special_chars = any_case_with_special_chars.strip('_')
+    any_case_with_special_chars = re.sub(r'^[0-9]+', '', any_case_with_special_chars)
+    any_case_with_special_chars = any_case_with_special_chars.strip('_')
+    return any_case_with_special_chars
+
 
 def get_asset_type(file_path):
     if file_path.endswith(('.png', '.jpg', '.jpeg', '.gif')):
@@ -61,7 +64,8 @@ def create_image_asset(file_path, output_dir):
 
     image_bytes = open(file_path, "rb").read()
     image_hash = hashlib.sha256(image_bytes).hexdigest()
-    image_name = to_pascal_case(os.path.basename(file_path))
+    base_name_without_ext = os.path.splitext(os.path.basename(file_path))[0]
+    image_name = to_correct_case(base_name_without_ext)
 
     # files to generate: 
     # output_dir/include/ps_asset_image_<image_name>_<hash>.h # a forward declaration of a function to return the image data as ptr to a static byte array    
