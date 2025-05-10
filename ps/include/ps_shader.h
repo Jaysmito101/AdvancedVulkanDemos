@@ -6,7 +6,8 @@
 #include "ps_vulkan.h"
 
 
-VkShaderModule psShaderModuleCreate(PS_GameState *gameState, const char* shaderCode, VkShaderStageFlagBits shaderType, const char* inputFileName);
+VkShaderModule psShaderModuleCreate(VkDevice device, const char* shaderCode, VkShaderStageFlagBits shaderType, const char* inputFileName);
+VkShaderModule psShaderModuleCreateFromAsset(VkDevice device, const char* asset);
 
 
 #endif // PS_SHADERS_H

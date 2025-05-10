@@ -1,24 +1,19 @@
 #include "ps_vulkan.h"
 
-static void __psVulkanFramebufferAttachmentDestroy(PS_GameState *gameState, PS_VulkanFramebufferAttachment *attachment)
+static void __psVulkanFramebufferAttachmentDestroy(PS_Vulkan *vulkan, PS_VulkanFramebufferAttachment *attachment)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(vulkan != NULL);
     PS_ASSERT(attachment != NULL);
 
-    psVulkanImageDestroy(gameState, &attachment->image);    
+    psVulkanImageDestroy(vulkan, &attachment->image);
 }
 
-static bool __psVulkanFramebufferAttachmentCreate(PS_GameState *gameState, PS_VulkanFramebufferAttachment *attachment, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
+static bool __psVulkanFramebufferAttachmentCreate(PS_Vulkan *vulkan, PS_VulkanFramebufferAttachment *attachment, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(vulkan != NULL);
     PS_ASSERT(attachment != NULL);
 
-    if (!psVulkanImageCreate(gameState, &attachment->image, format, usage, width, height))
-    {
-        PS_LOG("Failed to create framebuffer attachment image\n");
-        return false;
-    }
-    
+    PS_CHECK(psVulkanImageCreate(vulkan, &attachment->image, format, usage, width, height));
     attachment->attachmentDescription.flags = 0;
     attachment->attachmentDescription.format = format;
     attachment->attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -29,20 +24,16 @@ static bool __psVulkanFramebufferAttachmentCreate(PS_GameState *gameState, PS_Vu
     attachment->attachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
     if (psVulkanFormatIsDepthStencil(format))
-    {
         attachment->attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    }
     else
-    {
         attachment->attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    }
 
     return true;
 }
 
-static bool __psVulkanFramebufferCreateRenderPassAndFramebuffer(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer)
+static bool __psVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device, PS_VulkanFramebuffer *framebuffer)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(device != VK_NULL_HANDLE);
     PS_ASSERT(framebuffer != NULL);
 
     static VkAttachmentDescription colorAttachmentDescriptions[16] = {0};
@@ -75,13 +66,9 @@ static bool __psVulkanFramebufferCreateRenderPassAndFramebuffer(PS_GameState *ga
     subpassDescription.pInputAttachments = NULL;
     subpassDescription.pResolveAttachments = NULL;
     if (framebuffer->hasDepthStencil)
-    {
         subpassDescription.pDepthStencilAttachment = &colorAttachmentReferences[1];
-    }
     else
-    {
         subpassDescription.pDepthStencilAttachment = NULL;
-    }
 
     static VkSubpassDependency dependencies[2] = {0};
 
@@ -109,19 +96,13 @@ static bool __psVulkanFramebufferCreateRenderPassAndFramebuffer(PS_GameState *ga
     renderPassInfo.pSubpasses = &subpassDescription;
     renderPassInfo.dependencyCount = 2;
     renderPassInfo.pDependencies = dependencies;
-    VkResult result = vkCreateRenderPass(gameState->vulkan.device, &renderPassInfo, NULL, &framebuffer->renderPass);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create render pass\n");
-        return false;
-    }
+    VkResult result = vkCreateRenderPass(device, &renderPassInfo, NULL, &framebuffer->renderPass);
+    PS_CHECK_VK_RESULT(result, "Failed to create render pass");
 
     static VkImageView attachmentViews[16] = {0};
     attachmentViews[0] = framebuffer->colorAttachment.image.imageView;
     if (framebuffer->hasDepthStencil)
-    {
         attachmentViews[1] = framebuffer->depthStencilAttachment.image.imageView;
-    }
 
     VkFramebufferCreateInfo framebufferInfo = {0};
     framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -131,13 +112,8 @@ static bool __psVulkanFramebufferCreateRenderPassAndFramebuffer(PS_GameState *ga
     framebufferInfo.width = framebuffer->width;
     framebufferInfo.height = framebuffer->height;
     framebufferInfo.layers = 1;
-    result = vkCreateFramebuffer(gameState->vulkan.device, &framebufferInfo, NULL, &framebuffer->framebuffer);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create framebuffer\n");
-        return false;
-    }  
-
+    result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffer->framebuffer);
+    PS_CHECK_VK_RESULT(result, "Failed to create framebuffer");
 
     return true;
 }
@@ -196,16 +172,16 @@ bool psVulkanFormatIsDepthStencil(VkFormat format)
     return isDepth || isStencil;
 }
 
-bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer, int32_t width, int32_t height, bool hasDepthStencil, VkFormat colorFormat, VkFormat depthStencilFormat)
+bool psVulkanFramebufferCreate(PS_Vulkan *vulkan, PS_VulkanFramebuffer *framebuffer, int32_t width, int32_t height, bool hasDepthStencil, VkFormat colorFormat, VkFormat depthStencilFormat)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(vulkan != NULL);                                                                                                                                                                                                                                                                                                                                                                 
     PS_ASSERT(framebuffer != NULL);
 
     framebuffer->width = width;
     framebuffer->height = height;
     framebuffer->hasDepthStencil = hasDepthStencil;
 
-    if (!__psVulkanFramebufferAttachmentCreate(gameState, &framebuffer->colorAttachment, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height))
+    if (!__psVulkanFramebufferAttachmentCreate(vulkan, &framebuffer->colorAttachment, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height))
     {
         PS_LOG("Failed to create color attachment\n");
         return false;
@@ -213,7 +189,7 @@ bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *fr
 
     // transition image layout to SHADER_READ_ONLY_OPTIMAL
     if(!psVulkanImageTransitionLayoutWithoutCommandBuffer(
-        gameState,
+        vulkan,
         &framebuffer->colorAttachment.image,
         VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -227,7 +203,7 @@ bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *fr
 
     if (hasDepthStencil)
     {
-        if (!__psVulkanFramebufferAttachmentCreate(gameState, &framebuffer->depthStencilAttachment, depthStencilFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height))
+        if (!__psVulkanFramebufferAttachmentCreate(vulkan, &framebuffer->depthStencilAttachment, depthStencilFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height))
         {
             PS_LOG("Failed to create depth stencil attachment\n");
             return false;
@@ -235,7 +211,7 @@ bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *fr
     }
 
     // Create render pass and framebuffer here (omitted for brevity)
-    if (!__psVulkanFramebufferCreateRenderPassAndFramebuffer(gameState, framebuffer))
+    if (!__psVulkanFramebufferCreateRenderPassAndFramebuffer(vulkan->device, framebuffer))
     {
         PS_LOG("Failed to create render pass and framebuffer\n");
         return false;
@@ -244,17 +220,13 @@ bool psVulkanFramebufferCreate(PS_GameState *gameState, PS_VulkanFramebuffer *fr
     return true;
 }
 
-void psVulkanFramebufferDestroy(PS_GameState *gameState, PS_VulkanFramebuffer *framebuffer)
+void psVulkanFramebufferDestroy(PS_Vulkan *vulkan, PS_VulkanFramebuffer *framebuffer)
 {
-    __psVulkanFramebufferAttachmentDestroy(gameState, &framebuffer->colorAttachment);
+    __psVulkanFramebufferAttachmentDestroy(vulkan, &framebuffer->colorAttachment);
     if (framebuffer->hasDepthStencil)
     {
-        __psVulkanFramebufferAttachmentDestroy(gameState, &framebuffer->depthStencilAttachment);
+        __psVulkanFramebufferAttachmentDestroy(vulkan, &framebuffer->depthStencilAttachment);
     }
-
-    vkDestroyRenderPass(gameState->vulkan.device, framebuffer->renderPass, NULL);
-    framebuffer->renderPass = VK_NULL_HANDLE;
-
-    vkDestroyFramebuffer(gameState->vulkan.device, framebuffer->framebuffer, NULL);
-    framebuffer->framebuffer = VK_NULL_HANDLE;
+    vkDestroyRenderPass(vulkan->device, framebuffer->renderPass, NULL);
+    vkDestroyFramebuffer(vulkan->device, framebuffer->framebuffer, NULL);
 }

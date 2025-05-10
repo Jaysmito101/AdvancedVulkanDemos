@@ -238,7 +238,7 @@ bool psScenesLoadContentScenesAsyncPoll(PS_GameState *gameState)
     PS_ASSERT(gameState != NULL);
 
     PS_LOAD_CONTENT_SCENE(0, "Main Menu", psScenesMainMenuInit(gameState));
-    PS_LOAD_CONTENT_SCENE(1, "Prologue", psScenesPrologueInit(gameState));
+    // PS_LOAD_CONTENT_SCENE(1, "Prologue", psScenesPrologueInit(gameState));
     PS_LOAD_CONTENT_SCENE(2, "Dummy 2", fakeLoad());
     PS_LOAD_CONTENT_SCENE(3, "Dummy 4", fakeLoad());
     PS_LOAD_CONTENT_SCENE(4, "Dummy 5", fakeLoad());

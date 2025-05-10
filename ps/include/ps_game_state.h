@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.h>
 
 #include "ps_base.h"
+// #include "ps_font_renderer.h"
 
 struct GLFWwindow;
 
@@ -79,8 +80,6 @@ typedef struct PS_VulkanFramebuffer {
 typedef struct PS_VulkanPresentation {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
-    VkShaderModule vertexShaderModule;
-    VkShaderModule fragmentShaderModule;
 
     VkDescriptorSetLayout descriptorSetLayout;
 
@@ -118,6 +117,7 @@ typedef struct PS_Vulkan {
     PS_VulkanSwapchain swapchain;
     PS_VulkanRenderer renderer;
 
+    // PS_FontRenderer fontRenderer;
 
     int32_t graphicsQueueFamilyIndex;
     int32_t computeQueueFamilyIndex;
@@ -162,8 +162,6 @@ typedef enum PS_SceneType {
 typedef struct PS_SplashScene {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
-    VkShaderModule vertexShaderModule;
-    VkShaderModule fragmentShaderModule; 
 
     VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorSet descriptorSet;
@@ -178,11 +176,8 @@ typedef struct PS_SplashScene {
 typedef struct PS_LoadingScene {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
-    VkShaderModule vertexShaderModule;
-    VkShaderModule fragmentShaderModule;
 
     float sceneStartTime;
-
     float progress;
 } PS_LoadingScene;
 
@@ -196,8 +191,6 @@ typedef enum PS_MainMenuButtonType {
 } PS_MainMenuButtonType;
 
 typedef struct PS_MainMenuScene {
-    VkShaderModule vertexShaderModule;
-    VkShaderModule fragmentShaderModule;
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
 
@@ -263,6 +256,7 @@ typedef struct PS_GameState {
     PS_Frametime framerate;
     PS_Scene scene;
     PS_Input input;
+
 
     bool running;
 } PS_GameState;

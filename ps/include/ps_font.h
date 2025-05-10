@@ -1,5 +1,5 @@
-#ifndef PS_PS_FONT_H
-#define PS_PS_FONT_H
+#ifndef PS_FONT_H
+#define PS_FONT_H
 
 #include "ps_base.h"
 
@@ -45,9 +45,11 @@ typedef struct PS_FontAtlas {
     uint32_t glyphCount;
 } PS_FontAtlas;
 
-typedef struct PS_Font {
-    PS_FontAtlas atlas;
-} PS_Font;
+typedef struct PS_FontData {
+    char name[256];
+    PS_FontAtlas* atlas;
+    uint8_t *atlasData;
+    size_t atlasDataSize;
+} PS_FontData;
 
-
-#endif // PS_PS_FONT_H
+#endif // PS_FONT_H

@@ -2,10 +2,11 @@
 #include "ps_game_state.h"
 #include <string.h>
 #include "stb_image.h"
+#include "ps_asset.h"
 
-static bool __psVulkanFramebufferCreateSampler(PS_GameState *gameState, PS_VulkanImage *image)
+static bool __psVulkanFramebufferCreateSampler(VkDevice device, PS_VulkanImage *image)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(device != VK_NULL_HANDLE);
     PS_ASSERT(image != NULL);
 
     VkSamplerCreateInfo samplerInfo = {0};
@@ -26,19 +27,15 @@ static bool __psVulkanFramebufferCreateSampler(PS_GameState *gameState, PS_Vulka
     samplerInfo.minLod = 0.0f;
     samplerInfo.maxLod = 1.0f;
 
-    VkResult result = vkCreateSampler(gameState->vulkan.device, &samplerInfo, NULL, &image->sampler);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create image sampler\n");
-        return false;
-    }
+    VkResult result = vkCreateSampler(device, &samplerInfo, NULL, &image->sampler);
+    PS_CHECK_VK_RESULT(result, "Failed to create image sampler\n");
 
     return true;
 }
 
-bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
+bool psVulkanImageCreate(PS_Vulkan *vulkan, PS_VulkanImage *image, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(vulkan != NULL);
     PS_ASSERT(image != NULL);
 
     VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_NONE;
@@ -78,38 +75,22 @@ bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkForma
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-    VkResult result = vkCreateImage(gameState->vulkan.device, &imageInfo, NULL, &image->image);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create image\n");
-        return false;
-    }
+    VkResult result = vkCreateImage(vulkan->device, &imageInfo, NULL, &image->image);
+    PS_CHECK_VK_RESULT(result, "Failed to create image\n");
 
     VkMemoryRequirements memRequirements = {0};
-    vkGetImageMemoryRequirements(gameState->vulkan.device, image->image, &memRequirements);
+    vkGetImageMemoryRequirements(vulkan->device, image->image, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo = {0};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = psVulkanFindMemoryType(gameState, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    if (allocInfo.memoryTypeIndex == UINT32_MAX)
-    {
-        PS_LOG("Failed to find suitable memory type\n");
-        return false;
-    }
+    allocInfo.memoryTypeIndex = psVulkanFindMemoryType(vulkan, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    PS_CHECK_MSG(allocInfo.memoryTypeIndex != UINT32_MAX, "Failed to find suitable memory type\n");
 
-    result = vkAllocateMemory(gameState->vulkan.device, &allocInfo, NULL, &image->memory);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to allocate image memory\n");
-        return false;
-    }
-    result = vkBindImageMemory(gameState->vulkan.device, image->image, image->memory, 0);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to bind image memory\n");
-        return false;
-    }
+    result = vkAllocateMemory(vulkan->device, &allocInfo, NULL, &image->memory);
+    PS_CHECK_VK_RESULT(result, "Failed to allocate image memory\n");
+    result = vkBindImageMemory(vulkan->device, image->image, image->memory, 0);
+    PS_CHECK_VK_RESULT(result, "Failed to bind image memory\n");
 
     VkImageViewCreateInfo viewInfo = {0};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -125,26 +106,17 @@ bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkForma
     viewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
     viewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
     viewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    result = vkCreateImageView(gameState->vulkan.device, &viewInfo, NULL, &image->imageView);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create image view\n");
-        return false;
-    }
+    result = vkCreateImageView(vulkan->device, &viewInfo, NULL, &image->imageView);
+    PS_CHECK_VK_RESULT(result, "Failed to create image view\n");
 
     image->format = format;
-
     image->subresourceRange.aspectMask = aspectMask;
     image->subresourceRange.baseArrayLayer = 0;
     image->subresourceRange.layerCount = 1;
     image->subresourceRange.baseMipLevel = 0;
     image->subresourceRange.levelCount = 1;
 
-    if (!__psVulkanFramebufferCreateSampler(gameState, image))
-    {
-        PS_LOG("Failed to create framebuffer sampler\n");
-        return false;
-    }
+    PS_CHECK(__psVulkanFramebufferCreateSampler(vulkan->device, image));
 
     image->descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     image->descriptorImageInfo.imageView = image->imageView;
@@ -157,27 +129,19 @@ bool psVulkanImageCreate(PS_GameState *gameState, PS_VulkanImage *image, VkForma
     return true;
 }
 
-void psVulkanImageDestroy(PS_GameState *gameState, PS_VulkanImage *image)
+void psVulkanImageDestroy(PS_Vulkan* vulkan, PS_VulkanImage *image)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(vulkan != NULL);
     PS_ASSERT(image != NULL);
 
-    vkDestroyImageView(gameState->vulkan.device, image->imageView, NULL);
-    image->imageView = VK_NULL_HANDLE;
-
-    vkDestroyImage(gameState->vulkan.device, image->image, NULL);
-    image->image = VK_NULL_HANDLE;
-
-    vkDestroySampler(gameState->vulkan.device, image->sampler, NULL);
-    image->sampler = VK_NULL_HANDLE;
-
-    vkFreeMemory(gameState->vulkan.device, image->memory, NULL);
-    image->memory = VK_NULL_HANDLE;
+    vkDestroyImageView(vulkan->device, image->imageView, NULL);
+    vkDestroyImage(vulkan->device, image->image, NULL);
+    vkDestroySampler(vulkan->device, image->sampler, NULL);
+    vkFreeMemory(vulkan->device, image->memory, NULL);
 }
 
-bool psVulkanImageTransitionLayout(PS_GameState *gameState, PS_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+bool psVulkanImageTransitionLayout(PS_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
 {
-    PS_ASSERT(gameState != NULL);
     PS_ASSERT(image != NULL);
     PS_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
@@ -299,78 +263,53 @@ bool psVulkanImageTransitionLayout(PS_GameState *gameState, PS_VulkanImage *imag
     return true;
 }
 
-bool psVulkanImageTransitionLayoutWithoutCommandBuffer(PS_GameState *gameState, PS_VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+bool psVulkanImageTransitionLayoutWithoutCommandBuffer(PS_Vulkan* vulkan, PS_VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(vulkan != NULL);
     PS_ASSERT(image != NULL);
 
     VkCommandBufferAllocateInfo allocInfo = {0};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = gameState->vulkan.graphicsCommandPool; // Use graphics pool for simplicity
+    allocInfo.commandPool = vulkan->graphicsCommandPool; // Use graphics pool for simplicity
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
-    VkResult allocResult = vkAllocateCommandBuffers(gameState->vulkan.device, &allocInfo, &commandBuffer);
-    if (allocResult != VK_SUCCESS)
-    {
-        PS_LOG("Failed to allocate command buffer for image layout transition\n");
-        return false;
-    }
+    VkResult allocResult = vkAllocateCommandBuffers(vulkan->device, &allocInfo, &commandBuffer);
+    PS_CHECK_VK_RESULT(allocResult, "Failed to allocate command buffer for image layout transition");
 
     VkCommandBufferBeginInfo beginInfo = {0};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     VkResult beginResult = vkBeginCommandBuffer(commandBuffer, &beginInfo);
-    if (beginResult != VK_SUCCESS)
-    {
-        PS_LOG("Failed to begin command buffer for image layout transition\n");
-        return false;
-    }
+    PS_CHECK_VK_RESULT(beginResult, "Failed to begin command buffer for image layout transition");
 
-    bool transitionResult = psVulkanImageTransitionLayout(gameState, image, commandBuffer, oldLayout, newLayout, srcStageMask, dstStageMask);
+    bool transitionResult = psVulkanImageTransitionLayout(image, commandBuffer, oldLayout, newLayout, srcStageMask, dstStageMask);
 
     VkResult endResult = vkEndCommandBuffer(commandBuffer);
-    if (endResult != VK_SUCCESS)
-    {
-        PS_LOG("Failed to end command buffer for image layout transition\n");
-        return false;
-    }
-
-    if (!transitionResult)
-    {
-        PS_LOG("Image layout transition command recording failed\n");
-        return false;
-    }
+    PS_CHECK_VK_RESULT(endResult, "Failed to end command buffer for image layout transition");
+    PS_CHECK_MSG(transitionResult, "Image layout transition command recording failed");
 
     VkSubmitInfo submitInfo = {0};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    VkResult submitResult = vkQueueSubmit(gameState->vulkan.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    if (submitResult != VK_SUCCESS)
-    {
-        PS_LOG("Failed to submit command buffer for image layout transition\n");
-        return false;
-    }
+    VkResult submitResult = vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    PS_CHECK_VK_RESULT(submitResult, "Failed to submit command buffer for image layout transition");
 
-    VkResult waitResult = vkQueueWaitIdle(gameState->vulkan.graphicsQueue);
-    if (waitResult != VK_SUCCESS)
-    {
-        PS_LOG("Failed to wait for queue idle after image layout transition\n");
-        return false;
-    }
+    VkResult waitResult = vkQueueWaitIdle(vulkan->graphicsQueue);
+    PS_CHECK_VK_RESULT(waitResult, "Failed to wait for queue idle after image layout transition");
 
-    vkFreeCommandBuffers(gameState->vulkan.device, gameState->vulkan.graphicsCommandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(vulkan->device, vulkan->graphicsCommandPool, 1, &commandBuffer);
     return true;
 }
 
 // simple 2D image upload via staging buffer
-bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, const void *srcData)
+bool psVulkanImageUploadSimple(PS_Vulkan *vulkan, PS_VulkanImage *image, const void *srcData)
 {
-    PS_ASSERT(gameState && image && srcData);
+    PS_ASSERT(vulkan && image && srcData);
 
     // infer bytes per pixel from format
     uint32_t bpp;
@@ -398,29 +337,29 @@ bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, c
 
     // create and fill staging buffer
     PS_VulkanBuffer staging = {0};
-    if (!psVulkanBufferCreate(gameState, &staging, imageSize,
+    if (!psVulkanBufferCreate(vulkan, &staging, imageSize,
                               VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
     {
         return false;
     }
     void *mapped = NULL;
-    if (!psVulkanBufferMap(gameState, &staging, &mapped))
+    if (!psVulkanBufferMap(vulkan, &staging, &mapped))
     {
-        psVulkanBufferDestroy(gameState, &staging);
+        psVulkanBufferDestroy(vulkan, &staging);
         return false;
     }
     memcpy(mapped, srcData, imageSize);
-    psVulkanBufferUnmap(gameState, &staging);
+    psVulkanBufferUnmap(vulkan, &staging);
 
     // allocate command buffer
     VkCommandBufferAllocateInfo bufAlloc = {0};
     bufAlloc.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     bufAlloc.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    bufAlloc.commandPool = gameState->vulkan.graphicsCommandPool;
+    bufAlloc.commandPool = vulkan->graphicsCommandPool;
     bufAlloc.commandBufferCount = 1;
     VkCommandBuffer cmd;
-    vkAllocateCommandBuffers(gameState->vulkan.device, &bufAlloc, &cmd);
+    vkAllocateCommandBuffers(vulkan->device, &bufAlloc, &cmd);
 
     VkCommandBufferBeginInfo beginInfo = {0};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -428,11 +367,11 @@ bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, c
     vkBeginCommandBuffer(cmd, &beginInfo);
 
     // transition to transfer dst
-    psVulkanImageTransitionLayout(gameState, image, cmd,
+    PS_CHECK(psVulkanImageTransitionLayout(image, cmd,
                                   VK_IMAGE_LAYOUT_UNDEFINED,
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                   VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+                                  VK_PIPELINE_STAGE_TRANSFER_BIT));
 
     // copy buffer to image
     VkBufferImageCopy region = {0};
@@ -452,11 +391,11 @@ bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, c
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
     // transition to shader read
-    psVulkanImageTransitionLayout(gameState, image, cmd,
+    PS_CHECK(psVulkanImageTransitionLayout(image, cmd,
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                   VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT));
 
     vkEndCommandBuffer(cmd);
 
@@ -464,26 +403,26 @@ bool psVulkanImageUploadSimple(PS_GameState *gameState, PS_VulkanImage *image, c
     VkFenceCreateInfo fenceInfo = {0};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     VkFence fence;
-    vkCreateFence(gameState->vulkan.device, &fenceInfo, NULL, &fence);
+    vkCreateFence(vulkan->device, &fenceInfo, NULL, &fence);
 
     VkSubmitInfo submit = {0};
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &cmd;
-    vkQueueSubmit(gameState->vulkan.graphicsQueue, 1, &submit, fence);
+    vkQueueSubmit(vulkan->graphicsQueue, 1, &submit, fence);
 
-    vkWaitForFences(gameState->vulkan.device, 1, &fence, VK_TRUE, UINT64_MAX);
-    vkDestroyFence(gameState->vulkan.device, fence, NULL);
+    vkWaitForFences(vulkan->device, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkDestroyFence(vulkan->device, fence, NULL);
 
-    vkFreeCommandBuffers(gameState->vulkan.device, gameState->vulkan.graphicsCommandPool, 1, &cmd);
-    psVulkanBufferDestroy(gameState, &staging);
+    vkFreeCommandBuffers(vulkan->device, vulkan->graphicsCommandPool, 1, &cmd);
+    psVulkanBufferDestroy(vulkan, &staging);
     return true;
 }
 
 // load image file (8‑bit or HDR float), create Vulkan image and upload
-bool psVulkanImageLoadFromFile(PS_GameState *gameState, const char *filename, PS_VulkanImage *image)
+bool psVulkanImageLoadFromFile(PS_Vulkan *vulkan, const char *filename, PS_VulkanImage *image)
 {
-    PS_ASSERT(gameState && filename && image);
+    PS_ASSERT(vulkan && filename && image);
 
     int width, height, origChannels;
     void *pixels = NULL;
@@ -494,53 +433,35 @@ bool psVulkanImageLoadFromFile(PS_GameState *gameState, const char *filename, PS
     if (isHDR)
     {
         float *fdata = stbi_loadf(filename, &width, &height, &origChannels, 4);
-        if (!fdata)
-        {
-            PS_LOG("Failed to load HDR image: %s\n", filename);
-            return false;
-        }
+        PS_CHECK(fdata != NULL);
         format = VK_FORMAT_R32G32B32A32_SFLOAT;
         pixels = fdata;
     }
     else
     {
         unsigned char *cdata = stbi_load(filename, &width, &height, &origChannels, 4);
-        if (!cdata)
-        {
-            PS_LOG("Failed to load image: %s\n", filename);
-            return false;
-        }
+        PS_CHECK(cdata != NULL);
         format = VK_FORMAT_R8G8B8A8_UNORM;
         pixels = cdata;
     }
 
     // create Vulkan image
-    if (!psVulkanImageCreate(
-            gameState, image, format,
+    PS_CHECK(psVulkanImageCreate(
+            vulkan, image, format,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            (uint32_t)width, (uint32_t)height))
-    {
-        PS_LOG("Failed to create Vulkan image for file: %s\n", filename);
-        stbi_image_free(pixels);
-        return false;
-    }
+            (uint32_t)width, (uint32_t)height));
 
     // upload pixel data
-    if (!psVulkanImageUploadSimple(gameState, image, pixels))
-    {
-        PS_LOG("Failed to upload image data: %s\n", filename);
-        stbi_image_free(pixels);
-        return false;
-    }
+    PS_CHECK(psVulkanImageUploadSimple(vulkan, image, pixels));
 
     stbi_image_free(pixels);
     return true;
 }
 
 // load image from memory buffer, create Vulkan image and upload
-bool psVulkanImageLoadFromMemory(PS_GameState *gameState, const void *data, size_t dataSize, PS_VulkanImage *image)
+bool psVulkanImageLoadFromMemory(PS_Vulkan *vulkan, const void *data, size_t dataSize, PS_VulkanImage *image)
 {
-    PS_ASSERT(gameState && data && image && dataSize > 0);
+    PS_ASSERT(vulkan && data && image && dataSize > 0);
 
     int width, height, origChannels;
     void *pixels = NULL;
@@ -551,45 +472,35 @@ bool psVulkanImageLoadFromMemory(PS_GameState *gameState, const void *data, size
     if (isHDR)
     {
         float *fdata = stbi_loadf_from_memory(data, (int)dataSize, &width, &height, &origChannels, 4);
-        if (!fdata)
-        {
-            PS_LOG("Failed to load HDR image from memory\n");
-            return false;
-        }
+        PS_CHECK(fdata != NULL);
         format = VK_FORMAT_R32G32B32A32_SFLOAT;
         pixels = fdata;
     }
     else
     {
         unsigned char *cdata = stbi_load_from_memory(data, (int)dataSize, &width, &height, &origChannels, 4);
-        if (!cdata)
-        {
-            PS_LOG("Failed to load image from memory\n");
-            return false;
-        }
+        PS_CHECK(cdata != NULL);
         format = VK_FORMAT_R8G8B8A8_UNORM;
         pixels = cdata;
     }
 
     // create Vulkan image
-    if (!psVulkanImageCreate(
-            gameState, image, format,
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            (uint32_t)width, (uint32_t)height))
-    {
-        PS_LOG("Failed to create Vulkan image from memory data\n");
-        stbi_image_free(pixels);
-        return false;
-    }
+    PS_CHECK(psVulkanImageCreate(
+        vulkan, image, format,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        (uint32_t)width, (uint32_t)height));
 
     // upload pixel data
-    if (!psVulkanImageUploadSimple(gameState, image, pixels))
-    {
-        PS_LOG("Failed to upload image data from memory\n");
-        stbi_image_free(pixels);
-        return false;
-    }
+    PS_CHECK(psVulkanImageUploadSimple(vulkan, image, pixels));
 
     stbi_image_free(pixels);
     return true;
+}
+
+bool psVulkanImageLoadFromAsset(PS_Vulkan* vulkan, const char *asset, PS_VulkanImage *image) {
+    PS_ASSERT(vulkan && asset && image);
+    size_t assetSize = 0;
+    const uint8_t *assetData = psAssetImage(asset, &assetSize);
+    PS_CHECK(assetData != NULL && assetSize > 0);    
+    return psVulkanImageLoadFromMemory(vulkan, assetData, assetSize, image);
 }

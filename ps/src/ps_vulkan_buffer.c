@@ -1,7 +1,7 @@
 #include "ps_vulkan.h"
 #include "ps_game_state.h"
 
-bool psVulkanBufferCreate(PS_GameState *gameState, PS_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+bool psVulkanBufferCreate(PS_Vulkan *vulkan, PS_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {
     VkBufferCreateInfo bufferInfo = {0};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -9,37 +9,24 @@ bool psVulkanBufferCreate(PS_GameState *gameState, PS_VulkanBuffer *buffer, VkDe
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // Assuming exclusive for simplicity
 
-    if (vkCreateBuffer(gameState->vulkan.device, &bufferInfo, NULL, &buffer->buffer) != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create buffer!\n");
-        return false;
-    }
+    VkResult result = vkCreateBuffer(vulkan->device, &bufferInfo, NULL, &buffer->buffer);
+    PS_CHECK_VK_RESULT(result, "Failed to create buffer!");
 
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(gameState->vulkan.device, buffer->buffer, &memRequirements);
+    vkGetBufferMemoryRequirements(vulkan->device, buffer->buffer, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo = {0};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = psVulkanFindMemoryType(gameState, memRequirements.memoryTypeBits, properties);
+    allocInfo.memoryTypeIndex = psVulkanFindMemoryType(vulkan, memRequirements.memoryTypeBits, properties);
 
-    if (allocInfo.memoryTypeIndex == UINT32_MAX)
-    {
-        PS_LOG("Failed to find suitable memory type for buffer!\n");
-        vkDestroyBuffer(gameState->vulkan.device, buffer->buffer, NULL);
-        buffer->buffer = VK_NULL_HANDLE;
-        return false;
-    }
+    PS_CHECK_MSG(allocInfo.memoryTypeIndex != UINT32_MAX, "Failed to find suitable memory type for buffer!");
 
-    if (vkAllocateMemory(gameState->vulkan.device, &allocInfo, NULL, &buffer->memory) != VK_SUCCESS)
-    {
-        PS_LOG("Failed to allocate buffer memory!\n");
-        vkDestroyBuffer(gameState->vulkan.device, buffer->buffer, NULL);
-        buffer->buffer = VK_NULL_HANDLE;
-        return false;
-    }
+    result = vkAllocateMemory(vulkan->device, &allocInfo, NULL, &buffer->memory);
+    PS_CHECK_VK_RESULT(result, "Failed to allocate buffer memory!");
 
-    vkBindBufferMemory(gameState->vulkan.device, buffer->buffer, buffer->memory, 0);
+    result = vkBindBufferMemory(vulkan->device, buffer->buffer, buffer->memory, 0);
+    PS_CHECK_VK_RESULT(result, "Failed to bind buffer memory!");
 
     buffer->descriptorBufferInfo.buffer = buffer->buffer;
     buffer->descriptorBufferInfo.offset = 0;
@@ -48,56 +35,48 @@ bool psVulkanBufferCreate(PS_GameState *gameState, PS_VulkanBuffer *buffer, VkDe
     return true;
 }
 
-void psVulkanBufferDestroy(PS_GameState *gameState, PS_VulkanBuffer *buffer)
+void psVulkanBufferDestroy(PS_Vulkan *vulkan, PS_VulkanBuffer *buffer)
 {
-    if (buffer->buffer != VK_NULL_HANDLE)
-    {
-        vkDestroyBuffer(gameState->vulkan.device, buffer->buffer, NULL);
-        buffer->buffer = VK_NULL_HANDLE;
-    }
-    if (buffer->memory != VK_NULL_HANDLE)
-    {
-        vkFreeMemory(gameState->vulkan.device, buffer->memory, NULL);
-        buffer->memory = VK_NULL_HANDLE;
-    }
+    vkDestroyBuffer(vulkan->device, buffer->buffer, NULL);
+    vkFreeMemory(vulkan->device, buffer->memory, NULL);
 }
 
-bool psVulkanBufferMap(PS_GameState *gameState, PS_VulkanBuffer *buffer, void **data) {
-    if (vkMapMemory(gameState->vulkan.device, buffer->memory, 0, VK_WHOLE_SIZE, 0, data) != VK_SUCCESS) {
-        PS_LOG("Failed to map buffer memory!\n");
-        return false;
-    }
+bool psVulkanBufferMap(PS_Vulkan *vulkan, PS_VulkanBuffer *buffer, void **data)
+{
+    VkResult result = vkMapMemory(vulkan->device, buffer->memory, 0, VK_WHOLE_SIZE, 0, data);
+    PS_CHECK_VK_RESULT(result, "Failed to map buffer memory!");
     return true;
 }
 
-void psVulkanBufferUnmap(PS_GameState *gameState, PS_VulkanBuffer *buffer) {
-    vkUnmapMemory(gameState->vulkan.device, buffer->memory);
+void psVulkanBufferUnmap(PS_Vulkan *vulkan, PS_VulkanBuffer *buffer)
+{
+    vkUnmapMemory(vulkan->device, buffer->memory);
 }
 
-bool psVulkanBufferUpload(PS_GameState *gameState, PS_VulkanBuffer *buffer, const void *srcData, VkDeviceSize size) {
+bool psVulkanBufferUpload(PS_Vulkan *vulkan, PS_VulkanBuffer *buffer, const void *srcData, VkDeviceSize size)
+{
     PS_VulkanBuffer staging = {0};
-    if (!psVulkanBufferCreate(gameState, &staging, size,
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
-        return false;
-    }
+    PS_CHECK(psVulkanBufferCreate(vulkan, &staging, size,
+                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 
     void *mapped = NULL;
-    if (!psVulkanBufferMap(gameState, &staging, &mapped)) {
-        psVulkanBufferDestroy(gameState, &staging);
+    if (!psVulkanBufferMap(vulkan, &staging, &mapped))
+    {
+        psVulkanBufferDestroy(vulkan, &staging);
         return false;
     }
     memcpy(mapped, srcData, size);
-    psVulkanBufferUnmap(gameState, &staging);
+    psVulkanBufferUnmap(vulkan, &staging);
 
     VkCommandBufferAllocateInfo allocInfo = {0};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = gameState->vulkan.graphicsCommandPool;
+    allocInfo.commandPool = vulkan->graphicsCommandPool;
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer cmd;
-    vkAllocateCommandBuffers(gameState->vulkan.device, &allocInfo, &cmd);
+    vkAllocateCommandBuffers(vulkan->device, &allocInfo, &cmd);
 
     VkCommandBufferBeginInfo beginInfo = {0};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -114,10 +93,10 @@ bool psVulkanBufferUpload(PS_GameState *gameState, PS_VulkanBuffer *buffer, cons
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &cmd;
-    vkQueueSubmit(gameState->vulkan.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(gameState->vulkan.graphicsQueue);
+    vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(vulkan->graphicsQueue);
 
-    vkFreeCommandBuffers(gameState->vulkan.device, gameState->vulkan.graphicsCommandPool, 1, &cmd);
-    psVulkanBufferDestroy(gameState, &staging);
+    vkFreeCommandBuffers(vulkan->device, vulkan->graphicsCommandPool, 1, &cmd);
+    psVulkanBufferDestroy(vulkan, &staging);
     return true;
 }

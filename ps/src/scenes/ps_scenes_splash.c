@@ -11,9 +11,10 @@ typedef struct PS_SplashPushConstants
     float opacity;
 } PS_SplashPushConstants;
 
-static bool __psCreateDescriptorSetLayout(PS_GameState *gameState)
+static bool __psCreateDescriptorSetLayout(PS_SplashScene* scene, VkDevice device)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(scene != NULL);
+    PS_ASSERT(device != VK_NULL_HANDLE);
 
     VkDescriptorSetLayoutBinding layoutBinding = {0};
     layoutBinding.binding = 0;
@@ -26,49 +27,38 @@ static bool __psCreateDescriptorSetLayout(PS_GameState *gameState)
     layoutInfo.bindingCount = 1;
     layoutInfo.pBindings = &layoutBinding;
 
-    if (vkCreateDescriptorSetLayout(gameState->vulkan.device, &layoutInfo, NULL,
-                                    &gameState->scene.splashScene.descriptorSetLayout) != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create descriptor set layout\n");
-        return false;
-    }
+    VkResult result = vkCreateDescriptorSetLayout(device, &layoutInfo, NULL, &scene->descriptorSetLayout);
+    PS_CHECK_VK_RESULT(result, "Failed to create descriptor set layout\n");
 
     return true;
 }
 
-static bool __psCreateDescriptorSet(PS_GameState *gameState)
+static bool __psCreateDescriptorSet(PS_SplashScene* scene, VkDevice device, VkDescriptorPool descriptorPool)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(device != VK_NULL_HANDLE);
+    PS_ASSERT(descriptorPool != VK_NULL_HANDLE);
+    PS_ASSERT(scene != NULL);
 
     VkDescriptorSetAllocateInfo allocInfo = {0};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = gameState->vulkan.descriptorPool;
+    allocInfo.descriptorPool = descriptorPool;
     allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &gameState->scene.splashScene.descriptorSetLayout;
+    allocInfo.pSetLayouts = &scene->descriptorSetLayout;
 
-    if (vkAllocateDescriptorSets(gameState->vulkan.device, &allocInfo,
-                                 &gameState->scene.splashScene.descriptorSet) != VK_SUCCESS)
-    {
-        PS_LOG("Failed to allocate descriptor set\n");
-        return false;
-    }
+    VkResult result = vkAllocateDescriptorSets(device, &allocInfo, &scene->descriptorSet);
+    PS_CHECK_VK_RESULT(result, "Failed to allocate descriptor set\n");
 
     VkWriteDescriptorSet descriptorWrite = {0};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.dstSet = gameState->scene.splashScene.descriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 0;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pImageInfo = &gameState->scene.splashScene.splashImage.descriptorImageInfo;
-    vkUpdateDescriptorSets(gameState->vulkan.device, 1, &descriptorWrite, 0, NULL);
-
+    PS_CHECK(psWriteImageDescriptorSet(&descriptorWrite, scene->descriptorSet, 0, &scene->splashImage.descriptorImageInfo));
+    vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, NULL);
+    
     return true;
 }
 
-static bool __psCreatePipelineLayout(PS_GameState *gameState)
+static bool __psCreatePipelineLayout(PS_SplashScene* scene, VkDevice device)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(scene != NULL);
+    PS_ASSERT(device != VK_NULL_HANDLE);
 
     VkPushConstantRange pushConstantRanges[1] = {0};
     pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -78,124 +68,70 @@ static bool __psCreatePipelineLayout(PS_GameState *gameState)
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &gameState->scene.splashScene.descriptorSetLayout;
+    pipelineLayoutInfo.pSetLayouts = &scene->descriptorSetLayout;
     pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;
     pipelineLayoutInfo.pushConstantRangeCount = PS_ARRAY_COUNT(pushConstantRanges);
 
-    VkResult result = vkCreatePipelineLayout(gameState->vulkan.device, &pipelineLayoutInfo, NULL, &gameState->scene.splashScene.pipelineLayout);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create pipeline layout\n");
-        return false;
-    }
-
+    VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, &scene->pipelineLayout);
+    PS_CHECK_VK_RESULT(result, "Failed to create pipeline layout\n");
     return true;
 }
 
-static bool __psCreatePipeline(PS_GameState *gameState)
+static bool __psCreatePipeline(PS_SplashScene* scene, VkDevice device, VkRenderPass renderPass)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(scene != NULL);
+    PS_ASSERT(device != VK_NULL_HANDLE);
+    PS_ASSERT(renderPass != VK_NULL_HANDLE);
+
+    VkShaderModule vertexShaderModule = psShaderModuleCreateFromAsset(device, "SplashVert");
+    PS_CHECK_VK_HANDLE(vertexShaderModule, "Failed to create vertex shader module\n");
+    VkShaderModule fragmentShaderModule = psShaderModuleCreateFromAsset(device, "SplashFrag");
+    PS_CHECK_VK_HANDLE(fragmentShaderModule, "Failed to create fragment shader module\n");
 
     VkPipelineShaderStageCreateInfo shaderStages[2] = {0};
-    shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    shaderStages[0].module = gameState->scene.splashScene.vertexShaderModule;
-    shaderStages[0].pName = "main";
-
-    shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    shaderStages[1].module = gameState->scene.splashScene.fragmentShaderModule;
-    shaderStages[1].pName = "main";
-
-    VkDynamicState dynamicStates[2] = {0};
-    dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
-    dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
+    PS_CHECK(psPipelineUtilsShaderStage(&shaderStages[0], vertexShaderModule, VK_SHADER_STAGE_VERTEX_BIT));
+    PS_CHECK(psPipelineUtilsShaderStage(&shaderStages[1], fragmentShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT));
 
     VkPipelineDynamicStateCreateInfo dynamicStateInfo = {0};
-    dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamicStateInfo.dynamicStateCount = PS_ARRAY_COUNT(dynamicStates);
-    dynamicStateInfo.pDynamicStates = dynamicStates;
+    PS_CHECK(psPipelineUtilsDynamicState(&dynamicStateInfo));
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {0};
+    PS_CHECK(psPipelineUtilsInputAssemblyState(&inputAssemblyInfo));
+
+    VkViewport viewport = {0};
+    VkRect2D scissor = {0};
+    PS_CHECK(psPipelineUtilsViewportScissor(&viewport, &scissor));
+    
+    VkPipelineViewportStateCreateInfo viewportStateInfo = {0};
+    PS_CHECK(psPipelineUtilsViewportState(&viewportStateInfo, &viewport, &scissor));
+
+    VkPipelineRasterizationStateCreateInfo rasterizerInfo = {0};
+    PS_CHECK(psPipelineUtilsRasterizationState(&rasterizerInfo));
+    
+    VkPipelineMultisampleStateCreateInfo multisampleInfo = {0};
+    PS_CHECK(psPipelineUtilsMultisampleState(&multisampleInfo));
+    
+    VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {0};
+    PS_CHECK(psPipelineUtilsDepthStencilState(&depthStencilInfo, false));
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment = {0};
+    PS_CHECK(psPipelineUtilsBlendAttachment(&colorBlendAttachment, true));
+
+    VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {0};
+    PS_CHECK(psPipelineUtilsColorBlendState(&colorBlendStateInfo, &colorBlendAttachment, 1));
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 0;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {0};
-    inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
-
-    VkViewport viewport = {0};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float)gameState->vulkan.swapchain.extent.width;
-    viewport.height = (float)gameState->vulkan.swapchain.extent.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-
-    VkRect2D scissor = {0};
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent = gameState->vulkan.swapchain.extent;
-
-    VkPipelineRasterizationStateCreateInfo rasterizerInfo = {0};
-    rasterizerInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterizerInfo.depthClampEnable = VK_FALSE;
-    rasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
-    rasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizerInfo.cullMode = VK_CULL_MODE_NONE;
-    rasterizerInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    rasterizerInfo.depthBiasEnable = VK_FALSE;
-    rasterizerInfo.lineWidth = 1.0f;
-
-    VkPipelineMultisampleStateCreateInfo multisampleInfo = {0};
-    multisampleInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampleInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    multisampleInfo.sampleShadingEnable = VK_FALSE;
-    multisampleInfo.minSampleShading = 1.0f;
-    multisampleInfo.pSampleMask = NULL;
-    multisampleInfo.alphaToCoverageEnable = VK_FALSE;
-    multisampleInfo.alphaToOneEnable = VK_FALSE;
-
-    VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {0};
-    depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencilInfo.depthTestEnable = VK_FALSE;
-    depthStencilInfo.depthWriteEnable = VK_FALSE;
-    depthStencilInfo.depthCompareOp = VK_COMPARE_OP_ALWAYS;
-    depthStencilInfo.depthBoundsTestEnable = VK_FALSE;
-    depthStencilInfo.stencilTestEnable = VK_FALSE;
-
-    VkPipelineViewportStateCreateInfo viewportStateInfo = {0};
-    viewportStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewportStateInfo.viewportCount = 1;
-    viewportStateInfo.pViewports = &viewport;
-    viewportStateInfo.scissorCount = 1;
-    viewportStateInfo.pScissors = &scissor;
-
-    VkPipelineColorBlendAttachmentState colorBlendAttachment = {0};
-    colorBlendAttachment.blendEnable = VK_TRUE;
-    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-    colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-
-    VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {0};
-    colorBlendStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlendStateInfo.logicOpEnable = VK_FALSE;
-    colorBlendStateInfo.logicOp = VK_LOGIC_OP_COPY;
-    colorBlendStateInfo.attachmentCount = 1;
-    colorBlendStateInfo.pAttachments = &colorBlendAttachment;
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {0};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.stageCount = PS_ARRAY_COUNT(shaderStages);
     pipelineInfo.pStages = shaderStages;
-    pipelineInfo.layout = gameState->scene.splashScene.pipelineLayout;
-    pipelineInfo.renderPass = gameState->vulkan.renderer.sceneFramebuffer.renderPass;
+    pipelineInfo.layout = scene->pipelineLayout;
+    pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
@@ -211,12 +147,11 @@ static bool __psCreatePipeline(PS_GameState *gameState)
     pipelineInfo.pViewportState = &viewportStateInfo;
     pipelineInfo.pMultisampleState = &multisampleInfo;
 
-    VkResult result = vkCreateGraphicsPipelines(gameState->vulkan.device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &gameState->scene.splashScene.pipeline);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create graphics pipeline\n");
-        return false;
-    }
+    VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &scene->pipeline);
+    PS_CHECK_VK_RESULT(result, "Failed to create graphics pipeline\n");
+
+    vkDestroyShaderModule(device, vertexShaderModule, NULL);
+    vkDestroyShaderModule(device, fragmentShaderModule, NULL);
 
     return true;
 }
@@ -224,77 +159,24 @@ static bool __psCreatePipeline(PS_GameState *gameState)
 bool psScenesSplashInit(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
-
-    size_t imageDataSize = 0;
-    if (!psVulkanImageLoadFromMemory(gameState, psAssetImage("Splash", &imageDataSize), imageDataSize, &gameState->scene.splashScene.splashImage))
-    {
-        PS_LOG("Failed to load splash image\n");
-        return false;
-    }
-
-    if (!__psCreateDescriptorSetLayout(gameState))
-    {
-        PS_LOG("Failed to create descriptor set layout\n");
-        return false;
-    }
-
-    if (!__psCreateDescriptorSet(gameState))
-    {
-        PS_LOG("Failed to create descriptor set\n");
-        return false;
-    }
-
-    VkShaderModule vertexShaderModule = psShaderModuleCreate(gameState, psAssetShader("SplashVert"), VK_SHADER_STAGE_VERTEX_BIT, "splash_scene_vertex_shader.glsl");
-    if (vertexShaderModule == VK_NULL_HANDLE)
-    {
-        PS_LOG("Failed to create vertex shader module\n");
-        return false;
-    }
-    gameState->scene.splashScene.vertexShaderModule = vertexShaderModule;
-
-    VkShaderModule fragmentShaderModule = psShaderModuleCreate(gameState, psAssetShader("SplashFrag"), VK_SHADER_STAGE_FRAGMENT_BIT, "splash_scene_fragment_shader.glsl");
-    if (fragmentShaderModule == VK_NULL_HANDLE)
-    {
-        PS_LOG("Failed to create fragment shader module\n");
-        vkDestroyShaderModule(gameState->vulkan.device, vertexShaderModule, NULL);
-        return false;
-    }
-    gameState->scene.splashScene.fragmentShaderModule = fragmentShaderModule;
-
-    if (!__psCreatePipelineLayout(gameState))
-    {
-        PS_LOG("Failed to create pipeline layout\n");
-        return false;
-    }
-
-    if (!__psCreatePipeline(gameState))
-    {
-        PS_LOG("Failed to create scene pipeline\n");
-        return false;
-    }
-
+    PS_SplashScene *scene = &gameState->scene.splashScene;
+    PS_CHECK(psVulkanImageLoadFromAsset(&gameState->vulkan, "Splash", &scene->splashImage));
+    PS_CHECK(__psCreateDescriptorSetLayout(scene, gameState->vulkan.device));
+    PS_CHECK(__psCreateDescriptorSet(scene, gameState->vulkan.device, gameState->vulkan.descriptorPool));
+    PS_CHECK(__psCreatePipelineLayout(scene, gameState->vulkan.device));
+    PS_CHECK(__psCreatePipeline(scene, gameState->vulkan.device, gameState->vulkan.renderer.sceneFramebuffer.renderPass));
     return true;
 }
 
 void psScenesSplashShutdown(PS_GameState *gameState)
 {
     PS_ASSERT(gameState != NULL);
+    PS_SplashScene *scene = &gameState->scene.splashScene;
 
-    psVulkanImageDestroy(gameState, &gameState->scene.splashScene.splashImage);
-
-    vkDestroyDescriptorSetLayout(gameState->vulkan.device, gameState->scene.splashScene.descriptorSetLayout, NULL);
-
-    vkDestroyPipeline(gameState->vulkan.device, gameState->scene.splashScene.pipeline, NULL);
-    gameState->scene.splashScene.pipeline = VK_NULL_HANDLE;
-
-    vkDestroyPipelineLayout(gameState->vulkan.device, gameState->scene.splashScene.pipelineLayout, NULL);
-    gameState->scene.splashScene.pipelineLayout = VK_NULL_HANDLE;
-
-    vkDestroyShaderModule(gameState->vulkan.device, gameState->scene.splashScene.vertexShaderModule, NULL);
-    gameState->scene.splashScene.vertexShaderModule = VK_NULL_HANDLE;
-
-    vkDestroyShaderModule(gameState->vulkan.device, gameState->scene.splashScene.fragmentShaderModule, NULL);
-    gameState->scene.splashScene.fragmentShaderModule = VK_NULL_HANDLE;
+    psVulkanImageDestroy(&gameState->vulkan, &scene->splashImage);
+    vkDestroyDescriptorSetLayout(gameState->vulkan.device, scene->descriptorSetLayout, NULL);
+    vkDestroyPipeline(gameState->vulkan.device, scene->pipeline, NULL);
+    vkDestroyPipelineLayout(gameState->vulkan.device, scene->pipelineLayout, NULL);
 }
 
 bool psScenesSplashSwitch(PS_GameState *gameState)

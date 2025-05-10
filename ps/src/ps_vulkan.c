@@ -107,8 +107,10 @@ static VkBool32 __psDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagB
     return VK_FALSE; // Don't abort on debug messages
 }
 
-static bool __psCreateDebugUtilsMessenger(PS_GameState *gameState)
+static bool __psCreateDebugUtilsMessenger(PS_Vulkan *vulkan)
 {
+    PS_ASSERT(vulkan != NULL);
+
     VkDebugUtilsMessengerCreateInfoEXT createInfo = {0};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -119,28 +121,22 @@ static bool __psCreateDebugUtilsMessenger(PS_GameState *gameState)
                              VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = __psDebugUtilsMessengerCallback;
-    createInfo.pUserData = gameState;
+    createInfo.pUserData = vulkan;
 
     PFN_vkCreateDebugUtilsMessengerEXT createDebugUtilsMessenger =
-        (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(gameState->vulkan.instance, "vkCreateDebugUtilsMessengerEXT");
-    if (createDebugUtilsMessenger == NULL)
-    {
-        PS_LOG("Failed to load vkCreateDebugUtilsMessengerEXT\n");
-        return false;
-    }
-    VkResult result = createDebugUtilsMessenger(gameState->vulkan.instance, &createInfo, NULL, &gameState->vulkan.debugMessenger);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create debug utils messenger\n");
-        return false;
-    }
+        (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vulkan->instance, "vkCreateDebugUtilsMessengerEXT");
+    PS_CHECK_MSG(createDebugUtilsMessenger != NULL, "Failed to load vkCreateDebugUtilsMessengerEXT");
+    VkResult result = createDebugUtilsMessenger(vulkan->instance, &createInfo, NULL, &vulkan->debugMessenger);
+    PS_CHECK_VK_RESULT(result, "Failed to create debug utils messenger\n");
     return true;
 }
 
 #endif
 
-static bool __psVulkanCreateInstance(PS_GameState *gameState)
+static bool __psVulkanCreateInstance(PS_Vulkan *vulkan)
 {
+    PS_ASSERT(vulkan != NULL);
+    
     VkApplicationInfo appInfo = {0};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "Pastel Shadows";
@@ -152,29 +148,17 @@ static bool __psVulkanCreateInstance(PS_GameState *gameState)
     uint32_t extensionCount = 0;
     static const char *extensions[64] = {0};
 
-    if (!__psAddGlfwExtenstions(&extensionCount, extensions))
-    {
-        PS_LOG("Failed to add GLFW extensions\n");
-        return false;
-    }
+    PS_CHECK(__psAddGlfwExtenstions(&extensionCount, extensions));
 
 #ifdef PS_DEBUG
-    if (!__psAddDebugUtilsExtenstions(&extensionCount, extensions))
-    {
-        PS_LOG("Failed to add debug utils extensions\n");
-        return false;
-    }
+    PS_CHECK(__psAddDebugUtilsExtenstions(&extensionCount, extensions));
 #endif
 
     uint32_t layerCount = 0;
     static const char *layers[64] = {0};
 
 #ifdef PS_DEBUG
-    if (!__psAddDebugLayers(&layerCount, layers, &gameState->vulkan.debugLayersEnabled))
-    {
-        PS_LOG("Failed to add debug layers\n");
-        return false;
-    }
+    PS_CHECK(__psAddDebugLayers(&layerCount, layers, &vulkan->debugLayersEnabled));
 #endif
 
     VkInstanceCreateInfo createInfo = {0};
@@ -185,34 +169,23 @@ static bool __psVulkanCreateInstance(PS_GameState *gameState)
     createInfo.enabledExtensionCount = extensionCount;
     createInfo.ppEnabledExtensionNames = extensions;
 
-    VkResult result = vkCreateInstance(&createInfo, NULL, &gameState->vulkan.instance);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create Vulkan instance\n");
-        return false;
-    }
+    VkResult result = vkCreateInstance(&createInfo, NULL, &vulkan->instance);
+    PS_CHECK_VK_RESULT(result, "Failed to create Vulkan instance\n");
 
 #ifdef PS_DEBUG
-    if (gameState->vulkan.debugLayersEnabled)
+    if (vulkan->debugLayersEnabled)
     {
-        if (!__psCreateDebugUtilsMessenger(gameState))
-        {
-            PS_LOG("Failed to create debug utils messenger\n");
-            return false;
-        }
+        PS_CHECK(__psCreateDebugUtilsMessenger(vulkan));
     }
 #endif
 
     return true;
 }
 
-static bool __psVulkanCreateSurface(PS_GameState *gameState)
+static bool __psVulkanCreateSurface(PS_Vulkan* vulkan, GLFWwindow* window)
 {
-    if (glfwCreateWindowSurface(gameState->vulkan.instance, gameState->window.window, NULL, &gameState->vulkan.swapchain.surface) != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create Vulkan surface\n");
-        return false;
-    }
+    VkResult result = glfwCreateWindowSurface(vulkan->instance, window, NULL, &vulkan->swapchain.surface);
+    PS_CHECK_VK_RESULT(result, "Failed to create window surface\n");
     return true;
 }
 
@@ -256,23 +229,17 @@ static bool __psVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device)
     return true;
 }
 
-static bool __psVulkanPickPhysicalDevice(PS_GameState *gameState)
+static bool __psVulkanPickPhysicalDevice(PS_Vulkan *vulkan)
 {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(gameState->vulkan.instance, &deviceCount, NULL);
-    if (deviceCount == 0)
-    {
-        PS_LOG("No Vulkan-compatible devices found\n");
-        return false;
-    }
-    if (deviceCount > 64)
-    {
-        PS_LOG("Too many Vulkan-compatible devices found\n");
-        return false;
-    }
+    PS_ASSERT(vulkan != NULL);
 
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(vulkan->instance, &deviceCount, NULL);
+    PS_CHECK_MSG(deviceCount > 0, "No Vulkan-compatible devices found\n");
+    
+    deviceCount = PS_MIN(deviceCount, 64);
     VkPhysicalDevice devices[64] = {0};
-    vkEnumeratePhysicalDevices(gameState->vulkan.instance, &deviceCount, devices);
+    vkEnumeratePhysicalDevices(vulkan->instance, &deviceCount, devices);
 
     bool foundDiscreteGPU = false;
     for (uint32_t i = 0; i < deviceCount; ++i)
@@ -288,7 +255,7 @@ static bool __psVulkanPickPhysicalDevice(PS_GameState *gameState)
 
         if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
         {
-            gameState->vulkan.physicalDevice = devices[i];
+            vulkan->physicalDevice = devices[i];
             foundDiscreteGPU = true;
             break;
         }
@@ -297,7 +264,7 @@ static bool __psVulkanPickPhysicalDevice(PS_GameState *gameState)
     if (!foundDiscreteGPU)
     {
         PS_LOG("No discrete GPU found, using first available device\n");
-        gameState->vulkan.physicalDevice = devices[0];
+        vulkan->physicalDevice = devices[0];
     }
 
     return true;
@@ -346,27 +313,21 @@ static int32_t __psVulkanFindQueueFamilyIndex(VkPhysicalDevice device, VkQueueFl
     return -1;
 }
 
-static bool __psVulkanCreateDevice(PS_GameState *gameState)
+static bool __psVulkanCreateDevice(PS_Vulkan *vulkan)
 {
-    int32_t graphicsQueueFamilyIndex = __psVulkanFindQueueFamilyIndex(gameState->vulkan.physicalDevice, VK_QUEUE_GRAPHICS_BIT, gameState->vulkan.swapchain.surface, -1);
-    if (graphicsQueueFamilyIndex < 0)
-    {
-        PS_LOG("Failed to find graphics queue family index\n");
-        return false;
-    }
+    PS_ASSERT(vulkan != NULL);
 
-    int32_t computeQueueFamilyIndex = __psVulkanFindQueueFamilyIndex(gameState->vulkan.physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_NULL_HANDLE, graphicsQueueFamilyIndex);
-    if (computeQueueFamilyIndex < 0)
-    {
-        PS_LOG("Failed to find compute queue family index\n");
-        return false;
-    }
+    int32_t graphicsQueueFamilyIndex = __psVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_GRAPHICS_BIT, vulkan->swapchain.surface, -1);
+    PS_CHECK_MSG(graphicsQueueFamilyIndex >= 0, "Failed to find graphics queue family index\n");
+
+    int32_t computeQueueFamilyIndex = __psVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_NULL_HANDLE, graphicsQueueFamilyIndex);
+    PS_CHECK_MSG(computeQueueFamilyIndex >= 0, "Failed to find compute queue family index\n");
 
     // We only need one graphics queue and one compute queue for now
     VkDeviceQueueCreateInfo queueCreateInfos[2] = {0};
     float queuePriority = 1.0f;
 
-    //  first the g1raphics queue
+    //  first the graphics queue
     queueCreateInfos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queueCreateInfos[0].queueFamilyIndex = graphicsQueueFamilyIndex;
     queueCreateInfos[0].queueCount = 1;
@@ -390,8 +351,9 @@ static bool __psVulkanCreateDevice(PS_GameState *gameState)
     createInfo.enabledExtensionCount = deviceExtensionCount;
     createInfo.ppEnabledExtensionNames = deviceExtensions;
     createInfo.enabledLayerCount = 0;
+    
 #ifdef PS_DEBUG
-    if (gameState->vulkan.debugLayersEnabled)
+    if (vulkan->debugLayersEnabled)
     {
         static const char *debugLayers[] = {
             "VK_LAYER_KHRONOS_validation",
@@ -402,57 +364,41 @@ static bool __psVulkanCreateDevice(PS_GameState *gameState)
     }    
 #endif
 
-    VkResult result = vkCreateDevice(gameState->vulkan.physicalDevice, &createInfo, NULL, &gameState->vulkan.device);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create Vulkan device\n");
-        return false;
-    }
+    VkResult result = vkCreateDevice(vulkan->physicalDevice, &createInfo, NULL, &vulkan->device);
+    PS_CHECK_VK_RESULT(result, "Failed to create Vulkan device\n");
 
-    gameState->vulkan.graphicsQueueFamilyIndex = graphicsQueueFamilyIndex;
-    gameState->vulkan.computeQueueFamilyIndex = computeQueueFamilyIndex;
+    vulkan->graphicsQueueFamilyIndex = graphicsQueueFamilyIndex;
+    vulkan->computeQueueFamilyIndex = computeQueueFamilyIndex;
 
     return true;
 }
 
-static bool __psVulkanGetQueues(PS_GameState *gameState)
+static bool __psVulkanGetQueues(PS_Vulkan *vulkan)
 {
-    vkGetDeviceQueue(gameState->vulkan.device, gameState->vulkan.graphicsQueueFamilyIndex, 0, &gameState->vulkan.graphicsQueue);
-    vkGetDeviceQueue(gameState->vulkan.device, gameState->vulkan.computeQueueFamilyIndex, 0, &gameState->vulkan.computeQueue);
-    if (gameState->vulkan.graphicsQueue == VK_NULL_HANDLE || gameState->vulkan.computeQueue == VK_NULL_HANDLE)
-    {
-        PS_LOG("Failed to get Vulkan device queues\n");
-        return false;
-    }
+    vkGetDeviceQueue(vulkan->device, vulkan->graphicsQueueFamilyIndex, 0, &vulkan->graphicsQueue);
+    vkGetDeviceQueue(vulkan->device, vulkan->computeQueueFamilyIndex, 0, &vulkan->computeQueue);
+    PS_CHECK(vulkan->graphicsQueue != VK_NULL_HANDLE && vulkan->computeQueue != VK_NULL_HANDLE);
     return true;
 }
 
-static bool __psVulkanCreateCommandPools(PS_GameState *gameState)
+static bool __psVulkanCreateCommandPools(PS_Vulkan *vulkan)
 {
     VkCommandPoolCreateInfo poolInfo = {0};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = gameState->vulkan.graphicsQueueFamilyIndex;
+    poolInfo.queueFamilyIndex = vulkan->graphicsQueueFamilyIndex;
 
-    VkResult result = vkCreateCommandPool(gameState->vulkan.device, &poolInfo, NULL, &gameState->vulkan.graphicsCommandPool);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create graphics command pool\n");
-        return false;
-    }
+    VkResult result = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->graphicsCommandPool);
+    PS_CHECK_VK_RESULT(result, "Failed to create graphics command pool\n");
 
-    poolInfo.queueFamilyIndex = gameState->vulkan.computeQueueFamilyIndex;
-    result = vkCreateCommandPool(gameState->vulkan.device, &poolInfo, NULL, &gameState->vulkan.computeCommandPool);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create compute command pool\n");
-        return false;
-    }
+    poolInfo.queueFamilyIndex = vulkan->computeQueueFamilyIndex;
+    result = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->computeCommandPool);
+    PS_CHECK_VK_RESULT(result, "Failed to create compute command pool\n");
 
     return true;
 }   
 
-static bool __psVulkanDescriptorPoolCreate(PS_GameState *gameState)
+static bool __psVulkanDescriptorPoolCreate(PS_Vulkan *vulkan)
 {
     VkDescriptorPoolSize poolSizes[] = {
         {VK_DESCRIPTOR_TYPE_SAMPLER, 100},
@@ -471,128 +417,62 @@ static bool __psVulkanDescriptorPoolCreate(PS_GameState *gameState)
     poolInfo.pPoolSizes = poolSizes;
     poolInfo.maxSets = 10000;
 
-    VkResult result = vkCreateDescriptorPool(gameState->vulkan.device, &poolInfo, NULL, &gameState->vulkan.descriptorPool);
-    if (result != VK_SUCCESS)
-    {
-        PS_LOG("Failed to create descriptor pool\n");
-        return false;
-    }
+    VkResult result = vkCreateDescriptorPool(vulkan->device, &poolInfo, NULL, &vulkan->descriptorPool);
+    PS_CHECK_VK_RESULT(result, "Failed to create descriptor pool\n");
 
     return true;
 }
 
-bool psVulkanInit(PS_GameState *gameState)
+bool psVulkanInit(PS_Vulkan *vulkan, PS_Window* window)
 {
-    if (!__psVulkanCreateInstance(gameState))
-    {
-        PS_LOG("Vulkan initialization failed\n");
-        return false;
-    }
+    vulkan->swapchain.swapchainReady = false;
 
-    if (!__psVulkanCreateSurface(gameState))
-    {
-        PS_LOG("Failed to create Vulkan surface\n");
-        return false;
-    }
-
-    if (!__psVulkanPickPhysicalDevice(gameState))
-    {
-        PS_LOG("Failed to pick physical device\n");
-        return false;
-    }
-
-    if (!__psVulkanCreateDevice(gameState))
-    {
-        PS_LOG("Failed to create Vulkan device\n");
-        return false;
-    }
-
-    if (!__psVulkanGetQueues(gameState))
-    {
-        PS_LOG("Failed to get Vulkan device queues\n");
-        return false;
-    }
-
-    if (!__psVulkanCreateCommandPools(gameState))
-    {
-        PS_LOG("Failed to create Vulkan command pools\n");
-        return false;
-    }
-
-    if (!__psVulkanDescriptorPoolCreate(gameState))
-    {
-        PS_LOG("Failed to create Vulkan descriptor pool\n");
-        return false;
-    }
-
-    gameState->vulkan.swapchain.swapchainReady = false;
-    if (!psVulkanSwapchainCreate(gameState))
-    {
-        PS_LOG("Failed to create Vulkan swapchain\n");
-        return false;
-    }
-
-    if(!psVulkanRendererCreate(gameState))
-    {
-        PS_LOG("Failed to create Vulkan renderer\n");
-        return false;
-    }
-
-    if (!psVulkanPresentationInit(gameState))
-    {
-        PS_LOG("Failed to create Vulkan render resources\n");
-        return false;
-    }
-
+    PS_CHECK(__psVulkanCreateInstance(vulkan));
+    PS_CHECK(__psVulkanCreateSurface(vulkan, window->window));
+    PS_CHECK(__psVulkanPickPhysicalDevice(vulkan));
+    PS_CHECK(__psVulkanCreateDevice(vulkan));
+    PS_CHECK(__psVulkanGetQueues(vulkan));
+    PS_CHECK(__psVulkanCreateCommandPools(vulkan));
+    PS_CHECK(__psVulkanDescriptorPoolCreate(vulkan));
+    PS_CHECK(psVulkanSwapchainCreate(vulkan, window));
+    PS_CHECK(psVulkanRendererCreate(vulkan));
+    PS_CHECK(psVulkanPresentationInit(vulkan));
     return true;
 }
 
-void psVulkanShutdown(PS_GameState *gameState)
+void psVulkanShutdown(PS_Vulkan *vulkan)
 {
-    vkDeviceWaitIdle(gameState->vulkan.device);
+    vkDeviceWaitIdle(vulkan->device);
+    psVulkanPresentationDestroy(vulkan);
+    psVulkanRendererDestroy(vulkan);
 
-    psVulkanPresentationDestroy(gameState);
-    
-    psVulkanRendererDestroy(gameState);
+    vkDestroyCommandPool(vulkan->device, vulkan->graphicsCommandPool, NULL);
+    vkDestroyCommandPool(vulkan->device, vulkan->computeCommandPool, NULL);
+    psVulkanSwapchainDestroy(vulkan);
 
-    vkDestroyCommandPool(gameState->vulkan.device, gameState->vulkan.graphicsCommandPool, NULL);
-    gameState->vulkan.graphicsCommandPool = VK_NULL_HANDLE;
-
-    vkDestroyCommandPool(gameState->vulkan.device, gameState->vulkan.computeCommandPool, NULL);
-    gameState->vulkan.computeCommandPool = VK_NULL_HANDLE;
-
-    psVulkanSwapchainDestroy(gameState);
-
-    vkDestroyDescriptorPool(gameState->vulkan.device, gameState->vulkan.descriptorPool, NULL);
-    gameState->vulkan.descriptorPool = VK_NULL_HANDLE;
-
-    vkDestroyDevice(gameState->vulkan.device, NULL);
-    gameState->vulkan.device = VK_NULL_HANDLE;
+    vkDestroyDescriptorPool(vulkan->device, vulkan->descriptorPool, NULL);
+    vkDestroyDevice(vulkan->device, NULL);
 
 
 #ifdef PS_DEBUG
-    if (gameState->vulkan.debugLayersEnabled)
+    if (vulkan->debugLayersEnabled)
     {
         PFN_vkDestroyDebugUtilsMessengerEXT destroyDebugUtilsMessenger =
-            (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(gameState->vulkan.instance, "vkDestroyDebugUtilsMessengerEXT");
+            (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vulkan->instance, "vkDestroyDebugUtilsMessengerEXT");
         if (destroyDebugUtilsMessenger != NULL)
         {
-            destroyDebugUtilsMessenger(gameState->vulkan.instance, gameState->vulkan.debugMessenger, NULL);
-            gameState->vulkan.debugMessenger = VK_NULL_HANDLE;
+            destroyDebugUtilsMessenger(vulkan->instance, vulkan->debugMessenger, NULL);
         }
     }
 #endif
 
-    vkDestroySurfaceKHR(gameState->vulkan.instance, gameState->vulkan.swapchain.surface, NULL);
-    gameState->vulkan.swapchain.surface = VK_NULL_HANDLE;
-
-    vkDestroyInstance(gameState->vulkan.instance, NULL);
-    gameState->vulkan.instance = VK_NULL_HANDLE;
+    vkDestroySurfaceKHR(vulkan->instance, vulkan->swapchain.surface, NULL);
+    vkDestroyInstance(vulkan->instance, NULL);
 }
 
-uint32_t psVulkanFindMemoryType(PS_GameState *gameState, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t psVulkanFindMemoryType(PS_Vulkan* vulkan, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties = {0};
-    vkGetPhysicalDeviceMemoryProperties(gameState->vulkan.physicalDevice, &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(vulkan->physicalDevice, &memProperties);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {

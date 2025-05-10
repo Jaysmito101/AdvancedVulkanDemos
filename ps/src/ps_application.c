@@ -32,28 +32,13 @@ bool psApplicationInit(PS_GameState *gameState) {
 
     gameState->running = true;
 
-    if(!psWindowInit(gameState)) {
-        PS_LOG("Failed to initialize window\n");
-        return false;
-    }
-
-    if(!psVulkanInit(gameState)) {
-        PS_LOG("Failed to initialize Vulkan\n");
-        return false;
-    }
-
-    if(!psScenesInit(gameState)) {
-        PS_LOG("Failed to initialize scenes\n");
-        return false;
-    }
-
+    PS_CHECK(psWindowInit(gameState));
+    PS_CHECK(psVulkanInit(&gameState->vulkan, &gameState->window));
+    PS_CHECK(psScenesInit(gameState));
     __psApplicationUpdateFramerateCalculation(gameState);
 
     // this is for prod
-    if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_SPLASH)) {
-    PS_LOG("Failed to switch to splash scene\n");
-        return false;
-    }
+    PS_CHECK(psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_SPLASH));
 
     memset(&gameState->input, 0, sizeof(PS_Input));
 
@@ -78,7 +63,7 @@ void psApplicationShutdown(PS_GameState *gameState) {
     vkQueueWaitIdle(gameState->vulkan.computeQueue);
 
     psScenesShutdown(gameState);
-    psVulkanShutdown(gameState);    
+    psVulkanShutdown(&gameState->vulkan);
     psWindowShutdown(gameState);
 }
 
