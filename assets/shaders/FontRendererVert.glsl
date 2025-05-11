@@ -27,7 +27,7 @@ layout(push_constant) uniform PushConstants {
 
 void main() {
     vec2 offset = vec2(pushConstants.data.offsetX, pushConstants.data.offsetY);
-    vec2 pos = (inPosition + offset) * pushConstants.data.scale;
+    vec2 pos = inPosition * pushConstants.data.scale + offset;
     pos /= vec2(pushConstants.data.fragmentBufferWidth, pushConstants.data.fragmentBufferHeight);
     pos = pos * 2.0 - 1.0;
     fragTexCoord = inTexCoord;

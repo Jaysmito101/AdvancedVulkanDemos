@@ -7,8 +7,10 @@ bool psFontCreate(PS_FontData fontData, PS_Vulkan* vulkan, PS_Font *font);
 void psFontDestroy(PS_Vulkan* vulkan, PS_Font *font);
 
 bool psRenderableTextCreate(PS_GameState* gameState, PS_RenderableText *renderableText, const char *fontName, const char *text, float charHeight);
-bool psRenderableTextUpdate(PS_GameState* gameState, PS_RenderableText *renderableText, const char *text, float charHeight);
+bool psRenderableTextUpdate(PS_GameState* gameState, PS_RenderableText *renderableText, const char *text);
 void psRenderableTextDestroy(PS_GameState* gameState, PS_RenderableText *renderableText);
+void psRenderableTextGetBounds(PS_RenderableText *renderableText, float *minX, float *minY, float *maxX, float *maxY);
+void psRenderableTextGetSize(PS_RenderableText *renderableText, float *width, float *height);
 
 bool psFontRendererInit(PS_GameState *gameState);
 void psFontRendererShutdown(PS_GameState *gameState);

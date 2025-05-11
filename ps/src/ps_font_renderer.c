@@ -246,6 +246,11 @@ static bool __psUpdateFontText(PS_Vulkan *vulkan, PS_RenderableText *renderableT
     float atlasWidth = (float)font->fontData.atlas->info.width;
     float atlasHeight = (float)font->fontData.atlas->info.height;
 
+    renderableText->boundsMinX = 0.0f;
+    renderableText->boundsMinY = 0.0f;
+    renderableText->boundsMaxX = 0.0f;
+    renderableText->boundsMaxY = 0.0f;
+
     for (size_t i = 0; i < renderableText->characterCount; i++)
     {
         uint32_t c = (uint32_t)text[i];
@@ -256,7 +261,11 @@ static bool __psUpdateFontText(PS_Vulkan *vulkan, PS_RenderableText *renderableT
             continue;
         }
 
-        PS_CHECK_MSG(c < PS_FONT_MAX_GLYPHS, "Character %c is out of range\n", c);
+        if(c >= PS_FONT_MAX_GLYPHS)
+        {
+            PS_LOG("Font character out of range: %c [skipping]\n", c);
+            continue;
+        }
 
         if (c == ' ')
         {
@@ -280,6 +289,11 @@ static bool __psUpdateFontText(PS_Vulkan *vulkan, PS_RenderableText *renderableT
         float bx = cX + planeBounds->right * charHeight;
         float by = cY - planeBounds->bottom * charHeight;
 
+        renderableText->boundsMinX = fminf(renderableText->boundsMinX, ax);
+        renderableText->boundsMinY = fminf(renderableText->boundsMinY, ay);
+        renderableText->boundsMaxX = fmaxf(renderableText->boundsMaxX, bx);
+        renderableText->boundsMaxY = fmaxf(renderableText->boundsMaxY, by);
+
         cX += glyph->advanceX * charHeight;
 
         PS_FontRendererVertex *vertex = &renderableText->vertexBufferData[indexOffset];
@@ -290,6 +304,8 @@ static bool __psUpdateFontText(PS_Vulkan *vulkan, PS_RenderableText *renderableT
                                  bounds->bottom / atlasHeight));
         indexOffset += 6;
     }
+
+    renderableText->renderableVertexCount = indexOffset;
 
     // update the vertex buffer with the new text
     PS_VulkanBuffer *vertexBuffer = &renderableText->vertexBuffer;
@@ -328,6 +344,7 @@ bool psRenderableTextCreate(PS_GameState *gameState, PS_RenderableText *renderab
 
     // create the vertex buffer data
     renderableText->vertexBufferData = (PS_FontRendererVertex *)malloc(currentSize);
+    renderableText->charHeight = charHeight;
 
     // get the font data
     PS_Font *font = NULL;
@@ -337,7 +354,7 @@ bool psRenderableTextCreate(PS_GameState *gameState, PS_RenderableText *renderab
     return true;
 }
 
-bool psRenderableTextUpdate(PS_GameState *gameState, PS_RenderableText *renderableText, const char *text, float charHeight)
+bool psRenderableTextUpdate(PS_GameState *gameState, PS_RenderableText *renderableText, const char *text)
 {
     PS_ASSERT(renderableText != NULL);
     PS_ASSERT(gameState != NULL);
@@ -352,6 +369,8 @@ bool psRenderableTextUpdate(PS_GameState *gameState, PS_RenderableText *renderab
 
     if (newSize > currentSize)
     {
+        vkDeviceWaitIdle(vulkan->device);
+
         psVulkanBufferDestroy(vulkan, &renderableText->vertexBuffer);
         // Reallocate the vertex buffer
         PS_CHECK(psVulkanBufferCreate(
@@ -370,7 +389,7 @@ bool psRenderableTextUpdate(PS_GameState *gameState, PS_RenderableText *renderab
     PS_CHECK(psFontRendererGetFont(fontRenderer, renderableText->fontName, &font));
 
     // update the vertex buffer with the new text
-    PS_CHECK(__psUpdateFontText(vulkan, renderableText, font, text, charHeight));
+    PS_CHECK(__psUpdateFontText(vulkan, renderableText, font, text, renderableText->charHeight));
 
     return true;
 }
@@ -382,6 +401,30 @@ void psRenderableTextDestroy(PS_GameState *gameState, PS_RenderableText *rendera
 
     psVulkanBufferDestroy(&gameState->vulkan, &renderableText->vertexBuffer);
     free(renderableText->vertexBufferData);
+}
+
+void psRenderableTextGetBounds(PS_RenderableText *renderableText, float *minX, float *minY, float *maxX, float *maxY) 
+{
+    PS_ASSERT(renderableText != NULL);
+    PS_ASSERT(minX != NULL);
+    PS_ASSERT(minY != NULL);
+    PS_ASSERT(maxX != NULL);
+    PS_ASSERT(maxY != NULL);
+
+    *minX = renderableText->boundsMinX;
+    *minY = renderableText->boundsMinY;
+    *maxX = renderableText->boundsMaxX;
+    *maxY = renderableText->boundsMaxY;
+}
+
+void psRenderableTextGetSize(PS_RenderableText *renderableText, float *width, float *height) 
+{
+    PS_ASSERT(renderableText != NULL);
+    PS_ASSERT(width != NULL);
+    PS_ASSERT(height != NULL);
+
+    *width = renderableText->boundsMaxX - renderableText->boundsMinX;
+    *height = renderableText->boundsMaxY - renderableText->boundsMinY;
 }
 
 bool psFontCreate(PS_FontData fontData, PS_Vulkan *vulkan, PS_Font *font)
@@ -515,6 +558,5 @@ void psRenderText(PS_Vulkan *vulkan, PS_FontRenderer *fontRenderer, PS_Renderabl
     vkCmdPushConstants(cmd, fontRenderer->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
 
     vkCmdBindVertexBuffers(cmd, 0, 1, &renderableText->vertexBuffer.descriptorBufferInfo.buffer, (VkDeviceSize[]){0});
-    vkCmdDraw(cmd, (uint32_t)renderableText->characterCount * 6, 1, 0, 0);
-    // vkCmdDraw(cmd, 6, 1, 0, 0);
+    vkCmdDraw(cmd, (uint32_t)renderableText->renderableVertexCount, 1, 0, 0);
 }

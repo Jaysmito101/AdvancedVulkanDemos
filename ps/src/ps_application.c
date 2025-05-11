@@ -63,7 +63,7 @@ void psApplicationShutdown(PS_GameState *gameState) {
     psFontRendererShutdown(gameState);
     psScenesShutdown(gameState);
     psVulkanShutdown(&gameState->vulkan);
-    psWindowShutdown(gameState);
+    psWindowShutdown(&gameState->window);
 }
 
 bool psApplicationIsRunning(PS_GameState *gameState) {
@@ -76,7 +76,9 @@ void psApplicationUpdate(PS_GameState *gameState) {
 
     __psApplicationUpdateFramerateCalculation(gameState);
 
-    psWindowPollEvents(gameState);
+    psInputNewFrame(&gameState->input);
+    psWindowPollEvents();
+    psInputCalculateDeltas(&gameState->input);
     psApplicationUpdateWithoutPolling(gameState);
 }
 

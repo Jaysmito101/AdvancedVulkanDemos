@@ -146,11 +146,20 @@ typedef struct PS_Input {
     bool keyState[1024];
     bool mouseButtonState[1024];
 
+    float lastMouseX;
+    float lastMouseY;
+
     double rawMouseX;
     double rawMouseY;
 
     float mouseX;
     float mouseY;
+
+    float mouseDeltaX;
+    float mouseDeltaY;
+
+    float mouseScrollX; 
+    float mouseScrollY;
 } PS_Input;
 
 struct PS_FontRendererVertex;
@@ -165,12 +174,17 @@ typedef struct PS_Font {
 
 typedef struct PS_RenderableText {
     size_t characterCount;
+    size_t renderableVertexCount;
     PS_VulkanBuffer vertexBuffer;
     struct PS_FontRendererVertex* vertexBufferData;
     PS_Font* font;
     char fontName[256];
-    float width;
-    float height;
+    float charHeight;
+    
+    float boundsMinX;
+    float boundsMinY;
+    float boundsMaxX;
+    float boundsMaxY;
 } PS_RenderableText;
 
 typedef struct PS_FontRenderer {
@@ -247,6 +261,9 @@ typedef struct PS_MainMenuScene {
     bool wasMouseClicked;
     bool continueDisabled;
 
+    float debugFontScale;
+    float debugFontOffsetX;
+    float debugFontOffsetY;
 } PS_MainMenuScene;
 
 typedef struct PS_PrologueScene {

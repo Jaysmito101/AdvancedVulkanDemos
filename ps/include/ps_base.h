@@ -38,6 +38,7 @@
 #define PS_CHECK_VK_RESULT(result, log, ...) \
     if (result != VK_SUCCESS) { \
         PS_LOG("------------------------------------\n"); \
+        PS_LOG("Check [%s] failed in %s:%d\n", #result, __FILE__, __LINE__); \
         PS_LOG(log, ##__VA_ARGS__); \
         PS_LOG("------------------------------------\n"); \
         return false; \
@@ -46,6 +47,7 @@
 #define PS_CHECK_MSG(result, log, ...) \
     if (!(result)) { \
         PS_LOG("------------------------------------\n"); \
+        PS_LOG("Check [%s] failed in %s:%d\n", #result, __FILE__, __LINE__); \
         PS_LOG(log, ##__VA_ARGS__); \
         PS_LOG("------------------------------------\n"); \
         return false; \

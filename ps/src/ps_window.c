@@ -37,8 +37,8 @@ static void __psGLFWDropCallback(GLFWwindow *window, int count, const char **pat
 static void __psGLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
     PS_GameState *gameState = (PS_GameState *)glfwGetWindowUserPointer(window);
-    // TODO: Handle scroll events
-    // PS_LOG("Scroll: x=%.2f, y=%.2f\n", xoffset, yoffset);
+    gameState->input.mouseScrollX = (float)xoffset;
+    gameState->input.mouseScrollY = (float)yoffset;
 }
 
 static void __psGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos)
@@ -169,18 +169,16 @@ bool psWindowInit(PS_GameState *gameState) {
     return true;
 }
 
-void psWindowShutdown(PS_GameState *gameState) {
-    PS_ASSERT(gameState != NULL);
+void psWindowShutdown(PS_Window *window) {
+    PS_ASSERT(window != NULL);
 
-    if (gameState->window.window) {
-        glfwDestroyWindow(gameState->window.window);
-        gameState->window.window = NULL;
+    if (window->window) {
+        glfwDestroyWindow(window->window);
+        window->window = NULL;
     }
     glfwTerminate();
 }
 
-void psWindowPollEvents(PS_GameState *gameState) {
-    PS_ASSERT(gameState != NULL);
-
+void psWindowPollEvents() {
     glfwPollEvents();
 }

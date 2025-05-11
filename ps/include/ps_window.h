@@ -5,8 +5,8 @@
 #include "ps_common.h"
 
 bool psWindowInit(PS_GameState *gameState);
-void psWindowShutdown(PS_GameState *gameState);
-void psWindowPollEvents(PS_GameState *gameState);
+void psWindowShutdown(PS_Window *window);
+void psWindowPollEvents();
 
 
 #endif // PS_WINDOW_H

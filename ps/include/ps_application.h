@@ -14,5 +14,7 @@ void psApplicationUpdateWithoutPolling(PS_GameState *gameState);
 void psApplicationRender(PS_GameState *gameState);
 
 void psInputCalculateMousePositionFromRaw(PS_GameState *gameState, double x, double y);
+void psInputCalculateDeltas(PS_Input *input);
+void psInputNewFrame(PS_Input *input);
 
 #endif // PS_APPLICATION_H

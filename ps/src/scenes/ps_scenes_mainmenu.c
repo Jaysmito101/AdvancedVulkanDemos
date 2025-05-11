@@ -207,7 +207,11 @@ bool psScenesMainMenuInit(PS_GameState *gameState)
     scene->wasMouseClicked = false;
     scene->continueDisabled = true; // Disable continue button by default
 
-    PS_CHECK(psRenderableTextCreate(gameState, &scene->titleText, "ShantellSansBold", psAssetShader_LoadingScreenFrag(), 48.0f));
+    PS_CHECK(psRenderableTextCreate(gameState, &scene->titleText, "ShantellSansBold", "Yay FontRendering!!!!", 48.0f));
+
+    scene->debugFontScale = 1.0f;
+    scene->debugFontOffsetX = 0.0f;
+    scene->debugFontOffsetY = 0.0f; 
 
     return true;
 }
@@ -252,6 +256,17 @@ bool psScenesMainMenuUpdate(PS_GameState *gameState)
 
     float mx = gameState->input.mouseX * 0.5f + 0.5f;
     float my = gameState->input.mouseY * 0.5f + 0.5f;
+
+    scene->debugFontScale += gameState->input.mouseScrollY * 0.1f;
+    if (scene->debugFontScale < 0.1f)
+    {
+        scene->debugFontScale = 0.1f;
+    }
+    if (gameState->input.mouseButtonState[GLFW_MOUSE_BUTTON_LEFT])
+    {
+        scene->debugFontOffsetX += gameState->input.mouseDeltaX * 1000.0f;
+        scene->debugFontOffsetY -= gameState->input.mouseDeltaY * 1000.0f;
+    }
 
     // Button layout constants
     const float buttonHeightUV = 0.1f;
@@ -313,6 +328,24 @@ bool psScenesMainMenuUpdate(PS_GameState *gameState)
         }
     }
     scene->wasMouseClicked = isMouseClicked;
+
+    static char random[2560];
+    // ill randfom wiut rhandom ascii
+    memset(random, 0, sizeof(random));
+    for (int i = 0; i < sizeof(random) - 1; ++i)
+    {
+        random[i] = 'A' + (rand() % 26);
+        if (i % 80 == 79)
+        {
+            random[i] = '\n';
+        }
+    }
+
+    static char title[4560];
+    snprintf(title, sizeof(title), "Pastel Shadows\n --\n FPS(Stable): %zu, FPS(Instant): %zu\n DeltaTime: %.3f", gameState->framerate.fps, gameState->framerate.instanteneousFrameRate, gameState->framerate.deltaTime);
+    snprintf(title + strlen(title), sizeof(title) - strlen(title), "\nRandom Stuff:\n%s", random);
+    psRenderableTextUpdate(gameState, &scene->titleText, title);
+
 
     return true;
 }
@@ -397,8 +430,8 @@ bool psScenesMainMenuRender(PS_GameState *gameState)
         &gameState->fontRenderer,
         &scene->titleText,
         cmd,
-        0.0, 0.0,
-        1.0,
+        scene->debugFontOffsetX, scene->debugFontOffsetY,
+        scene->debugFontScale,
         0.1f, 0.2f, 0.3f, 1.0f
     );
 
