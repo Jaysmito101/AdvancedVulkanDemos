@@ -5,7 +5,11 @@
 #include <vulkan/vulkan.h>
 
 #include "ps_base.h"
-// #include "ps_font_renderer.h"
+#include "ps_font.h"
+
+#ifndef PS_MAX_FONTS
+#define PS_MAX_FONTS 128
+#endif
 
 struct GLFWwindow;
 
@@ -117,8 +121,6 @@ typedef struct PS_Vulkan {
     PS_VulkanSwapchain swapchain;
     PS_VulkanRenderer renderer;
 
-    // PS_FontRenderer fontRenderer;
-
     int32_t graphicsQueueFamilyIndex;
     int32_t computeQueueFamilyIndex;
 
@@ -150,6 +152,35 @@ typedef struct PS_Input {
     float mouseX;
     float mouseY;
 } PS_Input;
+
+struct PS_FontRendererVertex;
+
+
+typedef struct PS_Font {
+    PS_FontData fontData;   
+    PS_VulkanImage fontAtlasImage;
+    VkDescriptorSet fontDescriptorSet;
+    VkDescriptorSetLayout fontDescriptorSetLayout;
+} PS_Font;
+
+typedef struct PS_RenderableText {
+    size_t characterCount;
+    PS_VulkanBuffer vertexBuffer;
+    struct PS_FontRendererVertex* vertexBufferData;
+    PS_Font* font;
+    char fontName[256];
+    float width;
+    float height;
+} PS_RenderableText;
+
+typedef struct PS_FontRenderer {
+    PS_Font fonts[PS_MAX_FONTS];
+    size_t fontCount;
+    
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
+    VkDescriptorSetLayout fontDescriptorSetLayout;
+} PS_FontRenderer;
 
 typedef enum PS_SceneType {
     PS_SCENE_TYPE_NONE,
@@ -209,6 +240,8 @@ typedef struct PS_MainMenuScene {
     VkDescriptorSetLayout textureDescriptorSetLayout;
     VkDescriptorSet textureDescriptorSet;
 
+    PS_RenderableText titleText;
+
     // Interaction State
     PS_MainMenuButtonType hoveredButton;
     bool wasMouseClicked;
@@ -256,7 +289,7 @@ typedef struct PS_GameState {
     PS_Frametime framerate;
     PS_Scene scene;
     PS_Input input;
-
+    PS_FontRenderer fontRenderer;
 
     bool running;
 } PS_GameState;

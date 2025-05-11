@@ -1,8 +1,6 @@
 #ifndef PS_VULKAN_H
 #define PS_VULKAN_H
 
-#define API_VERSION VK_API_VERSION_1_2
-#include <vulkan/vulkan.h>
 
 #include "ps_common.h"
 #include "ps_pipeline_utils.h"

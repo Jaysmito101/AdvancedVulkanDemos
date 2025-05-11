@@ -104,18 +104,71 @@ def generate_c_code_for_string(text_data, name):
 def generate_c_code_for_ps_font_atlas(font_metrics_data, name):
     atlas_data = font_metrics_data["atlas"]
     metrics_data = font_metrics_data["metrics"]
-    glyphs_data = font_metrics_data["glyphs"]
+    json_glyphs_list = font_metrics_data["glyphs"]
 
-    num_glyphs = len(glyphs_data)
-    if num_glyphs > PS_FONT_MAX_GLYPHS_PY:
-        print(f"Warning: Font has {num_glyphs} glyphs, exceeding PS_FONT_MAX_GLYPHS_PY {PS_FONT_MAX_GLYPHS_PY}. Truncating.")
-        glyphs_data = glyphs_data[:PS_FONT_MAX_GLYPHS_PY]
-        num_glyphs = PS_FONT_MAX_GLYPHS_PY
+    # Initialize an array for C glyph structures with default values.
+    # The C array will always have PS_FONT_MAX_GLYPHS_PY entries.
+    c_glyphs_array = []
+    for i in range(PS_FONT_MAX_GLYPHS_PY):
+        c_glyphs_array.append({
+            "unicodeIndex": i,  # Represents the unicode value for this slot
+            "advanceX": 0.0,
+            "planeBounds": {"left": 0.0, "bottom": 0.0, "right": 0.0, "top": 0.0},
+            "atlasBounds": {"left": 0.0, "bottom": 0.0, "right": 0.0, "top": 0.0}
+        })
+
+    skipped_glyphs_count = 0
+    max_unicode_found_in_json = -1
+
+    # Populate the c_glyphs_array with actual glyph data from JSON.
+    # Glyphs from JSON are placed at their 'unicode' index.
+    for glyph_from_json in json_glyphs_list:
+        unicode_val = glyph_from_json["unicode"]
+        
+        if unicode_val >= 0:
+            max_unicode_found_in_json = max(max_unicode_found_in_json, unicode_val)
+
+        if 0 <= unicode_val < PS_FONT_MAX_GLYPHS_PY:
+            target_glyph_struct = c_glyphs_array[unicode_val]
+            
+            # The unicodeIndex is already set to unicode_val during initialization,
+            # but explicitly setting it here reinforces its meaning.
+            target_glyph_struct["unicodeIndex"] = unicode_val 
+            target_glyph_struct["advanceX"] = float(glyph_from_json["advance"])
+            
+            plane_bounds_json = glyph_from_json.get("planeBounds")
+            if plane_bounds_json:
+                target_glyph_struct["planeBounds"] = {
+                    "left": float(plane_bounds_json["left"]),
+                    "bottom": float(plane_bounds_json["bottom"]),
+                    "right": float(plane_bounds_json["right"]),
+                    "top": float(plane_bounds_json["top"])
+                }
+            # If not present, it keeps the default {0,0,0,0}
+
+            atlas_bounds_json = glyph_from_json.get("atlasBounds")
+            if atlas_bounds_json:
+                target_glyph_struct["atlasBounds"] = {
+                    "left": float(atlas_bounds_json["left"]),
+                    "bottom": float(atlas_bounds_json["bottom"]),
+                    "right": float(atlas_bounds_json["right"]),
+                    "top": float(atlas_bounds_json["top"])
+                }
+            # If not present, it keeps the default {0,0,0,0}
+        elif unicode_val >= PS_FONT_MAX_GLYPHS_PY:
+            skipped_glyphs_count += 1
+    
+    if skipped_glyphs_count > 0:
+        print(f"Warning: Font '{name}' - Skipped {skipped_glyphs_count} glyphs with unicode value >= {PS_FONT_MAX_GLYPHS_PY} (max unicode found in JSON: {max_unicode_found_in_json}).")
 
     lines = [f'static const PS_FontAtlas {name} = {{']
     lines.append(f'    .info = {{')
     lines.append(f'        .distanceRange = {float(atlas_data["distanceRange"]):.8f}f,')
-    lines.append(f'        .distanceRangeMiddle = {float(atlas_data["distanceRange"]) / 2.0:.8f}f,')
+    if "distanceRangeMiddle" in atlas_data:
+        lines.append(f'        .distanceRangeMiddle = {float(atlas_data["distanceRangeMiddle"]):.8f}f,')
+    else:
+        # Fallback if not in JSON, though msdf-atlas-gen typically includes it.
+        lines.append(f'        .distanceRangeMiddle = {float(atlas_data["distanceRange"]) / 2.0:.8f}f,')
     lines.append(f'        .size = {float(atlas_data["size"]):.8f}f,')
     lines.append(f'        .width = {int(atlas_data["width"])},')
     lines.append(f'        .height = {int(atlas_data["height"])}')
@@ -130,25 +183,22 @@ def generate_c_code_for_ps_font_atlas(font_metrics_data, name):
     lines.append(f'        .underlineThickness = {float(metrics_data["underlineThickness"]):.8f}f')
     lines.append(f'    }},')
 
-    lines.append(f'    .glyphCount = {num_glyphs},')
+    lines.append(f'    .glyphCount = {PS_FONT_MAX_GLYPHS_PY},') # C array size is fixed
     lines.append(f'    .glyphs = {{')
-    for i, glyph in enumerate(glyphs_data):
-        plane_bounds = glyph.get("planeBounds")
-        atlas_bounds = glyph.get("atlasBounds")
+    for i, glyph_struct_for_c in enumerate(c_glyphs_array): # Iterate PS_FONT_MAX_GLYPHS_PY times
+        # glyph_struct_for_c is c_glyphs_array[i], representing unicode 'i'
         line = "        {"
-        line += f'.unicodeIndex = {glyph["index"]}, '
-        line += f'.advanceX = {float(glyph["advance"]):.8f}f, '
-        if plane_bounds:
-            line += f'.planeBounds = {{{float(plane_bounds["left"]):.8f}f, {float(plane_bounds["bottom"]):.8f}f, {float(plane_bounds["right"]):.8f}f, {float(plane_bounds["top"]):.8f}f}}, '
-        else:
-            line += f'.planeBounds = {{0.0f, 0.0f, 0.0f, 0.0f}}, '
-        if atlas_bounds:
-            line += f'.atlasBounds = {{{float(atlas_bounds["left"]):.8f}f, {float(atlas_bounds["bottom"]):.8f}f, {float(atlas_bounds["right"]):.8f}f, {float(atlas_bounds["top"]):.8f}f}}'
-        else:
-            line += f'.atlasBounds = {{0.0f, 0.0f, 0.0f, 0.0f}}'
+        line += f'.unicodeIndex = {glyph_struct_for_c["unicodeIndex"]}, ' # This will be 'i'
+        line += f'.advanceX = {glyph_struct_for_c["advanceX"]:.8f}f, '
+        
+        pb = glyph_struct_for_c["planeBounds"]
+        line += f'.planeBounds = {{{pb["left"]:.8f}f, {pb["bottom"]:.8f}f, {pb["right"]:.8f}f, {pb["top"]:.8f}f}}, '
+        
+        ab = glyph_struct_for_c["atlasBounds"]
+        line += f'.atlasBounds = {{{ab["left"]:.8f}f, {ab["bottom"]:.8f}f, {ab["right"]:.8f}f, {ab["top"]:.8f}f}}'
 
         line += "}"
-        if i < num_glyphs - 1:
+        if i < PS_FONT_MAX_GLYPHS_PY - 1:
             line += ","
         lines.append(line)
     lines.append(f'    }}')
@@ -185,7 +235,6 @@ def create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root):
     cmd = [
         msdf_exe_path,
         "-font", file_path,
-        "-allglyphs",
         "-type", "mtsdf",
         "-format", "png",
         "-dimensions", "2048", "2048",

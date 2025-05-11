@@ -1,4 +1,5 @@
 #include "ps_vulkan.h"
+
 #include "glfw/glfw3.h"
 
 static bool __psVulkanLayersSupported(const char **layers, uint32_t layerCount)

@@ -26,9 +26,9 @@ typedef struct PS_FontAtlasMetrics {
 
 typedef struct PS_FontAtlasBounds {
     float left;
+    float bottom;
     float right;
     float top;
-    float bottom;
 } PS_FontAtlasBounds;
 
 typedef struct PS_FontAtlasGlyph {

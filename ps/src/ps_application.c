@@ -1,6 +1,7 @@
 #include "ps_application.h"
 #include "ps_window.h"
 #include "ps_vulkan.h"
+#include "ps_font_renderer.h"
 
 #include "glfw/glfw3.h"
 
@@ -35,22 +36,19 @@ bool psApplicationInit(PS_GameState *gameState) {
     PS_CHECK(psWindowInit(gameState));
     PS_CHECK(psVulkanInit(&gameState->vulkan, &gameState->window));
     PS_CHECK(psScenesInit(gameState));
-    __psApplicationUpdateFramerateCalculation(gameState);
+    PS_CHECK(psFontRendererInit(gameState));
+    PS_CHECK(psFontRendererAddBasicFonts(gameState));
 
-    // this is for prod
-    PS_CHECK(psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_SPLASH));
+    __psApplicationUpdateFramerateCalculation(gameState);
 
     memset(&gameState->input, 0, sizeof(PS_Input));
 
-    // // this is for dev/testing
-    // if(!psScenesMainMenuInit(gameState)) {
-    //     PS_LOG("Failed to switch to loading scene\n");
-    //     return false;
-    // }
-    // if(!psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_MAIN_MENU)) {
-    //     PS_LOG("Failed to switch to debug scene\n");
-    //     return false;
-    // }
+    // this is for prod
+    // PS_CHECK(psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_SPLASH));
+
+    // this is for dev/testing
+    PS_CHECK(psScenesMainMenuInit(gameState));
+    PS_CHECK(psScenesSwitchWithoutTransition(gameState, PS_SCENE_TYPE_MAIN_MENU));
 
     return true;
 }
@@ -62,6 +60,7 @@ void psApplicationShutdown(PS_GameState *gameState) {
     vkQueueWaitIdle(gameState->vulkan.graphicsQueue);
     vkQueueWaitIdle(gameState->vulkan.computeQueue);
 
+    psFontRendererShutdown(gameState);
     psScenesShutdown(gameState);
     psVulkanShutdown(&gameState->vulkan);
     psWindowShutdown(gameState);

@@ -265,7 +265,7 @@ bool psVulkanSwapchainRecreate(PS_Vulkan *vulkan, PS_Window* window) {
 
     PS_CHECK(__psVulkanSwapchainChooseParameters(vulkan, window));
     PS_CHECK(__psVulkanSwapchainKHRCreate(vulkan, vulkan->swapchain.swapchain));
-    PS_CHECK(__psVulkanSwapchainCreateRenderPass(vulkan));
+    PS_CHECK(__psVulkanSwapchainQueryImages(vulkan));
     PS_CHECK(__psVulkanSwapchainCreateImageViews(vulkan));
     PS_CHECK(__psVulkanSwapchainCreateFramebuffers(vulkan));
 

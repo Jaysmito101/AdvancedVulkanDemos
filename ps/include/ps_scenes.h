@@ -4,6 +4,8 @@
 #include "ps_asset.h"
 #include "ps_common.h"
 #include "ps_vulkan.h"
+#include "ps_font_renderer.h"
+
 
 bool psScenesInit(PS_GameState *gameState);
 void psScenesShutdown(PS_GameState *gameState);

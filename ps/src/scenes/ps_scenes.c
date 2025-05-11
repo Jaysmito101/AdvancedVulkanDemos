@@ -70,7 +70,7 @@ void psScenesShutdown(PS_GameState *gameState)
     psScenesSplashShutdown(gameState);
     psScenesLoadingShutdown(gameState);
     psScenesMainMenuShutdown(gameState);
-    psScenesPrologueShutdown(gameState);
+    // psScenesPrologueShutdown(gameState);
 }
 
 

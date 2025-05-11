@@ -4,7 +4,9 @@
 
 // third party includes
 #include "glfw/glfw3.h"
-#include "vulkan/vulkan.h"
+
+#define API_VERSION VK_API_VERSION_1_2
+#include <vulkan/vulkan.h>
  
 // ps includes
 #include "ps_base.h"

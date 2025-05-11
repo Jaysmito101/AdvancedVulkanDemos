@@ -207,6 +207,8 @@ bool psScenesMainMenuInit(PS_GameState *gameState)
     scene->wasMouseClicked = false;
     scene->continueDisabled = true; // Disable continue button by default
 
+    PS_CHECK(psRenderableTextCreate(gameState, &scene->titleText, "ShantellSansBold", psAssetShader_LoadingScreenFrag(), 48.0f));
+
     return true;
 }
 
@@ -215,6 +217,8 @@ void psScenesMainMenuShutdown(PS_GameState *gameState)
     PS_ASSERT(gameState != NULL);
     PS_MainMenuScene *scene = &gameState->scene.mainMenuScene;
     PS_Vulkan *vulkan = &gameState->vulkan;
+
+    psRenderableTextDestroy(gameState, &scene->titleText);
 
     // Destroy pipeline and layout first
     vkDestroyPipeline(vulkan->device, scene->pipeline, NULL);
@@ -388,6 +392,19 @@ bool psScenesMainMenuRender(PS_GameState *gameState)
     // Draw full screen quad (6 vertices)
     vkCmdDraw(cmd, 6, 1, 0, 0);
 
+    psRenderText(
+        &gameState->vulkan,
+        &gameState->fontRenderer,
+        &scene->titleText,
+        cmd,
+        0.0, 0.0,
+        1.0,
+        0.1f, 0.2f, 0.3f, 1.0f
+    );
+
+
     vkCmdEndRenderPass(cmd);
+
+
     return true;
 }
