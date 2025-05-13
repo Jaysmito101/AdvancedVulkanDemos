@@ -194,6 +194,8 @@ typedef struct PS_FontRenderer {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
     VkDescriptorSetLayout fontDescriptorSetLayout;
+
+    PS_Vulkan* vulkan;
 } PS_FontRenderer;
 
 typedef enum PS_SceneType {

@@ -12,10 +12,10 @@ void psRenderableTextDestroy(PS_GameState* gameState, PS_RenderableText *rendera
 void psRenderableTextGetBounds(PS_RenderableText *renderableText, float *minX, float *minY, float *maxX, float *maxY);
 void psRenderableTextGetSize(PS_RenderableText *renderableText, float *width, float *height);
 
-bool psFontRendererInit(PS_GameState *gameState);
-void psFontRendererShutdown(PS_GameState *gameState);
-bool psFontRendererAddFontFromAsset(PS_GameState *gameState, const char *asset);
-bool psFontRendererAddBasicFonts(PS_GameState *gameState);
+bool psFontRendererInit(PS_FontRenderer* fontRenderer, PS_Vulkan* vulkan);
+void psFontRendererShutdown(PS_FontRenderer* fontRenderer);
+bool psFontRendererAddFontFromAsset(PS_FontRenderer* fontRenderer, const char *asset);
+bool psFontRendererAddBasicFonts(PS_FontRenderer* fontRenderer);
 bool psFontRendererHasFont(PS_FontRenderer *fontRenderer, const char *fontName);
 bool psFontRendererGetFont(PS_FontRenderer *fontRenderer, const char *fontName, PS_Font **font);
 

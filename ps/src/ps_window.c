@@ -118,27 +118,26 @@ static void __psGLFWWindowFocusCallback(GLFWwindow *window, int focused)
 // ---------- GLFW Callbacks End ----------
 
 
-static void __psSetupWindowEvents(PS_GameState *gameState) {
-    PS_ASSERT(gameState != NULL);
-    PS_ASSERT(gameState->window.window != NULL);
+static void __psSetupWindowEvents(PS_Window *window) {
+    PS_ASSERT(window != NULL);
 
     glfwSetErrorCallback(__psGLFWErrorCallback);
-    glfwSetKeyCallback(gameState->window.window, __psGLFWKeyCallback);
-    glfwSetCharCallback(gameState->window.window, __psGLFWCharCallback);
-    glfwSetDropCallback(gameState->window.window, __psGLFWDropCallback);
-    glfwSetScrollCallback(gameState->window.window, __psGLFWScrollCallback);
-    glfwSetCursorPosCallback(gameState->window.window, __psGLFWCursorPosCallback);
-    glfwSetWindowPosCallback(gameState->window.window, __psGLFWWindowPosCallback);
-    glfwSetWindowSizeCallback(gameState->window.window, __psGLFWWindowSizeCallback);
-    glfwSetCursorEnterCallback(gameState->window.window, __psGLFWCursorEnterCallback);
-    glfwSetWindowCloseCallback(gameState->window.window, __psGLFWWindowCloseCallback);
-    glfwSetMouseButtonCallback(gameState->window.window, __psGLFWMouseButtonCallback);
-    glfwSetFramebufferSizeCallback(gameState->window.window, __psGLFWFramebufferSizeCallback);
-    glfwSetWindowMaximizeCallback(gameState->window.window, __psGLFWWindowMaximizeCallback);
-    glfwSetWindowFocusCallback(gameState->window.window, __psGLFWWindowFocusCallback);
+    glfwSetKeyCallback(window->window, __psGLFWKeyCallback);
+    glfwSetCharCallback(window->window, __psGLFWCharCallback);
+    glfwSetDropCallback(window->window, __psGLFWDropCallback);
+    glfwSetScrollCallback(window->window, __psGLFWScrollCallback);
+    glfwSetCursorPosCallback(window->window, __psGLFWCursorPosCallback);
+    glfwSetWindowPosCallback(window->window, __psGLFWWindowPosCallback);
+    glfwSetWindowSizeCallback(window->window, __psGLFWWindowSizeCallback);
+    glfwSetCursorEnterCallback(window->window, __psGLFWCursorEnterCallback);
+    glfwSetWindowCloseCallback(window->window, __psGLFWWindowCloseCallback);
+    glfwSetMouseButtonCallback(window->window, __psGLFWMouseButtonCallback);
+    glfwSetFramebufferSizeCallback(window->window, __psGLFWFramebufferSizeCallback);
+    glfwSetWindowMaximizeCallback(window->window, __psGLFWWindowMaximizeCallback);
+    glfwSetWindowFocusCallback(window->window, __psGLFWWindowFocusCallback);
 }
 
-bool psWindowInit(PS_GameState *gameState) {
+bool psWindowInit(PS_Window* window, PS_GameState *gameState) {
 
     if(!glfwInit()) {
         PS_LOG("Failed to initialize GLFW\n");
@@ -153,18 +152,18 @@ bool psWindowInit(PS_GameState *gameState) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    gameState->window.window = glfwCreateWindow(1280, 720, "Pastel Shadows", NULL, NULL);
-    if (!gameState->window.window) {
+    window->window = glfwCreateWindow(1280, 720, "Pastel Shadows", NULL, NULL);
+    if (!window->window) {
         PS_LOG("Failed to create GLFW window\n");
         glfwTerminate(); // Terminate GLFW if window creation fails
         return false;
     }
-    gameState->window.width = 1280; // Store initial size
-    gameState->window.height = 720;
-    gameState->window.isMinimized = false;
-    glfwSetWindowUserPointer(gameState->window.window, gameState);
+    window->width = 1280; // Store initial size
+    window->height = 720;
+    window->isMinimized = false;
+    glfwSetWindowUserPointer(window->window, gameState);
 
-    __psSetupWindowEvents(gameState); // Setup callbacks
+    __psSetupWindowEvents(window);
 
     return true;
 }

@@ -444,39 +444,38 @@ void psFontDestroy(PS_Vulkan *vulkan, PS_Font *font)
     vkDestroyDescriptorSetLayout(vulkan->device, font->fontDescriptorSetLayout, NULL);
 }
 
-bool psFontRendererInit(PS_GameState *gameState)
+bool psFontRendererInit(PS_FontRenderer* fontRenderer, PS_Vulkan* vulkan)
 {
-    PS_ASSERT(gameState != NULL);
+    PS_ASSERT(fontRenderer != NULL);
 
-    PS_FontRenderer *fontRenderer = &gameState->fontRenderer;
     memset(&fontRenderer->fonts, 0, sizeof(fontRenderer->fonts));
     fontRenderer->fontCount = 0;
 
-    PS_CHECK(__psCreateDescriptorSetLayout(gameState->vulkan.device, &fontRenderer->fontDescriptorSetLayout));
-    PS_CHECK(__psCreatePipelineLayout(fontRenderer, gameState->vulkan.device));
-    PS_CHECK(__psCreatePipeline(fontRenderer, gameState->vulkan.device, gameState->vulkan.renderer.sceneFramebuffer.renderPass));
+    fontRenderer->vulkan = vulkan;
+    PS_CHECK(__psCreateDescriptorSetLayout(vulkan->device, &fontRenderer->fontDescriptorSetLayout));
+    PS_CHECK(__psCreatePipelineLayout(fontRenderer, vulkan->device));
+    PS_CHECK(__psCreatePipeline(fontRenderer, vulkan->device, vulkan->renderer.sceneFramebuffer.renderPass));
 
     return true;
 }
 
-void psFontRendererShutdown(PS_GameState *gameState)
+void psFontRendererShutdown(PS_FontRenderer* fontRenderer)
 {
-    PS_ASSERT(gameState != NULL);
-
-    PS_FontRenderer *fontRenderer = &gameState->fontRenderer;
+    PS_ASSERT(fontRenderer != NULL);
 
     for (size_t i = 0; i < fontRenderer->fontCount; ++i)
     {
-        psFontDestroy(&gameState->vulkan, &fontRenderer->fonts[i]);
+        psFontDestroy(fontRenderer->vulkan, &fontRenderer->fonts[i]);
     }
 
-    vkDestroyPipeline(gameState->vulkan.device, fontRenderer->pipeline, NULL);
-    vkDestroyPipelineLayout(gameState->vulkan.device, fontRenderer->pipelineLayout, NULL);
-    vkDestroyDescriptorSetLayout(gameState->vulkan.device, fontRenderer->fontDescriptorSetLayout, NULL);
+    vkDestroyPipeline(fontRenderer->vulkan->device, fontRenderer->pipeline, NULL);
+    vkDestroyPipelineLayout(fontRenderer->vulkan->device, fontRenderer->pipelineLayout, NULL);
+    vkDestroyDescriptorSetLayout(fontRenderer->vulkan->device, fontRenderer->fontDescriptorSetLayout, NULL);
     fontRenderer->fontCount = 0;
+    fontRenderer->vulkan = NULL;
 }
 
-bool psFontRendererAddFontFromAsset(PS_GameState *gameState, const char *asset)
+bool psFontRendererAddFontFromAsset(PS_FontRenderer* fontRenderer, const char *asset)
 {
     PS_FontData fontData = {0};
     snprintf(fontData.name, sizeof(fontData.name), "%s", asset);
@@ -484,17 +483,17 @@ bool psFontRendererAddFontFromAsset(PS_GameState *gameState, const char *asset)
     fontData.atlasData = (uint8_t *)psAssetFontAtlas(asset, &fontData.atlasDataSize);
     PS_CHECK_MSG(fontData.atlasData != NULL, "Failed to load font asset\n");
     PS_CHECK_MSG(fontData.atlas != NULL, "Failed to load font atlas\n");
-    PS_CHECK_MSG(gameState->fontRenderer.fontCount < PS_MAX_FONTS, "Font count exceeded maximum limit\n");
-    PS_CHECK(psFontCreate(fontData, &gameState->vulkan, &gameState->fontRenderer.fonts[gameState->fontRenderer.fontCount]));
-    gameState->fontRenderer.fontCount += 1;
+    PS_CHECK_MSG(fontRenderer->fontCount < PS_MAX_FONTS, "Font count exceeded maximum limit\n");
+    PS_CHECK(psFontCreate(fontData, fontRenderer->vulkan, &fontRenderer->fonts[fontRenderer->fontCount]));
+    fontRenderer->fontCount += 1;
     return true;
 }
 
-bool psFontRendererAddBasicFonts(PS_GameState *gameState)
+bool psFontRendererAddBasicFonts(PS_FontRenderer* fontRenderer)
 {
-    PS_ASSERT(gameState != NULL);
-    PS_CHECK(psFontRendererAddFontFromAsset(gameState, "OpenSansRegular"));
-    PS_CHECK(psFontRendererAddFontFromAsset(gameState, "ShantellSansBold"));
+    PS_ASSERT(fontRenderer != NULL);
+    PS_CHECK(psFontRendererAddFontFromAsset(fontRenderer, "OpenSansRegular"));
+    PS_CHECK(psFontRendererAddFontFromAsset(fontRenderer, "ShantellSansBold"));
     return true;
 }
 
