@@ -197,44 +197,12 @@ bool psScenesSplashRender(PS_GameState *gameState)
     uint32_t currentFrameIndex = gameState->vulkan.renderer.currentFrameIndex;
     VkCommandBuffer commandBuffer = gameState->vulkan.renderer.resources[currentFrameIndex].commandBuffer;
 
-    static VkClearValue clearColor[2] = {0};
-    clearColor[0].color.float32[0] = 215.0f / 255.0f;
-    clearColor[0].color.float32[1] = 204.0f / 255.0f;
-    clearColor[0].color.float32[2] = 246.0f / 255.0f;
-    clearColor[0].color.float32[3] = 1.0f;
-
-    clearColor[1].depthStencil.depth = 1.0f;
-    clearColor[1].depthStencil.stencil = 0;
-
-    VkRenderPassBeginInfo renderPassInfo = {0};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = gameState->vulkan.renderer.sceneFramebuffer.renderPass;
-    renderPassInfo.framebuffer = gameState->vulkan.renderer.sceneFramebuffer.framebuffer;
-    renderPassInfo.renderArea.offset.x = 0;
-    renderPassInfo.renderArea.offset.y = 0;
-    renderPassInfo.renderArea.extent.width = gameState->vulkan.renderer.sceneFramebuffer.width;
-    renderPassInfo.renderArea.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
-    renderPassInfo.clearValueCount = 2;
-    renderPassInfo.pClearValues = clearColor;
-
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    VkViewport viewport = {0};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float)gameState->vulkan.renderer.sceneFramebuffer.width;
-    viewport.height = (float)gameState->vulkan.renderer.sceneFramebuffer.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-    VkRect2D scissor = {0};
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent.width = gameState->vulkan.renderer.sceneFramebuffer.width;
-    scissor.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
+    PS_CHECK(psBeginSceneRenderPass(
+        commandBuffer,
+        &gameState->vulkan.renderer,
+        NULL, 0
+    ));
+    
     PS_SplashPushConstants pushConstantData = {
         .framebufferWidth = (float)gameState->vulkan.renderer.sceneFramebuffer.width,
         .framebufferHeight = (float)gameState->vulkan.renderer.sceneFramebuffer.height,
@@ -259,7 +227,7 @@ bool psScenesSplashRender(PS_GameState *gameState)
 
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
-    vkCmdEndRenderPass(commandBuffer);
+    PS_CHECK(psEndSceneRenderPass(commandBuffer));
 
     return true;
 }

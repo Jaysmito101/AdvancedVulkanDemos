@@ -358,41 +358,11 @@ bool psScenesMainMenuRender(PS_GameState *gameState)
     VkCommandBuffer cmd = gameState->vulkan.renderer.resources[idx].commandBuffer;
 
     // Begin scene render pass
-    VkRenderPassBeginInfo rpInfo = {0};
-    rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    rpInfo.renderPass = gameState->vulkan.renderer.sceneFramebuffer.renderPass;
-    rpInfo.framebuffer = gameState->vulkan.renderer.sceneFramebuffer.framebuffer;
-    rpInfo.renderArea.offset.x = 0;
-    rpInfo.renderArea.offset.y = 0;
-    rpInfo.renderArea.extent.width = gameState->vulkan.renderer.sceneFramebuffer.width;
-    rpInfo.renderArea.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
-    VkClearValue clears[2] = {0};
-
-    clears[0].color.float32[0] = 208.0f / 255.0f;
-    clears[0].color.float32[1] = 166.0f / 255.0f;
-    clears[0].color.float32[2] = 228.0f / 255.0f;
-    clears[0].color.float32[3] = 1.0f;
-    clears[1].depthStencil.depth = 1.0f;
-    rpInfo.clearValueCount = 2;
-    rpInfo.pClearValues = clears;
-
-    vkCmdBeginRenderPass(cmd, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    VkViewport viewport = {0};
-    viewport.x = 0.0f;
-    viewport.y = 0.0f;
-    viewport.width = (float)gameState->vulkan.renderer.sceneFramebuffer.width;
-    viewport.height = (float)gameState->vulkan.renderer.sceneFramebuffer.height;
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
-
-    VkRect2D scissor = {0};
-    scissor.offset.x = 0;
-    scissor.offset.y = 0;
-    scissor.extent.width = gameState->vulkan.renderer.sceneFramebuffer.width;
-    scissor.extent.height = gameState->vulkan.renderer.sceneFramebuffer.height;
-    vkCmdSetScissor(cmd, 0, 1, &scissor);
+    PS_CHECK(psBeginSceneRenderPass(
+        cmd,
+        &gameState->vulkan.renderer,
+        NULL, 0
+    ));
 
     // Bind pipeline
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, scene->pipeline);
@@ -436,7 +406,7 @@ bool psScenesMainMenuRender(PS_GameState *gameState)
     );
 
 
-    vkCmdEndRenderPass(cmd);
+    PS_CHECK(psEndSceneRenderPass(cmd));
 
 
     return true;

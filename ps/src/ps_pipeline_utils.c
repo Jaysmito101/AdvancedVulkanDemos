@@ -1,6 +1,7 @@
 #include "ps_pipeline_utils.h"
 
-bool psPipelineUtilsShaderStage(VkPipelineShaderStageCreateInfo *shaderStageInfo, VkShaderModule shaderModule, VkShaderStageFlagBits stageFlags) {
+bool psPipelineUtilsShaderStage(VkPipelineShaderStageCreateInfo *shaderStageInfo, VkShaderModule shaderModule, VkShaderStageFlagBits stageFlags)
+{
     PS_ASSERT(shaderStageInfo != NULL);
     PS_ASSERT(shaderModule != VK_NULL_HANDLE);
 
@@ -19,7 +20,7 @@ bool psPipelineUtilsDynamicState(VkPipelineDynamicStateCreateInfo *dynamicStateI
     static VkDynamicState dynamicStates[2] = {0};
     dynamicStates[0] = VK_DYNAMIC_STATE_VIEWPORT;
     dynamicStates[1] = VK_DYNAMIC_STATE_SCISSOR;
-    
+
     dynamicStateInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicStateInfo->pNext = NULL;
     dynamicStateInfo->flags = 0;
@@ -29,7 +30,8 @@ bool psPipelineUtilsDynamicState(VkPipelineDynamicStateCreateInfo *dynamicStateI
     return true;
 }
 
-bool psPipelineUtilsInputAssemblyState(VkPipelineInputAssemblyStateCreateInfo *inputAssemblyInfo) {
+bool psPipelineUtilsInputAssemblyState(VkPipelineInputAssemblyStateCreateInfo *inputAssemblyInfo)
+{
     inputAssemblyInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssemblyInfo->topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssemblyInfo->primitiveRestartEnable = VK_FALSE;
@@ -57,7 +59,8 @@ bool psPipelineUtilsViewportScissor(VkViewport *viewport, VkRect2D *scissor)
     return true;
 }
 
-bool psPipelineUtilsViewportState(VkPipelineViewportStateCreateInfo *viewportStateInfo, VkViewport *viewport, VkRect2D *scissor) {
+bool psPipelineUtilsViewportState(VkPipelineViewportStateCreateInfo *viewportStateInfo, VkViewport *viewport, VkRect2D *scissor)
+{
     PS_ASSERT(viewportStateInfo != NULL);
     PS_ASSERT(viewport != NULL);
     PS_ASSERT(scissor != NULL);
@@ -71,7 +74,8 @@ bool psPipelineUtilsViewportState(VkPipelineViewportStateCreateInfo *viewportSta
     return true;
 }
 
-bool psPipelineUtilsRasterizationState(VkPipelineRasterizationStateCreateInfo *rasterizerInfo) {
+bool psPipelineUtilsRasterizationState(VkPipelineRasterizationStateCreateInfo *rasterizerInfo)
+{
     PS_ASSERT(rasterizerInfo != NULL);
 
     rasterizerInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -86,7 +90,8 @@ bool psPipelineUtilsRasterizationState(VkPipelineRasterizationStateCreateInfo *r
     return true;
 }
 
-bool psPipelineUtilsMultisampleState(VkPipelineMultisampleStateCreateInfo *multisampleInfo) {
+bool psPipelineUtilsMultisampleState(VkPipelineMultisampleStateCreateInfo *multisampleInfo)
+{
     PS_ASSERT(multisampleInfo != NULL);
 
     multisampleInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -100,9 +105,9 @@ bool psPipelineUtilsMultisampleState(VkPipelineMultisampleStateCreateInfo *multi
     return true;
 }
 
-bool psPipelineUtilsDepthStencilState(VkPipelineDepthStencilStateCreateInfo *depthStencilInfo, bool enableDepthTest) {
+bool psPipelineUtilsDepthStencilState(VkPipelineDepthStencilStateCreateInfo *depthStencilInfo, bool enableDepthTest)
+{
     PS_ASSERT(depthStencilInfo != NULL);
-
 
     depthStencilInfo->sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depthStencilInfo->depthTestEnable = enableDepthTest ? VK_TRUE : VK_FALSE;
@@ -114,7 +119,8 @@ bool psPipelineUtilsDepthStencilState(VkPipelineDepthStencilStateCreateInfo *dep
     return true;
 }
 
-bool psPipelineUtilsBlendAttachment(VkPipelineColorBlendAttachmentState *blendAttachment, bool enableBlend) {
+bool psPipelineUtilsBlendAttachment(VkPipelineColorBlendAttachmentState *blendAttachment, bool enableBlend)
+{
     PS_ASSERT(blendAttachment != NULL);
 
     blendAttachment->blendEnable = enableBlend ? VK_TRUE : VK_FALSE;
@@ -129,7 +135,8 @@ bool psPipelineUtilsBlendAttachment(VkPipelineColorBlendAttachmentState *blendAt
     return true;
 }
 
-bool psPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorBlendStateInfo, VkPipelineColorBlendAttachmentState *blendAttachments, size_t attachmentCount) {
+bool psPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorBlendStateInfo, VkPipelineColorBlendAttachmentState *blendAttachments, size_t attachmentCount)
+{
     PS_ASSERT(colorBlendStateInfo != NULL);
     PS_ASSERT(blendAttachments != NULL);
     PS_ASSERT(attachmentCount > 0);
@@ -142,7 +149,6 @@ bool psPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorBl
 
     return true;
 }
-
 
 bool psWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorImageInfo *imageInfo)
 {
@@ -162,7 +168,6 @@ bool psWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescr
     writeDescriptorSet->pTexelBufferView = NULL;
 
     return true;
-
 }
 
 bool psWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorBufferInfo *bufferInfo)
@@ -182,5 +187,65 @@ bool psWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDesc
     writeDescriptorSet->pBufferInfo = bufferInfo;
     writeDescriptorSet->pTexelBufferView = NULL;
 
+    return true;
+}
+
+bool psBeginSceneRenderPass(VkCommandBuffer commandBuffer, PS_VulkanRenderer *renderer, VkClearValue *customClearValues, size_t customClearValueCount)
+{
+    PS_ASSERT(renderer != NULL);
+
+    static VkClearValue defaultClearValues[2] = {
+        {.color = {.float32 = {208.0f / 255.0f, 166.0f / 255.0f, 228.0f / 255.0f}}},
+        {.depthStencil = {.depth = 1.0f, .stencil = 0}}};
+
+    VkClearValue* clearValues = NULL;
+    size_t clearValueCount = 0;
+
+    if (customClearValues != NULL && customClearValueCount > 0)
+    {
+        clearValues = customClearValues;
+        clearValueCount = customClearValueCount;
+    }
+    else
+    {
+        clearValues = defaultClearValues;
+        clearValueCount = PS_ARRAY_COUNT(defaultClearValues);
+    }
+
+    VkRenderPassBeginInfo renderPassInfo = {0};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = renderer->sceneFramebuffer.renderPass;
+    renderPassInfo.framebuffer = renderer->sceneFramebuffer.framebuffer;
+    renderPassInfo.renderArea.offset.x = 0;
+    renderPassInfo.renderArea.offset.y = 0;
+    renderPassInfo.renderArea.extent.width = renderer->sceneFramebuffer.width;
+    renderPassInfo.renderArea.extent.height = renderer->sceneFramebuffer.height;
+    renderPassInfo.clearValueCount = (uint32_t)clearValueCount;
+    renderPassInfo.pClearValues = clearValues;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    
+    VkViewport viewport = {0};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = (float)renderer->sceneFramebuffer.width;
+    viewport.height = (float)renderer->sceneFramebuffer.height;
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor = {0};
+    scissor.offset.x = 0;
+    scissor.offset.y = 0;
+    scissor.extent.width = renderer->sceneFramebuffer.width;
+    scissor.extent.height = renderer->sceneFramebuffer.height;
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+    return true;
+}
+
+bool psEndSceneRenderPass(VkCommandBuffer commandBuffer) 
+{
+    vkCmdEndRenderPass(commandBuffer);
     return true;
 }

@@ -18,4 +18,7 @@ bool psPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorBl
 bool psWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorImageInfo *imageInfo);
 bool psWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorBufferInfo *bufferInfo);
 
+bool psBeginSceneRenderPass(VkCommandBuffer commandBuffer, PS_VulkanRenderer* renderer, VkClearValue* clearValues, size_t clearValueCount);
+bool psEndSceneRenderPass(VkCommandBuffer commandBuffer);
+
 #endif // PS_PIPELINE_UTILS_H
