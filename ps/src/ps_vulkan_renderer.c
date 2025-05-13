@@ -133,47 +133,6 @@ static bool __psVulkanRendererHandleSwapchainResult(PS_Vulkan *vulkan, VkResult 
     return true;
 }
 
-static bool __psVulkanSceneCreateDescriptors(PS_Vulkan *vulkan) {
-    PS_ASSERT(vulkan != NULL);
-
-    VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[1] = {0};
-    descriptorSetLayoutBindings[0].binding = 0;
-    descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorSetLayoutBindings[0].descriptorCount = 1;
-    descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {0};
-    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutInfo.bindingCount = PS_ARRAY_COUNT(descriptorSetLayoutBindings);
-    descriptorSetLayoutInfo.pBindings = descriptorSetLayoutBindings;
-
-    VkResult result = vkCreateDescriptorSetLayout(vulkan->device, &descriptorSetLayoutInfo, NULL, &vulkan->renderer.sceneFramebufferColorDescriptorSetLayout);
-    PS_CHECK_VK_RESULT(result, "Failed to create descriptor set layout\n");
-
-    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {0};
-    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocateInfo.descriptorPool = vulkan->descriptorPool;
-    descriptorSetAllocateInfo.descriptorSetCount = 1;
-    descriptorSetAllocateInfo.pSetLayouts = &vulkan->renderer.sceneFramebufferColorDescriptorSetLayout;
-
-    result = vkAllocateDescriptorSets(vulkan->device, &descriptorSetAllocateInfo, &vulkan->renderer.sceneFramebufferColorDescriptorSet);
-    PS_CHECK_VK_RESULT(result, "Failed to allocate descriptor set\n");
-
-    VkWriteDescriptorSet writeDescriptorSet = {0};
-    writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeDescriptorSet.dstSet = vulkan->renderer.sceneFramebufferColorDescriptorSet;
-    writeDescriptorSet.dstBinding = 0;
-    writeDescriptorSet.dstArrayElement = 0;
-    writeDescriptorSet.descriptorCount = 1;
-    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writeDescriptorSet.pImageInfo = &vulkan->renderer.sceneFramebuffer.colorAttachment.image.descriptorImageInfo;
-    writeDescriptorSet.pBufferInfo = NULL;
-    writeDescriptorSet.pTexelBufferView = NULL;
-    vkUpdateDescriptorSets(vulkan->device, 1, &writeDescriptorSet, 0, NULL);
-
-    return true;
-}
-
 bool psVulkanRendererCreate(PS_Vulkan *vulkan)
 {
     PS_ASSERT(vulkan != NULL);
@@ -181,7 +140,6 @@ bool psVulkanRendererCreate(PS_Vulkan *vulkan)
     // // create the command buffer and synchronization objects
     PS_CHECK(__psVulkanRendererCreateRenderResources(vulkan));
     PS_CHECK(psVulkanFramebufferCreate(vulkan, &vulkan->renderer.sceneFramebuffer, GAME_WIDTH, GAME_HEIGHT, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT));
-    PS_CHECK(__psVulkanSceneCreateDescriptors(vulkan));
     return true;
 }
 
@@ -189,7 +147,6 @@ void psVulkanRendererDestroy(PS_Vulkan *vulkan)
 {
     PS_ASSERT(vulkan != NULL);
 
-    vkDestroyDescriptorSetLayout(vulkan->device, vulkan->renderer.sceneFramebufferColorDescriptorSetLayout, NULL);
     psVulkanFramebufferDestroy(vulkan, &vulkan->renderer.sceneFramebuffer);
     __psVulkanRendererDestroyRenderResources(vulkan);
 }

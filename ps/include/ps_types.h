@@ -67,6 +67,9 @@ typedef struct PS_VulkanImage {
 typedef struct PS_VulkanFramebufferAttachment {
     PS_VulkanImage image;
     VkAttachmentDescription attachmentDescription;
+    
+    VkDescriptorSet descriptorSet;
+    VkDescriptorSetLayout descriptorSetLayout;
 } PS_VulkanFramebufferAttachment;
 
 typedef struct PS_VulkanFramebuffer {
@@ -102,8 +105,6 @@ typedef struct PS_VulkanRenderer {
     PS_VulkanPresentation presentation;
 
     PS_VulkanFramebuffer sceneFramebuffer;
-    VkDescriptorSet sceneFramebufferColorDescriptorSet;
-    VkDescriptorSetLayout sceneFramebufferColorDescriptorSetLayout;
 } PS_VulkanRenderer;
 
 

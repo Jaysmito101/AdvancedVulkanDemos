@@ -258,7 +258,7 @@ bool psVulkanPresentationRender(PS_Vulkan *vulkan, uint32_t imageIndex)
     vkCmdPushConstants(commandBuffer, vulkan->renderer.presentation.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PS_VulkanPresentationPushConstants), &pushConstants);
 
     VkDescriptorSet descriptorSetsToBind[] = {
-        vulkan->renderer.sceneFramebufferColorDescriptorSet, // Set 0
+        vulkan->renderer.sceneFramebuffer.colorAttachment.descriptorSet, // Set 0
         vulkan->renderer.presentation.iconDescriptorSet      // Set 1
     };
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vulkan->renderer.presentation.pipelineLayout, 0, PS_ARRAY_COUNT(descriptorSetsToBind), descriptorSetsToBind, 0, NULL);

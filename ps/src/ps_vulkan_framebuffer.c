@@ -1,11 +1,47 @@
 #include "ps_vulkan.h"
 
+static bool __psVulkanFramebufferAttachmentDescriptorsCreate(PS_Vulkan *vulkan, PS_VulkanFramebufferAttachment *attachment)
+{
+    PS_ASSERT(vulkan != NULL);
+    PS_ASSERT(attachment != NULL);
+    
+    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {0};
+    descriptorSetLayoutBinding.binding = 0;
+    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorSetLayoutBinding.descriptorCount = 1;
+    descriptorSetLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {0};
+    descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutInfo.bindingCount = 1;
+    descriptorSetLayoutInfo.pBindings = &descriptorSetLayoutBinding;
+
+    VkResult result = vkCreateDescriptorSetLayout(vulkan->device, &descriptorSetLayoutInfo, NULL, &attachment->descriptorSetLayout);
+    PS_CHECK_VK_RESULT(result, "Failed to create framebuffer attachment descriptor set layout");
+
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {0};
+    descriptorSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;   
+    descriptorSetAllocateInfo.descriptorPool = vulkan->descriptorPool;
+    descriptorSetAllocateInfo.descriptorSetCount = 1;
+    descriptorSetAllocateInfo.pSetLayouts = &attachment->descriptorSetLayout;
+    
+    result = vkAllocateDescriptorSets(vulkan->device, &descriptorSetAllocateInfo, &attachment->descriptorSet);
+    PS_CHECK_VK_RESULT(result, "Failed to allocate framebuffer attachment descriptor set");
+
+    VkWriteDescriptorSet writeDescriptorSet = {0};
+    PS_CHECK(psWriteImageDescriptorSet(&writeDescriptorSet, attachment->descriptorSet, 0, &attachment->image.descriptorImageInfo));
+    vkUpdateDescriptorSets(vulkan->device, 1, &writeDescriptorSet, 0, NULL);
+
+    return true;
+}
+
 static void __psVulkanFramebufferAttachmentDestroy(PS_Vulkan *vulkan, PS_VulkanFramebufferAttachment *attachment)
 {
     PS_ASSERT(vulkan != NULL);
     PS_ASSERT(attachment != NULL);
 
     psVulkanImageDestroy(vulkan, &attachment->image);
+    vkDestroyDescriptorSetLayout(vulkan->device, attachment->descriptorSetLayout, NULL);
 }
 
 static bool __psVulkanFramebufferAttachmentCreate(PS_Vulkan *vulkan, PS_VulkanFramebufferAttachment *attachment, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
@@ -14,6 +50,8 @@ static bool __psVulkanFramebufferAttachmentCreate(PS_Vulkan *vulkan, PS_VulkanFr
     PS_ASSERT(attachment != NULL);
 
     PS_CHECK(psVulkanImageCreate(vulkan, &attachment->image, format, usage, width, height));
+    PS_CHECK(__psVulkanFramebufferAttachmentDescriptorsCreate(vulkan, attachment));
+
     attachment->attachmentDescription.flags = 0;
     attachment->attachmentDescription.format = format;
     attachment->attachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -148,8 +186,7 @@ bool psVulkanFormatIsStencil(VkFormat format)
         VK_FORMAT_S8_UINT,
         VK_FORMAT_D16_UNORM_S8_UINT,
         VK_FORMAT_D24_UNORM_S8_UINT,
-        VK_FORMAT_D32_SFLOAT_S8_UINT
-    };
+        VK_FORMAT_D32_SFLOAT_S8_UINT};
     const size_t stencilFormatCount = sizeof(stencilFormats) / sizeof(stencilFormats[0]);
 
     bool isStencil = false;
@@ -174,7 +211,7 @@ bool psVulkanFormatIsDepthStencil(VkFormat format)
 
 bool psVulkanFramebufferCreate(PS_Vulkan *vulkan, PS_VulkanFramebuffer *framebuffer, int32_t width, int32_t height, bool hasDepthStencil, VkFormat colorFormat, VkFormat depthStencilFormat)
 {
-    PS_ASSERT(vulkan != NULL);                                                                                                                                                                                                                                                                                                                                                                 
+    PS_ASSERT(vulkan != NULL);
     PS_ASSERT(framebuffer != NULL);
 
     framebuffer->width = width;
@@ -188,18 +225,17 @@ bool psVulkanFramebufferCreate(PS_Vulkan *vulkan, PS_VulkanFramebuffer *framebuf
     }
 
     // transition image layout to SHADER_READ_ONLY_OPTIMAL
-    if(!psVulkanImageTransitionLayoutWithoutCommandBuffer(
-        vulkan,
-        &framebuffer->colorAttachment.image,
-        VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
-    )) {
+    if (!psVulkanImageTransitionLayoutWithoutCommandBuffer(
+            vulkan,
+            &framebuffer->colorAttachment.image,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT))
+    {
         PS_LOG("Failed to transition image layout\n");
         return false;
     }
-
 
     if (hasDepthStencil)
     {
