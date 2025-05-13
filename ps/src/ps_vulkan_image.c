@@ -1,5 +1,5 @@
 #include "ps_vulkan.h"
-#include "ps_game_state.h"
+#include "ps_types.h"
 #include <string.h>
 #include "stb_image.h"
 #include "ps_asset.h"

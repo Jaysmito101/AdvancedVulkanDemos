@@ -11,7 +11,7 @@
 // ps includes
 #include "ps_base.h"
 #include "ps_font.h"
-#include "ps_game_state.h"
+#include "ps_types.h"
 
 // common functions
 uint32_t psHashBuffer(const void *buffer, size_t size);

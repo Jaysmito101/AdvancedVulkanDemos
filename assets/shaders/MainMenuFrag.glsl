@@ -149,6 +149,6 @@ void main() {
     if (btnColor.a > 0.0) { finalColor = mix(finalColor, btnColor, btnColor.a); }
 
     outColor = finalColor;
-    outColor.rgb = pow(outColor.rgb, vec3(1.8));
-    outColor.rgb = aces(outColor.rgb);
+    // outColor.rgb = pow(outColor.rgb, vec3(1.8));
+    // outColor.rgb = aces(outColor.rgb);
 }

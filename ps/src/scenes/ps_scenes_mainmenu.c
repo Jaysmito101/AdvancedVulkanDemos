@@ -402,11 +402,13 @@ bool psScenesMainMenuRender(PS_GameState *gameState)
         cmd,
         scene->debugFontOffsetX, scene->debugFontOffsetY,
         scene->debugFontScale,
-        0.1f, 0.2f, 0.3f, 1.0f
+        3.1f, 1.2f, 2.3f, 1.0f
     );
 
 
     PS_CHECK(psEndSceneRenderPass(cmd));
+
+    // psBloomApply(&gameState->vulkan,  &gameState->vulkan.renderer.sceneFramebuffer);
 
 
     return true;

@@ -1,5 +1,5 @@
 #include "ps_vulkan.h"
-#include "ps_game_state.h"
+#include "ps_types.h"
 
 bool psVulkanBufferCreate(PS_Vulkan *vulkan, PS_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {

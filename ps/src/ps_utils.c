@@ -1,9 +1,10 @@
-#include "ps_common.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
+
+#include "ps_common.h"
 
 // FNV-1a 32-bit hash function
 // See: http://www.isthe.com/chongo/tech/comp/fnv/
