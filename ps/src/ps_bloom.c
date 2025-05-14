@@ -3,7 +3,7 @@
 bool psBloomCreate(PS_Bloom *bloom, PS_Vulkan* vulkan, uint32_t width, uint32_t height) 
 {
     
-
+    return true;
 }
 
 

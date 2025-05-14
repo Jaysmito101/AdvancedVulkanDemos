@@ -194,6 +194,9 @@ static bool __psVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device)
 {
     static const char *requiredExtensions[] = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+        VK_KHR_RAY_QUERY_EXTENSION_NAME,
     };
     uint32_t extensionCount = 0;
     static VkExtensionProperties extensions[256] = {0};
@@ -201,12 +204,6 @@ static bool __psVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device)
     if (extensionCount == 0)
     {
         PS_LOG("No Vulkan-compatible extensions found\n");
-        return false;
-    }
-
-    if (extensionCount > PS_ARRAY_COUNT(extensions))
-    {
-        PS_LOG("Too many Vulkan-compatible extensions found\n");
         return false;
     }
     vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, extensions);
