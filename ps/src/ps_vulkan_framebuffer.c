@@ -239,7 +239,7 @@ bool psVulkanFramebufferCreate(PS_Vulkan *vulkan, PS_VulkanFramebuffer *framebuf
 
     if (hasDepthStencil)
     {
-        if (!__psVulkanFramebufferAttachmentCreate(vulkan, &framebuffer->depthStencilAttachment, depthStencilFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, width, height))
+        if (!__psVulkanFramebufferAttachmentCreate(vulkan, &framebuffer->depthStencilAttachment, depthStencilFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height))
         {
             PS_LOG("Failed to create depth stencil attachment\n");
             return false;

@@ -2,6 +2,18 @@
 
 #include "glfw/glfw3.h"
 
+static const char *__ps_RequiredVulkanExtensions[] = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+    VK_KHR_RAY_QUERY_EXTENSION_NAME,
+    VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+    VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+    VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
+    VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+    VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+};
+
 static bool __psVulkanLayersSupported(const char **layers, uint32_t layerCount)
 {
     static VkLayerProperties availableLayers[128] = {0};
@@ -192,12 +204,6 @@ static bool __psVulkanCreateSurface(PS_Vulkan* vulkan, GLFWwindow* window)
 
 static bool __psVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device)
 {
-    static const char *requiredExtensions[] = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-        VK_KHR_RAY_QUERY_EXTENSION_NAME,
-    };
     uint32_t extensionCount = 0;
     static VkExtensionProperties extensions[256] = {0};
     vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, NULL);
@@ -208,12 +214,12 @@ static bool __psVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device)
     }
     vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, extensions);
 
-    for (uint32_t i = 0; i < PS_ARRAY_COUNT(requiredExtensions); ++i)
+    for (uint32_t i = 0; i < PS_ARRAY_COUNT(__ps_RequiredVulkanExtensions); ++i)
     {
         bool found = false;
         for (uint32_t j = 0; j < extensionCount; ++j)
         {
-            if (strcmp(requiredExtensions[i], extensions[j].extensionName) == 0)
+            if (strcmp(__ps_RequiredVulkanExtensions[i], extensions[j].extensionName) == 0)
             {
                 found = true;
                 break;
@@ -337,18 +343,55 @@ static bool __psVulkanCreateDevice(PS_Vulkan *vulkan)
     queueCreateInfos[1].queueCount = 1;
     queueCreateInfos[1].pQueuePriorities = &queuePriority;
 
-    static const char *deviceExtensions[] = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    };
-    uint32_t deviceExtensionCount = PS_ARRAY_COUNT(deviceExtensions);
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {0};
+    rayTracingPipelineFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+    rayTracingPipelineFeatures.rayTracingPipeline = VK_TRUE;
+    rayTracingPipelineFeatures.pNext = NULL;
+
+    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {0};
+    rayQueryFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
+    rayQueryFeatures.rayQuery = VK_TRUE;
+    rayQueryFeatures.pNext = &rayTracingPipelineFeatures;
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {0};
+    accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+    accelerationStructureFeatures.accelerationStructure = VK_TRUE;
+    accelerationStructureFeatures.pNext = &rayQueryFeatures;
+
+    VkPhysicalDeviceVulkan12Features deviceVulkan12Features = {0};
+    deviceVulkan12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    deviceVulkan12Features.descriptorIndexing = VK_TRUE;
+    deviceVulkan12Features.bufferDeviceAddress = VK_TRUE;
+    deviceVulkan12Features.shaderFloat16 = VK_TRUE;
+    deviceVulkan12Features.shaderInt8 = VK_TRUE;
+    deviceVulkan12Features.uniformAndStorageBuffer8BitAccess = VK_TRUE;
+    deviceVulkan12Features.storageBuffer8BitAccess = VK_TRUE;
+    deviceVulkan12Features.drawIndirectCount = VK_TRUE;
+    deviceVulkan12Features.pNext = &accelerationStructureFeatures;
+
+    VkPhysicalDeviceVulkan11Features deviceVulkan11Features = {0};
+    deviceVulkan11Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    deviceVulkan11Features.uniformAndStorageBuffer16BitAccess = VK_TRUE;
+    deviceVulkan11Features.storageBuffer16BitAccess = VK_TRUE;
+    deviceVulkan11Features.pNext = &deviceVulkan12Features;
+
+    VkPhysicalDeviceFeatures2 deviceFeatures2 = {0};
+    deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    deviceFeatures2.features.multiDrawIndirect = VK_TRUE;
+    deviceFeatures2.features.pipelineStatisticsQuery = VK_TRUE;
+    deviceFeatures2.features.samplerAnisotropy = VK_TRUE;
+    deviceFeatures2.features.shaderInt64 = VK_TRUE;
+    deviceFeatures2.features.shaderInt16 = VK_TRUE;
+    deviceFeatures2.pNext = &deviceVulkan11Features;
 
     VkDeviceCreateInfo createInfo = {0};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = 2;
     createInfo.pQueueCreateInfos = queueCreateInfos;
-    createInfo.enabledExtensionCount = deviceExtensionCount;
-    createInfo.ppEnabledExtensionNames = deviceExtensions;
+    createInfo.enabledExtensionCount = PS_ARRAY_COUNT(__ps_RequiredVulkanExtensions);
+    createInfo.ppEnabledExtensionNames = __ps_RequiredVulkanExtensions;
     createInfo.enabledLayerCount = 0;
+    createInfo.pNext = &deviceFeatures2;
     
 #ifdef PS_DEBUG
     if (vulkan->debugLayersEnabled)
