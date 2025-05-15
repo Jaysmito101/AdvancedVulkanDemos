@@ -5,6 +5,7 @@
 #include "ps_common.h"
 #include "ps_vulkan.h"
 #include "ps_font_renderer.h"
+#include "ps_bloom.h"
 
 
 bool psScenesInit(PS_GameState *gameState);

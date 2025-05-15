@@ -36,6 +36,7 @@ bool psApplicationInit(PS_GameState *gameState) {
     PS_CHECK(psWindowInit(&gameState->window, gameState));
     PS_CHECK(psVulkanInit(&gameState->vulkan, &gameState->window));
     PS_CHECK(psScenesInit(gameState));
+    PS_CHECK(psBloomCreate(&gameState->bloom, &gameState->vulkan, GAME_WIDTH, GAME_HEIGHT));
     PS_CHECK(psFontRendererInit(&gameState->fontRenderer, &gameState->vulkan));
     PS_CHECK(psFontRendererAddBasicFonts(&gameState->fontRenderer));
 
@@ -61,6 +62,7 @@ void psApplicationShutdown(PS_GameState *gameState) {
     vkQueueWaitIdle(gameState->vulkan.computeQueue);
 
     psFontRendererShutdown(&gameState->fontRenderer);
+    psBloomDestroy(&gameState->bloom, &gameState->vulkan);
     psScenesShutdown(gameState);
     psVulkanShutdown(&gameState->vulkan);
     psWindowShutdown(&gameState->window);

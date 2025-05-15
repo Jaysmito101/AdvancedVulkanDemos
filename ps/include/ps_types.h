@@ -303,6 +303,14 @@ typedef struct PS_Scene {
     PS_PrologueScene prologueScene;
 } PS_Scene;
 
+typedef struct PS_Bloom {
+    PS_VulkanFramebuffer bloomPasses[5];
+    uint32_t passCount;
+
+    uint32_t width;
+    uint32_t height;
+} PS_Bloom;
+
 typedef struct PS_GameState {
     PS_Window window;
     PS_Vulkan vulkan;
@@ -310,6 +318,7 @@ typedef struct PS_GameState {
     PS_Scene scene;
     PS_Input input;
     PS_FontRenderer fontRenderer;
+    PS_Bloom bloom;
 
     bool running;
 } PS_GameState;

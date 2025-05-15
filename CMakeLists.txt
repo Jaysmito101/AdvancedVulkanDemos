@@ -112,6 +112,7 @@ add_executable(ps
     ./ps/src/ps_third_party_impls.c
     ./ps/src/ps_pipeline_utils.c
     ./ps/src/ps_font_renderer.c
+    ./ps/src/ps_bloom.c
 
     ./ps/src/scenes/ps_scenes.c
     ./ps/src/scenes/ps_scenes_splash.c
