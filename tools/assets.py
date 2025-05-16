@@ -8,7 +8,7 @@ import urllib.request
 import json
 import subprocess
 
-PS_FONT_MAX_GLYPHS_PY = 4096
+AVD_FONT_MAX_GLYPHS_PY = 4096
 
 def find_git_root():
     current_dir = Path(__file__).resolve().parent
@@ -101,15 +101,15 @@ def generate_c_code_for_string(text_data, name):
     escaped_text = text_data.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n"\n"')
     return f'static const char {name}[] = "{escaped_text}";'
 
-def generate_c_code_for_ps_font_atlas(font_metrics_data, name):
+def generate_c_code_for_avd_font_atlas(font_metrics_data, name):
     atlas_data = font_metrics_data["atlas"]
     metrics_data = font_metrics_data["metrics"]
     json_glyphs_list = font_metrics_data["glyphs"]
 
     # Initialize an array for C glyph structures with default values.
-    # The C array will always have PS_FONT_MAX_GLYPHS_PY entries.
+    # The C array will always have AVD_FONT_MAX_GLYPHS_PY entries.
     c_glyphs_array = []
-    for i in range(PS_FONT_MAX_GLYPHS_PY):
+    for i in range(AVD_FONT_MAX_GLYPHS_PY):
         c_glyphs_array.append({
             "unicodeIndex": i,  # Represents the unicode value for this slot
             "advanceX": 0.0,
@@ -128,7 +128,7 @@ def generate_c_code_for_ps_font_atlas(font_metrics_data, name):
         if unicode_val >= 0:
             max_unicode_found_in_json = max(max_unicode_found_in_json, unicode_val)
 
-        if 0 <= unicode_val < PS_FONT_MAX_GLYPHS_PY:
+        if 0 <= unicode_val < AVD_FONT_MAX_GLYPHS_PY:
             target_glyph_struct = c_glyphs_array[unicode_val]
             
             # The unicodeIndex is already set to unicode_val during initialization,
@@ -155,13 +155,13 @@ def generate_c_code_for_ps_font_atlas(font_metrics_data, name):
                     "top": float(atlas_bounds_json["top"])
                 }
             # If not present, it keeps the default {0,0,0,0}
-        elif unicode_val >= PS_FONT_MAX_GLYPHS_PY:
+        elif unicode_val >= AVD_FONT_MAX_GLYPHS_PY:
             skipped_glyphs_count += 1
     
     if skipped_glyphs_count > 0:
-        print(f"Warning: Font '{name}' - Skipped {skipped_glyphs_count} glyphs with unicode value >= {PS_FONT_MAX_GLYPHS_PY} (max unicode found in JSON: {max_unicode_found_in_json}).")
+        print(f"Warning: Font '{name}' - Skipped {skipped_glyphs_count} glyphs with unicode value >= {AVD_FONT_MAX_GLYPHS_PY} (max unicode found in JSON: {max_unicode_found_in_json}).")
 
-    lines = [f'static const PS_FontAtlas {name} = {{']
+    lines = [f'static const AVD_FontAtlas {name} = {{']
     lines.append(f'    .info = {{')
     lines.append(f'        .distanceRange = {float(atlas_data["distanceRange"]):.8f}f,')
     if "distanceRangeMiddle" in atlas_data:
@@ -183,9 +183,9 @@ def generate_c_code_for_ps_font_atlas(font_metrics_data, name):
     lines.append(f'        .underlineThickness = {float(metrics_data["underlineThickness"]):.8f}f')
     lines.append(f'    }},')
 
-    lines.append(f'    .glyphCount = {PS_FONT_MAX_GLYPHS_PY},') # C array size is fixed
+    lines.append(f'    .glyphCount = {AVD_FONT_MAX_GLYPHS_PY},') # C array size is fixed
     lines.append(f'    .glyphs = {{')
-    for i, glyph_struct_for_c in enumerate(c_glyphs_array): # Iterate PS_FONT_MAX_GLYPHS_PY times
+    for i, glyph_struct_for_c in enumerate(c_glyphs_array): # Iterate AVD_FONT_MAX_GLYPHS_PY times
         # glyph_struct_for_c is c_glyphs_array[i], representing unicode 'i'
         line = "        {"
         line += f'.unicodeIndex = {glyph_struct_for_c["unicodeIndex"]}, ' # This will be 'i'
@@ -198,7 +198,7 @@ def generate_c_code_for_ps_font_atlas(font_metrics_data, name):
         line += f'.atlasBounds = {{{ab["left"]:.8f}f, {ab["bottom"]:.8f}f, {ab["right"]:.8f}f, {ab["top"]:.8f}f}}'
 
         line += "}"
-        if i < PS_FONT_MAX_GLYPHS_PY - 1:
+        if i < AVD_FONT_MAX_GLYPHS_PY - 1:
             line += ","
         lines.append(line)
     lines.append(f'    }}')
@@ -215,16 +215,16 @@ def create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root):
     font_name = to_correct_case(base_name_without_ext)
 
     all_files = os.listdir(output_dir + "/include") + os.listdir(output_dir + "/src")
-    header_exists = any(f"ps_asset_font_{font_name}_{font_hash}" in file for file in all_files if file.endswith(".h"))
-    source_exists = any(f"ps_asset_font_{font_name}_{font_hash}" in file for file in all_files if file.endswith(".c"))
+    header_exists = any(f"avd_asset_font_{font_name}_{font_hash}" in file for file in all_files if file.endswith(".h"))
+    source_exists = any(f"avd_asset_font_{font_name}_{font_hash}" in file for file in all_files if file.endswith(".c"))
     if header_exists and source_exists:
         print(f"Asset {font_name} already exists with same hash, skipping generation.")
         return
 
     for file in all_files:
-        if file.startswith(f"ps_asset_font_{font_name}_") and file.endswith(".h"):
+        if file.startswith(f"avd_asset_font_{font_name}_") and file.endswith(".h"):
             os.remove(os.path.join(output_dir, "include", file))
-        if file.startswith(f"ps_asset_font_{font_name}_") and file.endswith(".c"):
+        if file.startswith(f"avd_asset_font_{font_name}_") and file.endswith(".c"):
             os.remove(os.path.join(output_dir, "src", file))
 
     temp_json_path = os.path.join(temp_dir, f"{font_name}.json")
@@ -261,8 +261,8 @@ def create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root):
         font_metrics_data = json.load(f)
 
     header_source = [
-        f"#ifndef PS_ASSET_FONT_{font_name.upper()}_{font_hash.upper()}_H",
-        f"#define PS_ASSET_FONT_{font_name.upper()}_{font_hash.upper()}_H",
+        f"#ifndef AVD_ASSET_FONT_{font_name.upper()}_{font_hash.upper()}_H",
+        f"#define AVD_ASSET_FONT_{font_name.upper()}_{font_hash.upper()}_H",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
@@ -274,21 +274,21 @@ def create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root):
         f"\n",
         f"#include <stdint.h>",
         f"#include <stddef.h>",
-        f"#include \"ps_font.h\"",
+        f"#include \"avd_font.h\"",
         f"\n",
-        f"const uint8_t* psAssetFontAtlas_{font_name}(size_t* size);",
+        f"const uint8_t* avdAssetFontAtlas_{font_name}(size_t* size);",
         f"\n",
-        f"const PS_FontAtlas* psAssetFontMetrics_{font_name}(void);",
+        f"const AVD_FontAtlas* avdAssetFontMetrics_{font_name}(void);",
         f"\n",
-        f"#endif // PS_ASSET_FONT_{font_name.upper()}_{font_hash.upper()}_H"
+        f"#endif // AVD_ASSET_FONT_{font_name.upper()}_{font_hash.upper()}_H"
     ]
 
-    header_file_path = os.path.join(output_dir, "include", f"ps_asset_font_{font_name}_{font_hash}.h")
+    header_file_path = os.path.join(output_dir, "include", f"avd_asset_font_{font_name}_{font_hash}.h")
     with open(header_file_path, "w") as header_file:
         header_file.write("\n".join(header_source))
 
     source_source = [
-        f"#include \"ps_asset_font_{font_name}_{font_hash}.h\"",
+        f"#include \"avd_asset_font_{font_name}_{font_hash}.h\"",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
@@ -298,24 +298,24 @@ def create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root):
         f"// Hash: {font_hash}",
         f"// Name: {font_name}",
         f"\n",
-        generate_c_code_for_bytes(atlas_image_bytes, f"__psAssetFontAtlas__{font_name}_{font_hash}"),
+        generate_c_code_for_bytes(atlas_image_bytes, f"__avdAssetFontAtlas__{font_name}_{font_hash}"),
         f"\n",
-        f"const uint8_t* psAssetFontAtlas_{font_name}(size_t* size) {{",
+        f"const uint8_t* avdAssetFontAtlas_{font_name}(size_t* size) {{",
         f"    if (size != NULL) {{",
-        f"        *size = sizeof(__psAssetFontAtlas__{font_name}_{font_hash});",
+        f"        *size = sizeof(__avdAssetFontAtlas__{font_name}_{font_hash});",
         f"    }}",
-        f"   return &__psAssetFontAtlas__{font_name}_{font_hash}[0];",
+        f"   return &__avdAssetFontAtlas__{font_name}_{font_hash}[0];",
         f"}};",
         f"\n",
-        generate_c_code_for_ps_font_atlas(font_metrics_data, f"__psAssetFontMetrics__{font_name}_{font_hash}"),
+        generate_c_code_for_avd_font_atlas(font_metrics_data, f"__avdAssetFontMetrics__{font_name}_{font_hash}"),
         f"\n",
-        f"const PS_FontAtlas* psAssetFontMetrics_{font_name}(void) {{",
-        f"   return &__psAssetFontMetrics__{font_name}_{font_hash};",
+        f"const AVD_FontAtlas* avdAssetFontMetrics_{font_name}(void) {{",
+        f"   return &__avdAssetFontMetrics__{font_name}_{font_hash};",
         f"}};",
         f"\n"
     ]
 
-    source_file_path = os.path.join(output_dir, "src", f"ps_asset_font_{font_name}_{font_hash}.c")
+    source_file_path = os.path.join(output_dir, "src", f"avd_asset_font_{font_name}_{font_hash}.c")
     with open(source_file_path, "w") as source_file:
         source_file.write("\n".join(source_source))
         source_file.write("\n")
@@ -323,12 +323,12 @@ def create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root):
 
 def create_font_assets_common_header(output_dir):
     all_font_headers = os.listdir(output_dir + "/include")
-    all_font_headers = [f for f in all_font_headers if f.endswith(".h") and f.startswith("ps_asset_font_")]
+    all_font_headers = [f for f in all_font_headers if f.endswith(".h") and f.startswith("avd_asset_font_")]
     all_font_names = sorted(list(set([f.split("_")[3] for f in all_font_headers])))
 
     common_header_source = [
-        f"#ifndef PS_ASSET_FONT_COMMON_H",
-        f"#define PS_ASSET_FONT_COMMON_H",
+        f"#ifndef AVD_ASSET_FONT_COMMON_H",
+        f"#define AVD_ASSET_FONT_COMMON_H",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
@@ -336,24 +336,24 @@ def create_font_assets_common_header(output_dir):
         f"#include <stdint.h>",
         f"#include <string.h>",
         f"#include <stddef.h>",
-        f"#include \"ps_font.h\"",
+        f"#include \"avd_font.h\"",
         f"\n",
         f"// Asset Type: \"font\"",
         f"\n",
         *[f"#include \"{header}\"" for header in all_font_headers],
         "\n",
-        "const uint8_t* psAssetFontAtlas(const char* name, size_t* size); \n",
-        "const PS_FontAtlas* psAssetFontMetrics(const char* name); \n",
-        f"#endif // PS_ASSET_FONT_COMMON_H"
+        "const uint8_t* avdAssetFontAtlas(const char* name, size_t* size); \n",
+        "const AVD_FontAtlas* avdAssetFontMetrics(const char* name); \n",
+        f"#endif // AVD_ASSET_FONT_COMMON_H"
     ]
 
-    common_header_file_path = os.path.join(output_dir, "include", "ps_asset_font.h")
+    common_header_file_path = os.path.join(output_dir, "include", "avd_asset_font.h")
     with open(common_header_file_path, "w") as common_header_file:
         common_header_file.write("\n".join(common_header_source))
         common_header_file.write("\n")
 
     source_source = [
-        f"#include \"ps_asset_font.h\"",
+        f"#include \"avd_asset_font.h\"",
         f"\n",
         f"#include <stdio.h>",
         f"#include <string.h>",
@@ -363,27 +363,27 @@ def create_font_assets_common_header(output_dir):
         f"\n",
         f"// Asset Type: \"font\"",
         f"\n",
-        f"const uint8_t* psAssetFontAtlas(const char* name, size_t* size) {{",
+        f"const uint8_t* avdAssetFontAtlas(const char* name, size_t* size) {{",
         f"    if (size != NULL) {{",
         f"        *size = 0;",
         f"    }}",
         f"    if (name == NULL) return NULL;",
         f"    if (strcmp(name, \"\") == 0) return NULL;",
-        *[f"    if (strcmp(name, \"{font_name}\") == 0) return psAssetFontAtlas_{font_name}(size);" for font_name in all_font_names],
+        *[f"    if (strcmp(name, \"{font_name}\") == 0) return avdAssetFontAtlas_{font_name}(size);" for font_name in all_font_names],
         f"    printf(\"Error: Font atlas asset \\\"%s\\\" not found.\\n\", name);",
         f"    return NULL;",
         f"}}",
         f"\n\n",
-        f"const PS_FontAtlas* psAssetFontMetrics(const char* name) {{",
+        f"const AVD_FontAtlas* avdAssetFontMetrics(const char* name) {{",
         f"    if (name == NULL) return NULL;",
         f"    if (strcmp(name, \"\") == 0) return NULL;",
-        *[f"    if (strcmp(name, \"{font_name}\") == 0) return psAssetFontMetrics_{font_name}();" for font_name in all_font_names],
+        *[f"    if (strcmp(name, \"{font_name}\") == 0) return avdAssetFontMetrics_{font_name}();" for font_name in all_font_names],
         f"    printf(\"Error: Font metrics asset \\\"%s\\\" not found.\\n\", name);",
         f"    return NULL;",
         f"}}",
         f"\n",
     ]
-    source_file_path = os.path.join(output_dir, "src", "ps_asset_font.c")
+    source_file_path = os.path.join(output_dir, "src", "avd_asset_font.c")
     with open(source_file_path, "w") as source_file:
         source_file.write("\n".join(source_source))
         source_file.write("\n")
@@ -416,21 +416,21 @@ def create_image_asset(file_path, output_dir):
 
     all_files = os.listdir(output_dir + "/include") + os.listdir(output_dir + "/src")
 
-    header_exists = any(f"ps_asset_image_{image_name}_{image_hash}" in file for file in all_files if file.endswith(".h"))
-    source_exists = any(f"ps_asset_image_{image_name}_{image_hash}" in file for file in all_files if file.endswith(".c"))
+    header_exists = any(f"avd_asset_image_{image_name}_{image_hash}" in file for file in all_files if file.endswith(".h"))
+    source_exists = any(f"avd_asset_image_{image_name}_{image_hash}" in file for file in all_files if file.endswith(".c"))
     if header_exists and source_exists:
         print(f"Asset {image_name} already exists with same hash, skipping generation.")
         return
     
     for file in all_files:
-        if file.startswith(f"ps_asset_image_{image_name}_") and file.endswith(".h"):
+        if file.startswith(f"avd_asset_image_{image_name}_") and file.endswith(".h"):
             os.remove(os.path.join(output_dir, "include", file))
-        if file.startswith(f"ps_asset_image_{image_name}_") and file.endswith(".c"):
+        if file.startswith(f"avd_asset_image_{image_name}_") and file.endswith(".c"):
             os.remove(os.path.join(output_dir, "src", file))
 
     header_source = [
-        f"#ifndef PS_ASSET_IMAGE_{image_name}_{image_hash.upper()}_H",
-        f"#define PS_ASSET_IMAGE_{image_name}_{image_hash.upper()}_H",
+        f"#ifndef AVD_ASSET_IMAGE_{image_name}_{image_hash.upper()}_H",
+        f"#define AVD_ASSET_IMAGE_{image_name}_{image_hash.upper()}_H",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
@@ -443,17 +443,17 @@ def create_image_asset(file_path, output_dir):
         f"#include <stdint.h>",
         f"#include <stddef.h>",
         f"\n",
-        f"const uint8_t* psAssetImage_{image_name}(size_t* size);",
+        f"const uint8_t* avdAssetImage_{image_name}(size_t* size);",
         f"\n",
-        f"#endif // PS_ASSET_IMAGE_{image_name}_{image_hash.upper()}_H"
+        f"#endif // AVD_ASSET_IMAGE_{image_name}_{image_hash.upper()}_H"
     ]
 
-    header_file_path = os.path.join(output_dir, "include", f"ps_asset_image_{image_name}_{image_hash}.h")
+    header_file_path = os.path.join(output_dir, "include", f"avd_asset_image_{image_name}_{image_hash}.h")
     with open(header_file_path, "w") as header_file:
         header_file.write("\n".join(header_source))
 
     source_source = [
-        f"#include \"ps_asset_image_{image_name}_{image_hash}.h\"",
+        f"#include \"avd_asset_image_{image_name}_{image_hash}.h\"",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
@@ -463,18 +463,18 @@ def create_image_asset(file_path, output_dir):
         f"// Hash: {image_hash}",
         f"// Name: {image_name}",
         f"\n", 
-        generate_c_code_for_bytes(image_bytes, f"__psAssetImage__{image_name}_{image_hash}"),
+        generate_c_code_for_bytes(image_bytes, f"__avdAssetImage__{image_name}_{image_hash}"),
         f"\n",
-        f"const uint8_t* psAssetImage_{image_name}(size_t* size) {{",
+        f"const uint8_t* avdAssetImage_{image_name}(size_t* size) {{",
         f"    if (size != NULL) {{",
-        f"        *size = sizeof(__psAssetImage__{image_name}_{image_hash});",
+        f"        *size = sizeof(__avdAssetImage__{image_name}_{image_hash});",
         f"    }}",
-        f"   return &__psAssetImage__{image_name}_{image_hash}[0];",
+        f"   return &__avdAssetImage__{image_name}_{image_hash}[0];",
         f"}};",
         f"\n"
     ]
 
-    source_file_path = os.path.join(output_dir, "src", f"ps_asset_image_{image_name}_{image_hash}.c")
+    source_file_path = os.path.join(output_dir, "src", f"avd_asset_image_{image_name}_{image_hash}.c")
     with open(source_file_path, "w") as source_file:
         source_file.write("\n".join(source_source))
         source_file.write("\n")
@@ -482,12 +482,12 @@ def create_image_asset(file_path, output_dir):
 
 def create_image_assets_common_header(output_dir):
     all_image_headers = os.listdir(output_dir + "/include")
-    all_image_headers = [f for f in all_image_headers if f.endswith(".h") and f.startswith("ps_asset_image_")]
+    all_image_headers = [f for f in all_image_headers if f.endswith(".h") and f.startswith("avd_asset_image_")]
     all_image_names = [f.split("_")[3] for f in all_image_headers]
 
     common_header_source = [
-        f"#ifndef PS_ASSET_IMAGE_COMMON_H",
-        f"#define PS_ASSET_IMAGE_COMMON_H",
+        f"#ifndef AVD_ASSET_IMAGE_COMMON_H",
+        f"#define AVD_ASSET_IMAGE_COMMON_H",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
@@ -500,17 +500,17 @@ def create_image_assets_common_header(output_dir):
         f"\n",
         *[f"#include \"{header}\"" for header in all_image_headers],
         "\n",
-        "const uint8_t* psAssetImage(const char* name, size_t* size); \n",
-        f"#endif // PS_ASSET_IMAGE_COMMON_H"
+        "const uint8_t* avdAssetImage(const char* name, size_t* size); \n",
+        f"#endif // AVD_ASSET_IMAGE_COMMON_H"
     ]
 
-    common_header_file_path = os.path.join(output_dir, "include", "ps_asset_image.h")
+    common_header_file_path = os.path.join(output_dir, "include", "avd_asset_image.h")
     with open(common_header_file_path, "w") as common_header_file:
         common_header_file.write("\n".join(common_header_source))
         common_header_file.write("\n")
 
     source_source = [
-        f"#include \"ps_asset_image.h\"",
+        f"#include \"avd_asset_image.h\"",
         f"\n",
         f"#include <stdio.h>",
         f"#include <string.h>",
@@ -520,19 +520,19 @@ def create_image_assets_common_header(output_dir):
         f"\n",
         f"// Asset Type: \"image\"",
         f"\n",
-        f"const uint8_t* psAssetImage(const char* name, size_t* size) {{",
+        f"const uint8_t* avdAssetImage(const char* name, size_t* size) {{",
         f"    if (size != NULL) {{",
         f"        *size = 0;",
         f"    }}",
         f"    if (name == NULL) return NULL;",
         f"    if (strcmp(name, \"\") == 0) return NULL;",
-        *[f"    if (strcmp(name, \"{image_name}\") == 0) return psAssetImage_{image_name}(size);" for image_name in all_image_names],
+        *[f"    if (strcmp(name, \"{image_name}\") == 0) return avdAssetImage_{image_name}(size);" for image_name in all_image_names],
         f"    printf(\"Error: Image asset \\\"%s\\\" not found.\\n\", name);",
         f"    return NULL;",
         f"}}",
         f"\n",
     ]
-    source_file_path = os.path.join(output_dir, "src", "ps_asset_image.c")
+    source_file_path = os.path.join(output_dir, "src", "avd_asset_image.c")
     with open(source_file_path, "w") as source_file:
         source_file.write("\n".join(source_source))
         source_file.write("\n")
@@ -578,22 +578,22 @@ def create_shader_asset(file_path, output_dir):
     shader_name = to_correct_case(base_name_without_ext)
 
     all_files = os.listdir(output_dir + "/include") + os.listdir(output_dir + "/src")
-    header_exists = any(f"ps_asset_shader_{shader_name}_{shader_hash}" in file for file in all_files if file.endswith(".h"))
-    source_exists = any(f"ps_asset_shader_{shader_name}_{shader_hash}" in file for file in all_files if file.endswith(".c"))
+    header_exists = any(f"avd_asset_shader_{shader_name}_{shader_hash}" in file for file in all_files if file.endswith(".h"))
+    source_exists = any(f"avd_asset_shader_{shader_name}_{shader_hash}" in file for file in all_files if file.endswith(".c"))
     
     if header_exists and source_exists:
         print(f"Asset {shader_name} already exists with same hash, skipping generation.")
         return
     
     for file in all_files:
-        if file.startswith(f"ps_asset_shader_{shader_name}_") and file.endswith(".h"):
+        if file.startswith(f"avd_asset_shader_{shader_name}_") and file.endswith(".h"):
             os.remove(os.path.join(output_dir, "include", file))
-        if file.startswith(f"ps_asset_shader_{shader_name}_") and file.endswith(".c"):
+        if file.startswith(f"avd_asset_shader_{shader_name}_") and file.endswith(".c"):
             os.remove(os.path.join(output_dir, "src", file))
 
     header_source = [
-        f"#ifndef PS_ASSET_SHADER_{shader_name}_{shader_hash.upper()}_H",
-        f"#define PS_ASSET_SHADER_{shader_name}_{shader_hash.upper()}_H",
+        f"#ifndef AVD_ASSET_SHADER_{shader_name}_{shader_hash.upper()}_H",
+        f"#define AVD_ASSET_SHADER_{shader_name}_{shader_hash.upper()}_H",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
@@ -605,17 +605,17 @@ def create_shader_asset(file_path, output_dir):
         f"// Type: {shader_type}",
         f"\n", 
         f"// Return shader as a null-terminated string",
-        f"const char* psAssetShader_{shader_name}(void);",
+        f"const char* avdAssetShader_{shader_name}(void);",
         f"\n",
-        f"#endif // PS_ASSET_SHADER_{shader_name}_{shader_hash.upper()}_H"
+        f"#endif // AVD_ASSET_SHADER_{shader_name}_{shader_hash.upper()}_H"
     ]
 
-    header_file_path = os.path.join(output_dir, "include", f"ps_asset_shader_{shader_name}_{shader_hash}.h")
+    header_file_path = os.path.join(output_dir, "include", f"avd_asset_shader_{shader_name}_{shader_hash}.h")
     with open(header_file_path, "w") as header_file:
         header_file.write("\n".join(header_source))
 
     source_source = [
-        f"#include \"ps_asset_shader_{shader_name}_{shader_hash}.h\"",
+        f"#include \"avd_asset_shader_{shader_name}_{shader_hash}.h\"",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
@@ -626,15 +626,15 @@ def create_shader_asset(file_path, output_dir):
         f"// Name: {shader_name}",
         f"// Type: {shader_type}",
         f"\n", 
-        generate_c_code_for_string(shader_text, f"__psAssetShader__{shader_name}_{shader_hash}"),
+        generate_c_code_for_string(shader_text, f"__avdAssetShader__{shader_name}_{shader_hash}"),
         f"\n",
-        f"const char* psAssetShader_{shader_name}(void) {{",
-        f"   return __psAssetShader__{shader_name}_{shader_hash};",
+        f"const char* avdAssetShader_{shader_name}(void) {{",
+        f"   return __avdAssetShader__{shader_name}_{shader_hash};",
         f"}};",
         f"\n"
     ]
 
-    source_file_path = os.path.join(output_dir, "src", f"ps_asset_shader_{shader_name}_{shader_hash}.c")
+    source_file_path = os.path.join(output_dir, "src", f"avd_asset_shader_{shader_name}_{shader_hash}.c")
     with open(source_file_path, "w") as source_file:
         source_file.write("\n".join(source_source))
         source_file.write("\n")
@@ -642,12 +642,12 @@ def create_shader_asset(file_path, output_dir):
 
 def create_shader_assets_common_header(output_dir):
     all_shader_headers = os.listdir(output_dir + "/include")
-    all_shader_headers = [f for f in all_shader_headers if f.endswith(".h") and f.startswith("ps_asset_shader_")]
+    all_shader_headers = [f for f in all_shader_headers if f.endswith(".h") and f.startswith("avd_asset_shader_")]
     all_shader_names = [f.split("_")[3] for f in all_shader_headers]
 
     common_header_source = [
-        f"#ifndef PS_ASSET_SHADER_COMMON_H",
-        f"#define PS_ASSET_SHADER_COMMON_H",
+        f"#ifndef AVD_ASSET_SHADER_COMMON_H",
+        f"#define AVD_ASSET_SHADER_COMMON_H",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
@@ -659,17 +659,17 @@ def create_shader_assets_common_header(output_dir):
         *[f"#include \"{header}\"" for header in all_shader_headers],
         "\n",
         "// Returns shader source as a null-terminated string",
-        "const char* psAssetShader(const char* name); \n",
-        f"#endif // PS_ASSET_SHADER_COMMON_H"
+        "const char* avdAssetShader(const char* name); \n",
+        f"#endif // AVD_ASSET_SHADER_COMMON_H"
     ]
 
-    common_header_file_path = os.path.join(output_dir, "include", "ps_asset_shader.h")
+    common_header_file_path = os.path.join(output_dir, "include", "avd_asset_shader.h")
     with open(common_header_file_path, "w") as common_header_file:
         common_header_file.write("\n".join(common_header_source))
         common_header_file.write("\n")
 
     source_source = [
-        f"#include \"ps_asset_shader.h\"",
+        f"#include \"avd_asset_shader.h\"",
         f"\n",
         f"#include <stdio.h>",
         f"#include <string.h>",
@@ -679,16 +679,16 @@ def create_shader_assets_common_header(output_dir):
         f"\n",
         f"// Asset Type: \"shader\"",
         f"\n",
-        f"const char* psAssetShader(const char* name) {{",
+        f"const char* avdAssetShader(const char* name) {{",
         f"    if (name == NULL) return NULL;",
         f"    if (strcmp(name, \"\") == 0) return NULL;",
-        *[f"    if (strcmp(name, \"{shader_name}\") == 0) return psAssetShader_{shader_name}();" for shader_name in all_shader_names],
+        *[f"    if (strcmp(name, \"{shader_name}\") == 0) return avdAssetShader_{shader_name}();" for shader_name in all_shader_names],
         f"    printf(\"Error: Shader asset \\\"%s\\\" not found.\\n\", name);",
         f"    return NULL;",
         f"}}",
         f"\n",
     ]
-    source_file_path = os.path.join(output_dir, "src", "ps_asset_shader.c")
+    source_file_path = os.path.join(output_dir, "src", "avd_asset_shader.c")
     with open(source_file_path, "w") as source_file:
         source_file.write("\n".join(source_source))
         source_file.write("\n")
@@ -713,20 +713,20 @@ def create_shader_assets(git_root, output_dir):
 
 def create_assets_common_header(output_dir):
     common_header_source = [
-        f"#ifndef PS_ASSET_COMMON_H",
-        f"#define PS_ASSET_COMMON_H",
+        f"#ifndef AVD_ASSET_COMMON_H",
+        f"#define AVD_ASSET_COMMON_H",
         f"\n",
         f"// This file is auto-generated by the asset generator script.",
         f"// Do not edit this file directly.",
         f"\n",
-        f"#include \"ps_asset_image.h\"",
-        f"#include \"ps_asset_shader.h\"",
-        f"#include \"ps_asset_font.h\"",
+        f"#include \"avd_asset_image.h\"",
+        f"#include \"avd_asset_shader.h\"",
+        f"#include \"avd_asset_font.h\"",
         f"\n",
-        f"#endif // PS_ASSET_COMMON_H"
+        f"#endif // AVD_ASSET_COMMON_H"
     ]
 
-    common_header_file_path = os.path.join(output_dir, "include", "ps_asset.h")
+    common_header_file_path = os.path.join(output_dir, "include", "avd_asset.h")
     with open(common_header_file_path, "w") as common_header_file:
         common_header_file.write("\n".join(common_header_source))
         common_header_file.write("\n")
@@ -740,7 +740,7 @@ def main():
     clean_directory(temp_dir)
     ensure_directory(bins_dir)
     
-    output_dir = os.path.join(git_root, "ps_assets", "generated")
+    output_dir = os.path.join(git_root, "avd_assets", "generated")
     ensure_directory(output_dir)
     ensure_directory(output_dir + "/include")
     ensure_directory(output_dir + "/src")   
