@@ -3,7 +3,9 @@
 
 #include "font/avd_font.h"
 #include "core/avd_core.h"
-#include "vulkan/avd_vulkan.h"
+#include "vulkan/avd_vulkan_image.h"
+#include "vulkan/avd_vulkan_buffer.h"
+#include "vulkan/avd_vulkan_renderer.h"
 
 struct AVD_FontRendererVertex;
 
@@ -62,6 +64,6 @@ bool avdFontRendererAddBasicFonts(AVD_FontRenderer* fontRenderer);
 bool avdFontRendererHasFont(AVD_FontRenderer *fontRenderer, const char *fontName);
 bool avdFontRendererGetFont(AVD_FontRenderer *fontRenderer, const char *fontName, AVD_Font **font);
 
-void avdRenderText(AVD_Vulkan *vulkan, AVD_VulkanRenderer* renderer, AVD_FontRenderer *fontRenderer, AVD_RenderableText *renderableText, VkCommandBuffer cmd, float x, float y, float scale, float r, float g, float b, float a);
+void avdRenderText(AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, AVD_RenderableText *renderableText, VkCommandBuffer cmd, float x, float y, float scale, float r, float g, float b, float a, uint32_t framebufferWidth, uint32_t framebufferHeight);
 
 #endif // AVD_FONT_RENDERER_H

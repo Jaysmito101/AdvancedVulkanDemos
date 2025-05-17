@@ -1,5 +1,6 @@
 #include "vulkan/avd_vulkan.h"
 #include "shader/avd_shader.h"
+#include "scenes/avd_scenes.h"
 
 // Define the push constant struct matching the shader layout
 typedef struct AVD_VulkanPresentationPushConstants
@@ -8,9 +9,7 @@ typedef struct AVD_VulkanPresentationPushConstants
     float windowHeight;
     float framebufferWidth;
     float framebufferHeight;
-    float circleRadius;
-    float iconWidth;
-    float iconHeight;
+    float sceneLoadingProgress;
     float time;
 } AVD_VulkanPresentationPushConstants;
 
@@ -26,8 +25,7 @@ static bool __avdVulkanPresentationCreatePipelineLayout(AVD_VulkanPresentation *
 
     // Combine layouts for the pipeline layout
     VkDescriptorSetLayout setLayouts[] = {
-        presentation->descriptorSetLayout,
-        presentation->iconDescriptorSetLayout};
+        presentation->descriptorSetLayout};
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -139,48 +137,31 @@ static bool __avdVulkanPresentationSetupDescriptors(AVD_VulkanPresentation *pres
 
     VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, &presentation->descriptorSetLayout);
     AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
-
-    VkDescriptorSetLayoutBinding iconBinding = {0};
-    iconBinding.binding = 0;
-    iconBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    iconBinding.descriptorCount = 1;
-    iconBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorSetLayoutCreateInfo iconLayoutInfo = {0};
-    iconLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    iconLayoutInfo.bindingCount = 1;
-    iconLayoutInfo.pBindings = &iconBinding;
-
-    VkResult iconLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &iconLayoutInfo, NULL, &presentation->iconDescriptorSetLayout);
-    AVD_CHECK_VK_RESULT(iconLayoutResult, "Failed to create icon descriptor set layout");
-
-    VkDescriptorSetAllocateInfo allocInfo = {0};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = vulkan->descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &presentation->iconDescriptorSetLayout;
-
-    VkResult allocResult = vkAllocateDescriptorSets(vulkan->device, &allocInfo, &presentation->iconDescriptorSet);
-    AVD_CHECK_VK_RESULT(allocResult, "Failed to allocate icon descriptor set");
-
-    // Update the icon descriptor set
-    VkWriteDescriptorSet descriptorWrite = {0};
-    AVD_CHECK(avdWriteImageDescriptorSet(&descriptorWrite, presentation->iconDescriptorSet, 0, &presentation->iconImage.descriptorImageInfo));
-
-    vkUpdateDescriptorSets(vulkan->device, 1, &descriptorWrite, 0, NULL);
-
     return true;
 }
 
-bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain)
+bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain, AVD_FontRenderer *fontRenderer)
 {
     AVD_ASSERT(presentation != NULL);
     AVD_ASSERT(vulkan != NULL);
 
-    AVD_CHECK(avdVulkanImageLoadFromAsset(vulkan, "SwitchMascot", &presentation->iconImage));
     AVD_CHECK(__avdVulkanPresentationSetupDescriptors(presentation, vulkan));
     AVD_CHECK(__avdVulkanPresentationCreatePipelineLayout(presentation, vulkan));
     AVD_CHECK(__avdVulkanPresentationCreatePipeline(presentation, vulkan->device, swapchain->renderPass));
+    AVD_CHECK(avdRenderableTextCreate(
+        &presentation->loadingText,
+        fontRenderer,
+        vulkan,
+        "OpenSansRegular",
+        "Loading...",
+        24.0f));
+    AVD_CHECK(avdRenderableTextCreate(
+        &presentation->loadingStatusText,
+        fontRenderer,
+        vulkan,
+        "OpenSansRegular",
+        "No status",
+        16.0f));
     return true;
 }
 
@@ -189,15 +170,14 @@ void avdVulkanPresentationDestroy(AVD_VulkanPresentation *presentation, AVD_Vulk
     AVD_ASSERT(presentation != NULL);
     AVD_ASSERT(vulkan != NULL);
 
-    avdVulkanImageDestroy(vulkan, &presentation->iconImage);
-    // Note: Icon descriptor set is implicitly freed when the pool is destroyed.
+    avdRenderableTextDestroy(&presentation->loadingStatusText, vulkan);
+    avdRenderableTextDestroy(&presentation->loadingText, vulkan);
     vkDestroyPipeline(vulkan->device, presentation->pipeline, NULL);
     vkDestroyPipelineLayout(vulkan->device, presentation->pipelineLayout, NULL);
     vkDestroyDescriptorSetLayout(vulkan->device, presentation->descriptorSetLayout, NULL);
-    vkDestroyDescriptorSetLayout(vulkan->device, presentation->iconDescriptorSetLayout, NULL);
 }
 
-bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanRenderer *renderer, AVD_VulkanSwapchain *swapchain, uint32_t imageIndex)
+bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanRenderer *renderer, AVD_VulkanSwapchain *swapchain, AVD_SceneManager *sceneManager, AVD_FontRenderer *fontRenderer, uint32_t imageIndex)
 {
     AVD_ASSERT(presentation != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -207,14 +187,18 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
     uint32_t currentFrameIndex = renderer->currentFrameIndex;
     VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
 
+    static VkClearValue defaultClearValues[2] = {
+        {.color = {.float32 = {0.0f, 0.0f, 0.0f}}},
+        {.depthStencil = {.depth = 1.0f, .stencil = 0}}};
+
     AVD_CHECK(avdBeginRenderPass(
         commandBuffer,
         swapchain->renderPass,
         swapchain->framebuffers[imageIndex],
         swapchain->extent.width,
         swapchain->extent.height,
-        NULL,
-        0));
+        defaultClearValues,
+        AVD_ARRAY_COUNT(defaultClearValues)));
 
     // Populate the push constant struct
     AVD_VulkanPresentationPushConstants pushConstants = {
@@ -222,24 +206,61 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
         .windowHeight = (float)swapchain->extent.height,
         .framebufferWidth = (float)renderer->sceneFramebuffer.width,
         .framebufferHeight = (float)renderer->sceneFramebuffer.height,
-        .circleRadius = 1.0f,
-        .iconWidth = (float)presentation->iconImage.width,
-        .iconHeight = (float)presentation->iconImage.height,
+        .sceneLoadingProgress = sceneManager->sceneLoadingProgress,
         .time = (float)glfwGetTime(),
     };
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, presentation->pipeline);
     vkCmdPushConstants(commandBuffer, presentation->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AVD_VulkanPresentationPushConstants), &pushConstants);
-
     VkDescriptorSet descriptorSetsToBind[] = {
         renderer->sceneFramebuffer.colorAttachment.descriptorSet, // Set 0
-        presentation->iconDescriptorSet                           // Set 1
     };
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, presentation->pipelineLayout, 0, AVD_ARRAY_COUNT(descriptorSetsToBind), descriptorSetsToBind, 0, NULL);
-
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
-    AVD_CHECK(avdEndRenderPass(commandBuffer));
+    // NOTE: This wont work for now, as the font renderer pipeline only works with
+    //       the scene framebuffer and not the swapchain framebuffer, this will be fixed later?
 
+    if (!sceneManager->isSceneLoaded)
+    {
+        static char loadingText[256];
+        snprintf(loadingText, sizeof(loadingText), "Loading... [%.2f%%]", sceneManager->sceneLoadingProgress * 100.0f);
+        AVD_CHECK(avdRenderableTextUpdate(
+            &presentation->loadingText,
+            fontRenderer,
+            vulkan,
+            loadingText));
+
+        avdRenderText(
+            vulkan,
+            fontRenderer,
+            &presentation->loadingText,
+            commandBuffer,
+            100.0f, 100.0f,
+            1.0f,
+            1.0f, 1.0f, 0.0f, 1.0f,
+            swapchain->extent.width, swapchain->extent.height);
+
+        if (sceneManager->sceneLoadingStatusMessage != NULL)
+        {
+            AVD_CHECK(avdRenderableTextUpdate(
+                &presentation->loadingStatusText,
+                fontRenderer,
+                vulkan,
+                sceneManager->sceneLoadingStatusMessage));
+
+            avdRenderText(
+                vulkan,
+                fontRenderer,
+                &presentation->loadingStatusText,
+                commandBuffer,
+                100.0f, 500.0f,
+                1.0f,
+                1.0f, 1.0f, 0.0f, 1.0f,
+                swapchain->extent.width, swapchain->extent.height);
+        }
+    }
+
+    AVD_CHECK(avdEndRenderPass(commandBuffer));
     return true;
 }

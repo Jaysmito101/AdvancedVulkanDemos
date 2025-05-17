@@ -521,18 +521,16 @@ bool avdFontRendererGetFont(AVD_FontRenderer *fontRenderer, const char *fontName
     return false;
 }
 
-void avdRenderText(AVD_Vulkan *vulkan, AVD_VulkanRenderer* renderer, AVD_FontRenderer *fontRenderer, AVD_RenderableText *renderableText, VkCommandBuffer cmd, float x, float y, float scale, float r, float g, float b, float a)
+void avdRenderText(AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, AVD_RenderableText *renderableText, VkCommandBuffer cmd, float x, float y, float scale, float r, float g, float b, float a, uint32_t framebufferWidth, uint32_t framebufferHeight)
 {
     AVD_ASSERT(renderableText != NULL);
     AVD_ASSERT(cmd != VK_NULL_HANDLE);
     AVD_ASSERT(fontRenderer != NULL);
     AVD_ASSERT(renderableText->font != NULL);
-    AVD_ASSERT(renderer != NULL);
 
-    
     AVD_FontRendererPushConstants pushConstants = {
-        .frameBufferWidth = (float)renderer->sceneFramebuffer.width,
-        .frameBufferHeight = (float)renderer->sceneFramebuffer.height,
+        .frameBufferWidth = (float)framebufferWidth,
+        .frameBufferHeight = (float)framebufferHeight,
         .scale = scale,
         .opacity = 1.0f,
         .offsetX = x,

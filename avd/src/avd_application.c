@@ -29,11 +29,14 @@ bool avdApplicationInit(AVD_AppState *appState)
     AVD_CHECK(avdVulkanInit(&appState->vulkan, &appState->window, &appState->surface));
     AVD_CHECK(avdVulkanSwapchainCreate(&appState->swapchain, &appState->vulkan, appState->surface, &appState->window));
     AVD_CHECK(avdVulkanRendererCreate(&appState->renderer, &appState->vulkan, &appState->swapchain, GAME_WIDTH, GAME_HEIGHT));
-    AVD_CHECK(avdVulkanPresentationInit(&appState->presentation, &appState->vulkan, &appState->swapchain));
     AVD_CHECK(avdFontRendererInit(&appState->fontRenderer, &appState->vulkan, &appState->renderer));
     AVD_CHECK(avdFontRendererAddBasicFonts(&appState->fontRenderer));
+    AVD_CHECK(avdVulkanPresentationInit(&appState->presentation, &appState->vulkan, &appState->swapchain, &appState->fontRenderer));
     AVD_CHECK(avdBloomCreate(&appState->bloom, &appState->vulkan, GAME_WIDTH, GAME_HEIGHT));
+    AVD_CHECK(avdSceneManagerInit(&appState->sceneManager, appState));
+    
     __avdApplicationUpdateFramerateCalculation(&appState->framerate);
+
     memset(&appState->input, 0, sizeof(AVD_Input));
 
     return true;
@@ -45,9 +48,10 @@ void avdApplicationShutdown(AVD_AppState *appState)
 
     avdVulkanWaitIdle(&appState->vulkan);
 
+    avdSceneManagerDestroy(&appState->sceneManager, appState);
     avdBloomDestroy(&appState->bloom, &appState->vulkan);
-    avdFontRendererShutdown(&appState->fontRenderer);
     avdVulkanPresentationDestroy(&appState->presentation, &appState->vulkan);
+    avdFontRendererShutdown(&appState->fontRenderer);
     avdVulkanRendererDestroy(&appState->renderer, &appState->vulkan);
     avdVulkanSwapchainDestroy(&appState->swapchain, &appState->vulkan);
     avdVulkanDestroySurface(&appState->vulkan, appState->surface);
@@ -67,7 +71,7 @@ void avdApplicationUpdate(AVD_AppState *appState)
 
     __avdApplicationUpdateFramerateCalculation(&appState->framerate);
 
-    // avdInputNewFrame(&appState->input);
+    avdInputNewFrame(&appState->input);
     avdWindowPollEvents();
     avdInputCalculateDeltas(&appState->input);
     avdApplicationUpdateWithoutPolling(appState);
@@ -82,7 +86,7 @@ void avdApplicationUpdate(AVD_AppState *appState)
 void avdApplicationUpdateWithoutPolling(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
-
+    avdSceneManagerUpdate(&appState->sceneManager, appState);
     avdApplicationRender(appState);
 }
 
@@ -90,15 +94,10 @@ void avdApplicationRender(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
 
-    // to not render if the window is minimized
     if (appState->window.isMinimized)
     {
-        // sleep to avoid byst waiting
-#if defined(_WIN32) || defined(__CYGWIN__)
-        Sleep(100);
-#else
-        usleep(1000);
-#endif
+        // sleep to avoid busy waiting
+        avdSleep(100);
         return;
     }
 
@@ -115,7 +114,15 @@ void avdApplicationRender(AVD_AppState *appState)
         return; // do not render this frame
     }
 
-    if (!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, appState->renderer.currentImageIndex))
+    if (!avdSceneManagerRender(&appState->sceneManager, appState))
+    {
+        AVD_LOG("Failed to render scene\n");
+        if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
+            AVD_LOG("Failed to cancel Vulkan renderer frame\n");
+        return; // do not render this frame
+    }
+
+    if (!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, &appState->sceneManager, &appState->fontRenderer, appState->renderer.currentImageIndex))
     {
         if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
             AVD_LOG("Failed to cancel Vulkan renderer frame\n");

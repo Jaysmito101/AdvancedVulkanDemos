@@ -29,6 +29,9 @@ add_executable(avd
     ./src/vulkan/avd_vulkan_framebuffer.c
     ./src/vulkan/avd_vulkan_image.c
     ./src/vulkan/avd_vulkan_buffer.c
+
+    ./src/scenes/avd_scenes.c
+    ./src/scenes/avd_scenes_main_menu.c
 )
 
 include_directories(avd
