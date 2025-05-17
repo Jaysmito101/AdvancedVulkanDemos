@@ -44,6 +44,7 @@ include_directories(avd
     ../dep/stb
     ../dep/cgltf
     ../dep/cute_headers
+    ../dep/volk
     ../avd_assets/generated/include
     ${Vulkan_INCLUDE_DIRS}
 )
@@ -52,7 +53,7 @@ include_directories(avd
 target_link_libraries(avd
     avd_assets
     glfw
-    ${Vulkan_LIBRARY}
+    volk
     debug $ENV{VULKAN_SDK}/Lib/shaderc_combinedd.lib
     optimized $ENV{VULKAN_SDK}/Lib/shaderc_combined.lib
 )

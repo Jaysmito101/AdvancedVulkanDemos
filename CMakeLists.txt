@@ -76,7 +76,16 @@ add_custom_command(
 
 add_custom_target(generate_assets ALL DEPENDS ${ASSETS_TIMESTAMP_FILE})
 
+if (WIN32)
+    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
+elseif (APPLE)
+    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
+else()
+    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
+endif()
+
 add_subdirectory(dep/glfw)
+add_subdirectory(dep/volk)
 add_subdirectory(avd_assets)
 add_subdirectory(avd)
 

@@ -122,7 +122,6 @@ bool avdSceneBloomUpdate(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
 
-    // update the UI info text
     static char buffer[1024];
     snprintf(buffer, sizeof(buffer),
              "Bloom:\n"
@@ -173,7 +172,6 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
     avdRenderableTextGetSize(&bloom->title, &titleWidth, &titleHeight);
     avdRenderableTextGetSize(&bloom->uiInfoText, &uiInfoTextWidth, &uiInfoTextHeight);
 
-    AVD_LOG("Title Size: %f x %f\n", titleWidth, titleHeight);
     avdRenderText(
         vulkan,
         &appState->fontRenderer,

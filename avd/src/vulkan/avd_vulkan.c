@@ -134,10 +134,7 @@ static bool __avdCreateDebugUtilsMessenger(AVD_Vulkan *vulkan)
     createInfo.pfnUserCallback = __avdDebugUtilsMessengerCallback;
     createInfo.pUserData = vulkan;
 
-    PFN_vkCreateDebugUtilsMessengerEXT createDebugUtilsMessenger =
-        (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vulkan->instance, "vkCreateDebugUtilsMessengerEXT");
-    AVD_CHECK_MSG(createDebugUtilsMessenger != NULL, "Failed to load vkCreateDebugUtilsMessengerEXT");
-    VkResult result = createDebugUtilsMessenger(vulkan->instance, &createInfo, NULL, &vulkan->debugMessenger);
+    VkResult result = vkCreateDebugUtilsMessengerEXT(vulkan->instance, &createInfo, NULL, &vulkan->debugMessenger);
     AVD_CHECK_VK_RESULT(result, "Failed to create debug utils messenger\n");
     return true;
 }
@@ -182,6 +179,8 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
 
     VkResult result = vkCreateInstance(&createInfo, NULL, &vulkan->instance);
     AVD_CHECK_VK_RESULT(result, "Failed to create Vulkan instance\n");
+
+    volkLoadInstance(vulkan->instance);
 
 #ifdef AVD_DEBUG
     if (vulkan->debugLayersEnabled)
@@ -415,6 +414,10 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR* surface)
     VkResult result = vkCreateDevice(vulkan->physicalDevice, &createInfo, NULL, &vulkan->device);
     AVD_CHECK_VK_RESULT(result, "Failed to create Vulkan device\n");
 
+    // NOTE: VERY IMPORTANT: This only works as we only use a single vulkan device!
+    //                       And thus this optimizes the vulkan calls.
+    volkLoadDevice(vulkan->device);
+
     vulkan->graphicsQueueFamilyIndex = graphicsQueueFamilyIndex;
     vulkan->computeQueueFamilyIndex = computeQueueFamilyIndex;
 
@@ -473,6 +476,7 @@ static bool __avdVulkanDescriptorPoolCreate(AVD_Vulkan *vulkan)
 
 bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window* window, VkSurfaceKHR* surface)
 {
+    AVD_CHECK_VK_RESULT(volkInitialize(), "Failed to initialize Vulkan");
     AVD_CHECK(__avdVulkanCreateInstance(vulkan));
     AVD_CHECK(__avdVulkanCreateSurface(vulkan, window->window, surface));
     AVD_CHECK(__avdVulkanPickPhysicalDevice(vulkan));
@@ -509,12 +513,7 @@ void avdVulkanShutdown(AVD_Vulkan *vulkan)
 #ifdef AVD_DEBUG
     if (vulkan->debugLayersEnabled)
     {
-        PFN_vkDestroyDebugUtilsMessengerEXT destroyDebugUtilsMessenger =
-            (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vulkan->instance, "vkDestroyDebugUtilsMessengerEXT");
-        if (destroyDebugUtilsMessenger != NULL)
-        {
-            destroyDebugUtilsMessenger(vulkan->instance, vulkan->debugMessenger, NULL);
-        }
+        vkDestroyDebugUtilsMessengerEXT(vulkan->instance, vulkan->debugMessenger, NULL);
     }
 #endif
     vkDestroyInstance(vulkan->instance, NULL);
