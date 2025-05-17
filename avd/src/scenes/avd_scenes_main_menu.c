@@ -47,6 +47,22 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
         "Advanced Vulkan Demos",
         72.0f
     ));
+    AVD_CHECK(avdRenderableTextCreate(
+        &mainMenu->creditsText,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        "RobotoCondensedRegular",
+        "Made with Love by Jaysmito Mukherjee",
+        36.0f
+    ));
+    AVD_CHECK(avdRenderableTextCreate(
+        &mainMenu->githubLinkText,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        "RobotoCondensedRegular",
+        "(https://github.com/Jaysmito101/AdvancedVulkanDemos)",
+        16.0f
+    ));
 
     return true;
 }
@@ -57,6 +73,8 @@ void avdSceneMainMenuDestroy(AVD_AppState *appState, AVD_Scene *scene)
     
     AVD_LOG("Destroying main menu scene\n");
     avdRenderableTextDestroy(&mainMenu->title, &appState->vulkan);
+    avdRenderableTextDestroy(&mainMenu->creditsText, &appState->vulkan);
+    avdRenderableTextDestroy(&mainMenu->githubLinkText, &appState->vulkan);
 }
 
 bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char **statusMessage, float *progress)
@@ -114,14 +132,39 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         // render the title
         float titleWidth, titleHeight;
         avdRenderableTextGetSize(&mainMenu->title, &titleWidth, &titleHeight);
-        float x = (float)(renderer->sceneFramebuffer.width - titleWidth) / 2.0f;
-        float y = (float)(renderer->sceneFramebuffer.height - titleHeight) / 2.0f;
+        float creditsWidth, creditsHeight;
+        avdRenderableTextGetSize(&mainMenu->creditsText, &creditsWidth, &creditsHeight);
+        float githubLinkWidth, githubLinkHeight;
+        avdRenderableTextGetSize(&mainMenu->githubLinkText, &githubLinkWidth, &githubLinkHeight);
+
         avdRenderText(
             &appState->vulkan,
             &appState->fontRenderer,
             &mainMenu->title,
             commandBuffer,
-            x, y,
+            ((float)renderer->sceneFramebuffer.width - titleWidth) / 2.0f, titleHeight,
+            1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+            renderer->sceneFramebuffer.width,
+            renderer->sceneFramebuffer.height
+        );
+
+        avdRenderText(
+            &appState->vulkan,
+            &appState->fontRenderer,
+            &mainMenu->creditsText,
+            commandBuffer,
+            ((float)renderer->sceneFramebuffer.width - creditsWidth) / 2.0f, titleHeight + creditsHeight + 10.0f,
+            1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+            renderer->sceneFramebuffer.width,
+            renderer->sceneFramebuffer.height
+        );
+
+        avdRenderText(
+            &appState->vulkan,
+            &appState->fontRenderer,
+            &mainMenu->githubLinkText,
+            commandBuffer,
+            ((float)renderer->sceneFramebuffer.width - githubLinkWidth) / 2.0f, titleHeight + creditsHeight + 10.0f + githubLinkHeight + 10.0f,
             1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
             renderer->sceneFramebuffer.width,
             renderer->sceneFramebuffer.height

@@ -3,12 +3,17 @@
 
 #include "scenes/avd_scenes_base.h"
 
+typedef struct AVD_SceneMainMenuCard {
+    AVD_RenderableText title;
+} AVD_SceneMainMenuCard;
+
 typedef struct AVD_SceneMainMenu
 {
     AVD_SceneType type;
+    
     AVD_RenderableText title;
-
-    AVD_RenderableText headerText;  
+    AVD_RenderableText creditsText;  
+    AVD_RenderableText githubLinkText;  
 
     int32_t loadingCount;
 } AVD_SceneMainMenu;
