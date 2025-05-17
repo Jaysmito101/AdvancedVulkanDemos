@@ -4,18 +4,17 @@ static void __avdApplicationUpdateFramerateCalculation(AVD_Frametime *framerateI
 {
     AVD_ASSERT(framerateInfo != NULL);
 
-    double currentTime = glfwGetTime();
+    double currentTime         = glfwGetTime();
     framerateInfo->currentTime = currentTime;
-    framerateInfo->deltaTime = currentTime - framerateInfo->lastTime;
-    framerateInfo->lastTime = currentTime;
+    framerateInfo->deltaTime   = currentTime - framerateInfo->lastTime;
+    framerateInfo->lastTime    = currentTime;
     framerateInfo->lastSecondFrameCounter++;
     framerateInfo->instanteneousFrameRate = (size_t)(1.0 / framerateInfo->deltaTime);
 
-    if (currentTime - framerateInfo->lastSecondTime >= 1.0)
-    {
-        framerateInfo->fps = framerateInfo->lastSecondFrameCounter;
+    if (currentTime - framerateInfo->lastSecondTime >= 1.0) {
+        framerateInfo->fps                    = framerateInfo->lastSecondFrameCounter;
         framerateInfo->lastSecondFrameCounter = 0;
-        framerateInfo->lastSecondTime = currentTime;
+        framerateInfo->lastSecondTime         = currentTime;
     }
 }
 
@@ -35,7 +34,7 @@ bool avdApplicationInit(AVD_AppState *appState)
     AVD_CHECK(avdBloomCreate(&appState->bloom, &appState->vulkan, GAME_WIDTH, GAME_HEIGHT));
     AVD_CHECK(avdUiInit(&appState->ui, appState));
     AVD_CHECK(avdSceneManagerInit(&appState->sceneManager, appState));
-    
+
     __avdApplicationUpdateFramerateCalculation(&appState->framerate);
 
     memset(&appState->input, 0, sizeof(AVD_Input));
@@ -96,43 +95,37 @@ void avdApplicationRender(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
 
-    if (appState->window.isMinimized)
-    {
+    if (appState->window.isMinimized) {
         // sleep to avoid busy waiting
         avdSleep(100);
         return;
     }
 
-    if (avdVulkanSwapchainRecreateIfNeeded(&appState->swapchain, &appState->vulkan, &appState->window))
-    {
+    if (avdVulkanSwapchainRecreateIfNeeded(&appState->swapchain, &appState->vulkan, &appState->window)) {
         if (!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain))
             AVD_LOG("Failed to recreate Vulkan renderer resources\n");
         return; // skip this frame
     }
 
-    if (!avdVulkanRendererBegin(&appState->renderer, &appState->vulkan, &appState->swapchain))
-    {
+    if (!avdVulkanRendererBegin(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
         AVD_LOG("Failed to begin Vulkan renderer\n");
         return; // do not render this frame
     }
 
-    if (!avdSceneManagerRender(&appState->sceneManager, appState))
-    {
+    if (!avdSceneManagerRender(&appState->sceneManager, appState)) {
         AVD_LOG("Failed to render scene\n");
         if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
             AVD_LOG("Failed to cancel Vulkan renderer frame\n");
         return; // do not render this frame
     }
 
-    if (!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, &appState->sceneManager, &appState->fontRenderer, appState->renderer.currentImageIndex))
-    {
+    if (!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, &appState->sceneManager, &appState->fontRenderer, appState->renderer.currentImageIndex)) {
         if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
             AVD_LOG("Failed to cancel Vulkan renderer frame\n");
         return; // do not render this frame
     }
 
-    if (!avdVulkanRendererEnd(&appState->renderer, &appState->vulkan, &appState->swapchain))
-    {
+    if (!avdVulkanRendererEnd(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
         // Nothing to do here for now...
     }
 }

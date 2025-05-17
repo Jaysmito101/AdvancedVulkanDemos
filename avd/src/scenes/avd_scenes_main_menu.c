@@ -1,5 +1,5 @@
-#include "scenes/avd_scenes.h"
 #include "avd_application.h"
+#include "scenes/avd_scenes.h"
 
 static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
 {
@@ -7,15 +7,15 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
     AVD_ASSERT(layout != NULL);
 
     VkDescriptorSetLayoutBinding sceneFramebufferBinding = {0};
-    sceneFramebufferBinding.binding = 0;
-    sceneFramebufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    sceneFramebufferBinding.descriptorCount = 1;
-    sceneFramebufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    sceneFramebufferBinding.binding                      = 0;
+    sceneFramebufferBinding.descriptorType               = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sceneFramebufferBinding.descriptorCount              = 1;
+    sceneFramebufferBinding.stageFlags                   = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutCreateInfo sceneFramebufferLayoutInfo = {0};
-    sceneFramebufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    sceneFramebufferLayoutInfo.bindingCount = 1;
-    sceneFramebufferLayoutInfo.pBindings = &sceneFramebufferBinding;
+    sceneFramebufferLayoutInfo.sType                           = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    sceneFramebufferLayoutInfo.bindingCount                    = 1;
+    sceneFramebufferLayoutInfo.pBindings                       = &sceneFramebufferBinding;
 
     VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, layout);
     AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
@@ -39,10 +39,10 @@ static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AV
         28.0f));
 
     VkDescriptorSetAllocateInfo allocateInfo = {0};
-    allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocateInfo.descriptorPool = vulkan->descriptorPool;
-    allocateInfo.descriptorSetCount = 1;
-    allocateInfo.pSetLayouts = &layout;
+    allocateInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocateInfo.descriptorPool              = vulkan->descriptorPool;
+    allocateInfo.descriptorSetCount          = 1;
+    allocateInfo.pSetLayouts                 = &layout;
     AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(vulkan->device, &allocateInfo, &card->descriptorSet), "Failed to allocate descriptor set");
 
     VkWriteDescriptorSet writeDescriptorSet = {0};
@@ -102,12 +102,12 @@ bool avdSceneMainMenuRegisterApi(AVD_SceneAPI *api)
     AVD_ASSERT(api != NULL);
 
     api->checkIntegrity = avdSceneMainMenuCheckIntegrity;
-    api->init = avdSceneMainMenuInit;
-    api->render = avdSceneMainMenuRender;
-    api->update = avdSceneMainMenuUpdate;
-    api->destroy = avdSceneMainMenuDestroy;
-    api->load = avdSceneMainMenuLoad;
-    api->inputEvent = avdSceneMainMenuInputEvent;
+    api->init           = avdSceneMainMenuInit;
+    api->render         = avdSceneMainMenuRender;
+    api->update         = avdSceneMainMenuUpdate;
+    api->destroy        = avdSceneMainMenuDestroy;
+    api->load           = avdSceneMainMenuLoad;
+    api->inputEvent     = avdSceneMainMenuInputEvent;
 
     return true;
 }
@@ -117,8 +117,8 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
     AVD_LOG("Initializing main menu scene\n");
     mainMenu->loadingCount = 0;
-    mainMenu->currentPage = 0;
-    mainMenu->hoveredCard = -1;
+    mainMenu->currentPage  = 0;
+    mainMenu->hoveredCard  = -1;
 
     AVD_CHECK(__avdSetupDescriptors(&mainMenu->descriptorSetLayout, &appState->vulkan));
     AVD_CHECK(__avdSetupMainMenuCards(mainMenu, appState));
@@ -177,20 +177,19 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
     AVD_LOG("Loading main menu scene\n");
     // nothing to load really here but some busy waiting
-    if (mainMenu->loadingCount < 4)
-    {
+    if (mainMenu->loadingCount < 4) {
         mainMenu->loadingCount++;
         static char buffer[256];
         snprintf(buffer, sizeof(buffer), "Loading main menu scene: %d%%", mainMenu->loadingCount * 100 / 4);
         AVD_LOG("%s\n", buffer);
         *statusMessage = buffer;
-        *progress = (float)mainMenu->loadingCount / 4.0f;
+        *progress      = (float)mainMenu->loadingCount / 4.0f;
         avdSleep(100);
         return false;
     }
 
     *statusMessage = NULL;
-    *progress = 1.0f;
+    *progress      = 1.0f;
 
     return true;
 }
@@ -199,33 +198,23 @@ void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *
 {
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
 
-    if (event->type == AVD_INPUT_EVENT_KEY)
-    {
-        if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS)
-        {
+    if (event->type == AVD_INPUT_EVENT_KEY) {
+        if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS) {
             AVD_LOG("Exiting main menu scene\n");
             appState->running = false;
-        }
-        else if (event->key.key == GLFW_KEY_RIGHT && event->key.action == GLFW_PRESS)
-        {
+        } else if (event->key.key == GLFW_KEY_RIGHT && event->key.action == GLFW_PRESS) {
             mainMenu->currentPage++;
             if (mainMenu->currentPage >= (mainMenu->cardCount + 5) / 6)
                 mainMenu->currentPage = 0;
-        }
-        else if (event->key.key == GLFW_KEY_LEFT && event->key.action == GLFW_PRESS)
-        {
+        } else if (event->key.key == GLFW_KEY_LEFT && event->key.action == GLFW_PRESS) {
             if (mainMenu->currentPage > 0)
                 mainMenu->currentPage--;
             else
                 mainMenu->currentPage = (mainMenu->cardCount + 5) / 6 - 1;
         }
-    }
-    else if (event->type == AVD_INPUT_EVENT_MOUSE_BUTTON)
-    {
-        if (event->mouseButton.button == GLFW_MOUSE_BUTTON_LEFT && event->mouseButton.action == GLFW_PRESS)
-        {
-            if (mainMenu->hoveredCard != -1)
-            {
+    } else if (event->type == AVD_INPUT_EVENT_MOUSE_BUTTON) {
+        if (event->mouseButton.button == GLFW_MOUSE_BUTTON_LEFT && event->mouseButton.action == GLFW_PRESS) {
+            if (mainMenu->hoveredCard != -1) {
                 AVD_SceneMainMenuCard *card = &mainMenu->cards[mainMenu->hoveredCard];
                 avdSceneManagerSwitchToScene(
                     &appState->sceneManager,
@@ -246,10 +235,10 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
 
-    AVD_Vulkan *vulkan = &appState->vulkan;
+    AVD_Vulkan *vulkan           = &appState->vulkan;
     AVD_VulkanRenderer *renderer = &appState->renderer;
 
-    uint32_t currentFrameIndex = renderer->currentFrameIndex;
+    uint32_t currentFrameIndex    = renderer->currentFrameIndex;
     VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
@@ -296,17 +285,17 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
             renderer->sceneFramebuffer.height);
     }
 
-    float minX = 0.0f;
-    float minY = (titleHeight + creditsHeight + githubLinkHeight + 40.0f);
-    float frameWidth = (float)renderer->sceneFramebuffer.width;
+    float minX        = 0.0f;
+    float minY        = (titleHeight + creditsHeight + githubLinkHeight + 40.0f);
+    float frameWidth  = (float)renderer->sceneFramebuffer.width;
     float frameHeight = (float)renderer->sceneFramebuffer.height - minY;
 
-    float cardWidth = (frameWidth * 0.8f) / 3.0f - 20.0f;
-    float cardHeight = (frameHeight * 0.8f) / 2.0f - 80.0f;
-    float allCardsWidth = cardWidth * 3.0f + 20.0f * 2.0f;
+    float cardWidth      = (frameWidth * 0.8f) / 3.0f - 20.0f;
+    float cardHeight     = (frameHeight * 0.8f) / 2.0f - 80.0f;
+    float allCardsWidth  = cardWidth * 3.0f + 20.0f * 2.0f;
     float allCardsHeight = cardHeight * 2.0f + 80.0f * 2.0f;
-    float offsetX = (frameWidth - allCardsWidth) / 2.0f;
-    float offsetY = (frameHeight - allCardsHeight) / 2.0f;
+    float offsetX        = (frameWidth - allCardsWidth) / 2.0f;
+    float offsetY        = (frameHeight - allCardsHeight) / 2.0f;
 
     avdUiBegin(
         commandBuffer,
@@ -319,26 +308,24 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         renderer->sceneFramebuffer.height);
 
     const uint32_t numCardsPerPage = 6;
-    uint32_t currentOffset = mainMenu->currentPage * numCardsPerPage;
-    uint32_t totalPages = (mainMenu->cardCount + numCardsPerPage - 1) / numCardsPerPage;
+    uint32_t currentOffset         = mainMenu->currentPage * numCardsPerPage;
+    uint32_t totalPages            = (mainMenu->cardCount + numCardsPerPage - 1) / numCardsPerPage;
 
     float mouseX = (appState->input.mouseX * 0.5f + 0.5f) * frameWidth;
     float mouseY = frameHeight - minY - (appState->input.mouseY * 0.5f + 0.5f) * frameHeight;
 
     mainMenu->hoveredCard = -1;
-    for (uint32_t i = 0; i < numCardsPerPage; i++)
-    {
+    for (uint32_t i = 0; i < numCardsPerPage; i++) {
         if (currentOffset + i >= mainMenu->cardCount)
             break;
 
         AVD_SceneMainMenuCard *card = &mainMenu->cards[currentOffset + i];
-        float x = (float)(i % 3) * (cardWidth + 20.0f) + offsetX;
-        float y = (float)(i / 3) * (cardHeight + 80.0f) + offsetY;
+        float x                     = (float)(i % 3) * (cardWidth + 20.0f) + offsetX;
+        float y                     = (float)(i / 3) * (cardHeight + 80.0f) + offsetY;
 
         AVD_VulkanImage *image = &card->thumbnailImage;
 
-        if (mouseX >= x && mouseX <= x + cardWidth && mouseY >= y && mouseY <= y + cardHeight)
-        {
+        if (mouseX >= x && mouseX <= x + cardWidth && mouseY >= y && mouseY <= y + cardHeight) {
             mainMenu->hoveredCard = currentOffset + i;
             avdUiDrawRect(
                 commandBuffer,
@@ -348,9 +335,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
                 cardWidth + 30.0f, cardHeight + 30.0f,
                 1.0f, 1.0f, 1.0f, 1.0f,
                 card->descriptorSet, image->width, image->height);
-        }
-        else
-        {
+        } else {
             avdUiDrawRect(
                 commandBuffer,
                 &appState->ui,

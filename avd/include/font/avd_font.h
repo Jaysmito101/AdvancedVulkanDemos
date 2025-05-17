@@ -47,7 +47,7 @@ typedef struct AVD_FontAtlas {
 
 typedef struct AVD_FontData {
     char name[256];
-    AVD_FontAtlas* atlas;
+    AVD_FontAtlas *atlas;
     uint8_t *atlasData;
     size_t atlasDataSize;
 } AVD_FontData;

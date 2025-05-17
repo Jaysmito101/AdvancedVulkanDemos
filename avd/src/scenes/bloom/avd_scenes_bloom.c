@@ -1,5 +1,5 @@
-#include "scenes/avd_scenes.h"
 #include "avd_application.h"
+#include "scenes/avd_scenes.h"
 
 static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
 {
@@ -7,15 +7,15 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
     AVD_ASSERT(layout != NULL);
 
     VkDescriptorSetLayoutBinding sceneFramebufferBinding = {0};
-    sceneFramebufferBinding.binding = 0;
-    sceneFramebufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    sceneFramebufferBinding.descriptorCount = 1;
-    sceneFramebufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    sceneFramebufferBinding.binding                      = 0;
+    sceneFramebufferBinding.descriptorType               = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sceneFramebufferBinding.descriptorCount              = 1;
+    sceneFramebufferBinding.stageFlags                   = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorSetLayoutCreateInfo sceneFramebufferLayoutInfo = {0};
-    sceneFramebufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    sceneFramebufferLayoutInfo.bindingCount = 1;
-    sceneFramebufferLayoutInfo.pBindings = &sceneFramebufferBinding;
+    sceneFramebufferLayoutInfo.sType                           = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    sceneFramebufferLayoutInfo.bindingCount                    = 1;
+    sceneFramebufferLayoutInfo.pBindings                       = &sceneFramebufferBinding;
 
     VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, layout);
     AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
@@ -43,12 +43,12 @@ bool avdSceneBloomRegisterApi(AVD_SceneAPI *api)
     AVD_ASSERT(api != NULL);
 
     api->checkIntegrity = avdSceneBloomCheckIntegrity;
-    api->init = avdSceneBloomInit;
-    api->render = avdSceneBloomRender;
-    api->update = avdSceneBloomUpdate;
-    api->destroy = avdSceneBloomDestroy;
-    api->load = avdSceneBloomLoad;
-    api->inputEvent = avdSceneBloomInputEvent;
+    api->init           = avdSceneBloomInit;
+    api->render         = avdSceneBloomRender;
+    api->update         = avdSceneBloomUpdate;
+    api->destroy        = avdSceneBloomDestroy;
+    api->load           = avdSceneBloomLoad;
+    api->inputEvent     = avdSceneBloomInputEvent;
 
     return true;
 }
@@ -94,7 +94,7 @@ bool avdSceneBloomLoad(AVD_AppState *appState, AVD_Scene *scene, const char **st
     AVD_ASSERT(statusMessage != NULL);
     AVD_ASSERT(progress != NULL);
     *statusMessage = NULL;
-    *progress = 1.0f;
+    *progress      = 1.0f;
     return true;
 }
 
@@ -102,17 +102,13 @@ void avdSceneBloomInputEvent(struct AVD_AppState *appState, union AVD_Scene *sce
 {
     AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
 
-    if (event->type == AVD_INPUT_EVENT_KEY)
-    {
-        if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS)
-        {
+    if (event->type == AVD_INPUT_EVENT_KEY) {
+        if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS) {
             avdSceneManagerSwitchToScene(
                 &appState->sceneManager,
                 AVD_SCENE_TYPE_MAIN_MENU,
                 appState);
-        }
-        else if (event->key.key == GLFW_KEY_B && event->key.action == GLFW_PRESS)
-        {
+        } else if (event->key.key == GLFW_KEY_B && event->key.action == GLFW_PRESS) {
             bloom->isBloomEnabled = !bloom->isBloomEnabled;
         }
     }
@@ -144,16 +140,15 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
 
-    AVD_Vulkan *vulkan = &appState->vulkan;
+    AVD_Vulkan *vulkan           = &appState->vulkan;
     AVD_VulkanRenderer *renderer = &appState->renderer;
 
-    uint32_t currentFrameIndex = renderer->currentFrameIndex;
+    uint32_t currentFrameIndex    = renderer->currentFrameIndex;
     VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
 
-
-    float frameWidth = (float)renderer->sceneFramebuffer.width;
+    float frameWidth  = (float)renderer->sceneFramebuffer.width;
     float frameHeight = (float)renderer->sceneFramebuffer.height;
 
     avdUiBegin(
@@ -182,7 +177,6 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
 
-    
     avdRenderText(
         vulkan,
         &appState->fontRenderer,
@@ -192,8 +186,6 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
         1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
-
-
 
     avdUiEnd(
         commandBuffer,

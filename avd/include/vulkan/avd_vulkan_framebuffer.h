@@ -7,7 +7,7 @@
 typedef struct AVD_VulkanFramebufferAttachment {
     AVD_VulkanImage image;
     VkAttachmentDescription attachmentDescription;
-    
+
     VkDescriptorSet descriptorSet;
     VkDescriptorSetLayout descriptorSetLayout;
 } AVD_VulkanFramebufferAttachment;

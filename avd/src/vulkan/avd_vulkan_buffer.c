@@ -3,10 +3,10 @@
 bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {
     VkBufferCreateInfo bufferInfo = {0};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // Assuming exclusive for simplicity
+    bufferInfo.sType              = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size               = size;
+    bufferInfo.usage              = usage;
+    bufferInfo.sharingMode        = VK_SHARING_MODE_EXCLUSIVE; // Assuming exclusive for simplicity
 
     VkResult result = vkCreateBuffer(vulkan->device, &bufferInfo, NULL, &buffer->buffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create buffer!");
@@ -15,9 +15,9 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     vkGetBufferMemoryRequirements(vulkan->device, buffer->buffer, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo = {0};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = avdVulkanFindMemoryType(vulkan, memRequirements.memoryTypeBits, properties);
+    allocInfo.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize       = memRequirements.size;
+    allocInfo.memoryTypeIndex      = avdVulkanFindMemoryType(vulkan, memRequirements.memoryTypeBits, properties);
 
     AVD_CHECK_MSG(allocInfo.memoryTypeIndex != UINT32_MAX, "Failed to find suitable memory type for buffer!");
 
@@ -29,7 +29,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
 
     buffer->descriptorBufferInfo.buffer = buffer->buffer;
     buffer->descriptorBufferInfo.offset = 0;
-    buffer->descriptorBufferInfo.range = size;
+    buffer->descriptorBufferInfo.range  = size;
 
     return true;
 }
@@ -56,12 +56,11 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
 {
     AVD_VulkanBuffer staging = {0};
     AVD_CHECK(avdVulkanBufferCreate(vulkan, &staging, size,
-                                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 
     void *mapped = NULL;
-    if (!avdVulkanBufferMap(vulkan, &staging, &mapped))
-    {
+    if (!avdVulkanBufferMap(vulkan, &staging, &mapped)) {
         avdVulkanBufferDestroy(vulkan, &staging);
         return false;
     }
@@ -69,29 +68,29 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
     avdVulkanBufferUnmap(vulkan, &staging);
 
     VkCommandBufferAllocateInfo allocInfo = {0};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = vulkan->graphicsCommandPool;
-    allocInfo.commandBufferCount = 1;
+    allocInfo.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool                 = vulkan->graphicsCommandPool;
+    allocInfo.commandBufferCount          = 1;
 
     VkCommandBuffer cmd;
     vkAllocateCommandBuffers(vulkan->device, &allocInfo, &cmd);
 
     VkCommandBufferBeginInfo beginInfo = {0};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    beginInfo.sType                    = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags                    = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     vkBeginCommandBuffer(cmd, &beginInfo);
 
     VkBufferCopy copyRegion = {0};
-    copyRegion.size = size;
+    copyRegion.size         = size;
     vkCmdCopyBuffer(cmd, staging.buffer, buffer->buffer, 1, &copyRegion);
 
     vkEndCommandBuffer(cmd);
 
-    VkSubmitInfo submitInfo = {0};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSubmitInfo submitInfo       = {0};
+    submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &cmd;
+    submitInfo.pCommandBuffers    = &cmd;
     vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(vulkan->graphicsQueue);
 

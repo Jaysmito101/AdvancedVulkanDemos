@@ -1,7 +1,7 @@
-#include "core/avd_window.h"
 #include "core/avd_input.h"
+#include "core/avd_window.h"
 
-void avdInputCalculateMousePositionFromRaw(AVD_Input *input, AVD_Window* window, double x, double y)
+void avdInputCalculateMousePositionFromRaw(AVD_Input *input, AVD_Window *window, double x, double y)
 {
     AVD_ASSERT(input != NULL);
     AVD_ASSERT(window != NULL);
@@ -9,9 +9,9 @@ void avdInputCalculateMousePositionFromRaw(AVD_Input *input, AVD_Window* window,
     input->rawMouseX = x;
     input->rawMouseY = y;
 
-    float width = (float)window->width;
-    float height = (float)window->height;
-    float aspectRatio = width / height;
+    float width           = (float)window->width;
+    float height          = (float)window->height;
+    float aspectRatio     = width / height;
     float gameAspectRatio = (float)GAME_WIDTH / (float)GAME_HEIGHT;
 
     float mx = (float)x / width;
@@ -20,12 +20,9 @@ void avdInputCalculateMousePositionFromRaw(AVD_Input *input, AVD_Window* window,
     mx = mx * 2.0f - 1.0f;
     my = my * 2.0f - 1.0f;
 
-    if (aspectRatio > gameAspectRatio)
-    {
+    if (aspectRatio > gameAspectRatio) {
         mx *= aspectRatio / gameAspectRatio;
-    }
-    else
-    {
+    } else {
         my *= gameAspectRatio / aspectRatio;
     }
 
@@ -33,7 +30,7 @@ void avdInputCalculateMousePositionFromRaw(AVD_Input *input, AVD_Window* window,
     input->mouseY = my;
 }
 
-void avdInputCalculateDeltas(AVD_Input *input) 
+void avdInputCalculateDeltas(AVD_Input *input)
 {
     AVD_ASSERT(input != NULL);
 
@@ -41,7 +38,7 @@ void avdInputCalculateDeltas(AVD_Input *input)
     input->mouseDeltaY = input->mouseY - input->lastMouseY;
 }
 
-void avdInputNewFrame(AVD_Input *input) 
+void avdInputNewFrame(AVD_Input *input)
 {
     AVD_ASSERT(input != NULL);
 
@@ -55,20 +52,29 @@ void avdInputNewFrame(AVD_Input *input)
     input->lastMouseY = input->mouseY;
 }
 
-const char* avdInputEventTypeToString(AVD_InputEventType type)
+const char *avdInputEventTypeToString(AVD_InputEventType type)
 {
-    switch (type)
-    {
-        case AVD_INPUT_EVENT_NONE: return "InputEvent_None";
-        case AVD_INPUT_EVENT_KEY: return "InputEvent_Key";
-        case AVD_INPUT_EVENT_MOUSE_BUTTON: return "InputEvent_MouseButton";
-        case AVD_INPUT_EVENT_MOUSE_MOVE: return "InputEvent_MouseMove";
-        case AVD_INPUT_EVENT_MOUSE_SCROLL: return "InputEvent_MouseScroll";
-        case AVD_INPUT_EVENT_WINDOW_MOVE: return "InputEvent_WindowMove";
-        case AVD_INPUT_EVENT_WINDOW_RESIZE: return "InputEvent_WindowResize";
-        case AVD_INPUT_EVENT_WINDOW_CLOSE: return "InputEvent_WindowClose";
-        case AVD_INPUT_EVENT_DRAG_N_DROP: return "InputEvent_DragNDrop";
-        default: return "InputEvent_Unknown";
+    switch (type) {
+        case AVD_INPUT_EVENT_NONE:
+            return "InputEvent_None";
+        case AVD_INPUT_EVENT_KEY:
+            return "InputEvent_Key";
+        case AVD_INPUT_EVENT_MOUSE_BUTTON:
+            return "InputEvent_MouseButton";
+        case AVD_INPUT_EVENT_MOUSE_MOVE:
+            return "InputEvent_MouseMove";
+        case AVD_INPUT_EVENT_MOUSE_SCROLL:
+            return "InputEvent_MouseScroll";
+        case AVD_INPUT_EVENT_WINDOW_MOVE:
+            return "InputEvent_WindowMove";
+        case AVD_INPUT_EVENT_WINDOW_RESIZE:
+            return "InputEvent_WindowResize";
+        case AVD_INPUT_EVENT_WINDOW_CLOSE:
+            return "InputEvent_WindowClose";
+        case AVD_INPUT_EVENT_DRAG_N_DROP:
+            return "InputEvent_DragNDrop";
+        default:
+            return "InputEvent_Unknown";
     }
 
     return "InputEvent_Unknown";

@@ -8,7 +8,7 @@
 struct AVD_AppState;
 
 typedef struct AVD_Window {
-    GLFWwindow* window;
+    GLFWwindow *window;
     int32_t width;
     int32_t height;
 
@@ -18,10 +18,8 @@ typedef struct AVD_Window {
     bool isMinimized;
 } AVD_Window;
 
-
-bool avdWindowInit(AVD_Window* window, struct AVD_AppState* gameState);
+bool avdWindowInit(AVD_Window *window, struct AVD_AppState *gameState);
 void avdWindowShutdown(AVD_Window *window);
 void avdWindowPollEvents();
-
 
 #endif // AVD_WINDOW_H

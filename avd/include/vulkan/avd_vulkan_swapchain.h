@@ -19,12 +19,11 @@ typedef struct AVD_VulkanSwapchain {
     bool swapchainReady;
 } AVD_VulkanSwapchain;
 
-
-bool avdVulkanSwapchainCreate(AVD_VulkanSwapchain* swapchain, AVD_Vulkan *vulkan, VkSurfaceKHR surface, AVD_Window* window);
-bool avdVulkanSwapchainRecreate(AVD_VulkanSwapchain* swapchain, AVD_Vulkan *vulkan, AVD_Window* window);
-void avdVulkanSwapchainDestroy(AVD_VulkanSwapchain* swapchain, AVD_Vulkan *vulkan);
-VkResult avdVulkanSwapchainAcquireNextImage(AVD_VulkanSwapchain* swapchain, AVD_Vulkan *vulkan, uint32_t *imageIndex, VkSemaphore semaphore, VkFence fence);
-VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain* swapchain, AVD_Vulkan *vulkan, uint32_t imageIndex, VkSemaphore waitSemaphore);
-bool avdVulkanSwapchainRecreateIfNeeded(AVD_VulkanSwapchain* swapchain, AVD_Vulkan* vulkan, AVD_Window* window);
+bool avdVulkanSwapchainCreate(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, VkSurfaceKHR surface, AVD_Window *window);
+bool avdVulkanSwapchainRecreate(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, AVD_Window *window);
+void avdVulkanSwapchainDestroy(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan);
+VkResult avdVulkanSwapchainAcquireNextImage(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t *imageIndex, VkSemaphore semaphore, VkFence fence);
+VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t imageIndex, VkSemaphore waitSemaphore);
+bool avdVulkanSwapchainRecreateIfNeeded(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, AVD_Window *window);
 
 #endif // AVD_VULKAN_SWAPCHAIN_H

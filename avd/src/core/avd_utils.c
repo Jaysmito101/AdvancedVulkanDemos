@@ -10,10 +10,9 @@
 // See: http://www.isthe.com/chongo/tech/comp/fnv/
 uint32_t avdHashBuffer(const void *buffer, size_t size)
 {
-    uint32_t hash = 2166136261u; // FNV offset basis
+    uint32_t hash      = 2166136261u; // FNV offset basis
     const uint8_t *ptr = (const uint8_t *)buffer;
-    for (size_t i = 0; i < size; i++)
-    {
+    for (size_t i = 0; i < size; i++) {
         hash ^= (uint32_t)ptr[i];
         hash *= 16777619u; // FNV prime
     }
@@ -40,27 +39,23 @@ const char *avdGetTempDirPath(void)
 // print the  shader code formatted with line number (only one line at a time, use a temp buffer to extract)
 void avdPrintShaderWithLineNumbers(const char *shaderCode, const char *shaderName)
 {
-    if (shaderCode == NULL)
-    {
+    if (shaderCode == NULL) {
         AVD_LOG("Shader code is NULL\n");
         return;
     }
 
     AVD_LOG("Shader: %s\n", shaderName);
     const char *lineStart = shaderCode;
-    int lineNumber = 1;
-    while (*lineStart)
-    {
+    int lineNumber        = 1;
+    while (*lineStart) {
         const char *lineEnd = strchr(lineStart, '\n');
-        if (lineEnd == NULL)
-        {
+        if (lineEnd == NULL) {
             lineEnd = lineStart + strlen(lineStart);
         }
 
         size_t lineLength = lineEnd - lineStart;
-        char *lineBuffer = (char *)malloc(lineLength + 1);
-        if (lineBuffer == NULL)
-        {
+        char *lineBuffer  = (char *)malloc(lineLength + 1);
+        if (lineBuffer == NULL) {
             AVD_LOG("Failed to allocate memory for shader line\n");
             return;
         }

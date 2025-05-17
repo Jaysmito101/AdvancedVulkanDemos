@@ -18,7 +18,7 @@ typedef struct AVD_Vulkan {
     VkCommandPool graphicsCommandPool;
     VkCommandPool computeCommandPool;
     VkDescriptorPool descriptorPool;
-    
+
     int32_t graphicsQueueFamilyIndex;
     int32_t computeQueueFamilyIndex;
 
@@ -27,13 +27,12 @@ typedef struct AVD_Vulkan {
     bool debugLayersEnabled;
 #endif
 } AVD_Vulkan;
- 
-bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR* surface);
+
+bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface);
 void avdVulkanShutdown(AVD_Vulkan *vulkan);
 void avdVulkanWaitIdle(AVD_Vulkan *vulkan);
 void avdVulkanDestroySurface(AVD_Vulkan *vulkan, VkSurfaceKHR surface);
 
-uint32_t avdVulkanFindMemoryType(AVD_Vulkan* vulkan, uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
+uint32_t avdVulkanFindMemoryType(AVD_Vulkan *vulkan, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 #endif // AVD_VULKAN_CORE_H

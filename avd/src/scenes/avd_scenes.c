@@ -34,7 +34,7 @@ bool avdSceneManagerInit(AVD_SceneManager *sceneManager, AVD_AppState *appState)
     AVD_CHECK(__avdRegisterSceneApis(sceneManager));
     AVD_CHECK(__avdCheckAllSceneApis(sceneManager));
 
-    sceneManager->currentSceneType = AVD_SCENE_TYPE_MAIN_MENU;
+    sceneManager->currentSceneType   = AVD_SCENE_TYPE_MAIN_MENU;
     sceneManager->isSceneInitialized = false;
     AVD_CHECK(avdSceneManagerSwitchToScene(sceneManager, AVD_SCENE_TYPE_MAIN_MENU, appState));
 
@@ -46,11 +46,10 @@ void avdSceneManagerDestroy(AVD_SceneManager *sceneManager, AVD_AppState *appSta
     AVD_ASSERT(sceneManager != NULL);
     AVD_ASSERT(appState != NULL);
 
-    if (sceneManager->isSceneInitialized)
-    {
+    if (sceneManager->isSceneInitialized) {
         sceneManager->api[sceneManager->currentSceneType].destroy(appState, &sceneManager->scene);
         sceneManager->isSceneInitialized = false;
-        sceneManager->isSceneLoaded = false;
+        sceneManager->isSceneLoaded      = false;
     }
 }
 
@@ -59,14 +58,10 @@ bool avdSceneManagerUpdate(AVD_SceneManager *sceneManager, AVD_AppState *appStat
     AVD_ASSERT(sceneManager != NULL);
     AVD_ASSERT(appState != NULL);
 
-    if (sceneManager->isSceneInitialized)
-    {
-        if (sceneManager->isSceneLoaded)
-        {
+    if (sceneManager->isSceneInitialized) {
+        if (sceneManager->isSceneLoaded) {
             AVD_CHECK(sceneManager->api[sceneManager->currentSceneType].update(appState, &sceneManager->scene));
-        }
-        else
-        {
+        } else {
             sceneManager->isSceneLoaded = sceneManager->api[sceneManager->currentSceneType].load(appState, &sceneManager->scene, &sceneManager->sceneLoadingStatusMessage, &sceneManager->sceneLoadingProgress);
         }
     }
@@ -79,30 +74,27 @@ bool avdSceneManagerRender(AVD_SceneManager *sceneManager, AVD_AppState *appStat
     AVD_ASSERT(sceneManager != NULL);
     AVD_ASSERT(appState != NULL);
 
-    if (sceneManager->isSceneInitialized && sceneManager->isSceneLoaded)
-    {
+    if (sceneManager->isSceneInitialized && sceneManager->isSceneLoaded) {
         AVD_CHECK(sceneManager->api[sceneManager->currentSceneType].render(appState, &sceneManager->scene));
     }
 
     return true;
 }
 
-void avdSceneManagerPushInputEvent(AVD_SceneManager *sceneManager, struct AVD_AppState *appState, AVD_InputEvent* event) 
+void avdSceneManagerPushInputEvent(AVD_SceneManager *sceneManager, struct AVD_AppState *appState, AVD_InputEvent *event)
 {
     AVD_ASSERT(sceneManager != NULL);
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(event != NULL);
 
-    if (sceneManager->isSceneInitialized)
-    {
+    if (sceneManager->isSceneInitialized) {
         sceneManager->api[sceneManager->currentSceneType].inputEvent(appState, &sceneManager->scene, event);
     }
 }
 
 bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType type, AVD_AppState *appState)
 {
-    if (!sceneManager->api[type].checkIntegrity(appState, &sceneManager->sceneIntegrityStatusMessage))
-    {
+    if (!sceneManager->api[type].checkIntegrity(appState, &sceneManager->sceneIntegrityStatusMessage)) {
         sceneManager->sceneIntegrityCheckPassed = false;
         AVD_LOG("Scene integrity check failed: %s [Switch Cancelled]\n", sceneManager->sceneIntegrityStatusMessage);
         return true;
@@ -118,13 +110,13 @@ bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType 
 
     // Very important to set the type before calling init
     sceneManager->currentSceneType = type;
-    sceneManager->scene.type = type;
+    sceneManager->scene.type       = type;
 
     AVD_CHECK(sceneManager->api[type].init(appState, &sceneManager->scene));
 
-    sceneManager->isSceneInitialized = true;
-    sceneManager->isSceneLoaded = false;
-    sceneManager->sceneLoadingProgress = 0.0f;
+    sceneManager->isSceneInitialized        = true;
+    sceneManager->isSceneLoaded             = false;
+    sceneManager->sceneLoadingProgress      = 0.0f;
     sceneManager->sceneLoadingStatusMessage = NULL;
     return true;
 }

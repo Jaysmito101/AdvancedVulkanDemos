@@ -1,15 +1,14 @@
-#include "vulkan/avd_vulkan.h"
-#include "shader/avd_shader.h"
 #include "scenes/avd_scenes.h"
+#include "shader/avd_shader.h"
+#include "vulkan/avd_vulkan.h"
 
 // Define the push constant struct matching the shader layout
-typedef struct AVD_VulkanPresentationPushConstants
-{
+typedef struct AVD_VulkanPresentationPushConstants {
     float windowWidth;
     float windowHeight;
     float framebufferWidth;
     float framebufferHeight;
-    
+
     float sceneLoadingProgress;
     float time;
     float pad0;
@@ -20,7 +19,7 @@ bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan 
 {
     AVD_ASSERT(presentation != NULL);
     AVD_ASSERT(vulkan != NULL);
-    
+
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &presentation->descriptorSetLayout,
         vulkan->device,
@@ -74,7 +73,7 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
     AVD_ASSERT(renderer != NULL);
     AVD_ASSERT(swapchain != NULL);
 
-    uint32_t currentFrameIndex = renderer->currentFrameIndex;
+    uint32_t currentFrameIndex    = renderer->currentFrameIndex;
     VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
 
     static VkClearValue defaultClearValues[2] = {
@@ -92,12 +91,12 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
 
     // Populate the push constant struct
     AVD_VulkanPresentationPushConstants pushConstants = {
-        .windowWidth = (float)swapchain->extent.width,
-        .windowHeight = (float)swapchain->extent.height,
-        .framebufferWidth = (float)renderer->sceneFramebuffer.width,
-        .framebufferHeight = (float)renderer->sceneFramebuffer.height,
+        .windowWidth          = (float)swapchain->extent.width,
+        .windowHeight         = (float)swapchain->extent.height,
+        .framebufferWidth     = (float)renderer->sceneFramebuffer.width,
+        .framebufferHeight    = (float)renderer->sceneFramebuffer.height,
         .sceneLoadingProgress = sceneManager->sceneLoadingProgress,
-        .time = (float)glfwGetTime(),
+        .time                 = (float)glfwGetTime(),
     };
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, presentation->pipeline);

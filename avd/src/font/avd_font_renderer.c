@@ -1,10 +1,9 @@
 #include "font/avd_font_renderer.h"
-#include "vulkan/avd_vulkan.h"
-#include "shader/avd_shader.h"
 #include "avd_asset.h"
+#include "shader/avd_shader.h"
+#include "vulkan/avd_vulkan.h"
 
-typedef struct AVD_FontRendererPushConstants
-{
+typedef struct AVD_FontRendererPushConstants {
     float frameBufferWidth;
     float frameBufferHeight;
     float scale;
@@ -19,8 +18,7 @@ typedef struct AVD_FontRendererPushConstants
     float colorA;
 } AVD_FontRendererPushConstants;
 
-typedef struct AVD_FontRendererVertex
-{
+typedef struct AVD_FontRendererVertex {
     float x;
     float y;
     float u;
@@ -37,10 +35,10 @@ static bool __avdCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout desc
 
     // --- Allocate Descriptor Set ---
     VkDescriptorSetAllocateInfo allocInfo = {0};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &descriptorSetLayout;
+    allocInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool              = descriptorPool;
+    allocInfo.descriptorSetCount          = 1;
+    allocInfo.pSetLayouts                 = &descriptorSetLayout;
 
     VkResult result = vkAllocateDescriptorSets(device, &allocInfo, descriptorSet);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate font descriptor set\n");
@@ -75,7 +73,7 @@ static bool __avdCreatePipeline(AVD_FontRenderer *fr, VkDevice device, VkRenderP
     AVD_CHECK(avdPipelineUtilsInputAssemblyState(&inputAssemblyInfo));
 
     VkViewport viewport = {0};
-    VkRect2D scissor = {0};
+    VkRect2D scissor    = {0};
     AVD_CHECK(avdPipelineUtilsViewportScissor(&viewport, &scissor));
 
     VkPipelineViewportStateCreateInfo viewportStateInfo = {0};
@@ -97,48 +95,48 @@ static bool __avdCreatePipeline(AVD_FontRenderer *fr, VkDevice device, VkRenderP
     AVD_CHECK(avdPipelineUtilsColorBlendState(&colorBlendStateInfo, &colorBlendAttachment, 1));
 
     VkVertexInputBindingDescription vertexBindingDescription = {0};
-    vertexBindingDescription.binding = 0;
-    vertexBindingDescription.stride = sizeof(AVD_FontRendererVertex);
-    vertexBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    vertexBindingDescription.binding                         = 0;
+    vertexBindingDescription.stride                          = sizeof(AVD_FontRendererVertex);
+    vertexBindingDescription.inputRate                       = VK_VERTEX_INPUT_RATE_VERTEX;
 
     VkVertexInputAttributeDescription vertexAttributeDescription[2] = {0};
-    vertexAttributeDescription[0].binding = 0;
-    vertexAttributeDescription[0].location = 0;
-    vertexAttributeDescription[0].format = VK_FORMAT_R32G32_SFLOAT;
-    vertexAttributeDescription[0].offset = offsetof(AVD_FontRendererVertex, x);
+    vertexAttributeDescription[0].binding                           = 0;
+    vertexAttributeDescription[0].location                          = 0;
+    vertexAttributeDescription[0].format                            = VK_FORMAT_R32G32_SFLOAT;
+    vertexAttributeDescription[0].offset                            = offsetof(AVD_FontRendererVertex, x);
 
-    vertexAttributeDescription[1].binding = 0;
+    vertexAttributeDescription[1].binding  = 0;
     vertexAttributeDescription[1].location = 1;
-    vertexAttributeDescription[1].format = VK_FORMAT_R32G32_SFLOAT;
-    vertexAttributeDescription[1].offset = offsetof(AVD_FontRendererVertex, u);
+    vertexAttributeDescription[1].format   = VK_FORMAT_R32G32_SFLOAT;
+    vertexAttributeDescription[1].offset   = offsetof(AVD_FontRendererVertex, u);
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
-    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.pVertexBindingDescriptions = &vertexBindingDescription;
-    vertexInputInfo.vertexAttributeDescriptionCount = AVD_ARRAY_COUNT(vertexAttributeDescription);
-    vertexInputInfo.pVertexAttributeDescriptions = vertexAttributeDescription;
+    vertexInputInfo.sType                                = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexBindingDescriptionCount        = 1;
+    vertexInputInfo.pVertexBindingDescriptions           = &vertexBindingDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount      = AVD_ARRAY_COUNT(vertexAttributeDescription);
+    vertexInputInfo.pVertexAttributeDescriptions         = vertexAttributeDescription;
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {0};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = AVD_ARRAY_COUNT(shaderStages);
-    pipelineInfo.pStages = shaderStages;
-    pipelineInfo.layout = fr->pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0;
-    pipelineInfo.pVertexInputState = &vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
-    pipelineInfo.pViewportState = &viewportStateInfo;
-    pipelineInfo.pRasterizationState = &rasterizerInfo;
-    pipelineInfo.pMultisampleState = &multisampleInfo;
-    pipelineInfo.pDepthStencilState = &depthStencilInfo;
-    pipelineInfo.pColorBlendState = &colorBlendStateInfo;
-    pipelineInfo.pDynamicState = &dynamicStateInfo;
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-    pipelineInfo.basePipelineIndex = -1;
-    pipelineInfo.pDepthStencilState = &depthStencilInfo;
-    pipelineInfo.pViewportState = &viewportStateInfo;
-    pipelineInfo.pMultisampleState = &multisampleInfo;
+    pipelineInfo.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.stageCount                   = AVD_ARRAY_COUNT(shaderStages);
+    pipelineInfo.pStages                      = shaderStages;
+    pipelineInfo.layout                       = fr->pipelineLayout;
+    pipelineInfo.renderPass                   = renderPass;
+    pipelineInfo.subpass                      = 0;
+    pipelineInfo.pVertexInputState            = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState          = &inputAssemblyInfo;
+    pipelineInfo.pViewportState               = &viewportStateInfo;
+    pipelineInfo.pRasterizationState          = &rasterizerInfo;
+    pipelineInfo.pMultisampleState            = &multisampleInfo;
+    pipelineInfo.pDepthStencilState           = &depthStencilInfo;
+    pipelineInfo.pColorBlendState             = &colorBlendStateInfo;
+    pipelineInfo.pDynamicState                = &dynamicStateInfo;
+    pipelineInfo.basePipelineHandle           = VK_NULL_HANDLE;
+    pipelineInfo.basePipelineIndex            = -1;
+    pipelineInfo.pDepthStencilState           = &depthStencilInfo;
+    pipelineInfo.pViewportState               = &viewportStateInfo;
+    pipelineInfo.pMultisampleState            = &multisampleInfo;
 
     VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &fr->pipeline);
     AVD_CHECK_VK_RESULT(result, "Failed to create graphics pipeline\n");
@@ -192,48 +190,43 @@ static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderab
 
     size_t indexOffset = 0;
 
-    float lineHeight = font->fontData.atlas->metrics.lineHeight;
-    float atlasWidth = (float)font->fontData.atlas->info.width;
+    float lineHeight  = font->fontData.atlas->metrics.lineHeight;
+    float atlasWidth  = (float)font->fontData.atlas->info.width;
     float atlasHeight = (float)font->fontData.atlas->info.height;
 
     renderableText->boundsMinX = 1000000.0f;
     renderableText->boundsMinY = 1000000.0f;
     renderableText->boundsMaxX = -1000000.0f;
     renderableText->boundsMaxY = -1000000.0f;
-    renderableText->numLines = 1;
+    renderableText->numLines   = 1;
 
-    for (size_t i = 0; i < renderableText->characterCount; i++)
-    {
+    for (size_t i = 0; i < renderableText->characterCount; i++) {
         uint32_t c = (uint32_t)text[i];
-        if (c == '\n')
-        {
+        if (c == '\n') {
             cX = 0.0f;
             cY += charHeight * lineHeight;
             renderableText->numLines++;
             continue;
         }
 
-        if(c >= AVD_FONT_MAX_GLYPHS)
-        {
+        if (c >= AVD_FONT_MAX_GLYPHS) {
             AVD_LOG("Font character out of range: %c [skipping]\n", c);
             continue;
         }
 
-        if (c == ' ')
-        {
+        if (c == ' ') {
             cX += font->fontData.atlas->glyphs[' '].advanceX * charHeight;
             continue;
         }
 
-        if (c == '\r')
-        {
+        if (c == '\r') {
             continue;
         }
 
         AVD_FontAtlasGlyph *glyph = &font->fontData.atlas->glyphs[c];
         AVD_CHECK(glyph->unicodeIndex == c); // TODO: Just for testing
 
-        AVD_FontAtlasBounds *bounds = &glyph->atlasBounds;
+        AVD_FontAtlasBounds *bounds      = &glyph->atlasBounds;
         AVD_FontAtlasBounds *planeBounds = &glyph->planeBounds;
 
         float ax = cX + planeBounds->left * charHeight;
@@ -250,17 +243,17 @@ static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderab
 
         AVD_FontRendererVertex *vertex = &renderableText->vertexBufferData[indexOffset];
         AVD_CHECK(__avdSetCharQuad(vertex, ax, ay, bx, by,
-                                 bounds->left / atlasWidth,
-                                 bounds->top / atlasHeight,
-                                 bounds->right / atlasWidth,
-                                 bounds->bottom / atlasHeight));
+                                   bounds->left / atlasWidth,
+                                   bounds->top / atlasHeight,
+                                   bounds->right / atlasWidth,
+                                   bounds->bottom / atlasHeight));
         indexOffset += 6;
     }
 
     renderableText->renderableVertexCount = indexOffset;
 
     // update the vertex buffer with the new text
-    AVD_VulkanBuffer *vertexBuffer = &renderableText->vertexBuffer;
+    AVD_VulkanBuffer *vertexBuffer             = &renderableText->vertexBuffer;
     AVD_FontRendererVertex *mappedVertexBuffer = NULL;
 
     AVD_CHECK(avdVulkanBufferMap(vulkan, vertexBuffer, (void **)&mappedVertexBuffer));
@@ -271,7 +264,7 @@ static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderab
     return true;
 }
 
-bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRenderer* fontRenderer, AVD_Vulkan* vulkan, const char *fontName, const char *text, float charHeight)
+bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, const char *fontName, const char *text, float charHeight)
 {
     AVD_ASSERT(renderableText != NULL);
     AVD_ASSERT(fontName != NULL);
@@ -281,7 +274,7 @@ bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRendere
 
     snprintf(renderableText->fontName, sizeof(renderableText->fontName), "%s", fontName);
     renderableText->characterCount = strlen(text);
-    size_t currentSize = sizeof(AVD_FontRendererVertex) * 6 * renderableText->characterCount;
+    size_t currentSize             = sizeof(AVD_FontRendererVertex) * 6 * renderableText->characterCount;
 
     // allocate the vertex buffer
     AVD_CHECK(avdVulkanBufferCreate(
@@ -294,7 +287,7 @@ bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRendere
 
     // create the vertex buffer data
     renderableText->vertexBufferData = (AVD_FontRendererVertex *)malloc(currentSize);
-    renderableText->charHeight = charHeight;
+    renderableText->charHeight       = charHeight;
 
     // get the font data
     AVD_Font *font = NULL;
@@ -304,7 +297,7 @@ bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRendere
     return true;
 }
 
-bool avdRenderableTextUpdate(AVD_RenderableText *renderableText, AVD_FontRenderer* fontRenderer, AVD_Vulkan* vulkan, const char *text)
+bool avdRenderableTextUpdate(AVD_RenderableText *renderableText, AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, const char *text)
 {
     AVD_ASSERT(renderableText != NULL);
     AVD_ASSERT(fontRenderer != NULL);
@@ -313,10 +306,9 @@ bool avdRenderableTextUpdate(AVD_RenderableText *renderableText, AVD_FontRendere
     renderableText->characterCount = strlen(text);
 
     size_t currentSize = renderableText->vertexBuffer.descriptorBufferInfo.range;
-    size_t newSize = sizeof(AVD_FontRendererVertex) * 6 * renderableText->characterCount;
+    size_t newSize     = sizeof(AVD_FontRendererVertex) * 6 * renderableText->characterCount;
 
-    if (newSize > currentSize)
-    {
+    if (newSize > currentSize) {
         vkDeviceWaitIdle(vulkan->device);
 
         avdVulkanBufferDestroy(vulkan, &renderableText->vertexBuffer);
@@ -342,7 +334,7 @@ bool avdRenderableTextUpdate(AVD_RenderableText *renderableText, AVD_FontRendere
     return true;
 }
 
-void avdRenderableTextDestroy(AVD_RenderableText *renderableText, AVD_Vulkan* vulkan)
+void avdRenderableTextDestroy(AVD_RenderableText *renderableText, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(renderableText != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -351,7 +343,7 @@ void avdRenderableTextDestroy(AVD_RenderableText *renderableText, AVD_Vulkan* vu
     free(renderableText->vertexBufferData);
 }
 
-void avdRenderableTextGetBounds(AVD_RenderableText *renderableText, float *minX, float *minY, float *maxX, float *maxY) 
+void avdRenderableTextGetBounds(AVD_RenderableText *renderableText, float *minX, float *minY, float *maxX, float *maxY)
 {
     AVD_ASSERT(renderableText != NULL);
     AVD_ASSERT(minX != NULL);
@@ -365,13 +357,13 @@ void avdRenderableTextGetBounds(AVD_RenderableText *renderableText, float *minX,
     *maxY = renderableText->boundsMaxY;
 }
 
-void avdRenderableTextGetSize(AVD_RenderableText *renderableText, float *width, float *height) 
+void avdRenderableTextGetSize(AVD_RenderableText *renderableText, float *width, float *height)
 {
     AVD_ASSERT(renderableText != NULL);
     AVD_ASSERT(width != NULL);
     AVD_ASSERT(height != NULL);
 
-    *width = renderableText->boundsMaxX - renderableText->boundsMinX;
+    *width  = renderableText->boundsMaxX - renderableText->boundsMinX;
     *height = renderableText->boundsMaxY - renderableText->boundsMinY;
 }
 
@@ -398,7 +390,7 @@ void avdFontDestroy(AVD_Vulkan *vulkan, AVD_Font *font)
     vkDestroyDescriptorSetLayout(vulkan->device, font->fontDescriptorSetLayout, NULL);
 }
 
-bool avdFontRendererInit(AVD_FontRenderer* fontRenderer, AVD_Vulkan* vulkan, AVD_VulkanRenderer* renderer)
+bool avdFontRendererInit(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, AVD_VulkanRenderer *renderer)
 {
     AVD_ASSERT(fontRenderer != NULL);
 
@@ -423,12 +415,11 @@ bool avdFontRendererInit(AVD_FontRenderer* fontRenderer, AVD_Vulkan* vulkan, AVD
     return true;
 }
 
-void avdFontRendererShutdown(AVD_FontRenderer* fontRenderer)
+void avdFontRendererShutdown(AVD_FontRenderer *fontRenderer)
 {
     AVD_ASSERT(fontRenderer != NULL);
 
-    for (size_t i = 0; i < fontRenderer->fontCount; ++i)
-    {
+    for (size_t i = 0; i < fontRenderer->fontCount; ++i) {
         avdFontDestroy(fontRenderer->vulkan, &fontRenderer->fonts[i]);
     }
 
@@ -436,14 +427,14 @@ void avdFontRendererShutdown(AVD_FontRenderer* fontRenderer)
     vkDestroyPipelineLayout(fontRenderer->vulkan->device, fontRenderer->pipelineLayout, NULL);
     vkDestroyDescriptorSetLayout(fontRenderer->vulkan->device, fontRenderer->fontDescriptorSetLayout, NULL);
     fontRenderer->fontCount = 0;
-    fontRenderer->vulkan = NULL;
+    fontRenderer->vulkan    = NULL;
 }
 
-bool avdFontRendererAddFontFromAsset(AVD_FontRenderer* fontRenderer, const char *asset)
+bool avdFontRendererAddFontFromAsset(AVD_FontRenderer *fontRenderer, const char *asset)
 {
     AVD_FontData fontData = {0};
     snprintf(fontData.name, sizeof(fontData.name), "%s", asset);
-    fontData.atlas = (AVD_FontAtlas *)avdAssetFontMetrics(asset);
+    fontData.atlas     = (AVD_FontAtlas *)avdAssetFontMetrics(asset);
     fontData.atlasData = (uint8_t *)avdAssetFontAtlas(asset, &fontData.atlasDataSize);
     AVD_CHECK_MSG(fontData.atlasData != NULL, "Failed to load font asset\n");
     AVD_CHECK_MSG(fontData.atlas != NULL, "Failed to load font atlas\n");
@@ -453,7 +444,7 @@ bool avdFontRendererAddFontFromAsset(AVD_FontRenderer* fontRenderer, const char 
     return true;
 }
 
-bool avdFontRendererAddBasicFonts(AVD_FontRenderer* fontRenderer)
+bool avdFontRendererAddBasicFonts(AVD_FontRenderer *fontRenderer)
 {
     AVD_ASSERT(fontRenderer != NULL);
     AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "OpenSansRegular"));
@@ -467,10 +458,8 @@ bool avdFontRendererAddBasicFonts(AVD_FontRenderer* fontRenderer)
 bool avdFontRendererHasFont(AVD_FontRenderer *fontRenderer, const char *fontName)
 {
     AVD_ASSERT(fontRenderer != NULL);
-    for (size_t i = 0; i < fontRenderer->fontCount; ++i)
-    {
-        if (strcmp(fontRenderer->fonts[i].fontData.name, fontName) == 0)
-        {
+    for (size_t i = 0; i < fontRenderer->fontCount; ++i) {
+        if (strcmp(fontRenderer->fonts[i].fontData.name, fontName) == 0) {
             return true;
         }
     }
@@ -480,10 +469,8 @@ bool avdFontRendererHasFont(AVD_FontRenderer *fontRenderer, const char *fontName
 bool avdFontRendererGetFont(AVD_FontRenderer *fontRenderer, const char *fontName, AVD_Font **font)
 {
     AVD_ASSERT(fontRenderer != NULL);
-    for (size_t i = 0; i < fontRenderer->fontCount; ++i)
-    {
-        if (strcmp(fontRenderer->fonts[i].fontData.name, fontName) == 0)
-        {
+    for (size_t i = 0; i < fontRenderer->fontCount; ++i) {
+        if (strcmp(fontRenderer->fonts[i].fontData.name, fontName) == 0) {
             *font = &fontRenderer->fonts[i];
             return true;
         }
@@ -500,18 +487,18 @@ void avdRenderText(AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, AVD_Rende
     AVD_ASSERT(renderableText->font != NULL);
 
     AVD_FontRendererPushConstants pushConstants = {
-        .frameBufferWidth = (float)framebufferWidth,
+        .frameBufferWidth  = (float)framebufferWidth,
         .frameBufferHeight = (float)framebufferHeight,
-        .scale = scale,
-        .opacity = 1.0f,
-        .offsetX = x,
-        .offsetY = y + renderableText->charHeight - (renderableText->boundsMaxY - renderableText->boundsMinY),
-        .pxRange = renderableText->font->fontData.atlas->info.distanceRange,
-        .texSize = (float)renderableText->font->fontData.atlas->info.width,
-        .colorR = r,
-        .colorG = g,
-        .colorB = b,
-        .colorA = a,
+        .scale             = scale,
+        .opacity           = 1.0f,
+        .offsetX           = x,
+        .offsetY           = y + renderableText->charHeight - (renderableText->boundsMaxY - renderableText->boundsMinY),
+        .pxRange           = renderableText->font->fontData.atlas->info.distanceRange,
+        .texSize           = (float)renderableText->font->fontData.atlas->info.width,
+        .colorR            = r,
+        .colorG            = g,
+        .colorB            = b,
+        .colorA            = a,
     };
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, fontRenderer->pipeline);

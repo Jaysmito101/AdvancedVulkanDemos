@@ -7,23 +7,21 @@ VkShaderModule avdShaderModuleCreate(VkDevice device, const char *shaderCode, Vk
     AVD_ASSERT(shaderCode != NULL);
     AVD_ASSERT(inputFileName != NULL);
 
-    size_t shaderSize = 0;
+    size_t shaderSize        = 0;
     uint32_t *compiledShader = avdCompileShaderAndCache(shaderCode, inputFileName, &shaderSize);
-    if (compiledShader == NULL)
-    {
+    if (compiledShader == NULL) {
         AVD_LOG("Failed to compile shader: %s\n", inputFileName);
         return VK_NULL_HANDLE;
     }
 
     VkShaderModuleCreateInfo createInfo = {0};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = shaderSize * sizeof(uint32_t);
-    createInfo.pCode = compiledShader;
+    createInfo.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize                 = shaderSize * sizeof(uint32_t);
+    createInfo.pCode                    = compiledShader;
 
     VkShaderModule shaderModule;
     VkResult result = vkCreateShaderModule(device, &createInfo, NULL, &shaderModule);
-    if (result != VK_SUCCESS)
-    {
+    if (result != VK_SUCCESS) {
         AVD_LOG("Failed to create shader module: %s\n", inputFileName);
         free(compiledShader);
         return VK_NULL_HANDLE;
@@ -33,7 +31,8 @@ VkShaderModule avdShaderModuleCreate(VkDevice device, const char *shaderCode, Vk
     return shaderModule;
 }
 
-VkShaderModule avdShaderModuleCreateFromAsset(VkDevice device, const char* asset) {
+VkShaderModule avdShaderModuleCreateFromAsset(VkDevice device, const char *asset)
+{
     VkShaderStageFlagBits shaderType = (VkShaderStageFlagBits)0;
     if (strstr(asset, "Vert") != NULL) {
         shaderType = VK_SHADER_STAGE_VERTEX_BIT;

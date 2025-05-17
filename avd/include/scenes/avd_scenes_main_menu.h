@@ -10,8 +10,7 @@ typedef struct AVD_SceneMainMenuCard {
     VkDescriptorSet descriptorSet;
 } AVD_SceneMainMenuCard;
 
-typedef struct AVD_SceneMainMenu
-{
+typedef struct AVD_SceneMainMenu {
     AVD_SceneType type;
 
     AVD_SceneMainMenuCard cards[64];
@@ -19,11 +18,10 @@ typedef struct AVD_SceneMainMenu
     int32_t hoveredCard;
     uint32_t currentPage;
 
-
     VkDescriptorSetLayout descriptorSetLayout;
-    
+
     AVD_RenderableText title;
-    AVD_RenderableText creditsText;  
+    AVD_RenderableText creditsText;
     AVD_RenderableText githubLinkText;
     AVD_RenderableText pageNumberText;
 
@@ -34,12 +32,10 @@ bool avdSceneMainMenuInit(struct AVD_AppState *appState, union AVD_Scene *scene)
 bool avdSceneMainMenuRender(struct AVD_AppState *appState, union AVD_Scene *scene);
 bool avdSceneMainMenuUpdate(struct AVD_AppState *appState, union AVD_Scene *scene);
 void avdSceneMainMenuDestroy(struct AVD_AppState *appState, union AVD_Scene *scene);
-bool avdSceneMainMenuLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char** statusMessage, float* progress);
-void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent* event);
+bool avdSceneMainMenuLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char **statusMessage, float *progress);
+void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event);
 
-bool avdSceneMainMenuCheckIntegrity(struct AVD_AppState *appState, const char** statusMessage);
+bool avdSceneMainMenuCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage);
 bool avdSceneMainMenuRegisterApi(AVD_SceneAPI *api);
-
-
 
 #endif // AVD_SCENES_MAIN_MENU_H

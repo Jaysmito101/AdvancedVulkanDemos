@@ -19,7 +19,7 @@ typedef struct AVD_Input {
     float mouseDeltaX;
     float mouseDeltaY;
 
-    float mouseScrollX; 
+    float mouseScrollX;
     float mouseScrollY;
 } AVD_Input;
 
@@ -96,8 +96,8 @@ typedef union AVD_InputEvent {
     AVD_InputEventDragNDrop dragNDrop;
 } AVD_InputEvent;
 
-const char* avdInputEventTypeToString(AVD_InputEventType type);
-void avdInputCalculateMousePositionFromRaw(AVD_Input *input, struct AVD_Window* window, double x, double y);
+const char *avdInputEventTypeToString(AVD_InputEventType type);
+void avdInputCalculateMousePositionFromRaw(AVD_Input *input, struct AVD_Window *window, double x, double y);
 void avdInputCalculateDeltas(AVD_Input *input);
 void avdInputNewFrame(AVD_Input *input);
 

@@ -1,8 +1,7 @@
 #include "ui/avd_ui.h"
 #include "avd_application.h"
 
-typedef struct AVD_UiPushConstants
-{
+typedef struct AVD_UiPushConstants {
     int type;
     float width;
     float height;
@@ -74,11 +73,11 @@ void avdUiBegin(VkCommandBuffer commandBuffer, AVD_Ui *ui, AVD_AppState *appStat
     AVD_ASSERT(ui != NULL);
     AVD_ASSERT(appState != NULL);
 
-    ui->width = width;
-    ui->height = height;
-    ui->offsetX = offsetX;
-    ui->offsetY = offsetY;
-    ui->frameWidth = (float)frameWidth;
+    ui->width       = width;
+    ui->height      = height;
+    ui->offsetX     = offsetX;
+    ui->offsetY     = offsetY;
+    ui->frameWidth  = (float)frameWidth;
     ui->frameHeight = (float)frameHeight;
 
     float minX = AVD_MAX(offsetX, 0.0f);
@@ -105,45 +104,51 @@ void avdUiDrawRect(
     VkCommandBuffer commandBuffer,
     AVD_Ui *ui,
     struct AVD_AppState *appState,
-    float x, float y,
-    float width, float height,
-    float r, float g, float b, float a,
-    VkDescriptorSet descriptorSet, uint32_t imageWidth, uint32_t imageHeight)
+    float x,
+    float y,
+    float width,
+    float height,
+    float r,
+    float g,
+    float b,
+    float a,
+    VkDescriptorSet descriptorSet,
+    uint32_t imageWidth,
+    uint32_t imageHeight)
 {
     AVD_ASSERT(ui != NULL);
     AVD_ASSERT(appState != NULL);
 
     // TODO: THIS IS A HACK!! Fix it with a proper descriptor set for the fallback image
     VkDescriptorSet fallbackImage = appState->fontRenderer.fonts[0].fontDescriptorSet;
-    float fallbackImageWidth = (float)imageWidth;
-    float fallbackImageHeight = (float)imageHeight;
+    float fallbackImageWidth      = (float)imageWidth;
+    float fallbackImageHeight     = (float)imageHeight;
 
-    if (descriptorSet != NULL)
-    {
+    if (descriptorSet != NULL) {
         fallbackImage = descriptorSet;
     }
 
     AVD_UiPushConstants pushConstants = {
-        .type = AVD_UI_ELEMENT_TYPE_RECT,
-        .width = ui->width,
-        .height = ui->height,
-        .radius = 0.0f,
-        .offsetX = ui->offsetX,
-        .offsetY = ui->offsetY,
-        .frameWidth = ui->frameWidth,
+        .type        = AVD_UI_ELEMENT_TYPE_RECT,
+        .width       = ui->width,
+        .height      = ui->height,
+        .radius      = 0.0f,
+        .offsetX     = ui->offsetX,
+        .offsetY     = ui->offsetY,
+        .frameWidth  = ui->frameWidth,
         .frameHeight = ui->frameHeight,
-        .uiBoxMinX = (x + ui->offsetX) / ui->frameWidth,
-        .uiBoxMinY = (y + ui->offsetY) / ui->frameHeight,
-        .uiBoxMaxX = (x + width + ui->offsetX) / ui->frameWidth,
-        .uiBoxMaxY = (y + height + ui->offsetY) / ui->frameHeight,
-        .imageWidth = fallbackImageWidth,
+        .uiBoxMinX   = (x + ui->offsetX) / ui->frameWidth,
+        .uiBoxMinY   = (y + ui->offsetY) / ui->frameHeight,
+        .uiBoxMaxX   = (x + width + ui->offsetX) / ui->frameWidth,
+        .uiBoxMaxY   = (y + height + ui->offsetY) / ui->frameHeight,
+        .imageWidth  = fallbackImageWidth,
         .imageHeight = fallbackImageHeight,
-        .pad0 = 0.0f,
-        .pad1 = 0.0f,
-        .colorR = r,
-        .colorG = g,
-        .colorB = b,
-        .colorA = a,
+        .pad0        = 0.0f,
+        .pad1        = 0.0f,
+        .colorR      = r,
+        .colorG      = g,
+        .colorB      = b,
+        .colorA      = a,
     };
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ui->pipeline);

@@ -16,7 +16,6 @@ typedef struct AVD_VulkanRendererResources {
     VkFence renderFence;
 } AVD_VulkanRendererResources;
 
-
 typedef struct AVD_VulkanRenderer {
     AVD_VulkanRendererResources resources[AVD_MAX_IN_FLIGHT_FRAMES];
     uint32_t numInFlightFrames;
@@ -31,12 +30,11 @@ typedef struct AVD_VulkanRenderer {
     AVD_VulkanFramebuffer sceneFramebuffer;
 } AVD_VulkanRenderer;
 
-
-bool avdVulkanRendererCreate(AVD_VulkanRenderer* renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain* swapchain, uint32_t width, uint32_t height);
-void avdVulkanRendererDestroy(AVD_VulkanRenderer* renderer, AVD_Vulkan *vulkan);
-bool avdVulkanRendererRecreateResources(AVD_VulkanRenderer* renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain* swapchain);
-bool avdVulkanRendererBegin(AVD_VulkanRenderer* renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain* swapchain);
-bool avdVulkanRendererEnd(AVD_VulkanRenderer* renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain* swapchain);
-bool avdVulkanRendererCancelFrame(AVD_VulkanRenderer* renderer, AVD_Vulkan *vulkan);
+bool avdVulkanRendererCreate(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain, uint32_t width, uint32_t height);
+void avdVulkanRendererDestroy(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan);
+bool avdVulkanRendererRecreateResources(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain);
+bool avdVulkanRendererBegin(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain);
+bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain);
+bool avdVulkanRendererCancelFrame(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan);
 
 #endif // AVD_VULKAN_RENDERER_H
