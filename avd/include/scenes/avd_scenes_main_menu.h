@@ -17,11 +17,14 @@ typedef struct AVD_SceneMainMenu
     AVD_SceneMainMenuCard cards[64];
     uint32_t cardCount;
 
+    uint32_t currentPage;
+
     VkDescriptorSetLayout descriptorSetLayout;
     
     AVD_RenderableText title;
     AVD_RenderableText creditsText;  
     AVD_RenderableText githubLinkText;
+    AVD_RenderableText pageNumberText;
 
     int32_t loadingCount;
 } AVD_SceneMainMenu;

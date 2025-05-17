@@ -35,7 +35,7 @@ static bool __avdSetupMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan* vulk
         vulkan,
         "RobotoCondensedRegular",
         title,
-        24.0f));
+        28.0f));
 
     VkDescriptorSetAllocateInfo allocateInfo = {0};
     allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -65,16 +65,14 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
     AVD_ASSERT(mainMenu != NULL);
     AVD_ASSERT(appState != NULL);
 
-    // ddgiplaceholder
+    AVD_SceneMainMenuCard *card = NULL;
+    static char title[64];
+    mainMenu->cardCount = 0;
     
-    for (int i = 0; i < 15; i++)
-    {
-        AVD_SceneMainMenuCard *card = &mainMenu->cards[i];
-        static char title[64];
-        snprintf(title, sizeof(title), "Demo %d", i + 1);
-        AVD_CHECK(__avdSetupMainMenuCard(card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout, "DDGIPlaceholder", title));
-    }
-    mainMenu->cardCount = 15;
+    card = &mainMenu->cards[0];
+    snprintf(title, sizeof(title), "DDGI (Dynamic Diffuse Global Illumination)");
+    AVD_CHECK(__avdSetupMainMenuCard(card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout, "DDGIPlaceholder", title));
+    mainMenu->cardCount += 1;
 
     return true;
 }
@@ -116,6 +114,7 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
     AVD_LOG("Initializing main menu scene\n");
     mainMenu->loadingCount = 0;
+    mainMenu->currentPage = 0;
 
     AVD_CHECK(__avdSetupDescriptors(&mainMenu->descriptorSetLayout, &appState->vulkan));
     AVD_CHECK(__avdSetupMainMenuCards(mainMenu, appState));
@@ -141,6 +140,13 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
         "RobotoCondensedRegular",
         "(https://github.com/Jaysmito101/AdvancedVulkanDemos)",
         16.0f));
+    AVD_CHECK(avdRenderableTextCreate(
+        &mainMenu->pageNumberText,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        "RobotoCondensedRegular",
+        "Page 1/1",
+        16.0f));
 
     return true;
 }
@@ -153,6 +159,7 @@ void avdSceneMainMenuDestroy(AVD_AppState *appState, AVD_Scene *scene)
     avdRenderableTextDestroy(&mainMenu->title, &appState->vulkan);
     avdRenderableTextDestroy(&mainMenu->creditsText, &appState->vulkan);
     avdRenderableTextDestroy(&mainMenu->githubLinkText, &appState->vulkan);
+    avdRenderableTextDestroy(&mainMenu->pageNumberText, &appState->vulkan);
     vkDestroyDescriptorSetLayout(appState->vulkan.device, mainMenu->descriptorSetLayout, NULL);
     for (uint32_t i = 0; i < mainMenu->cardCount; i++)
         __avdDestroyMainMenuCard(&mainMenu->cards[i], &appState->vulkan);
@@ -186,7 +193,28 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
 
 void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
 {
-    // AVD_LOG("Main menu input event: %s\n", avdInputEventTypeToString(event->type));
+    if (event->type == AVD_INPUT_EVENT_KEY)
+    {
+        AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
+        if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_RELEASE)
+        {
+            AVD_LOG("Exiting main menu scene\n");
+            appState->running = false;
+        }
+        else if (event->key.key == GLFW_KEY_RIGHT && event->key.action == GLFW_RELEASE)
+        {
+            mainMenu->currentPage++;
+            if (mainMenu->currentPage >= (mainMenu->cardCount + 5) / 6)
+                mainMenu->currentPage = 0;
+        }
+        else if (event->key.key == GLFW_KEY_LEFT && event->key.action == GLFW_RELEASE)
+        {
+            if (mainMenu->currentPage > 0)
+                mainMenu->currentPage--;
+            else
+                mainMenu->currentPage = (mainMenu->cardCount + 5) / 6 - 1;
+        }
+    }
 }
 
 bool avdSceneMainMenuUpdate(AVD_AppState *appState, AVD_Scene *scene)
@@ -251,6 +279,15 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
 
     float minX = 0.0f;
     float minY = (titleHeight + creditsHeight + githubLinkHeight + 40.0f);
+    float frameWidth = (float)renderer->sceneFramebuffer.width;
+    float frameHeight = (float)renderer->sceneFramebuffer.height - minY;
+
+    float cardWidth = (frameWidth * 0.8f) / 3.0f - 20.0f;
+    float cardHeight = (frameHeight * 0.8f) / 2.0f - 80.0f;
+    float allCardsWidth = cardWidth * 3.0f + 20.0f * 2.0f;
+    float allCardsHeight = cardHeight * 2.0f + 80.0f * 2.0f;
+    float offsetX = (frameWidth - allCardsWidth) / 2.0f;
+    float offsetY = (frameHeight - allCardsHeight) / 2.0f;
 
     avdUiBegin(
         commandBuffer,
@@ -262,15 +299,65 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
 
-    avdUiDrawRect(
+    const uint32_t numCardsPerPage = 6;
+    uint32_t currentOffset = mainMenu->currentPage * numCardsPerPage;
+    uint32_t totalPages = (mainMenu->cardCount + numCardsPerPage - 1) / numCardsPerPage;
+    
+    for (uint32_t i = 0; i < numCardsPerPage; i++)
+    {
+        if (currentOffset + i >= mainMenu->cardCount)
+            break;
+
+        AVD_SceneMainMenuCard *card = &mainMenu->cards[currentOffset + i];
+        float x = (float)(i % 3) * (cardWidth + 20.0f) + offsetX;
+        float y = (float)(i / 3) * (cardHeight + 80.0f) + offsetY;
+
+        AVD_VulkanImage *image = &card->thumbnailImage;
+        avdUiDrawRect(
+            commandBuffer,
+            &appState->ui,
+            appState,
+            x, y,
+            cardWidth, cardHeight,
+            1.0f, 1.0f, 1.0f, 1.0f,
+            card->descriptorSet, image->width, image->height
+        );
+
+        float cardTitleWidth, cardTitleHeight;
+        avdRenderableTextGetSize(&card->title, &cardTitleWidth, &cardTitleHeight);
+        avdRenderText(
+            &appState->vulkan,
+            &appState->fontRenderer,
+            &card->title,
+            commandBuffer,
+            x + (cardWidth - cardTitleWidth) / 2.0f, y + cardHeight + cardTitleHeight + minY + 10.0f,
+            1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+            renderer->sceneFramebuffer.width,
+            renderer->sceneFramebuffer.height);
+    }
+
+    // Draw the page indicator
+    static char pageIndicator[32];
+    snprintf(pageIndicator, sizeof(pageIndicator), "Page %d/%d", mainMenu->currentPage + 1, totalPages);
+    AVD_CHECK(avdRenderableTextUpdate(
+        &mainMenu->pageNumberText,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        pageIndicator));
+
+    float pageIndicatorWidth, pageIndicatorHeight;
+    avdRenderableTextGetSize(&mainMenu->pageNumberText, &pageIndicatorWidth, &pageIndicatorHeight);
+
+    avdRenderText(
+        &appState->vulkan,
+        &appState->fontRenderer,
+        &mainMenu->pageNumberText,
         commandBuffer,
-        &appState->ui,
-        appState,
-        300.0f, 400.0f,
-        300.0, 500.0,
-        0.0f, 1.0f, 0.0f, 1.0f,
-        mainMenu->cards[0].descriptorSet, mainMenu->cards[0].thumbnailImage.width, mainMenu->cards[0].thumbnailImage.height
-    );
+        (frameWidth - pageIndicatorWidth) * 0.5f, frameHeight - pageIndicatorHeight - 10.0f + minY,
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+        renderer->sceneFramebuffer.width,
+        renderer->sceneFramebuffer.height);
+
 
     avdUiEnd(
         commandBuffer,
