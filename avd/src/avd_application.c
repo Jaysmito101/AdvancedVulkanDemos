@@ -1,6 +1,6 @@
 #include "avd_application.h"
 
-static void __avdApplicationUpdateFramerateCalculation(AVD_Frametime* framerateInfo)
+static void __avdApplicationUpdateFramerateCalculation(AVD_Frametime *framerateInfo)
 {
     AVD_ASSERT(framerateInfo != NULL);
 
@@ -72,11 +72,9 @@ void avdApplicationUpdate(AVD_AppState *appState)
     avdInputCalculateDeltas(&appState->input);
     avdApplicationUpdateWithoutPolling(appState);
 
-
-    
     // update the title of window with stats
     static char title[256];
-    AVD_Frametime* framerateInfo = &appState->framerate;
+    AVD_Frametime *framerateInfo = &appState->framerate;
     snprintf(title, sizeof(title), "Advanced Vulkan Demos -- FPS(Stable): %zu, FPS(Instant): %zu, DeltaTime: %.3f", framerateInfo->fps, framerateInfo->instanteneousFrameRate, framerateInfo->deltaTime);
     glfwSetWindowTitle(appState->window.window, title);
 }
@@ -86,7 +84,6 @@ void avdApplicationUpdateWithoutPolling(AVD_AppState *appState)
     AVD_ASSERT(appState != NULL);
 
     avdApplicationRender(appState);
-
 }
 
 void avdApplicationRender(AVD_AppState *appState)
@@ -96,20 +93,19 @@ void avdApplicationRender(AVD_AppState *appState)
     // to not render if the window is minimized
     if (appState->window.isMinimized)
     {
-    // sleep to avoid byst waiting
+        // sleep to avoid byst waiting
 #if defined(_WIN32) || defined(__CYGWIN__)
-		Sleep(100);
+        Sleep(100);
 #else
-		usleep(1000);
+        usleep(1000);
 #endif
         return;
     }
 
     if (avdVulkanSwapchainRecreateIfNeeded(&appState->swapchain, &appState->vulkan, &appState->window))
     {
-        if(!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
+        if (!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain))
             AVD_LOG("Failed to recreate Vulkan renderer resources\n");
-        }
         return; // skip this frame
     }
 
@@ -119,14 +115,15 @@ void avdApplicationRender(AVD_AppState *appState)
         return; // do not render this frame
     }
 
-    if(!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, appState->renderer.currentImageIndex)) {
-        if(!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan)) {
+    if (!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, appState->renderer.currentImageIndex))
+    {
+        if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
             AVD_LOG("Failed to cancel Vulkan renderer frame\n");
-        }
         return; // do not render this frame
     }
 
-    if(!avdVulkanRendererEnd(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
+    if (!avdVulkanRendererEnd(&appState->renderer, &appState->vulkan, &appState->swapchain))
+    {
         // Nothing to do here for now...
     }
 }
