@@ -6,7 +6,7 @@
 typedef struct AVD_SceneMainMenuCard {
     AVD_VulkanImage thumbnailImage;
     AVD_RenderableText title;
-    
+    AVD_SceneType targetSceneType;
     VkDescriptorSet descriptorSet;
 } AVD_SceneMainMenuCard;
 
@@ -18,6 +18,7 @@ typedef struct AVD_SceneMainMenu
     uint32_t cardCount;
     int32_t hoveredCard;
     uint32_t currentPage;
+
 
     VkDescriptorSetLayout descriptorSetLayout;
     

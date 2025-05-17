@@ -109,8 +109,10 @@ bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType 
 
     sceneManager->sceneIntegrityCheckPassed = true;
 
-    if (sceneManager->isSceneInitialized)
+    if (sceneManager->isSceneInitialized) {
+        avdVulkanWaitIdle(&appState->vulkan);
         sceneManager->api[sceneManager->currentSceneType].destroy(appState, &sceneManager->scene);
+    }
     memset(&sceneManager->scene, 0, sizeof(AVD_Scene));
 
     // Very important to set the type before calling init

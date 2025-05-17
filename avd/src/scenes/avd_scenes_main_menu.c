@@ -22,12 +22,13 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
     return true;
 }
 
-static bool __avdSetupMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, VkDescriptorSetLayout layout, const char *imageAsset, const char *title)
+static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AVD_SceneType targetSceneType, AVD_SceneMainMenuCard *card, AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, VkDescriptorSetLayout layout)
 {
     AVD_ASSERT(card != NULL);
     AVD_ASSERT(imageAsset != NULL);
     AVD_ASSERT(title != NULL);
 
+    card->targetSceneType = targetSceneType;
     AVD_CHECK(avdVulkanImageLoadFromAsset(vulkan, imageAsset, &card->thumbnailImage));
     AVD_CHECK(avdRenderableTextCreate(
         &card->title,
@@ -71,7 +72,7 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
 
     card = &mainMenu->cards[0];
     snprintf(title, sizeof(title), "DDGI (Dynamic Diffuse Global Illumination)");
-    AVD_CHECK(__avdSetupMainMenuCard(card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout, "DDGIPlaceholder", title));
+    AVD_CHECK(__avdSetupMainMenuCard("DDGIPlaceholder", title, AVD_SCENE_TYPE_MAIN_MENU, card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout));
     mainMenu->cardCount += 1;
 
     return true;
@@ -193,9 +194,10 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
 
 void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
 {
+    AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
+
     if (event->type == AVD_INPUT_EVENT_KEY)
     {
-        AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
         if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_RELEASE)
         {
             AVD_LOG("Exiting main menu scene\n");
@@ -213,6 +215,20 @@ void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *
                 mainMenu->currentPage--;
             else
                 mainMenu->currentPage = (mainMenu->cardCount + 5) / 6 - 1;
+        }
+    }
+    else if (event->type == AVD_INPUT_EVENT_MOUSE_BUTTON)
+    {
+        if (event->mouseButton.button == GLFW_MOUSE_BUTTON_LEFT && event->mouseButton.action == GLFW_RELEASE)
+        {
+            if (mainMenu->hoveredCard != -1)
+            {
+                AVD_SceneMainMenuCard *card = &mainMenu->cards[mainMenu->hoveredCard];
+                avdSceneManagerSwitchToScene(
+                    &appState->sceneManager,
+                    card->targetSceneType,
+                    appState);
+            }
         }
     }
 }
