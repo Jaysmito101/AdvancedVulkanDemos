@@ -220,7 +220,7 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
 
     // NOTE: This wont work for now, as the font renderer pipeline only works with
     //       the scene framebuffer and not the swapchain framebuffer, this will be fixed later?
-
+#if 0
     if (!sceneManager->isSceneLoaded)
     {
         static char loadingText[256];
@@ -260,6 +260,7 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
                 swapchain->extent.width, swapchain->extent.height);
         }
     }
+#endif
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
     return true;
