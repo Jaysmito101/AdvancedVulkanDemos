@@ -9,6 +9,7 @@ static bool __avdCheckSceneApiValidity(AVD_SceneAPI *api)
     AVD_CHECK(api->update != NULL);
     AVD_CHECK(api->destroy != NULL);
     AVD_CHECK(api->load != NULL);
+    AVD_CHECK(api->inputEvent != NULL);
     return true;
 }
 
@@ -83,6 +84,18 @@ bool avdSceneManagerRender(AVD_SceneManager *sceneManager, AVD_AppState *appStat
     }
 
     return true;
+}
+
+void avdSceneManagerPushInputEvent(AVD_SceneManager *sceneManager, struct AVD_AppState *appState, AVD_InputEvent* event) 
+{
+    AVD_ASSERT(sceneManager != NULL);
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(event != NULL);
+
+    if (sceneManager->isSceneInitialized)
+    {
+        sceneManager->api[sceneManager->currentSceneType].inputEvent(appState, &sceneManager->scene, event);
+    }
 }
 
 bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType type, AVD_AppState *appState)

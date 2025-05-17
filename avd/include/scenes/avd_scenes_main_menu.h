@@ -16,6 +16,7 @@ bool avdSceneMainMenuRender(struct AVD_AppState *appState, union AVD_Scene *scen
 bool avdSceneMainMenuUpdate(struct AVD_AppState *appState, union AVD_Scene *scene);
 void avdSceneMainMenuDestroy(struct AVD_AppState *appState, union AVD_Scene *scene);
 bool avdSceneMainMenuLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char** statusMessage, float* progress);
+void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent* event);
 
 bool avdSceneMainMenuCheckIntegrity(struct AVD_AppState *appState, const char** statusMessage);
 bool avdSceneMainMenuRegisterApi(AVD_SceneAPI *api);

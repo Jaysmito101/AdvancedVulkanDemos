@@ -13,6 +13,14 @@ void __avdGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action,
     if (key >= 0 && key < 1024) {
         appState->input.keyState[key] = (action == GLFW_PRESS || action == GLFW_REPEAT);
     }
+
+    AVD_InputEvent event;
+    event.type = AVD_INPUT_EVENT_KEY;
+    event.key.key = key;
+    event.key.scancode = scancode;
+    event.key.action = action;
+    event.key.mods = mods;
+    avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
 void __avdGLFWCharCallback(GLFWwindow *window, unsigned int codepoint)
@@ -30,6 +38,11 @@ void __avdGLFWDropCallback(GLFWwindow *window, int count, const char **paths)
     // for (int i = 0; i < count; ++i) {
     //     AVD_LOG("  %s\n", paths[i]);
     // }
+    AVD_InputEvent event;
+    event.type = AVD_INPUT_EVENT_DRAG_N_DROP;
+    event.dragNDrop.count = count;
+    event.dragNDrop.paths = paths;
+    avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
 void __avdGLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
@@ -37,12 +50,24 @@ void __avdGLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     appState->input.mouseScrollX = (float)xoffset;
     appState->input.mouseScrollY = (float)yoffset;
+
+    AVD_InputEvent event;
+    event.type = AVD_INPUT_EVENT_MOUSE_SCROLL;
+    event.mouseScroll.x = (float)xoffset;
+    event.mouseScroll.y = (float)yoffset;
+    avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
 void __avdGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     avdInputCalculateMousePositionFromRaw(&appState->input, &appState->window, xpos, ypos);
+
+    AVD_InputEvent event;
+    event.type = AVD_INPUT_EVENT_MOUSE_MOVE;
+    event.mouseMove.x = appState->input.mouseX;
+    event.mouseMove.y = appState->input.mouseY;
+    avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
 void __avdGLFWWindowPosCallback(GLFWwindow *window, int xpos, int ypos)
@@ -50,6 +75,11 @@ void __avdGLFWWindowPosCallback(GLFWwindow *window, int xpos, int ypos)
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     // TODO: Handle window position events
     // AVD_LOG("Window Pos: x=%d, y=%d\n", xpos, ypos);
+    AVD_InputEvent event;
+    event.type = AVD_INPUT_EVENT_WINDOW_MOVE;
+    event.windowMove.x = xpos;
+    event.windowMove.y = ypos;
+    avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
 void __avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height)
@@ -67,6 +97,12 @@ void __avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height)
         appState->window.isMinimized = false;
         avdInputCalculateMousePositionFromRaw(&appState->input, &appState->window, appState->input.rawMouseX, appState->input.rawMouseY);
     }
+
+    AVD_InputEvent event;
+    event.type = AVD_INPUT_EVENT_WINDOW_RESIZE;
+    event.windowResize.width = width;
+    event.windowResize.height = height;
+    avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
 void __avdGLFWCursorEnterCallback(GLFWwindow *window, int entered)
@@ -80,12 +116,23 @@ void __avdGLFWWindowCloseCallback(GLFWwindow *window)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     appState->running = false; // Signal the main loop to exit
+
+    AVD_InputEvent event;
+    event.type = AVD_INPUT_EVENT_WINDOW_CLOSE;
+    avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
 void __avdGLFWMouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     appState->input.mouseButtonState[button] = (action == GLFW_PRESS);
+
+    AVD_InputEvent event;
+    event.type = AVD_INPUT_EVENT_MOUSE_BUTTON;
+    event.mouseButton.button = button;
+    event.mouseButton.action = action;
+    event.mouseButton.mods = mods;
+    avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
 void __avdGLFWFramebufferSizeCallback(GLFWwindow *window, int width, int height)

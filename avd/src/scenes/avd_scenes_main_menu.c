@@ -13,7 +13,7 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
     AVD_LOG("Initializing main menu scene\n");
 
-    mainMenu->loadingCount = 0;   
+    mainMenu->loadingCount = 0;
 
     return true;
 }
@@ -43,8 +43,9 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
 
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
     AVD_LOG("Loading main menu scene\n");
-    // nothing to load really here but some busy waiting 
-    if (mainMenu->loadingCount < 40) {
+    // nothing to load really here but some busy waiting
+    if (mainMenu->loadingCount < 40)
+    {
         mainMenu->loadingCount++;
         static char buffer[256];
         snprintf(buffer, sizeof(buffer), "Loading main menu scene: %d%%", mainMenu->loadingCount * 100 / 40);
@@ -59,6 +60,11 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
     *progress = 1.0f;
 
     return true;
+}
+
+void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
+{
+    // AVD_LOG("Main menu input event: %s\n", avdInputEventTypeToString(event->type));
 }
 
 bool avdSceneMainMenuCheckIntegrity(AVD_AppState *appState, const char **statusMessage)
@@ -80,6 +86,7 @@ bool avdSceneMainMenuRegisterApi(AVD_SceneAPI *api)
     api->update = avdSceneMainMenuUpdate;
     api->destroy = avdSceneMainMenuDestroy;
     api->load = avdSceneMainMenuLoad;
+    api->inputEvent = avdSceneMainMenuInputEvent;
 
     return true;
 }

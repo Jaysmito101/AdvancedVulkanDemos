@@ -27,6 +27,7 @@ bool avdSceneManagerInit(AVD_SceneManager *sceneManager, struct AVD_AppState *ap
 void avdSceneManagerDestroy(AVD_SceneManager *sceneManager, struct AVD_AppState *appState);
 bool avdSceneManagerUpdate(AVD_SceneManager *sceneManager, struct AVD_AppState *appState);
 bool avdSceneManagerRender(AVD_SceneManager *sceneManager, struct AVD_AppState *appState);
+void avdSceneManagerPushInputEvent(AVD_SceneManager *sceneManager, struct AVD_AppState *appState, AVD_InputEvent* event);
 bool avdSceneManagerCheckSceneIntegrity(AVD_SceneManager *sceneManager, AVD_SceneType type, struct AVD_AppState *appState, const char** statusMessage);
 bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType type, struct AVD_AppState *appState);
 

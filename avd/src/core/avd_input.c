@@ -54,3 +54,22 @@ void avdInputNewFrame(AVD_Input *input)
     input->lastMouseX = input->mouseX;
     input->lastMouseY = input->mouseY;
 }
+
+const char* avdInputEventTypeToString(AVD_InputEventType type)
+{
+    switch (type)
+    {
+        case AVD_INPUT_EVENT_NONE: return "InputEvent_None";
+        case AVD_INPUT_EVENT_KEY: return "InputEvent_Key";
+        case AVD_INPUT_EVENT_MOUSE_BUTTON: return "InputEvent_MouseButton";
+        case AVD_INPUT_EVENT_MOUSE_MOVE: return "InputEvent_MouseMove";
+        case AVD_INPUT_EVENT_MOUSE_SCROLL: return "InputEvent_MouseScroll";
+        case AVD_INPUT_EVENT_WINDOW_MOVE: return "InputEvent_WindowMove";
+        case AVD_INPUT_EVENT_WINDOW_RESIZE: return "InputEvent_WindowResize";
+        case AVD_INPUT_EVENT_WINDOW_CLOSE: return "InputEvent_WindowClose";
+        case AVD_INPUT_EVENT_DRAG_N_DROP: return "InputEvent_DragNDrop";
+        default: return "InputEvent_Unknown";
+    }
+
+    return "InputEvent_Unknown";
+}

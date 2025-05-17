@@ -23,7 +23,7 @@ typedef bool (*AVD_SceneRenderFn)(struct AVD_AppState *appState, union AVD_Scene
 typedef bool (*AVD_SceneUpdateFn)(struct AVD_AppState *appState, union AVD_Scene *scene);
 typedef void (*AVD_SceneDestroyFn)(struct AVD_AppState *appState, union AVD_Scene *scene);
 typedef bool (*AVD_SceneLoaderFn)(struct AVD_AppState *appState, union AVD_Scene *scene, const char** statusMessage, float* progress);
-
+typedef void (*AVD_SceneInputEventFn)(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent* event);
 
 typedef struct AVD_SceneAPI
 {
@@ -33,6 +33,7 @@ typedef struct AVD_SceneAPI
     AVD_SceneUpdateFn update;
     AVD_SceneDestroyFn destroy;
     AVD_SceneLoaderFn load;
+    AVD_SceneInputEventFn inputEvent;
 } AVD_SceneAPI;
 
 #endif // AVD_SCENES_BASE_H
