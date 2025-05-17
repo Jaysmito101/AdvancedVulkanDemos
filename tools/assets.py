@@ -391,7 +391,7 @@ def create_font_assets_common_header(output_dir):
     print(f"Generated common font header file: {common_header_file_path}")
 
 def create_font_assets(git_root, output_dir, temp_dir, msdf_exe_path):
-    asset_dir = os.path.join(git_root, "assets")
+    asset_dir = os.path.join(git_root, "em_assets")
     all_asset_files = []
     for root_dir, _, files in os.walk(asset_dir):
         for file in files:
@@ -540,7 +540,7 @@ def create_image_assets_common_header(output_dir):
     print(f"Generated common header file: {common_header_file_path}")
 
 def create_image_assets(git_root, output_dir):
-    asset_dir = os.path.join(git_root, "assets")
+    asset_dir = os.path.join(git_root, "em_assets")
     all_asset_files = []
     for root, _, files in os.walk(asset_dir):
         for file in files:
@@ -696,7 +696,7 @@ def create_shader_assets_common_header(output_dir):
     print(f"Generated common shader header file: {common_header_file_path}")
 
 def create_shader_assets(git_root, output_dir):
-    asset_dir = os.path.join(git_root, "assets")
+    asset_dir = os.path.join(git_root, "em_assets")
     all_asset_files = []
     for root, _, files in os.walk(asset_dir):
         for file in files:

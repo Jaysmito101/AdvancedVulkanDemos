@@ -8,6 +8,8 @@ typedef struct AVD_SceneMainMenu
     AVD_SceneType type;
     AVD_RenderableText title;
 
+    AVD_RenderableText headerText;  
+
     int32_t loadingCount;
 } AVD_SceneMainMenu;
 

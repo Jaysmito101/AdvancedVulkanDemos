@@ -9,8 +9,11 @@ typedef struct AVD_VulkanPresentationPushConstants
     float windowHeight;
     float framebufferWidth;
     float framebufferHeight;
+    
     float sceneLoadingProgress;
     float time;
+    float pad0;
+    float pad1;
 } AVD_VulkanPresentationPushConstants;
 
 static bool __avdVulkanPresentationCreatePipelineLayout(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan)

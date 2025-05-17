@@ -200,7 +200,7 @@ bool avdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, 
     AVD_ASSERT(framebufferHeight > 0);
 
     static VkClearValue defaultClearValues[2] = {
-        {.color = {.float32 = {10.0f / 255.0f, 10.0f / 255.0f, 10.0f / 255.0f}}},
+        {.color = {.float32 = {10.0f / 255.0f, 10.0f / 255.0f, 10.0f / 255.0f, 1.0f}}},
         {.depthStencil = {.depth = 1.0f, .stencil = 0}}};
 
     VkClearValue *clearValues = NULL;

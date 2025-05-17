@@ -11,8 +11,11 @@ struct PushConstantData {
     float windowHeight; 
     float framebufferWidth; 
     float framebufferHeight; 
+
     float sceneLoadingProgress;
     float time;
+    float pad0;
+    float pad1;
 };
 
 
@@ -24,7 +27,7 @@ const float PI = 3.14159265358979323846;
 
 void main() 
 {
-    if (pushConstants.data.sceneLoadingProgress >= 1.0f) {
+    if (pushConstants.data.sceneLoadingProgress >= 1.0) {
         outColor = texture(sceneFramebuffer, inUV);
         return;
     }

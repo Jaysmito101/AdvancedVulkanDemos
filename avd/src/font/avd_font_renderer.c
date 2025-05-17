@@ -490,6 +490,8 @@ bool avdFontRendererAddBasicFonts(AVD_FontRenderer* fontRenderer)
     AVD_ASSERT(fontRenderer != NULL);
     AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "OpenSansRegular"));
     AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "ShantellSansBold"));
+    AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "RampartOneRegular"));
+    AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "RubikGlitchRegular"));
     return true;
 }
 
