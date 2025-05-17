@@ -38,7 +38,6 @@ bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan 
         swapchain->renderPass,
         "PresentationVert",
         "PresentationFrag"));
-
     AVD_CHECK(avdRenderableTextCreate(
         &presentation->loadingText,
         fontRenderer,
