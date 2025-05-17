@@ -1,6 +1,85 @@
 #include "scenes/avd_scenes.h"
 #include "avd_application.h"
 
+static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(layout != NULL);
+
+    VkDescriptorSetLayoutBinding sceneFramebufferBinding = {0};
+    sceneFramebufferBinding.binding = 0;
+    sceneFramebufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sceneFramebufferBinding.descriptorCount = 1;
+    sceneFramebufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo sceneFramebufferLayoutInfo = {0};
+    sceneFramebufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    sceneFramebufferLayoutInfo.bindingCount = 1;
+    sceneFramebufferLayoutInfo.pBindings = &sceneFramebufferBinding;
+
+    VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, layout);
+    AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
+    return true;
+}
+
+static bool __avdSetupMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan* vulkan, AVD_FontRenderer* fontRenderer, VkDescriptorSetLayout layout, const char* imageAsset, const char* title)
+{
+    AVD_ASSERT(card != NULL);
+    AVD_ASSERT(imageAsset != NULL);
+    AVD_ASSERT(title != NULL);
+
+    AVD_CHECK(avdVulkanImageLoadFromAsset(vulkan, imageAsset, &card->thumbnailImage));
+    AVD_CHECK(avdRenderableTextCreate(
+        &card->title,
+        fontRenderer,
+        vulkan,
+        "RobotoCondensedRegular",
+        title,
+        24.0f));
+
+    VkDescriptorSetAllocateInfo allocateInfo = {0};
+    allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocateInfo.descriptorPool = vulkan->descriptorPool;
+    allocateInfo.descriptorSetCount = 1;
+    allocateInfo.pSetLayouts = &layout;
+    AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(vulkan->device, &allocateInfo, &card->descriptorSet), "Failed to allocate descriptor set");
+
+    VkWriteDescriptorSet writeDescriptorSet = {0};
+    AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, card->descriptorSet, 0, &card->thumbnailImage.descriptorImageInfo));
+    vkUpdateDescriptorSets(vulkan->device, 1, &writeDescriptorSet, 0, NULL);
+
+    return true;
+}
+
+static void __avdDestroyMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan *vulkan)
+{
+    AVD_ASSERT(card != NULL);
+    AVD_ASSERT(vulkan != NULL);
+
+    avdVulkanImageDestroy(vulkan, &card->thumbnailImage);
+    avdRenderableTextDestroy(&card->title, vulkan);
+}
+
+static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *appState)
+{
+    AVD_ASSERT(mainMenu != NULL);
+    AVD_ASSERT(appState != NULL);
+
+    // ddgiplaceholder
+    
+    for (int i = 0; i < 15; i++)
+    {
+        AVD_SceneMainMenuCard *card = &mainMenu->cards[i];
+        static char title[64];
+        snprintf(title, sizeof(title), "Demo %d", i + 1);
+        AVD_CHECK(__avdSetupMainMenuCard(card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout, "DDGIPlaceholder", title));
+    }
+    mainMenu->cardCount = 15;
+
+    return true;
+}
+
+
 static AVD_SceneMainMenu *__avdSceneGetTypePtr(AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
@@ -38,6 +117,9 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
     AVD_LOG("Initializing main menu scene\n");
     mainMenu->loadingCount = 0;
 
+    AVD_CHECK(__avdSetupDescriptors(&mainMenu->descriptorSetLayout, &appState->vulkan));
+    AVD_CHECK(__avdSetupMainMenuCards(mainMenu, appState));
+
     AVD_CHECK(avdRenderableTextCreate(
         &mainMenu->title,
         &appState->fontRenderer,
@@ -71,6 +153,9 @@ void avdSceneMainMenuDestroy(AVD_AppState *appState, AVD_Scene *scene)
     avdRenderableTextDestroy(&mainMenu->title, &appState->vulkan);
     avdRenderableTextDestroy(&mainMenu->creditsText, &appState->vulkan);
     avdRenderableTextDestroy(&mainMenu->githubLinkText, &appState->vulkan);
+    vkDestroyDescriptorSetLayout(appState->vulkan.device, mainMenu->descriptorSetLayout, NULL);
+    for (uint32_t i = 0; i < mainMenu->cardCount; i++)
+        __avdDestroyMainMenuCard(&mainMenu->cards[i], &appState->vulkan);
 }
 
 bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char **statusMessage, float *progress)
@@ -184,7 +269,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         300.0f, 400.0f,
         300.0, 500.0,
         0.0f, 1.0f, 0.0f, 1.0f,
-        NULL, 0, 0
+        mainMenu->cards[0].descriptorSet, mainMenu->cards[0].thumbnailImage.width, mainMenu->cards[0].thumbnailImage.height
     );
 
     avdUiEnd(

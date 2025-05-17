@@ -16,6 +16,8 @@ typedef struct AVD_SceneMainMenu
 
     AVD_SceneMainMenuCard cards[64];
     uint32_t cardCount;
+
+    VkDescriptorSetLayout descriptorSetLayout;
     
     AVD_RenderableText title;
     AVD_RenderableText creditsText;  

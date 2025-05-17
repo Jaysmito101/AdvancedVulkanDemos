@@ -82,6 +82,8 @@ def get_asset_type(file_path):
         return 'video'
     elif file_path.endswith('.glsl'):
         return 'shader'
+    elif file_path.endswith('.txt'):
+        return 'text'
     else:
         return None
 
@@ -721,6 +723,7 @@ def create_assets_common_header(output_dir):
         f"\n",
         f"#include \"avd_asset_image.h\"",
         f"#include \"avd_asset_shader.h\"",
+        f"#include \"avd_asset_text.h\"",
         f"#include \"avd_asset_font.h\"",
         f"\n",
         f"#endif // AVD_ASSET_COMMON_H"
@@ -731,6 +734,152 @@ def create_assets_common_header(output_dir):
         common_header_file.write("\n".join(common_header_source))
         common_header_file.write("\n")
     print(f"Generated common header file: {common_header_file_path}")
+
+def create_text_asset(file_path, output_dir):
+    print(f"Generating text asset for {file_path} in {output_dir}")
+    with open(file_path, "r", encoding="utf-8") as f:
+        text_data = f.read()
+    text_hash = hashlib.sha256(text_data.encode('utf-8')).hexdigest()
+    name = to_correct_case(os.path.splitext(os.path.basename(file_path))[0])
+
+    all_files = os.listdir(output_dir+"/include") + os.listdir(output_dir+"/src")
+    if any(f"avd_asset_text_{name}_{text_hash}" in fn for fn in all_files):
+        return
+    # remove old
+    for fn in all_files:
+        if fn.startswith(f"avd_asset_text_{name}_"):
+            os.remove(os.path.join(output_dir, "include" if fn.endswith(".h") else "src", fn))
+
+    # header
+    hdr = [
+        f"#ifndef AVD_ASSET_TEXT_{name.upper()}_{text_hash.upper()}_H",
+        f"#define AVD_ASSET_TEXT_{name.upper()}_{text_hash.upper()}_H",
+        "",
+        "// Auto-generated. Do not edit.",
+        "",
+        "// Asset Type: \"text\"",
+        f"// Asset Path: {file_path}",
+        f"// Hash: {text_hash}",
+        f"// Name: {name}",
+        "",
+        f"const char* avdAssetText_{name}(void);",
+        "",
+        f"#endif // AVD_ASSET_TEXT_{name.upper()}_{text_hash.upper()}_H"
+    ]
+    with open(os.path.join(output_dir, "include", f"avd_asset_text_{name}_{text_hash}.h"), "w") as f:
+        f.write("\n".join(hdr)+"\n")
+
+    # source
+    src = [
+        f"#include \"avd_asset_text_{name}_{text_hash}.h\"",
+        "",
+        "// Auto-generated. Do not edit.",
+        "",
+        generate_c_code_for_string(text_data, f"__avdAssetText__{name}_{text_hash}"),
+        "",
+        f"const char* avdAssetText_{name}(void) {{",
+        f"    return __avdAssetText__{name}_{text_hash};",
+        f"}}",
+        ""
+    ]
+    with open(os.path.join(output_dir, "src", f"avd_asset_text_{name}_{text_hash}.c"), "w") as f:
+        f.write("\n".join(src)+"\n")
+
+def create_text_assets_common_header(output_dir):
+    headers = [h for h in os.listdir(output_dir+"/include") if h.startswith("avd_asset_text_") and h.endswith(".h")]
+    common = [
+        "#ifndef AVD_ASSET_TEXT_COMMON_H",
+        "#define AVD_ASSET_TEXT_COMMON_H",
+        "",
+        "// Auto-generated. Do not edit.",
+        "",
+        "#include <string.h>",
+        "",
+        "// Asset Type: \"text\"",
+        "",
+        *[f"#include \"{h}\"" for h in headers],
+        "",
+        "const char* avdAssetText(const char* name);",
+        "",
+        "#endif // AVD_ASSET_TEXT_COMMON_H"
+    ]
+    with open(os.path.join(output_dir, "include", "avd_asset_text.h"), "w") as f:
+        f.write("\n".join(common)+"\n")
+
+    src = [
+        "#include \"avd_asset_text.h\"",
+        "",
+        "#include <stdio.h>",
+        "#include <string.h>",
+        "",
+        "// Auto-generated. Do not edit.",
+        "",
+        "const char* avdAssetText(const char* name) {",
+        "    if (!name || !*name) return NULL;",
+        *[f"    if (strcmp(name, \"{to_correct_case(os.path.splitext(h)[0].split('_')[3])}\")==0) return avdAssetText_{to_correct_case(os.path.splitext(h)[0].split('_')[3])}();" for h in headers],
+        "    printf(\"Error: Text asset \\\"%s\\\" not found.\\n\", name);",
+        "    return NULL;",
+        "}",
+        ""
+    ]
+    with open(os.path.join(output_dir, "src", "avd_asset_text.c"), "w") as f:
+        f.write("\n".join(src)+"\n")
+
+def create_text_assets(git_root, output_dir):
+    asset_dir = os.path.join(git_root, "em_assets")
+    for root, _, files in os.walk(asset_dir):
+        for fn in files:
+            if fn.endswith(".txt"):
+                create_text_asset(os.path.join(root, fn), output_dir)
+    create_text_assets_common_header(output_dir)
+
+def create_assets(git_root, output_dir, temp_dir, msdf_exe_path):
+    asset_dir = os.path.join(git_root, "em_assets")
+    all_asset_files = []
+    for root_dir, _, files in os.walk(asset_dir):
+        for file in files:
+            file_path = os.path.join(root_dir, file)
+            asset_type = get_asset_type(file_path)
+            if asset_type == "font":
+                all_asset_files.append(file_path)
+    print(f"Found {len(all_asset_files)} font assets to generate.")
+    
+    for file_path in all_asset_files:
+        create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root)
+
+    create_font_assets_common_header(output_dir)
+
+    all_asset_files = []
+    for root_dir, _, files in os.walk(asset_dir):
+        for file in files:
+            file_path = os.path.join(root_dir, file)
+            asset_type = get_asset_type(file_path)
+            if asset_type == "image":
+                all_asset_files.append(file_path)
+    print(f"Found {len(all_asset_files)} image assets to generate.")
+    
+    for file_path in all_asset_files:
+        create_image_asset(file_path, output_dir)
+
+    create_image_assets_common_header(output_dir)
+
+    all_asset_files = []
+    for root_dir, _, files in os.walk(asset_dir):
+        for file in files:
+            file_path = os.path.join(root_dir, file)
+            asset_type = get_asset_type(file_path)
+            if asset_type == "shader":
+                all_asset_files.append(file_path)
+    print(f"Found {len(all_asset_files)} shader assets to generate.")
+    
+    for file_path in all_asset_files:
+        create_shader_asset(file_path, output_dir)
+
+    create_shader_assets_common_header(output_dir)
+
+    create_text_assets(git_root, output_dir)
+
+    create_assets_common_header(output_dir)
 
 def main():
     git_root = find_git_root()
@@ -747,6 +896,7 @@ def main():
 
     create_image_assets(git_root, output_dir)
     create_shader_assets(git_root, output_dir)
+    create_text_assets(git_root, output_dir)
     create_font_assets(git_root, output_dir, temp_dir, msdf_exe_path)
     create_assets_common_header(output_dir)
 
