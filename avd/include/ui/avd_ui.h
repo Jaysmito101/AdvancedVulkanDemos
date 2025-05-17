@@ -36,7 +36,15 @@ void avdUiDestroy(AVD_Ui *ui, struct AVD_AppState *appState);
 
 void avdUiBegin(VkCommandBuffer commandBuffer, AVD_Ui *ui, struct AVD_AppState *appState, float width, float height, float offsetX, float offsetY, uint32_t frameWidth, uint32_t frameHeight);
 void avdUiEnd(VkCommandBuffer commandBuffer, AVD_Ui *ui, struct AVD_AppState *appState);
-void avdUiDrawRect(VkCommandBuffer commandBuffer, AVD_Ui *ui, struct AVD_AppState *appState, float x, float y, float width, float height, float r, float g, float b, float a);
+void avdUiDrawRect(
+    VkCommandBuffer commandBuffer,
+    AVD_Ui *ui,
+    struct AVD_AppState *appState,
+    float x, float y,
+    float width, float height,
+    float r, float g, float b, float a,
+    VkDescriptorSet descriptorSet, uint32_t imageWidth, uint32_t imageHeight
+);
 
 
 #endif // AVD_UI_H

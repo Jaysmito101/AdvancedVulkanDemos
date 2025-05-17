@@ -181,9 +181,11 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         commandBuffer,
         &appState->ui,
         appState,
-        0.0f, 0.0f,
-        100.0, 100.0,
-        0.0f, 1.0f, 0.0f, 1.0f);
+        300.0f, 400.0f,
+        300.0, 500.0,
+        0.0f, 1.0f, 0.0f, 1.0f,
+        NULL, 0, 0
+    );
 
     avdUiEnd(
         commandBuffer,

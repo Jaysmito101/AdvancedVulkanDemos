@@ -13,6 +13,11 @@ typedef struct AVD_UiPushConstants
     float frameWidth;
     float frameHeight;
 
+    float imageWidth;
+    float imageHeight;
+    float pad0;
+    float pad1;
+
     float uiBoxMinX;
     float uiBoxMinY;
     float uiBoxMaxX;
@@ -209,13 +214,27 @@ void avdUiEnd(VkCommandBuffer commandBuffer, AVD_Ui *ui, AVD_AppState *appState)
     // A No op for now?
 }
 
-void avdUiDrawRect(VkCommandBuffer commandBuffer, AVD_Ui *ui, AVD_AppState *appState, float x, float y, float width, float height, float r, float g, float b, float a)
-{
+void avdUiDrawRect(
+    VkCommandBuffer commandBuffer,
+    AVD_Ui *ui,
+    struct AVD_AppState *appState,
+    float x, float y,
+    float width, float height,
+    float r, float g, float b, float a,
+    VkDescriptorSet descriptorSet, uint32_t imageWidth, uint32_t imageHeight
+) {
     AVD_ASSERT(ui != NULL);
     AVD_ASSERT(appState != NULL);
 
     // TODO: THIS IS A HACK!! Fix it with a proper descriptor set for the fallback image
     VkDescriptorSet fallbackImage = appState->fontRenderer.fonts[0].fontDescriptorSet;
+    float fallbackImageWidth = (float)imageWidth;
+    float fallbackImageHeight = (float)imageHeight;
+
+    if (descriptorSet != NULL)
+    {
+        fallbackImage = descriptorSet;
+    }
 
     AVD_UiPushConstants pushConstants = {
         .type = AVD_UI_ELEMENT_TYPE_RECT,
@@ -230,9 +249,13 @@ void avdUiDrawRect(VkCommandBuffer commandBuffer, AVD_Ui *ui, AVD_AppState *appS
         .uiBoxMinY = (y + ui->offsetY) / ui->frameHeight,
         .uiBoxMaxX = (x + width + ui->offsetX) / ui->frameWidth,
         .uiBoxMaxY = (y + height + ui->offsetY) / ui->frameHeight,
+        .imageWidth = fallbackImageWidth,
+        .imageHeight = fallbackImageHeight,
+        .pad0 = 0.0f,
+        .pad1 = 0.0f,
         .colorR = r,
         .colorG = g,
-        .colorB = b,
+        .colorB = b ,
         .colorA = a,
     };
 
@@ -240,5 +263,4 @@ void avdUiDrawRect(VkCommandBuffer commandBuffer, AVD_Ui *ui, AVD_AppState *appS
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ui->pipelineLayout, 0, 1, &fallbackImage, 0, NULL);
     vkCmdPushConstants(commandBuffer, ui->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
-
 }
