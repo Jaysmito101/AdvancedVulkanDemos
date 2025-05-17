@@ -2,18 +2,18 @@
 
 
 int main() {
-    AVD_GameState g_GameState;
+    AVD_AppState g_appState = {0};
     
-    if (!avdApplicationInit(&g_GameState)) {
+    if (!avdApplicationInit(&g_appState)) {
         AVD_LOG("Failed to initialize application\n");
         return -1;
     }
 
-    while(avdApplicationIsRunning(&g_GameState)) {
-        avdApplicationUpdate(&g_GameState);
+    while(avdApplicationIsRunning(&g_appState)) {
+        avdApplicationUpdate(&g_appState);
     }
 
-    avdApplicationShutdown(&g_GameState);
+    avdApplicationShutdown(&g_appState);
 
     AVD_LOG("Application shutdown successfully\n");
     

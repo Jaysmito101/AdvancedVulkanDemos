@@ -4,30 +4,31 @@ file(GLOB_RECURSE avd_headers
 
 add_executable(avd
     ${avd_headers}
+    ./src/core/avd_utils.c
+    ./src/core/avd_window.c
+    ./src/core/avd_window_cb.c
+    ./src/core/avd_input.c
+
     ./src/avd_main.c
     ./src/avd_application.c
-    ./src/avd_window.c
-    ./src/avd_vulkan.c
-    ./src/avd_vulkan_swapchain.c
-    ./src/avd_vulkan_renderer.c
-    ./src/avd_vulkan_presentation.c
-    ./src/avd_vulkan_framebuffer.c
-    ./src/avd_vulkan_image.c
-    ./src/avd_vulkan_buffer.c
-    ./src/avd_shader_compiler.c
-    ./src/avd_utils.c
-    ./src/avd_shader.c
-    ./src/avd_input.c
-    ./src/avd_third_party_impls.c
-    ./src/avd_pipeline_utils.c
-    ./src/avd_font_renderer.c
-    ./src/avd_bloom.c
 
-    ./src/scenes/avd_scenes.c
-    ./src/scenes/avd_scenes_splash.c
-    ./src/scenes/avd_scenes_loading.c
-    ./src/scenes/avd_scenes_mainmenu.c
-    ./src/scenes/avd_scenes_prologue.c
+    ./src/deps/avd_third_party_impls.c
+    
+    ./src/font/avd_font_renderer.c
+    
+    ./src/bloom/avd_bloom.c
+
+    ./src/shader/avd_shader_compiler.c
+    ./src/shader/avd_shader.c
+
+    ./src/vulkan/avd_vulkan_pipeline_utils.c
+    ./src/vulkan/avd_vulkan.c
+    ./src/vulkan/avd_vulkan_swapchain.c
+    ./src/vulkan/avd_vulkan_renderer.c
+    ./src/vulkan/avd_vulkan_presentation.c
+    ./src/vulkan/avd_vulkan_framebuffer.c
+    ./src/vulkan/avd_vulkan_image.c
+    ./src/vulkan/avd_vulkan_buffer.c
 )
 
 include_directories(avd
@@ -59,6 +60,6 @@ endif()
 add_dependencies(avd generate_assets)
 
 target_compile_definitions(avd PRIVATE
-    $<$<CONFIG:Debug>:PS_DEBUG>          # Define PS_DEBUG for Debug builds
-    $<$<NOT:$<CONFIG:Debug>>:PS_RELEASE> # Define PS_RELEASE for non-Debug builds
+    $<$<CONFIG:Debug>:AVD_DEBUG>          # Define AVD_DEBUG for Debug builds
+    $<$<NOT:$<CONFIG:Debug>>:AVD_RELEASE> # Define AVD_RELEASE for non-Debug builds
 )

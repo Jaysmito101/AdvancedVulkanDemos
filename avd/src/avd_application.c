@@ -1,106 +1,132 @@
 #include "avd_application.h"
-#include "avd_window.h"
-#include "avd_vulkan.h"
-#include "avd_font_renderer.h"
 
-#include "glfw/glfw3.h"
-
-static void __avdApplicationUpdateFramerateCalculation(AVD_GameState *gameState) {
-    AVD_ASSERT(gameState != NULL);
+static void __avdApplicationUpdateFramerateCalculation(AVD_Frametime* framerateInfo)
+{
+    AVD_ASSERT(framerateInfo != NULL);
 
     double currentTime = glfwGetTime();
-    gameState->framerate.currentTime = currentTime;
-    gameState->framerate.deltaTime = currentTime - gameState->framerate.lastTime;
-    gameState->framerate.lastTime = currentTime;
-    gameState->framerate.lastSecondFrameCounter++;
-    gameState->framerate.instanteneousFrameRate = (size_t)(1.0 / gameState->framerate.deltaTime);
+    framerateInfo->currentTime = currentTime;
+    framerateInfo->deltaTime = currentTime - framerateInfo->lastTime;
+    framerateInfo->lastTime = currentTime;
+    framerateInfo->lastSecondFrameCounter++;
+    framerateInfo->instanteneousFrameRate = (size_t)(1.0 / framerateInfo->deltaTime);
 
-    if (currentTime - gameState->framerate.lastSecondTime >= 1.0) {
-        gameState->framerate.fps = gameState->framerate.lastSecondFrameCounter;
-        gameState->framerate.lastSecondFrameCounter = 0;
-        gameState->framerate.lastSecondTime = currentTime;
-
-        // update the title of window with stats
-        static char title[256];
-        snprintf(title, sizeof(title), "Pastel Shadows -- FPS(Stable): %zu, FPS(Instant): %zu, DeltaTime: %.3f", gameState->framerate.fps, gameState->framerate.instanteneousFrameRate, gameState->framerate.deltaTime);
-        glfwSetWindowTitle(gameState->window.window, title);
+    if (currentTime - framerateInfo->lastSecondTime >= 1.0)
+    {
+        framerateInfo->fps = framerateInfo->lastSecondFrameCounter;
+        framerateInfo->lastSecondFrameCounter = 0;
+        framerateInfo->lastSecondTime = currentTime;
     }
-    
 }
 
-bool avdApplicationInit(AVD_GameState *gameState) {
-    AVD_ASSERT(gameState != NULL);
+bool avdApplicationInit(AVD_AppState *appState)
+{
+    AVD_ASSERT(appState != NULL);
 
-    gameState->running = true;
+    appState->running = true;
 
-    AVD_CHECK(avdWindowInit(&gameState->window, gameState));
-    AVD_CHECK(avdVulkanInit(&gameState->vulkan, &gameState->window));
-    AVD_CHECK(avdScenesInit(gameState));
-    AVD_CHECK(avdBloomCreate(&gameState->bloom, &gameState->vulkan, GAME_WIDTH, GAME_HEIGHT));
-    AVD_CHECK(avdFontRendererInit(&gameState->fontRenderer, &gameState->vulkan));
-    AVD_CHECK(avdFontRendererAddBasicFonts(&gameState->fontRenderer));
-
-    __avdApplicationUpdateFramerateCalculation(gameState);
-
-    memset(&gameState->input, 0, sizeof(AVD_Input));
-
-    // this is for prod
-    // AVD_CHECK(avdScenesSwitchWithoutTransition(gameState, AVD_SCENE_TYPE_SPLASH));
-
-    // this is for dev/testing
-    AVD_CHECK(avdScenesMainMenuInit(gameState));
-    AVD_CHECK(avdScenesSwitchWithoutTransition(gameState, AVD_SCENE_TYPE_MAIN_MENU));
+    AVD_CHECK(avdWindowInit(&appState->window, appState));
+    AVD_CHECK(avdVulkanInit(&appState->vulkan, &appState->window, &appState->surface));
+    AVD_CHECK(avdVulkanSwapchainCreate(&appState->swapchain, &appState->vulkan, appState->surface, &appState->window));
+    AVD_CHECK(avdVulkanRendererCreate(&appState->renderer, &appState->vulkan, &appState->swapchain, GAME_WIDTH, GAME_HEIGHT));
+    AVD_CHECK(avdVulkanPresentationInit(&appState->presentation, &appState->vulkan, &appState->swapchain));
+    AVD_CHECK(avdFontRendererInit(&appState->fontRenderer, &appState->vulkan, &appState->renderer));
+    AVD_CHECK(avdFontRendererAddBasicFonts(&appState->fontRenderer));
+    AVD_CHECK(avdBloomCreate(&appState->bloom, &appState->vulkan, GAME_WIDTH, GAME_HEIGHT));
+    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
+    memset(&appState->input, 0, sizeof(AVD_Input));
 
     return true;
 }
 
-void avdApplicationShutdown(AVD_GameState *gameState) {
-    AVD_ASSERT(gameState != NULL);
+void avdApplicationShutdown(AVD_AppState *appState)
+{
+    AVD_ASSERT(appState != NULL);
 
-    vkDeviceWaitIdle(gameState->vulkan.device);
-    vkQueueWaitIdle(gameState->vulkan.graphicsQueue);
-    vkQueueWaitIdle(gameState->vulkan.computeQueue);
+    avdVulkanWaitIdle(&appState->vulkan);
 
-    avdFontRendererShutdown(&gameState->fontRenderer);
-    avdBloomDestroy(&gameState->bloom, &gameState->vulkan);
-    avdScenesShutdown(gameState);
-    avdVulkanShutdown(&gameState->vulkan);
-    avdWindowShutdown(&gameState->window);
+    avdBloomDestroy(&appState->bloom, &appState->vulkan);
+    avdFontRendererShutdown(&appState->fontRenderer);
+    avdVulkanPresentationDestroy(&appState->presentation, &appState->vulkan);
+    avdVulkanRendererDestroy(&appState->renderer, &appState->vulkan);
+    avdVulkanSwapchainDestroy(&appState->swapchain, &appState->vulkan);
+    avdVulkanDestroySurface(&appState->vulkan, appState->surface);
+    avdVulkanShutdown(&appState->vulkan);
+    avdWindowShutdown(&appState->window);
 }
 
-bool avdApplicationIsRunning(AVD_GameState *gameState) {
-    AVD_ASSERT(gameState != NULL);
-    return gameState->running;
+bool avdApplicationIsRunning(AVD_AppState *appState)
+{
+    AVD_ASSERT(appState != NULL);
+    return appState->running;
 }
 
-void avdApplicationUpdate(AVD_GameState *gameState) {
-    AVD_ASSERT(gameState != NULL);
+void avdApplicationUpdate(AVD_AppState *appState)
+{
+    AVD_ASSERT(appState != NULL);
 
-    __avdApplicationUpdateFramerateCalculation(gameState);
+    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
 
-    avdInputNewFrame(&gameState->input);
+    // avdInputNewFrame(&appState->input);
     avdWindowPollEvents();
-    avdInputCalculateDeltas(&gameState->input);
-    avdApplicationUpdateWithoutPolling(gameState);
+    avdInputCalculateDeltas(&appState->input);
+    avdApplicationUpdateWithoutPolling(appState);
+
+
+    
+    // update the title of window with stats
+    static char title[256];
+    AVD_Frametime* framerateInfo = &appState->framerate;
+    snprintf(title, sizeof(title), "Advanced Vulkan Demos -- FPS(Stable): %zu, FPS(Instant): %zu, DeltaTime: %.3f", framerateInfo->fps, framerateInfo->instanteneousFrameRate, framerateInfo->deltaTime);
+    glfwSetWindowTitle(appState->window.window, title);
 }
 
+void avdApplicationUpdateWithoutPolling(AVD_AppState *appState)
+{
+    AVD_ASSERT(appState != NULL);
 
+    avdApplicationRender(appState);
 
-void avdApplicationUpdateWithoutPolling(AVD_GameState *gameState) {
-    AVD_ASSERT(gameState != NULL);
-
-    avdScenesUpdate(gameState);
-    avdApplicationRender(gameState);
 }
 
-
-void avdApplicationRender(AVD_GameState *gameState) {
-    AVD_ASSERT(gameState != NULL);
+void avdApplicationRender(AVD_AppState *appState)
+{
+    AVD_ASSERT(appState != NULL);
 
     // to not render if the window is minimized
-    if (gameState->window.isMinimized) {
+    if (appState->window.isMinimized)
+    {
+    // sleep to avoid byst waiting
+#if defined(_WIN32) || defined(__CYGWIN__)
+		Sleep(100);
+#else
+		usleep(1000);
+#endif
         return;
     }
 
-    avdVulkanRendererRender(gameState);
+    if (avdVulkanSwapchainRecreateIfNeeded(&appState->swapchain, &appState->vulkan, &appState->window))
+    {
+        if(!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
+            AVD_LOG("Failed to recreate Vulkan renderer resources\n");
+        }
+        return; // skip this frame
+    }
+
+    if (!avdVulkanRendererBegin(&appState->renderer, &appState->vulkan, &appState->swapchain))
+    {
+        AVD_LOG("Failed to begin Vulkan renderer\n");
+        return; // do not render this frame
+    }
+
+    if(!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, appState->renderer.currentImageIndex)) {
+        if(!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan)) {
+            AVD_LOG("Failed to cancel Vulkan renderer frame\n");
+        }
+        return; // do not render this frame
+    }
+
+    if(!avdVulkanRendererEnd(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
+        // Nothing to do here for now...
+    }
 }

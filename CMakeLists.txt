@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.12)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-project(ps C CXX)
+project(avd C CXX)
 
 add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 
