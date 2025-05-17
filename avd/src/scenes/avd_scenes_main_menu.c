@@ -43,7 +43,7 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
         &mainMenu->title,
         &appState->fontRenderer,
         &appState->vulkan,
-        "RubikGlitchRegular",
+        "RobotoCondensedRegular",
         "Advanced Vulkan Demos",
         72.0f
     ));
