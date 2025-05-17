@@ -8,7 +8,6 @@ static AVD_SceneMainMenu *__avdSceneGetTypePtr(AVD_Scene *scene)
     return &scene->mainMenu;
 }
 
-
 bool avdSceneMainMenuCheckIntegrity(AVD_AppState *appState, const char **statusMessage)
 {
     AVD_ASSERT(statusMessage != NULL);
@@ -45,24 +44,21 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
         &appState->vulkan,
         "RobotoCondensedRegular",
         "Advanced Vulkan Demos",
-        72.0f
-    ));
+        72.0f));
     AVD_CHECK(avdRenderableTextCreate(
         &mainMenu->creditsText,
         &appState->fontRenderer,
         &appState->vulkan,
         "RobotoCondensedRegular",
         "Made with Love by Jaysmito Mukherjee",
-        36.0f
-    ));
+        36.0f));
     AVD_CHECK(avdRenderableTextCreate(
         &mainMenu->githubLinkText,
         &appState->fontRenderer,
         &appState->vulkan,
         "RobotoCondensedRegular",
         "(https://github.com/Jaysmito101/AdvancedVulkanDemos)",
-        16.0f
-    ));
+        16.0f));
 
     return true;
 }
@@ -70,7 +66,7 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
 void avdSceneMainMenuDestroy(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
-    
+
     AVD_LOG("Destroying main menu scene\n");
     avdRenderableTextDestroy(&mainMenu->title, &appState->vulkan);
     avdRenderableTextDestroy(&mainMenu->creditsText, &appState->vulkan);
@@ -128,13 +124,13 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
 
     // AVD_LOG("Rendering main menu scene\n");
 
+    float titleWidth, titleHeight;
+    float creditsWidth, creditsHeight;
+    float githubLinkWidth, githubLinkHeight;
     {
         // render the title
-        float titleWidth, titleHeight;
         avdRenderableTextGetSize(&mainMenu->title, &titleWidth, &titleHeight);
-        float creditsWidth, creditsHeight;
         avdRenderableTextGetSize(&mainMenu->creditsText, &creditsWidth, &creditsHeight);
-        float githubLinkWidth, githubLinkHeight;
         avdRenderableTextGetSize(&mainMenu->githubLinkText, &githubLinkWidth, &githubLinkHeight);
 
         avdRenderText(
@@ -145,8 +141,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
             ((float)renderer->sceneFramebuffer.width - titleWidth) / 2.0f, titleHeight,
             1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
             renderer->sceneFramebuffer.width,
-            renderer->sceneFramebuffer.height
-        );
+            renderer->sceneFramebuffer.height);
 
         avdRenderText(
             &appState->vulkan,
@@ -156,8 +151,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
             ((float)renderer->sceneFramebuffer.width - creditsWidth) / 2.0f, titleHeight + creditsHeight + 10.0f,
             1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
             renderer->sceneFramebuffer.width,
-            renderer->sceneFramebuffer.height
-        );
+            renderer->sceneFramebuffer.height);
 
         avdRenderText(
             &appState->vulkan,
@@ -167,9 +161,34 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
             ((float)renderer->sceneFramebuffer.width - githubLinkWidth) / 2.0f, titleHeight + creditsHeight + 10.0f + githubLinkHeight + 10.0f,
             1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
             renderer->sceneFramebuffer.width,
-            renderer->sceneFramebuffer.height
-        );
+            renderer->sceneFramebuffer.height);
     }
+
+    float minX = 0.0f;
+    float minY = (titleHeight + creditsHeight + githubLinkHeight + 40.0f);
+
+    avdUiBegin(
+        commandBuffer,
+        &appState->ui,
+        appState,
+        (float)renderer->sceneFramebuffer.width,
+        (float)renderer->sceneFramebuffer.height - minY,
+        0.0f, minY,
+        renderer->sceneFramebuffer.width,
+        renderer->sceneFramebuffer.height);
+
+    avdUiDrawRect(
+        commandBuffer,
+        &appState->ui,
+        appState,
+        0.0f, 0.0f,
+        100.0, 100.0,
+        0.0f, 1.0f, 0.0f, 1.0f);
+
+    avdUiEnd(
+        commandBuffer,
+        &appState->ui,
+        appState);
 
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
     return true;

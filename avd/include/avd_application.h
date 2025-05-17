@@ -7,6 +7,7 @@
 #include "font/avd_font_renderer.h"
 #include "bloom/avd_bloom.h"
 #include "scenes/avd_scenes.h"
+#include "ui/avd_ui.h"
 
 
 typedef struct AVD_Frametime {
@@ -31,6 +32,7 @@ typedef struct AVD_AppState {
     AVD_FontRenderer fontRenderer;          // The font renderer
     AVD_Bloom bloom;                        // The bloom effect
     AVD_SceneManager sceneManager;          // The scene manager
+    AVD_Ui ui;                              // The UI manager   
 
     VkSurfaceKHR surface;                   // The Vulkan surface
     bool running;                           // The application running state
