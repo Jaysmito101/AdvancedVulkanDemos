@@ -16,7 +16,7 @@ typedef struct AVD_SceneMainMenu
 
     AVD_SceneMainMenuCard cards[64];
     uint32_t cardCount;
-
+    int32_t hoveredCard;
     uint32_t currentPage;
 
     VkDescriptorSetLayout descriptorSetLayout;

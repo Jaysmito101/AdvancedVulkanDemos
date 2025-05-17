@@ -22,7 +22,7 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
     return true;
 }
 
-static bool __avdSetupMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan* vulkan, AVD_FontRenderer* fontRenderer, VkDescriptorSetLayout layout, const char* imageAsset, const char* title)
+static bool __avdSetupMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, VkDescriptorSetLayout layout, const char *imageAsset, const char *title)
 {
     AVD_ASSERT(card != NULL);
     AVD_ASSERT(imageAsset != NULL);
@@ -68,7 +68,7 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
     AVD_SceneMainMenuCard *card = NULL;
     static char title[64];
     mainMenu->cardCount = 0;
-    
+
     card = &mainMenu->cards[0];
     snprintf(title, sizeof(title), "DDGI (Dynamic Diffuse Global Illumination)");
     AVD_CHECK(__avdSetupMainMenuCard(card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout, "DDGIPlaceholder", title));
@@ -76,7 +76,6 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
 
     return true;
 }
-
 
 static AVD_SceneMainMenu *__avdSceneGetTypePtr(AVD_Scene *scene)
 {
@@ -115,6 +114,7 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
     AVD_LOG("Initializing main menu scene\n");
     mainMenu->loadingCount = 0;
     mainMenu->currentPage = 0;
+    mainMenu->hoveredCard = -1;
 
     AVD_CHECK(__avdSetupDescriptors(&mainMenu->descriptorSetLayout, &appState->vulkan));
     AVD_CHECK(__avdSetupMainMenuCards(mainMenu, appState));
@@ -302,7 +302,11 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     const uint32_t numCardsPerPage = 6;
     uint32_t currentOffset = mainMenu->currentPage * numCardsPerPage;
     uint32_t totalPages = (mainMenu->cardCount + numCardsPerPage - 1) / numCardsPerPage;
-    
+
+    float mouseX = (appState->input.mouseX * 0.5f + 0.5f) * frameWidth;
+    float mouseY = frameHeight - minY - (appState->input.mouseY * 0.5f + 0.5f) * frameHeight;
+
+    mainMenu->hoveredCard = -1;
     for (uint32_t i = 0; i < numCardsPerPage; i++)
     {
         if (currentOffset + i >= mainMenu->cardCount)
@@ -313,15 +317,30 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         float y = (float)(i / 3) * (cardHeight + 80.0f) + offsetY;
 
         AVD_VulkanImage *image = &card->thumbnailImage;
-        avdUiDrawRect(
-            commandBuffer,
-            &appState->ui,
-            appState,
-            x, y,
-            cardWidth, cardHeight,
-            1.0f, 1.0f, 1.0f, 1.0f,
-            card->descriptorSet, image->width, image->height
-        );
+
+        if (mouseX >= x && mouseX <= x + cardWidth && mouseY >= y && mouseY <= y + cardHeight)
+        {
+            mainMenu->hoveredCard = currentOffset + i;
+            avdUiDrawRect(
+                commandBuffer,
+                &appState->ui,
+                appState,
+                x - 15.0f, y - 15.0f,
+                cardWidth + 30.0f, cardHeight + 30.0f,
+                1.0f, 1.0f, 1.0f, 1.0f,
+                card->descriptorSet, image->width, image->height);
+        }
+        else
+        {
+            avdUiDrawRect(
+                commandBuffer,
+                &appState->ui,
+                appState,
+                x, y,
+                cardWidth, cardHeight,
+                0.3f, 0.3f, 0.3f, 1.0f,
+                card->descriptorSet, image->width, image->height);
+        }
 
         float cardTitleWidth, cardTitleHeight;
         avdRenderableTextGetSize(&card->title, &cardTitleWidth, &cardTitleHeight);
@@ -357,7 +376,6 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
-
 
     avdUiEnd(
         commandBuffer,
