@@ -1,6 +1,8 @@
 #ifndef AVD_INPUT_H
 #define AVD_INPUT_H
 
+#include "core/avd_base.h"
+
 struct AVD_Window;
 
 typedef struct AVD_Input {
