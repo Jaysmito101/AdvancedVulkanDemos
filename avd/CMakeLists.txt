@@ -34,6 +34,7 @@ add_executable(avd
 
     ./src/scenes/avd_scenes.c
     ./src/scenes/avd_scenes_main_menu.c
+    ./src/scenes/bloom/avd_scenes_bloom.c
 )
 
 include_directories(avd

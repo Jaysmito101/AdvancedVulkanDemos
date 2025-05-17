@@ -25,6 +25,7 @@ static bool __avdRegisterSceneApis(AVD_SceneManager *sceneManager)
 {
     AVD_ASSERT(sceneManager != NULL);
     avdSceneMainMenuRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_MAIN_MENU]);
+    avdSceneBloomRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_BLOOM]);
     return true;
 }
 

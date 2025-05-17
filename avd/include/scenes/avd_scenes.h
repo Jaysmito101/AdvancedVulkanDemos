@@ -3,11 +3,13 @@
 
 #include "scenes/avd_scenes_base.h"
 #include "scenes/avd_scenes_main_menu.h"
+#include "scenes/bloom/avd_scenes_bloom.h"
 
 typedef union AVD_Scene {
     AVD_SceneType type;
-    AVD_SceneMainMenu mainMenu;    
-} AVD_Scene; 
+    AVD_SceneMainMenu mainMenu;
+    AVD_SceneBloom bloom;
+} AVD_Scene;
 
 typedef struct AVD_SceneManager {
     AVD_SceneAPI api[AVD_SCENE_TYPE_COUNT];

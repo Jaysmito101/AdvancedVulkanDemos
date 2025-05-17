@@ -29,6 +29,7 @@ typedef struct AVD_RenderableText {
     AVD_Font* font;
     char fontName[256];
     float charHeight;
+    uint32_t numLines;
     
     float boundsMinX;
     float boundsMinY;

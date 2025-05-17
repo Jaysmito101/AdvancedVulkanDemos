@@ -10,6 +10,7 @@
 typedef enum AVD_SceneType
 { 
     AVD_SCENE_TYPE_MAIN_MENU,
+    AVD_SCENE_TYPE_BLOOM,
     AVD_SCENE_TYPE_COUNT
 } AVD_SceneType;
 

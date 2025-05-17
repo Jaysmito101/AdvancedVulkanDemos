@@ -1,0 +1,207 @@
+#include "scenes/avd_scenes.h"
+#include "avd_application.h"
+
+static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(layout != NULL);
+
+    VkDescriptorSetLayoutBinding sceneFramebufferBinding = {0};
+    sceneFramebufferBinding.binding = 0;
+    sceneFramebufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    sceneFramebufferBinding.descriptorCount = 1;
+    sceneFramebufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutCreateInfo sceneFramebufferLayoutInfo = {0};
+    sceneFramebufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    sceneFramebufferLayoutInfo.bindingCount = 1;
+    sceneFramebufferLayoutInfo.pBindings = &sceneFramebufferBinding;
+
+    VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, layout);
+    AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
+    return true;
+}
+
+static AVD_SceneBloom *__avdSceneGetTypePtr(AVD_Scene *scene)
+{
+    AVD_ASSERT(scene != NULL);
+    AVD_ASSERT(scene->type == AVD_SCENE_TYPE_BLOOM);
+    return &scene->bloom;
+}
+
+bool avdSceneBloomCheckIntegrity(AVD_AppState *appState, const char **statusMessage)
+{
+    AVD_ASSERT(statusMessage != NULL);
+    // Bloom scene always passes integrity check
+    // as the bloom scene assets are directly embedded
+    // in the application binary.
+    return true;
+}
+
+bool avdSceneBloomRegisterApi(AVD_SceneAPI *api)
+{
+    AVD_ASSERT(api != NULL);
+
+    api->checkIntegrity = avdSceneBloomCheckIntegrity;
+    api->init = avdSceneBloomInit;
+    api->render = avdSceneBloomRender;
+    api->update = avdSceneBloomUpdate;
+    api->destroy = avdSceneBloomDestroy;
+    api->load = avdSceneBloomLoad;
+    api->inputEvent = avdSceneBloomInputEvent;
+
+    return true;
+}
+
+bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
+{
+    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+    AVD_LOG("Initializing main menu scene\n");
+    bloom->isBloomEnabled = true;
+
+    AVD_CHECK(__avdSetupDescriptors(&bloom->descriptorSetLayout, &appState->vulkan));
+
+    AVD_CHECK(avdRenderableTextCreate(
+        &bloom->title,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        "RubikGlitchRegular",
+        "Advanced\nVulkan\nDemos",
+        256.0f));
+    AVD_CHECK(avdRenderableTextCreate(
+        &bloom->uiInfoText,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        "RobotoCondensedRegular",
+        "...",
+        24.0f));
+
+    return true;
+}
+
+void avdSceneBloomDestroy(AVD_AppState *appState, AVD_Scene *scene)
+{
+    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+
+    AVD_LOG("Destroying bloom scene\n");
+    avdRenderableTextDestroy(&bloom->title, &appState->vulkan);
+    avdRenderableTextDestroy(&bloom->uiInfoText, &appState->vulkan);
+    vkDestroyDescriptorSetLayout(appState->vulkan.device, bloom->descriptorSetLayout, NULL);
+}
+
+bool avdSceneBloomLoad(AVD_AppState *appState, AVD_Scene *scene, const char **statusMessage, float *progress)
+{
+    AVD_ASSERT(statusMessage != NULL);
+    AVD_ASSERT(progress != NULL);
+    *statusMessage = NULL;
+    *progress = 1.0f;
+    return true;
+}
+
+void avdSceneBloomInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
+{
+    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+
+    if (event->type == AVD_INPUT_EVENT_KEY)
+    {
+        if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS)
+        {
+            avdSceneManagerSwitchToScene(
+                &appState->sceneManager,
+                AVD_SCENE_TYPE_MAIN_MENU,
+                appState);
+        }
+        else if (event->key.key == GLFW_KEY_B && event->key.action == GLFW_PRESS)
+        {
+            bloom->isBloomEnabled = !bloom->isBloomEnabled;
+        }
+    }
+}
+
+bool avdSceneBloomUpdate(AVD_AppState *appState, AVD_Scene *scene)
+{
+    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+
+    // update the UI info text
+    static char buffer[1024];
+    snprintf(buffer, sizeof(buffer),
+             "Bloom:\n"
+             "  - Enabled: %s [B to toggle]\n"
+             "General Stats:\n"
+             "  - Framerate: %zu FPS\n"
+             "  - Frame Time: %.2f ms\n",
+             bloom->isBloomEnabled ? "true" : "false",
+             appState->framerate.fps,
+             appState->framerate.deltaTime * 1000.0f);
+    AVD_CHECK(avdRenderableTextUpdate(&bloom->uiInfoText,
+                                      &appState->fontRenderer,
+                                      &appState->vulkan,
+                                      buffer));
+
+    return true;
+}
+
+bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
+{
+    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+
+    AVD_Vulkan *vulkan = &appState->vulkan;
+    AVD_VulkanRenderer *renderer = &appState->renderer;
+
+    uint32_t currentFrameIndex = renderer->currentFrameIndex;
+    VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
+
+    AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
+
+
+    float frameWidth = (float)renderer->sceneFramebuffer.width;
+    float frameHeight = (float)renderer->sceneFramebuffer.height;
+
+    avdUiBegin(
+        commandBuffer,
+        &appState->ui,
+        appState,
+        (float)renderer->sceneFramebuffer.width,
+        (float)renderer->sceneFramebuffer.height,
+        0.0f, 0.0,
+        renderer->sceneFramebuffer.width,
+        renderer->sceneFramebuffer.height);
+
+    float titleWidth, titleHeight;
+    float uiInfoTextWidth, uiInfoTextHeight;
+
+    avdRenderableTextGetSize(&bloom->title, &titleWidth, &titleHeight);
+    avdRenderableTextGetSize(&bloom->uiInfoText, &uiInfoTextWidth, &uiInfoTextHeight);
+
+    AVD_LOG("Title Size: %f x %f\n", titleWidth, titleHeight);
+    avdRenderText(
+        vulkan,
+        &appState->fontRenderer,
+        &bloom->title,
+        commandBuffer,
+        (frameWidth - titleWidth / 1.5f) / 2.0f, (frameHeight + titleHeight) / 2.0f,
+        0.8f, 1.2f, 4.0f, 1.0f, 1.0f,
+        renderer->sceneFramebuffer.width,
+        renderer->sceneFramebuffer.height);
+
+    
+    avdRenderText(
+        vulkan,
+        &appState->fontRenderer,
+        &bloom->uiInfoText,
+        commandBuffer,
+        10.0f, 10.0f + uiInfoTextHeight,
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+        renderer->sceneFramebuffer.width,
+        renderer->sceneFramebuffer.height);
+
+
+
+    avdUiEnd(
+        commandBuffer,
+        &appState->ui,
+        appState);
+
+    AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
+    return true;
+}

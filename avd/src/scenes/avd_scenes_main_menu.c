@@ -70,9 +70,12 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
     static char title[64];
     mainMenu->cardCount = 0;
 
-    card = &mainMenu->cards[0];
-    snprintf(title, sizeof(title), "DDGI (Dynamic Diffuse Global Illumination)");
-    AVD_CHECK(__avdSetupMainMenuCard("DDGIPlaceholder", title, AVD_SCENE_TYPE_MAIN_MENU, card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout));
+    card = &mainMenu->cards[mainMenu->cardCount];
+    AVD_CHECK(__avdSetupMainMenuCard("DDGIPlaceholder", "Bloom", AVD_SCENE_TYPE_BLOOM, card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout));
+    mainMenu->cardCount += 1;
+
+    card = &mainMenu->cards[mainMenu->cardCount];
+    AVD_CHECK(__avdSetupMainMenuCard("DDGIPlaceholder", "DDGI (Dynamic Diffuse Global Illumination)", AVD_SCENE_TYPE_MAIN_MENU, card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout));
     mainMenu->cardCount += 1;
 
     return true;
@@ -198,18 +201,18 @@ void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *
 
     if (event->type == AVD_INPUT_EVENT_KEY)
     {
-        if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_RELEASE)
+        if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS)
         {
             AVD_LOG("Exiting main menu scene\n");
             appState->running = false;
         }
-        else if (event->key.key == GLFW_KEY_RIGHT && event->key.action == GLFW_RELEASE)
+        else if (event->key.key == GLFW_KEY_RIGHT && event->key.action == GLFW_PRESS)
         {
             mainMenu->currentPage++;
             if (mainMenu->currentPage >= (mainMenu->cardCount + 5) / 6)
                 mainMenu->currentPage = 0;
         }
-        else if (event->key.key == GLFW_KEY_LEFT && event->key.action == GLFW_RELEASE)
+        else if (event->key.key == GLFW_KEY_LEFT && event->key.action == GLFW_PRESS)
         {
             if (mainMenu->currentPage > 0)
                 mainMenu->currentPage--;
@@ -219,7 +222,7 @@ void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *
     }
     else if (event->type == AVD_INPUT_EVENT_MOUSE_BUTTON)
     {
-        if (event->mouseButton.button == GLFW_MOUSE_BUTTON_LEFT && event->mouseButton.action == GLFW_RELEASE)
+        if (event->mouseButton.button == GLFW_MOUSE_BUTTON_LEFT && event->mouseButton.action == GLFW_PRESS)
         {
             if (mainMenu->hoveredCard != -1)
             {

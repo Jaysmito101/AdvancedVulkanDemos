@@ -246,10 +246,11 @@ static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderab
     float atlasWidth = (float)font->fontData.atlas->info.width;
     float atlasHeight = (float)font->fontData.atlas->info.height;
 
-    renderableText->boundsMinX = 0.0f;
-    renderableText->boundsMinY = 0.0f;
-    renderableText->boundsMaxX = 0.0f;
-    renderableText->boundsMaxY = 0.0f;
+    renderableText->boundsMinX = 1000000.0f;
+    renderableText->boundsMinY = 1000000.0f;
+    renderableText->boundsMaxX = -1000000.0f;
+    renderableText->boundsMaxY = -1000000.0f;
+    renderableText->numLines = 1;
 
     for (size_t i = 0; i < renderableText->characterCount; i++)
     {
@@ -258,6 +259,7 @@ static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderab
         {
             cX = 0.0f;
             cY += charHeight * lineHeight;
+            renderableText->numLines++;
             continue;
         }
 
@@ -537,7 +539,7 @@ void avdRenderText(AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, AVD_Rende
         .scale = scale,
         .opacity = 1.0f,
         .offsetX = x,
-        .offsetY = y,
+        .offsetY = y + renderableText->charHeight - (renderableText->boundsMaxY - renderableText->boundsMinY),
         .pxRange = renderableText->font->fontData.atlas->info.distanceRange,
         .texSize = (float)renderableText->font->fontData.atlas->info.width,
         .colorR = r,
