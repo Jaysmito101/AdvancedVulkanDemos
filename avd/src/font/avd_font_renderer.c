@@ -27,30 +27,6 @@ typedef struct AVD_FontRendererVertex
     float v;
 } AVD_FontRendererVertex;
 
-static bool __avdCreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout *descriptorSetLayout)
-{
-    AVD_ASSERT(device != VK_NULL_HANDLE);
-    AVD_ASSERT(descriptorSetLayout != NULL);
-
-    // --- Font Descriptor Set Layout ---
-    // (1) -> Font Atlas Image
-    VkDescriptorSetLayoutBinding fontLayoutBindings[1] = {0};
-    fontLayoutBindings[0].binding = 0;
-    fontLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    fontLayoutBindings[0].descriptorCount = 1;
-    fontLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorSetLayoutCreateInfo fontLayoutInfo = {0};
-    fontLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    fontLayoutInfo.bindingCount = AVD_ARRAY_COUNT(fontLayoutBindings);
-    fontLayoutInfo.pBindings = fontLayoutBindings;
-
-    VkResult result = vkCreateDescriptorSetLayout(device, &fontLayoutInfo, NULL, descriptorSetLayout);
-    AVD_CHECK_VK_RESULT(result, "Failed to create font descriptor set layout\n");
-
-    return true;
-}
-
 static bool __avdCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, AVD_VulkanImage *fontImage, VkDescriptorSet *descriptorSet)
 {
     AVD_ASSERT(descriptorSet != NULL);
@@ -74,32 +50,6 @@ static bool __avdCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout desc
     AVD_CHECK(avdWriteImageDescriptorSet(&descriptorWrite, *descriptorSet, 0, &fontImage->descriptorImageInfo));
     vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, NULL);
 
-    return true;
-}
-
-static bool __avdCreatePipelineLayout(AVD_FontRenderer *fr, VkDevice device)
-{
-    AVD_ASSERT(fr != NULL);
-    AVD_ASSERT(device != VK_NULL_HANDLE);
-
-    VkPushConstantRange pushConstantRanges[1] = {0};
-    pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    pushConstantRanges[0].offset = 0;
-    pushConstantRanges[0].size = sizeof(AVD_FontRendererPushConstants);
-
-    const VkDescriptorSetLayout setLayouts[1] = {
-        fr->fontDescriptorSetLayout,
-    };
-
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = AVD_ARRAY_COUNT(setLayouts);
-    pipelineLayoutInfo.pSetLayouts = setLayouts;
-    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;
-    pipelineLayoutInfo.pushConstantRangeCount = AVD_ARRAY_COUNT(pushConstantRanges);
-
-    VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, &fr->pipelineLayout);
-    AVD_CHECK_VK_RESULT(result, "Failed to create pipeline layout\n");
     return true;
 }
 
@@ -430,7 +380,13 @@ bool avdFontCreate(AVD_FontData fontData, AVD_Vulkan *vulkan, AVD_Font *font)
     AVD_ASSERT(font != NULL);
     font->fontData = fontData;
     AVD_CHECK(avdVulkanImageLoadFromMemory(vulkan, fontData.atlasData, fontData.atlasDataSize, &font->fontAtlasImage));
-    AVD_CHECK(__avdCreateDescriptorSetLayout(vulkan->device, &font->fontDescriptorSetLayout));
+    AVD_CHECK(avdCreateDescriptorSetLayout(
+        &font->fontDescriptorSetLayout,
+        vulkan->device,
+        (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER},
+        1,
+        VK_SHADER_STAGE_FRAGMENT_BIT));
+
     AVD_CHECK(__avdCreateDescriptorSet(vulkan->device, font->fontDescriptorSetLayout, vulkan->descriptorPool, &font->fontAtlasImage, &font->fontDescriptorSet));
     return true;
 }
@@ -450,8 +406,18 @@ bool avdFontRendererInit(AVD_FontRenderer* fontRenderer, AVD_Vulkan* vulkan, AVD
     fontRenderer->fontCount = 0;
 
     fontRenderer->vulkan = vulkan;
-    AVD_CHECK(__avdCreateDescriptorSetLayout(vulkan->device, &fontRenderer->fontDescriptorSetLayout));
-    AVD_CHECK(__avdCreatePipelineLayout(fontRenderer, vulkan->device));
+    AVD_CHECK(avdCreateDescriptorSetLayout(
+        &fontRenderer->fontDescriptorSetLayout,
+        vulkan->device,
+        (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER},
+        1,
+        VK_SHADER_STAGE_FRAGMENT_BIT));
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
+        &fontRenderer->pipelineLayout,
+        vulkan->device,
+        &fontRenderer->fontDescriptorSetLayout, 1,
+        sizeof(AVD_FontRendererPushConstants)));
+
     AVD_CHECK(__avdCreatePipeline(fontRenderer, vulkan->device, renderer->sceneFramebuffer.renderPass));
 
     return true;

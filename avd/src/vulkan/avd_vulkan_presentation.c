@@ -16,33 +16,6 @@ typedef struct AVD_VulkanPresentationPushConstants
     float pad1;
 } AVD_VulkanPresentationPushConstants;
 
-static bool __avdVulkanPresentationCreatePipelineLayout(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan)
-{
-    AVD_ASSERT(vulkan != NULL);
-    AVD_ASSERT(presentation != NULL);
-
-    VkPushConstantRange pushConstantRanges[1] = {0};
-    pushConstantRanges[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    pushConstantRanges[0].offset = 0;
-    pushConstantRanges[0].size = sizeof(AVD_VulkanPresentationPushConstants); // Use sizeof the struct
-
-    // Combine layouts for the pipeline layout
-    VkDescriptorSetLayout setLayouts[] = {
-        presentation->descriptorSetLayout};
-
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = AVD_ARRAY_COUNT(setLayouts);
-    pipelineLayoutInfo.pSetLayouts = setLayouts;
-    pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges;
-    pipelineLayoutInfo.pushConstantRangeCount = AVD_ARRAY_COUNT(pushConstantRanges);
-
-    VkResult result = vkCreatePipelineLayout(vulkan->device, &pipelineLayoutInfo, NULL, &presentation->pipelineLayout);
-    AVD_CHECK_VK_RESULT(result, "Failed to create pipeline layout for presentation");
-
-    return true;
-}
-
 static bool __avdVulkanPresentationCreatePipeline(AVD_VulkanPresentation *presentation, VkDevice device, VkRenderPass renderPass)
 {
     AVD_ASSERT(presentation != NULL);
@@ -122,34 +95,22 @@ static bool __avdVulkanPresentationCreatePipeline(AVD_VulkanPresentation *presen
     return true;
 }
 
-static bool __avdVulkanPresentationSetupDescriptors(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan)
-{
-    AVD_ASSERT(vulkan != NULL);
-    AVD_ASSERT(presentation != NULL);
-
-    VkDescriptorSetLayoutBinding sceneFramebufferBinding = {0};
-    sceneFramebufferBinding.binding = 0;
-    sceneFramebufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    sceneFramebufferBinding.descriptorCount = 1;
-    sceneFramebufferBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorSetLayoutCreateInfo sceneFramebufferLayoutInfo = {0};
-    sceneFramebufferLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    sceneFramebufferLayoutInfo.bindingCount = 1;
-    sceneFramebufferLayoutInfo.pBindings = &sceneFramebufferBinding;
-
-    VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, &presentation->descriptorSetLayout);
-    AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
-    return true;
-}
-
 bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain, AVD_FontRenderer *fontRenderer)
 {
     AVD_ASSERT(presentation != NULL);
     AVD_ASSERT(vulkan != NULL);
+    
+    AVD_CHECK(avdCreateDescriptorSetLayout(
+        &presentation->descriptorSetLayout,
+        vulkan->device,
+        (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}, 1,
+        VK_SHADER_STAGE_FRAGMENT_BIT));
 
-    AVD_CHECK(__avdVulkanPresentationSetupDescriptors(presentation, vulkan));
-    AVD_CHECK(__avdVulkanPresentationCreatePipelineLayout(presentation, vulkan));
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
+        &presentation->pipelineLayout,
+        vulkan->device,
+        &presentation->descriptorSetLayout, 1,
+        sizeof(AVD_VulkanPresentationPushConstants)));
     AVD_CHECK(__avdVulkanPresentationCreatePipeline(presentation, vulkan->device, swapchain->renderPass));
     AVD_CHECK(avdRenderableTextCreate(
         &presentation->loadingText,
