@@ -16,85 +16,6 @@ typedef struct AVD_VulkanPresentationPushConstants
     float pad1;
 } AVD_VulkanPresentationPushConstants;
 
-static bool __avdVulkanPresentationCreatePipeline(AVD_VulkanPresentation *presentation, VkDevice device, VkRenderPass renderPass)
-{
-    AVD_ASSERT(presentation != NULL);
-    AVD_ASSERT(device != VK_NULL_HANDLE);
-    AVD_ASSERT(renderPass != VK_NULL_HANDLE);
-
-    VkShaderModule vertexShaderModule = avdShaderModuleCreateFromAsset(device, "PresentationVert");
-    AVD_CHECK_VK_HANDLE(vertexShaderModule, "Failed to create vertex shader module\n");
-
-    VkShaderModule fragmentShaderModule = avdShaderModuleCreateFromAsset(device, "PresentationFrag");
-    AVD_CHECK_VK_HANDLE(fragmentShaderModule, "Failed to create fragment shader module\n");
-
-    VkPipelineShaderStageCreateInfo shaderStages[2] = {0};
-    AVD_CHECK(avdPipelineUtilsShaderStage(&shaderStages[0], vertexShaderModule, VK_SHADER_STAGE_VERTEX_BIT));
-    AVD_CHECK(avdPipelineUtilsShaderStage(&shaderStages[1], fragmentShaderModule, VK_SHADER_STAGE_FRAGMENT_BIT));
-
-    VkPipelineDynamicStateCreateInfo dynamicStateInfo = {0};
-    AVD_CHECK(avdPipelineUtilsDynamicState(&dynamicStateInfo));
-
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {0};
-    AVD_CHECK(avdPipelineUtilsInputAssemblyState(&inputAssemblyInfo));
-
-    VkViewport viewport = {0};
-    VkRect2D scissor = {0};
-    AVD_CHECK(avdPipelineUtilsViewportScissor(&viewport, &scissor));
-
-    VkPipelineViewportStateCreateInfo viewportStateInfo = {0};
-    AVD_CHECK(avdPipelineUtilsViewportState(&viewportStateInfo, &viewport, &scissor));
-
-    VkPipelineRasterizationStateCreateInfo rasterizerInfo = {0};
-    AVD_CHECK(avdPipelineUtilsRasterizationState(&rasterizerInfo));
-
-    VkPipelineMultisampleStateCreateInfo multisampleInfo = {0};
-    AVD_CHECK(avdPipelineUtilsMultisampleState(&multisampleInfo));
-
-    VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {0};
-    AVD_CHECK(avdPipelineUtilsDepthStencilState(&depthStencilInfo, false));
-
-    VkPipelineColorBlendAttachmentState colorBlendAttachment = {0};
-    AVD_CHECK(avdPipelineUtilsBlendAttachment(&colorBlendAttachment, true));
-
-    VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {0};
-    AVD_CHECK(avdPipelineUtilsColorBlendState(&colorBlendStateInfo, &colorBlendAttachment, 1));
-
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
-    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-
-    VkGraphicsPipelineCreateInfo pipelineInfo = {0};
-    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.stageCount = AVD_ARRAY_COUNT(shaderStages);
-    pipelineInfo.pStages = shaderStages;
-    pipelineInfo.layout = presentation->pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
-    pipelineInfo.subpass = 0;
-    pipelineInfo.pVertexInputState = &vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
-    pipelineInfo.pViewportState = &viewportStateInfo;
-    pipelineInfo.pRasterizationState = &rasterizerInfo;
-    pipelineInfo.pMultisampleState = &multisampleInfo;
-    pipelineInfo.pDepthStencilState = &depthStencilInfo;
-    pipelineInfo.pColorBlendState = &colorBlendStateInfo;
-    pipelineInfo.pDynamicState = &dynamicStateInfo;
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
-    pipelineInfo.basePipelineIndex = -1;
-    pipelineInfo.pDepthStencilState = &depthStencilInfo;
-    pipelineInfo.pViewportState = &viewportStateInfo;
-    pipelineInfo.pMultisampleState = &multisampleInfo;
-
-    VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &presentation->pipeline);
-    AVD_CHECK_VK_RESULT(result, "Failed to create graphics pipeline for presentation");
-
-    vkDestroyShaderModule(device, vertexShaderModule, NULL);
-    vkDestroyShaderModule(device, fragmentShaderModule, NULL);
-
-    return true;
-}
-
 bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain, AVD_FontRenderer *fontRenderer)
 {
     AVD_ASSERT(presentation != NULL);
@@ -105,13 +26,19 @@ bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan 
         vulkan->device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT));
-
     AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
         &presentation->pipelineLayout,
         vulkan->device,
         &presentation->descriptorSetLayout, 1,
         sizeof(AVD_VulkanPresentationPushConstants)));
-    AVD_CHECK(__avdVulkanPresentationCreatePipeline(presentation, vulkan->device, swapchain->renderPass));
+    AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
+        &presentation->pipeline,
+        presentation->pipelineLayout,
+        vulkan->device,
+        swapchain->renderPass,
+        "PresentationVert",
+        "PresentationFrag"));
+
     AVD_CHECK(avdRenderableTextCreate(
         &presentation->loadingText,
         fontRenderer,
