@@ -63,6 +63,10 @@ bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
     bloom->prefilterType  = AVD_BLOOM_PREFILTER_TYPE_SOFTKNEE;
     bloom->bloomThreshold = 2.0f;
     bloom->bloomSoftKnee  = 1.2f;
+    bloom->bloomAmount    = 1.0f;
+    bloom->lowQuality     = false;
+    bloom->applyGamma     = false; // usually we pick up a srgb framebuffer so the conversion is done by the hardware
+    bloom->tonemappingType = AVD_BLOOM_TONEMAPPING_TYPE_ACES;
 
     AVD_CHECK(__avdSetupDescriptors(&bloom->descriptorSetLayout, &appState->vulkan));
 
@@ -71,8 +75,8 @@ bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
         &appState->fontRenderer,
         &appState->vulkan,
         "ShantellSansBold",
-        "Advanced\nVulkan\nDemos",
-        256.0f));
+        "Bloom",
+        300.0f));
     AVD_CHECK(avdRenderableTextCreate(
         &bloom->uiInfoText,
         &appState->fontRenderer,
@@ -117,6 +121,12 @@ void avdSceneBloomInputEvent(struct AVD_AppState *appState, union AVD_Scene *sce
             bloom->isBloomEnabled = !bloom->isBloomEnabled;
         } else if (event->key.key == GLFW_KEY_P && event->key.action == GLFW_PRESS) {
             bloom->prefilterType = (bloom->prefilterType + 1) % AVD_BLOOM_PREFILTER_TYPE_COUNT;
+        } else if (event->key.key == GLFW_KEY_L && event->key.action == GLFW_PRESS) {
+            bloom->lowQuality = !bloom->lowQuality;
+        } else if (event->key.key == GLFW_KEY_G && event->key.action == GLFW_PRESS) {
+            bloom->applyGamma = !bloom->applyGamma;
+        } else if (event->key.key == GLFW_KEY_M && event->key.action == GLFW_PRESS) {
+            bloom->tonemappingType = (bloom->tonemappingType + 1) % AVD_BLOOM_TONEMAPPING_TYPE_COUNT;
         }
     }
 }
@@ -125,7 +135,7 @@ bool avdSceneBloomUpdate(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
 
-    const float scale = appState->framerate.deltaTime * 2.0f;
+    const float scale = (float)appState->framerate.deltaTime * 2.0f;
     if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_T]) {
         bloom->bloomThreshold += scale;
     } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_T]) {
@@ -147,7 +157,10 @@ bool avdSceneBloomUpdate(AVD_AppState *appState, AVD_Scene *scene)
              "  - Prefilter Type: %s [P to switch through]\n"
              "  - Threshold: %.2f [T + Up/Down to change]\n"
              "  - Soft Knee: %.2f [Y + Up/Down to change]\n"
-             "  - Amount: %.2f [A to change]\n"
+             "  - Amount: %.2f [A + Up/Down to change]\n"
+             "  - Low Quality: %s [L to toggle]\n"
+             "  - Apply Gamma: %s [G to toggle]\n"
+             "  - Tonemapping: %s [M to switch through]\n"
              "General Stats:\n"
              "  - Framerate: %zu FPS\n"
              "  - Frame Time: %.2f ms\n",
@@ -156,6 +169,11 @@ bool avdSceneBloomUpdate(AVD_AppState *appState, AVD_Scene *scene)
              bloom->bloomThreshold,
              bloom->bloomSoftKnee,
              bloom->bloomAmount,
+             bloom->lowQuality ? "true" : "false",
+             bloom->applyGamma ? "true" : "false",
+             bloom->tonemappingType == AVD_BLOOM_TONEMAPPING_TYPE_NONE ? "None" :
+             bloom->tonemappingType == AVD_BLOOM_TONEMAPPING_TYPE_ACES ? "ACES" :
+             bloom->tonemappingType == AVD_BLOOM_TONEMAPPING_TYPE_FILMIC ? "Filmic" : "Unknown",
              appState->framerate.fps,
              appState->framerate.deltaTime * 1000.0f);
     AVD_CHECK(avdRenderableTextUpdate(&bloom->uiInfoText,
@@ -225,15 +243,22 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
 
     if (bloom->isBloomEnabled) {
+        AVD_BloomParams params = {
+            .prefilterType = bloom->prefilterType,
+            .threshold = bloom->bloomThreshold,
+            .softKnee = bloom->bloomSoftKnee,
+            .bloomAmount = bloom->bloomAmount,
+            .lowQuality = bloom->lowQuality,
+            .applyGamma = bloom->applyGamma,
+            .tonemappingType = bloom->tonemappingType
+        };
+        
         AVD_CHECK(avdBloomApplyInplace(
             commandBuffer,
             &appState->bloom,
             &renderer->sceneFramebuffer,
             vulkan,
-            bloom->prefilterType,
-            bloom->bloomThreshold,
-            bloom->bloomSoftKnee,
-            bloom->bloomAmount
+            params
         ));
     }
 

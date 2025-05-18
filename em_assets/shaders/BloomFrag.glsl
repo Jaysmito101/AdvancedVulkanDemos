@@ -20,6 +20,10 @@ layout(location = 0) out vec4 outColor;
 #define AVD_BLOOM_PREFILTER_TYPE_THRESHOLD 1
 #define AVD_BLOOM_PREFILTER_TYPE_SOFTKNEE  2
 
+#define AVD_BLOOM_TONEMAPPING_TYPE_NONE    0
+#define AVD_BLOOM_TONEMAPPING_TYPE_ACES    1
+#define AVD_BLOOM_TONEMAPPING_TYPE_FILMIC  2
+
 struct PushConstantData {
     float srcWidth;
     float srcHeight;
@@ -32,9 +36,9 @@ struct PushConstantData {
     float softKnee;
 
     float bloomAmount;
-    float pad0;
-    float pad1;
-    float pad2;
+    int lowerQuality;
+    int tonemappingType;
+    int applyGamma;
 };
 
 layout(push_constant) uniform PushConstants
@@ -150,24 +154,70 @@ vec4 downsample13Tap(sampler2D textureToSample, vec2 uv) {
     return vec4(o.rgb, G.a);
 }
 
+vec4 downscample4Tap(sampler2D textureToSample, vec2 uv) {
+    vec2 texelSize = vec2(1.0 / pushConstants.data.srcWidth, 1.0 / pushConstants.data.srcHeight);
+
+    vec4 d = texelSize.xyxy * vec4(-1.0, -1.0, 1.0, 1.0);
+
+    vec4 s = vec4(0.0);
+    s += texture(textureToSample, uv + d.xy);
+    s += texture(textureToSample, uv + d.zy);
+    s += texture(textureToSample, uv + d.xw);
+    s += texture(textureToSample, uv + d.zw);
+    
+    return s * 0.25;
+}
+
+vec4 downsample(sampler2D textureToSample, vec2 uv) {
+    if (pushConstants.data.lowerQuality == 1) {
+        return downscample4Tap(textureToSample, uv);
+    } else {
+        return downsample13Tap(textureToSample, uv);
+    }
+}
+
+
 vec4 upsampleTent(sampler2D textureToSample, vec2 uv) {
     vec2 texelSize = vec2(1.0 / pushConstants.data.targetWidth, 1.0 / pushConstants.data.targetHeight);
 
     vec4 centralValue = texture(textureToSample, uv);
-    vec4 d = vec4(1, 1, -1, 0);
+    vec4 d = texelSize.xyxy * vec4(1, 1, -1, 0);
     vec4 s;
-    s = texture(textureToSample, uv - texelSize * d.xy);
-    s += texture(textureToSample, uv - texelSize * d.wy) * 2.0;
-    s += texture(textureToSample, uv - texelSize * d.zy);
-    s += texture(textureToSample, uv + texelSize * d.zw) * 2.0;
+    s = texture(textureToSample, uv - d.xy);
+    s += texture(textureToSample, uv - d.wy) * 2.0;
+    s += texture(textureToSample, uv - d.zy);
+    s += texture(textureToSample, uv + d.zw) * 2.0;
     s += centralValue * 4.0;
-    s += texture(textureToSample, uv + texelSize * d.xw) * 2.0;
-    s += texture(textureToSample, uv + texelSize * d.zy);
-    s += texture(textureToSample, uv + texelSize * d.wy) * 2.0;
-    s += texture(textureToSample, uv + texelSize * d.xy);
+    s += texture(textureToSample, uv + d.xw) * 2.0;
+    s += texture(textureToSample, uv + d.zy);
+    s += texture(textureToSample, uv + d.wy) * 2.0;
+    s += texture(textureToSample, uv + d.xy);
 
     vec4 o = s / 16.0;
     return vec4(o.rgb, centralValue.a);
+}
+
+vec4 upsampleBox(sampler2D textureToSample, vec2 uv) {
+    vec2 texelSize = vec2(1.0 / pushConstants.data.targetWidth, 1.0 / pushConstants.data.targetHeight);
+
+    vec4 d = texelSize.xyxy * vec4(-1.0, -1.0, 1.0, 1.0);
+
+    vec4 s = vec4(0.0);
+    s += texture(textureToSample, uv + d.xy);
+    s += texture(textureToSample, uv + d.zy);
+    s += texture(textureToSample, uv + d.xw);
+    s += texture(textureToSample, uv + d.zw);    
+
+    return s * (1.0 / 4.0);
+}
+
+vec4 upsample(sampler2D textureToSample, vec2 uv) {
+    if (pushConstants.data.lowerQuality == 1) {
+        return upsampleBox(textureToSample, uv);
+    } else {
+        return vec4(0.0, 0.0, 0.0, 0.0);
+        return upsampleTent(textureToSample, uv);
+    }
 }
 
 // -------------- Utility functions -------------- //
@@ -180,36 +230,45 @@ vec4 prefilterPass()
     return bloomColor;
 }
 
-vec4 downsample13TapPrefilterPass()
+vec4 downsamplePrefilterPass()
 {
-    vec4 color = downsample13Tap(customTexture0, inUV);
+    vec4 color = downsample(customTexture0, inUV);
     vec3 prefilteredColor = prefilter(color.rgb);
     vec4 bloomColor = vec4(prefilteredColor, color.a);
     return bloomColor;
 }
 
 // to a 13 tap downsample here
-vec4 downsample13TapPass()
+vec4 downsamplePass()
 {
-    vec4 color = downsample13Tap(customTexture0, inUV);
+    vec4 color = downsample(customTexture0, inUV);
     return color;
 }
 
 // upsample tent
-vec4 upsampleTentPass()
+vec4 upsamplePass()
 {
     vec4 originalColor = texture(customTexture1, inUV);
-    vec4 color = upsampleTent(customTexture0, inUV);
+    vec4 color = upsample(customTexture0, inUV);
     vec4 combined = color + originalColor;
     return vec4(combined.rgb, originalColor.a);
 }
 
 vec4 compositePass()
 {
-    vec4 bloomColor = upsampleTent(customTexture0, inUV);
+    vec4 bloomColor = upsample(customTexture0, inUV);
     vec4 sceneColor = texture(customTexture1, inUV);
     float bloomAmount = pushConstants.data.bloomAmount;
-    outColor.rgb = aces(bloomColor.rgb * bloomAmount + sceneColor.rgb);
+    vec3 result = bloomColor.rgb * bloomAmount + sceneColor.rgb;
+    if (pushConstants.data.tonemappingType == AVD_BLOOM_TONEMAPPING_TYPE_ACES) {
+        result = aces(result);
+    } else if (pushConstants.data.tonemappingType == AVD_BLOOM_TONEMAPPING_TYPE_FILMIC) {
+        result = filmic(result);
+    }
+    if (pushConstants.data.applyGamma == 1) {
+        result = pow(result, vec3(1.0 / 2.2));
+    }
+    outColor.rgb = result;
     outColor.a   = sceneColor.a;
     return outColor;
 }
@@ -220,12 +279,12 @@ void main()
     if (pushConstants.data.type == AVD_BLOOM_PASS_TYPE_PREFILTER) {
         outColor = prefilterPass();
     } else if (pushConstants.data.type == AVD_BLOOM_PASS_TYPE_DOWNSAMPLE) {
-        outColor = downsample13TapPass();
+        outColor = downsamplePass();
     } else if (pushConstants.data.type == AVD_BLOOM_PASS_TYPE_UPSAMPLE) {
-        outColor = upsampleTentPass();
+        outColor = upsamplePass();
     } else if (pushConstants.data.type == AVD_BLOOM_PASS_TYPE_COMPOSITE) {
         outColor = compositePass();
     } else if (pushConstants.data.type == AVD_BLOOM_PASS_TYPE_DOWNSAMPLE_PREFILTER) {
-        outColor = downsample13TapPrefilterPass();
+        outColor = downsamplePrefilterPass();
     }
 }

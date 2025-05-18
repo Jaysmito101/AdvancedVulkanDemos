@@ -24,6 +24,23 @@ typedef enum AVD_BloomPrefilterType {
     AVD_BLOOM_PREFILTER_TYPE_COUNT
 } AVD_BloomPrefilterType;
 
+typedef enum AVD_BloomTonemappingType {
+    AVD_BLOOM_TONEMAPPING_TYPE_NONE    = 0,
+    AVD_BLOOM_TONEMAPPING_TYPE_ACES    = 1,
+    AVD_BLOOM_TONEMAPPING_TYPE_FILMIC  = 2,
+    AVD_BLOOM_TONEMAPPING_TYPE_COUNT
+} AVD_BloomTonemappingType;
+
+typedef struct AVD_BloomParams {
+    AVD_BloomPrefilterType prefilterType;
+    float threshold;
+    float softKnee;
+    float bloomAmount;
+    bool lowQuality;
+    bool applyGamma;
+    AVD_BloomTonemappingType tonemappingType;
+} AVD_BloomParams;
+
 typedef struct AVD_Bloom {
     // NOTE: Ideally we dont really need 10 buffers for a 5 pass bloom effect, but this is a
     // simple way to do it for now. We can optimize this later if needed.
@@ -57,9 +74,7 @@ bool avdBloomApplyInplace(
     AVD_Bloom *bloom,
     AVD_VulkanFramebuffer *inputFramebuffer,
     AVD_Vulkan *vulkan,
-    AVD_BloomPrefilterType prefilterType,
-    float threshold,
-    float softKnee,
-    float bloomAmount);
+    AVD_BloomParams params
+);
 
 #endif // AVD_BLOOM_H

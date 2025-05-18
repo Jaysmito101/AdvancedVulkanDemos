@@ -387,5 +387,6 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         appState);
 
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
+
     return true;
 }

@@ -208,6 +208,8 @@ bool avdVulkanFramebufferCreate(AVD_Vulkan *vulkan, AVD_VulkanFramebuffer *frame
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(framebuffer != NULL);
+    AVD_CHECK_MSG(width > 0, "Framebuffer width must be greater than 0");
+    AVD_CHECK_MSG(height > 0, "Framebuffer height must be greater than 0");
 
     framebuffer->width           = width;
     framebuffer->height          = height;

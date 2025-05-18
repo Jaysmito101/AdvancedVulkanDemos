@@ -12,9 +12,9 @@ typedef struct AVD_BloomUberPushConstants {
     float softKnee;
 
     float bloomAmount;
-    float pad0;
-    float pad1;
-    float pad2;
+    int lowerQuality;
+    int tonemappingType;
+    int applyGamma;
 } AVD_BloomUberPushConstants;
 
 static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, uint32_t width, uint32_t height)
@@ -34,12 +34,12 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
             framebufferWidth,
             framebufferHeight,
             false,
-            VK_FORMAT_R32G32B32A32_SFLOAT, // could play with this a bit for a more efficient format
+            VK_FORMAT_R16G16B16A16_SFLOAT, // could play with this a bit for a more efficient format
             VK_FORMAT_D32_SFLOAT_S8_UINT));
     }
 
     // up sampling passes
-    for (uint32_t i = bloom->passCount - 1; i < bloom->passCount * 2 - 1; ++i) {
+    for (uint32_t i = bloom->passCount - 1; i < bloom->passCount * 2 - 2; ++i) {
         uint32_t framebufferWidth  = width >> (2 * bloom->passCount - 3 - i);
         uint32_t framebufferHeight = height >> (2 * bloom->passCount - 3 - i);
         // AVD_LOG("Up Pass %d: %dx%d\n", i, framebufferWidth, framebufferHeight);
@@ -50,15 +50,15 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
             framebufferWidth,
             framebufferHeight,
             false,
-            VK_FORMAT_R32G32B32A32_SFLOAT, // could play with this a bit for a more efficient format
+            VK_FORMAT_R16G16B16A16_SFLOAT, // could play with this a bit for a more efficient format
             VK_FORMAT_D32_SFLOAT_S8_UINT));
     }
 
-    // print the width and height of all the framebuffers
-    for (uint32_t i = 0; i < bloom->passCount * 2 - 2; ++i) {
-        AVD_VulkanFramebuffer *framebuffer = &bloom->bloomPasses[i];
-        AVD_LOG("Framebuffer %d: %dx%d\n", i, framebuffer->width, framebuffer->height);
-    }
+    // // print the width and height of all the framebuffers
+    // for (uint32_t i = 0; i < bloom->passCount * 2 - 2; ++i) {
+    //     AVD_VulkanFramebuffer *framebuffer = &bloom->bloomPasses[i];
+    //     AVD_LOG("Framebuffer %d: %dx%d\n", i, framebuffer->width, framebuffer->height);
+    // }
 
     return true;
 }
@@ -71,10 +71,7 @@ static bool __avdBloomPass(
     AVD_VulkanFramebuffer *srcFramebuffer,
     uint32_t sourceIndex,
     uint32_t targetIndex,
-    AVD_BloomPrefilterType prefilterType,
-    float threshold,
-    float softKnee,
-    float bloomAmount)
+    AVD_BloomParams params)
 {
     AVD_ASSERT(bloom != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -132,10 +129,13 @@ static bool __avdBloomPass(
         .srcHeight               = (float)bloom->bloomPasses[sourceIndex].height,
         .targetWidth             = (float)targetFramebuffer->width,
         .targetHeight            = (float)targetFramebuffer->height,
-        .bloomPrefilterType      = (int)prefilterType,
-        .bloomPrefilterThreshold = threshold,
-        .softKnee                = softKnee,
-        .bloomAmount             = bloomAmount,
+        .bloomPrefilterType      = (int)params.prefilterType,
+        .bloomPrefilterThreshold = params.threshold,
+        .softKnee                = params.softKnee,
+        .bloomAmount             = params.bloomAmount,
+        .lowerQuality            = params.lowQuality ? 1 : 0,
+        .tonemappingType         = (int)params.tonemappingType,
+        .applyGamma              = params.applyGamma ? 1 : 0,
     };
 
     vkCmdPushConstants(commandBuffer, bloom->pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(AVD_BloomUberPushConstants), &pushConstants);
@@ -207,10 +207,7 @@ bool avdBloomApplyInplace(
     AVD_Bloom *bloom,
     AVD_VulkanFramebuffer *inputFramebuffer,
     AVD_Vulkan *vulkan,
-    AVD_BloomPrefilterType prefilterType,
-    float threshold,
-    float softKnee,
-    float bloomAmount)
+    AVD_BloomParams params)
 {
     AVD_ASSERT(bloom != NULL);
     AVD_ASSERT(inputFramebuffer != NULL);
@@ -223,7 +220,7 @@ bool avdBloomApplyInplace(
         inputFramebuffer,
         0, // source index (can be anything for prefilter pass)
         0, // target index
-        prefilterType, threshold, softKnee, bloomAmount));
+        params));
 
     for (uint32_t i = 0; i < bloom->passCount - 2; ++i) {
         // AVD_LOG("Downsampling pass %d -> %d\n", i, i + 1);
@@ -234,7 +231,7 @@ bool avdBloomApplyInplace(
             inputFramebuffer,
             i,     // source index
             i + 1, // target index
-            prefilterType, threshold, softKnee, bloomAmount));
+            params));
     }
 
     for (uint32_t i = bloom->passCount - 2; i < bloom->passCount * 2 - 4; i++) {
@@ -246,10 +243,11 @@ bool avdBloomApplyInplace(
             inputFramebuffer,
             i,     // source index
             i + 1, // target index
-            prefilterType, threshold, softKnee, bloomAmount));
+            params));
     }
 
     // another prefiltering without theshold
+    params.prefilterType = AVD_BLOOM_PREFILTER_TYPE_NONE;
     AVD_CHECK(__avdBloomPass(
         commandBuffer,
         AVD_BLOOM_PASS_TYPE_PREFILTER,
@@ -257,7 +255,7 @@ bool avdBloomApplyInplace(
         inputFramebuffer,
         0,                        // source index (can be anything for prefilter pass)
         bloom->passCount * 2 - 3, // target index
-        AVD_BLOOM_PREFILTER_TYPE_NONE, threshold, softKnee, bloomAmount));
+        params));
 
     AVD_CHECK(__avdBloomPass(
         commandBuffer,
@@ -266,7 +264,7 @@ bool avdBloomApplyInplace(
         inputFramebuffer,
         0, // source index
         0, // target index
-        prefilterType, threshold, softKnee, bloomAmount));
+        params));
 
     return true;
 }
