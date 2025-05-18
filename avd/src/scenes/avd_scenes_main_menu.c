@@ -71,7 +71,7 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
     mainMenu->cardCount = 0;
 
     card = &mainMenu->cards[mainMenu->cardCount];
-    AVD_CHECK(__avdSetupMainMenuCard("DDGIPlaceholder", "Bloom", AVD_SCENE_TYPE_BLOOM, card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout));
+    AVD_CHECK(__avdSetupMainMenuCard("Bloom", "Bloom", AVD_SCENE_TYPE_BLOOM, card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout));
     mainMenu->cardCount += 1;
 
     card = &mainMenu->cards[mainMenu->cardCount];
