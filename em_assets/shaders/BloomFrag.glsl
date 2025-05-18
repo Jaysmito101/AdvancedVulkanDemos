@@ -215,7 +215,6 @@ vec4 upsample(sampler2D textureToSample, vec2 uv) {
     if (pushConstants.data.lowerQuality == 1) {
         return upsampleBox(textureToSample, uv);
     } else {
-        return vec4(0.0, 0.0, 0.0, 0.0);
         return upsampleTent(textureToSample, uv);
     }
 }
