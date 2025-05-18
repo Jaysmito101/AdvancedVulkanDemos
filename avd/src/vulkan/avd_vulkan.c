@@ -323,7 +323,7 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {0};
     rayTracingPipelineFeatures.sType                                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
     // rayTracingPipelineFeatures.rayTracingPipeline                            = VK_TRUE;
-    rayTracingPipelineFeatures.pNext                                         = NULL;
+    rayTracingPipelineFeatures.pNext = NULL;
 
     VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {0};
     rayQueryFeatures.sType                               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;

@@ -9,11 +9,11 @@
 #endif
 
 typedef enum AVD_BloomPassType {
-    AVD_BLOOM_PASS_TYPE_PREFILTER                    = 0,
-    AVD_BLOOM_PASS_TYPE_DOWNSAMPLE                   = 1,
-    AVD_BLOOM_PASS_TYPE_UPSAMPLE                     = 2,
-    AVD_BLOOM_PASS_TYPE_COMPOSITE                    = 3,
-    AVD_BLOOM_PASS_TYPE_DOWNSAMPLE_PREFILTER         = 4,
+    AVD_BLOOM_PASS_TYPE_PREFILTER            = 0,
+    AVD_BLOOM_PASS_TYPE_DOWNSAMPLE           = 1,
+    AVD_BLOOM_PASS_TYPE_UPSAMPLE             = 2,
+    AVD_BLOOM_PASS_TYPE_COMPOSITE            = 3,
+    AVD_BLOOM_PASS_TYPE_DOWNSAMPLE_PREFILTER = 4,
     AVD_BLOOM_PASS_TYPE_COUNT
 } AVD_BloomPassType;
 
@@ -25,9 +25,9 @@ typedef enum AVD_BloomPrefilterType {
 } AVD_BloomPrefilterType;
 
 typedef enum AVD_BloomTonemappingType {
-    AVD_BLOOM_TONEMAPPING_TYPE_NONE    = 0,
-    AVD_BLOOM_TONEMAPPING_TYPE_ACES    = 1,
-    AVD_BLOOM_TONEMAPPING_TYPE_FILMIC  = 2,
+    AVD_BLOOM_TONEMAPPING_TYPE_NONE   = 0,
+    AVD_BLOOM_TONEMAPPING_TYPE_ACES   = 1,
+    AVD_BLOOM_TONEMAPPING_TYPE_FILMIC = 2,
     AVD_BLOOM_TONEMAPPING_TYPE_COUNT
 } AVD_BloomTonemappingType;
 
@@ -74,7 +74,6 @@ bool avdBloomApplyInplace(
     AVD_Bloom *bloom,
     AVD_VulkanFramebuffer *inputFramebuffer,
     AVD_Vulkan *vulkan,
-    AVD_BloomParams params
-);
+    AVD_BloomParams params);
 
 #endif // AVD_BLOOM_H
