@@ -2,6 +2,7 @@
 #define AVD_SCENES_BLOOM_H
 
 #include "scenes/avd_scenes_base.h"
+#include "bloom/avd_bloom.h"
 
 typedef struct AVD_SceneBloom {
     AVD_SceneType type;
@@ -10,6 +11,10 @@ typedef struct AVD_SceneBloom {
     AVD_RenderableText uiInfoText;
 
     VkDescriptorSetLayout descriptorSetLayout;
+    AVD_BloomPrefilterType prefilterType;
+    float bloomThreshold;
+    float bloomSoftKnee;
+    float bloomAmount;
 
     bool isBloomEnabled;
 } AVD_SceneBloom;

@@ -59,13 +59,18 @@ bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
     AVD_LOG("Initializing main menu scene\n");
     bloom->isBloomEnabled = true;
 
+    // Some values that look good for the demo
+    bloom->prefilterType  = AVD_BLOOM_PREFILTER_TYPE_SOFTKNEE;
+    bloom->bloomThreshold = 2.0f;
+    bloom->bloomSoftKnee  = 1.2f;
+
     AVD_CHECK(__avdSetupDescriptors(&bloom->descriptorSetLayout, &appState->vulkan));
 
     AVD_CHECK(avdRenderableTextCreate(
         &bloom->title,
         &appState->fontRenderer,
         &appState->vulkan,
-        "RubikGlitchRegular",
+        "ShantellSansBold",
         "Advanced\nVulkan\nDemos",
         256.0f));
     AVD_CHECK(avdRenderableTextCreate(
@@ -110,6 +115,8 @@ void avdSceneBloomInputEvent(struct AVD_AppState *appState, union AVD_Scene *sce
                 appState);
         } else if (event->key.key == GLFW_KEY_B && event->key.action == GLFW_PRESS) {
             bloom->isBloomEnabled = !bloom->isBloomEnabled;
+        } else if (event->key.key == GLFW_KEY_P && event->key.action == GLFW_PRESS) {
+            bloom->prefilterType = (bloom->prefilterType + 1) % AVD_BLOOM_PREFILTER_TYPE_COUNT;
         }
     }
 }
@@ -118,14 +125,37 @@ bool avdSceneBloomUpdate(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
 
+    const float scale = appState->framerate.deltaTime * 2.0f;
+    if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_T]) {
+        bloom->bloomThreshold += scale;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_T]) {
+        bloom->bloomThreshold -= scale;
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_Y]) {
+        bloom->bloomSoftKnee += scale;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_Y]) {
+        bloom->bloomSoftKnee -= scale;
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_A]) {
+        bloom->bloomAmount += scale;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_A]) {
+        bloom->bloomAmount -= scale;
+    }
+
     static char buffer[1024];
     snprintf(buffer, sizeof(buffer),
              "Bloom:\n"
              "  - Enabled: %s [B to toggle]\n"
+             "  - Prefilter Type: %s [P to switch through]\n"
+             "  - Threshold: %.2f [T + Up/Down to change]\n"
+             "  - Soft Knee: %.2f [Y + Up/Down to change]\n"
+             "  - Amount: %.2f [A to change]\n"
              "General Stats:\n"
              "  - Framerate: %zu FPS\n"
              "  - Frame Time: %.2f ms\n",
              bloom->isBloomEnabled ? "true" : "false",
+             avdBloomPrefilterTypeToString(bloom->prefilterType),
+             bloom->bloomThreshold,
+             bloom->bloomSoftKnee,
+             bloom->bloomAmount,
              appState->framerate.fps,
              appState->framerate.deltaTime * 1000.0f);
     AVD_CHECK(avdRenderableTextUpdate(&bloom->uiInfoText,
@@ -193,5 +223,19 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
         appState);
 
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
+
+    if (bloom->isBloomEnabled) {
+        AVD_CHECK(avdBloomApplyInplace(
+            commandBuffer,
+            &appState->bloom,
+            &renderer->sceneFramebuffer,
+            vulkan,
+            bloom->prefilterType,
+            bloom->bloomThreshold,
+            bloom->bloomSoftKnee,
+            bloom->bloomAmount
+        ));
+    }
+
     return true;
 }

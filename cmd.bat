@@ -17,6 +17,8 @@ if not exist build\CMakeCache.txt (
 ) else (
     echo CMakeCache.txt found. Skipping cmake configuration.
 )
+echo Generating assets...
+python tools/assets.py
 echo Building the project...
 @REM if a if there is --release in the command line, run cmake --build build --config Release
 if "%1"=="--release" (

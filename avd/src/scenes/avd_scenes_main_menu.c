@@ -312,7 +312,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     uint32_t totalPages            = (mainMenu->cardCount + numCardsPerPage - 1) / numCardsPerPage;
 
     float mouseX = (appState->input.mouseX * 0.5f + 0.5f) * frameWidth;
-    float mouseY = frameHeight - minY - (appState->input.mouseY * 0.5f + 0.5f) * frameHeight;
+    float mouseY = frameHeight - minY / 2.0f - (appState->input.mouseY * 0.5f + 0.5f) * frameHeight;
 
     mainMenu->hoveredCard = -1;
     for (uint32_t i = 0; i < numCardsPerPage; i++) {
