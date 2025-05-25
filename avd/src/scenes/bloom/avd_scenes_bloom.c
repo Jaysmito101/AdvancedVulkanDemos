@@ -135,7 +135,7 @@ bool avdSceneBloomUpdate(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
 
-    const float scale = (float)appState->framerate.deltaTime * 200.0f;
+    const float scale = (float)appState->framerate.deltaTime * 2.0f;
     if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_T]) {
         bloom->bloomThreshold += scale;
     } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_T]) {
@@ -220,7 +220,7 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
         &appState->fontRenderer,
         &bloom->title,
         commandBuffer,
-        (frameWidth - 1330.0f) / 2.0, (frameHeight + bloom->bloomThreshold + 100.0) / 2.0f,
+        (frameWidth - 1330.0f) / 2.0f, (frameHeight + 100.0f) / 2.0f,
         0.8f, 1.2f, 4.0f, 1.0f, 1.0f,
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
