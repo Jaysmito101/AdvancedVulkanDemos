@@ -17,7 +17,8 @@ static bool __avdCheckAllSceneApis(AVD_SceneManager *sceneManager)
 {
     AVD_ASSERT(sceneManager != NULL);
     for (int i = 0; i < AVD_SCENE_TYPE_COUNT; ++i)
-        AVD_CHECK(__avdCheckSceneApiValidity(&sceneManager->api[i]));
+        AVD_CHECK_MSG(__avdCheckSceneApiValidity(&sceneManager->api[i]), "Failed to validate scene API for type %s\n",
+                      avdSceneTypeToString((AVD_SceneType)i));
     return true;
 }
 
@@ -26,6 +27,7 @@ static bool __avdRegisterSceneApis(AVD_SceneManager *sceneManager)
     AVD_ASSERT(sceneManager != NULL);
     avdSceneMainMenuRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_MAIN_MENU]);
     avdSceneBloomRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_BLOOM]);
+    avdScene2DRadianceCascadesRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_2D_RADIANCE_CASCADES]);
     return true;
 }
 
@@ -119,4 +121,18 @@ bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType 
     sceneManager->sceneLoadingProgress      = 0.0f;
     sceneManager->sceneLoadingStatusMessage = NULL;
     return true;
+}
+
+const char *avdSceneTypeToString(AVD_SceneType type)
+{
+    switch (type) {
+        case AVD_SCENE_TYPE_MAIN_MENU:
+            return "Main_Menu";
+        case AVD_SCENE_TYPE_BLOOM:
+            return "Bloom";
+        case AVD_SCENE_TYPE_2D_RADIANCE_CASCADES:
+            return "2D_Radiance_Cascades";
+        default:
+            return "Unknown_Scene_Type";
+    }
 }

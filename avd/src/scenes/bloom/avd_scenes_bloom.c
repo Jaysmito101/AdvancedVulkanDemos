@@ -32,6 +32,8 @@ static AVD_SceneBloom *__avdSceneGetTypePtr(AVD_Scene *scene)
 bool avdSceneBloomCheckIntegrity(AVD_AppState *appState, const char **statusMessage)
 {
     AVD_ASSERT(statusMessage != NULL);
+    *statusMessage = NULL;
+
     // Bloom scene always passes integrity check
     // as the bloom scene assets are directly embedded
     // in the application binary.

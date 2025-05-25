@@ -9,6 +9,7 @@
 typedef enum AVD_SceneType {
     AVD_SCENE_TYPE_MAIN_MENU,
     AVD_SCENE_TYPE_BLOOM,
+    AVD_SCENE_TYPE_2D_RADIANCE_CASCADES,
     AVD_SCENE_TYPE_COUNT
 } AVD_SceneType;
 
@@ -33,5 +34,7 @@ typedef struct AVD_SceneAPI {
     AVD_SceneLoaderFn load;
     AVD_SceneInputEventFn inputEvent;
 } AVD_SceneAPI;
+
+const char *avdSceneTypeToString(AVD_SceneType type);
 
 #endif // AVD_SCENES_BASE_H

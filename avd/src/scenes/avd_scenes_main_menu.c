@@ -61,6 +61,11 @@ static void __avdDestroyMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan *vu
     avdRenderableTextDestroy(&card->title, vulkan);
 }
 
+#define ADD_MAIN_MENU_CARD(cardName, title, sceneType) \
+    card = &mainMenu->cards[mainMenu->cardCount]; \
+    AVD_CHECK(__avdSetupMainMenuCard(cardName, title, sceneType, card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout)); \
+    mainMenu->cardCount += 1;
+
 static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *appState)
 {
     AVD_ASSERT(mainMenu != NULL);
@@ -70,13 +75,9 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
     static char title[64];
     mainMenu->cardCount = 0;
 
-    card = &mainMenu->cards[mainMenu->cardCount];
-    AVD_CHECK(__avdSetupMainMenuCard("Bloom", "Bloom", AVD_SCENE_TYPE_BLOOM, card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout));
-    mainMenu->cardCount += 1;
-
-    card = &mainMenu->cards[mainMenu->cardCount];
-    AVD_CHECK(__avdSetupMainMenuCard("DDGIPlaceholder", "DDGI (Dynamic Diffuse Global Illumination)", AVD_SCENE_TYPE_MAIN_MENU, card, &appState->vulkan, &appState->fontRenderer, mainMenu->descriptorSetLayout));
-    mainMenu->cardCount += 1;
+    ADD_MAIN_MENU_CARD("Bloom", "Bloom", AVD_SCENE_TYPE_BLOOM);
+    ADD_MAIN_MENU_CARD("DDGIPlaceholder", "2D GI (Radiance Cascades)", AVD_SCENE_TYPE_2D_RADIANCE_CASCADES);
+    ADD_MAIN_MENU_CARD("DDGIPlaceholder", "DDGI (Dynamic Diffuse Global Illumination)", AVD_SCENE_TYPE_MAIN_MENU);
 
     return true;
 }
