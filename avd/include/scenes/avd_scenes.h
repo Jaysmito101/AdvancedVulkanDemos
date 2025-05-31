@@ -37,4 +37,12 @@ void avdSceneManagerPushInputEvent(AVD_SceneManager *sceneManager, struct AVD_Ap
 bool avdSceneManagerCheckSceneIntegrity(AVD_SceneManager *sceneManager, AVD_SceneType type, struct AVD_AppState *appState, const char **statusMessage);
 bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType type, struct AVD_AppState *appState);
 
+#define AVD_FILE_INTEGRITY_CHECK(path) \
+    if (!avdPathExists(path)) { \
+        static char statusBuffer[256]; \
+        snprintf(statusBuffer, sizeof(statusBuffer), "File integrity check failed: %s does not exist", path); \
+        *statusMessage = statusBuffer; \
+        AVD_CHECK_MSG(false, "File integrity check failed: %s does not exist", path); \
+    }
+
 #endif // AVD_SCENES_H

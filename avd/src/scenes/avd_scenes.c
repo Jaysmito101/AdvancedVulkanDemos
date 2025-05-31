@@ -106,6 +106,10 @@ bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType 
     if (!sceneManager->api[type].checkIntegrity(appState, &sceneManager->sceneIntegrityStatusMessage)) {
         sceneManager->sceneIntegrityCheckPassed = false;
         AVD_LOG("Scene integrity check failed: %s [Switch Cancelled]\n", sceneManager->sceneIntegrityStatusMessage);
+        avdMessageBox(
+            "Scene Integrity Check Failed",
+            sceneManager->sceneIntegrityStatusMessage ? sceneManager->sceneIntegrityStatusMessage : "No specific message provided."
+        );
         return true;
     }
 
