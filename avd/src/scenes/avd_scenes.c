@@ -28,6 +28,7 @@ static bool __avdRegisterSceneApis(AVD_SceneManager *sceneManager)
     avdSceneMainMenuRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_MAIN_MENU]);
     avdSceneBloomRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_BLOOM]);
     avdScene2DRadianceCascadesRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_2D_RADIANCE_CASCADES]);
+    avdSceneDeccerCubesRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_DECCER_CUBES]);
     return true;
 }
 

@@ -36,6 +36,7 @@ add_executable(avd
     ./src/scenes/avd_scenes_main_menu.c
     ./src/scenes/bloom/avd_scenes_bloom.c
     ./src/scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.c
+    ./src/scenes/deccer_cubes/avd_scenes_deccer_cubes.c
 )
 
 include_directories(avd

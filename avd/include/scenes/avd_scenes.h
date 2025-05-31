@@ -5,12 +5,14 @@
 #include "scenes/avd_scenes_main_menu.h"
 #include "scenes/bloom/avd_scenes_bloom.h"
 #include "scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.h"
+#include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
 
 typedef union AVD_Scene {
     AVD_SceneType type;
     AVD_SceneMainMenu mainMenu;
     AVD_SceneBloom bloom;
     AVD_Scene2DRadianceCascades radianceCascades;
+    AVD_SceneDeccerCubes deccerCubes;
 } AVD_Scene;
 
 typedef struct AVD_SceneManager {
