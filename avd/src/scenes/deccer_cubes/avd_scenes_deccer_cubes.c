@@ -73,8 +73,24 @@ bool avdSceneDeccerCubesCheckIntegrity(struct AVD_AppState *appState, const char
     AVD_ASSERT(statusMessage != NULL);
     *statusMessage = NULL;
 
-    // The Deccer Cubes scene does not have any external dependencies
-    // and is always considered to be in a valid state.
+    // Not really a dependency but we should ensure that its present
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/LICENSE");
+
+    // The Model files
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/SM_Deccer_Cubes.glb");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/SM_Deccer_Cubes_Colored.glb");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/SM_Deccer_Cubes_Textured.glb");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/SM_Deccer_Cubes_Textured_Animated.glb");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/SM_Deccer_Cubes_With_Rotation.glb");
+
+    // The images
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/T_Atlas.png");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/T_Blue_D.png");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/T_LightGreen_D.png");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/T_Orange_D.png");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/T_Purple_D.png");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_deccer_cubes/T_Red_D.png");
+
     return true;
 }
 
