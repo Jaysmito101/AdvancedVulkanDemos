@@ -52,6 +52,8 @@ bool avdSceneBloomRegisterApi(AVD_SceneAPI *api)
     api->load           = avdSceneBloomLoad;
     api->inputEvent     = avdSceneBloomInputEvent;
 
+    api->id             = "Bloom";
+
     return true;
 }
 

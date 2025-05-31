@@ -10,6 +10,12 @@ static bool __avdCheckSceneApiValidity(AVD_SceneAPI *api)
     AVD_CHECK(api->destroy != NULL);
     AVD_CHECK(api->load != NULL);
     AVD_CHECK(api->inputEvent != NULL);
+
+    AVD_CHECK(api->id != NULL);
+    if (api->displayName == NULL) {
+        AVD_LOG("Scene API '%s' does not have a display name set, using id as display name.\n", api->id);
+        api->displayName = api->id;
+    }
     return true;
 }
 

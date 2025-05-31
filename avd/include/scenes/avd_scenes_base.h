@@ -27,6 +27,9 @@ typedef bool (*AVD_SceneLoaderFn)(struct AVD_AppState *appState, union AVD_Scene
 typedef void (*AVD_SceneInputEventFn)(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event);
 
 typedef struct AVD_SceneAPI {
+    const char* displayName; // Name of the scene
+    const char* id; // Unique identifier for the scene type
+
     AVD_SceneCheckIntegrityFn checkIntegrity;
     AVD_SceneInitFn init;
     AVD_SceneRenderFn render;

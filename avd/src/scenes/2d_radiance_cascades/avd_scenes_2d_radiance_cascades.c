@@ -90,5 +90,8 @@ bool avdScene2DRadianceCascadesRegisterApi(AVD_SceneAPI *api)
     api->load           = avdScene2DRadianceCascadesLoad;
     api->inputEvent     = avdScene2DRadianceCascadesInputEvent;
 
+    api->displayName    = "2D GI (Radiance Cascades)";
+    api->id             = "DDGIPlaceholder";
+
     return true;
 }
