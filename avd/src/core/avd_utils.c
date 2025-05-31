@@ -36,6 +36,17 @@ const char *avdGetTempDirPath(void)
     return tempDirPath;
 }
 
+bool avdPathExists(const char *path)
+{
+#if defined(_WIN32) || defined(__CYGWIN__)
+    DWORD fileAttributes = GetFileAttributesA(path);
+    return (fileAttributes != INVALID_FILE_ATTRIBUTES && !(fileAttributes & FILE_ATTRIBUTE_DIRECTORY));
+#else
+    struct stat buffer;
+    return (stat(path, &buffer) == 0 && S_ISREG(buffer.st_mode));
+#endif
+}
+
 // print the  shader code formatted with line number (only one line at a time, use a temp buffer to extract)
 void avdPrintShaderWithLineNumbers(const char *shaderCode, const char *shaderName)
 {
@@ -77,5 +88,22 @@ void avdSleep(uint32_t milliseconds)
     Sleep(milliseconds);
 #else
     usleep(milliseconds * 1000);
+#endif
+}
+
+void avdMessageBox(const char *title, const char *message)
+{
+#if defined(_WIN32) || defined(__CYGWIN__)
+    MessageBoxA(NULL, message, title, MB_OK | MB_ICONINFORMATION);
+#else
+    fprintf(stderr, "%s: %s\n", title, message);
+    if (system("which zenity > /dev/null 2>&1") == 0) {
+        char command[1024];
+        snprintf(command, sizeof(command), "zenity --info --title=\"%s\" --text=\"%s\"", title, message);
+        system(command);
+    } else {
+        fprintf(stderr, "%s: %s\n", title, message);
+        fprintf(stderr, "Zenity is not available. Please install it to show message boxes.\n");
+    }
 #endif
 }

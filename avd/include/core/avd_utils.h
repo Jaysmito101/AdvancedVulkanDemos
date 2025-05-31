@@ -7,6 +7,8 @@ uint32_t avdHashBuffer(const void *buffer, size_t size);
 uint32_t avdHashString(const char *str);
 void avdPrintShaderWithLineNumbers(const char *shaderCode, const char *shaderName);
 const char *avdGetTempDirPath(void);
+bool avdPathExists(const char *path);
 void avdSleep(uint32_t milliseconds);
+void avdMessageBox(const char *title, const char *message);
 
 #endif // AVD_UTILS_H
