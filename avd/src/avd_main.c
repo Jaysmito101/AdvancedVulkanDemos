@@ -6,7 +6,10 @@ int main()
 {
     AVD_AppState g_appState = {0};
 
+#ifdef AVD_DEBUG
+    // Run tests only in debug mode for now
     AVD_CHECK(avdMathTestsRun());
+#endif
 
     if (!avdApplicationInit(&g_appState)) {
         AVD_LOG("Failed to initialize application\n");
