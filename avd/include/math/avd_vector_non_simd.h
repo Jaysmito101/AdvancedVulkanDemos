@@ -60,9 +60,7 @@ typedef union {
     avdLerp((a).y, (b).y, (t)) \
 )
 #define avdVec2FromPolar(angle, length) avdVec2( length * avdCos(angle), length * avdSin(angle) )
-#define avdVec2Log(v) ({ \
-    AVD_LOG("Vec2[x: %.2f, y: %.2f]", (v).x, (v).y); \
-})
+#define avdVec2Log(v) AVD_LOG("Vec2[x: %.2f, y: %.2f]", (v).x, (v).y)
 
 #define avdVec3(vx, vy, vz) ((AVD_Vector3){ .x = (vx), .y = (vy), .z = (vz) })
 #define avdVec3Zero() avdVec3(0.0f, 0.0f, 0.0f)
@@ -94,9 +92,7 @@ typedef union {
     radius * avdCos(elevation) * avdSin(azimuth), \
     radius * avdSin(elevation) \
 )
-#define avdVec3Log(v) ({ \
-    AVD_LOG("Vec3[x: %.2f, y: %.2f, z: %.2f]", (v).x, (v).y, (v).z); \
-})
+#define avdVec3Log(v) AVD_LOG("Vec3[x: %.2f, y: %.2f, z: %.2f]", (v).x, (v).y, (v).z)
 
 
 #define avdVec4(vx, vy, vz, vw) ((AVD_Vector4){ .x = (vx), .y = (vy), .z = (vz), .w = (vw) })
@@ -122,16 +118,13 @@ typedef union {
     avdLerp((a).z, (b).z, (t)), \
     avdLerp((a).w, (b).w, (t)) \
 )
-#define avdVec4Log(v) ({ \
-    AVD_LOG("Vec4[x: %.2f, y: %.2f, z: %.2f, w: %.2f]", (v).x, (v).y, (v).z, (v).w); \
-})
-
+#define avdVec4Log(v) AVD_LOG("Vec4[x: %.2f, y: %.2f, z: %.2f, w: %.2f]", (v).x, (v).y, (v).z, (v).w)
 
 // Define the swizzle macros for vectors
 
-#define avdVecSwizzle2(v, c1, c2) avdVec2((v). ##c1, (v). ##c2)
-#define avdVecSwizzle3(v, c1, c2, c3) avdVec3((v). ##c1, (v). ##c2, (v). ##c3)
-#define avdVecSwizzle4(v, c1, c2, c3, c4) avdVec4((v). ##c1, (v). ##c2, (v). ##c3, (v). ##c4)
+#define avdVecSwizzle2(v, c1, c2) avdVec2((v). c1, (v). c2)
+#define avdVecSwizzle3(v, c1, c2, c3) avdVec3((v). c1, (v). c2, (v). c3)
+#define avdVecSwizzle4(v, c1, c2, c3, c4) avdVec4((v). c1, (v). c2, (v). c3, (v). c4)
 
 
 // Create static functions for some operations that are more optimized this way

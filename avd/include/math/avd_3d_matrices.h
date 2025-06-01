@@ -42,51 +42,11 @@
     0.0f, 0.0f, 0.0f, 1.0f \
 )
 
-#define avdMatLookAt(eye, center, up) ({ \
-    AVD_Vector3 f = avdVec3Normalize(avdVec3Subtract(center, eye)); \
-    AVD_Vector3 s = avdVec3Normalize(avdVec3Cross(f, up)); \
-    AVD_Vector3 u = avdVec3Cross(s, f); \
-    avdMat4x4( \
-        s.x, u.x, -f.x, 0.0f, \
-        s.y, u.y, -f.y, 0.0f, \
-        s.z, u.z, -f.z, 0.0f, \
-        -avdVec3Dot(s, eye), -avdVec3Dot(u, eye), avdVec3Dot(f, eye), 1.0f \
-    ); \
-})
+AVD_Matrix4x4 avdMatLookAt(const AVD_Vector3 eye, const AVD_Vector3 center, const AVD_Vector3 up);
+AVD_Matrix4x4 avdMatPerspective(AVD_Float fovY, AVD_Float aspect, AVD_Float nearZ, AVD_Float farZ);
+AVD_Matrix4x4 avdMatOrthographic(AVD_Float left, AVD_Float right, AVD_Float bottom, AVD_Float top, AVD_Float nearZ, AVD_Float farZ);
+AVD_Matrix4x4 avdMatFrustum(AVD_Float left, AVD_Float right, AVD_Float bottom, AVD_Float top, AVD_Float nearZ, AVD_Float farZ);
 
-#define avdMatPerspective(fovY, aspect, nearZ, farZ) ({ \
-    AVD_Float f = 1.0f / avdTan(fovY * 0.5f); \
-    avdMat4x4( \
-        f / aspect, 0.0f, 0.0f, 0.0f, \
-        0.0f, f, 0.0f, 0.0f, \
-        0.0f, 0.0f, (farZ + nearZ) / (nearZ - farZ), -1.0f, \
-        0.0f, 0.0f, (2.0f * farZ * nearZ) / (nearZ - farZ), 0.0f \
-    ); \
-})
-
-#define avdMatOrthographic(left, right, bottom, top, nearZ, farZ) ({ \
-    AVD_Float rl = right - left; \
-    AVD_Float tb = top - bottom; \
-    AVD_Float fn = farZ - nearZ; \
-    avdMat4x4( \
-        2.0f / rl, 0.0f, 0.0f, -(right + left) / rl, \
-        0.0f, 2.0f / tb, 0.0f, -(top + bottom) / tb, \
-        0.0f, 0.0f, -2.0f / fn, -(farZ + nearZ) / fn, \
-        0.0f, 0.0f, 0.0f, 1.0f \
-    ); \
-})
-
-#define avdMatFrustum(left, right, bottom, top, nearZ, farZ) ({ \
-    AVD_Float rl = right - left; \
-    AVD_Float tb = top - bottom; \
-    AVD_Float fn = farZ - nearZ; \
-    avdMat4x4( \
-        (2.0f * nearZ) / rl, 0.0f, (right + left) / rl, 0.0f, \
-        0.0f, (2.0f * nearZ) / tb, (top + bottom) / tb, 0.0f, \
-        0.0f, 0.0f, -(farZ + nearZ) / fn, -(2.0f * farZ * nearZ) / fn, \
-        0.0f, 0.0f, -1.0f, 0.0f \
-    ); \
-})
 
 
 

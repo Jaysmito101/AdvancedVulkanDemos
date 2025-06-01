@@ -25,7 +25,7 @@ typedef size_t AVD_Size;
 #define avdCos(value) cosf(value)
 #define avdTan(value) tanf(value)
 #define avdLerp(a, b, t) ((a) + ((b) - (a)) * (t))
-#define avdIsFEqual(a, b) (fabsf((a) - (b)) < 1e-6f)
+#define avdIsFEqual(a, b) (fabsf((a) - (b)) < 1e-6f && !isnan(a) && !isnan(b) && !isinf(a) && !isinf(b) && fabsf(a) < 1e6f)
 
 
 

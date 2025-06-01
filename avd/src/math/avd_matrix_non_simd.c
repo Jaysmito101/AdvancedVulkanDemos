@@ -69,7 +69,7 @@ void avdMat4x4MultiplyInplace(AVD_Matrix4x4 *out, const AVD_Matrix4x4 *b)
 
 AVD_Matrix4x4 avdMat4x4Multiply(const AVD_Matrix4x4 a, const AVD_Matrix4x4 b)
 {
-    AVD_Matrix4x4 result;
+    AVD_Matrix4x4 result = a;
     avdMat4x4MultiplyInplace(&result, &b);
     return result;
 }

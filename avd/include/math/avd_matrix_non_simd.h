@@ -22,7 +22,7 @@ typedef union {
     };
 } AVD_Matrix4x4;
 
-typedef struct {
+typedef union {
     AVD_Float m[3 * 3];
     struct {
         AVD_Vector3 cols[3];
@@ -82,13 +82,12 @@ typedef struct {
     0.0f, 0.0f, 0.0f, 1.0f \
 )
 #define avdMat4x4Transpose(mat) avdMat4x4( \
-    (mat).col0.x, (mat).col1.x, (mat).col2.x, (mat).col3.x, \
-    (mat).col0.y, (mat).col1.y, (mat).col2.y, (mat).col3.y, \
-    (mat).col0.z, (mat).col1.z, (mat).col2.z, (mat).col3.z, \
-    (mat).col0.w, (mat).col1.w, (mat).col2.w, (mat).col3.w  \
+    (mat).col0.x, (mat).col0.y, (mat).col0.z, (mat).col0.w, \
+    (mat).col1.x, (mat).col1.y, (mat).col1.z, (mat).col1.w, \
+    (mat).col2.x, (mat).col2.y, (mat).col2.z, (mat).col2.w, \
+    (mat).col3.x, (mat).col3.y, (mat).col3.z, (mat).col3.w  \
 )
-#define avdMat4x4Log(mat) ({ \
-    AVD_LOG("Matrix4x4[ \n" \
+#define avdMat4x4Log(mat) AVD_LOG("Matrix4x4[ \n" \
             "  %.2f, %.2f, %.2f, %.2f,\n" \
             "  %.2f, %.2f, %.2f, %.2f,\n" \
             "  %.2f, %.2f, %.2f, %.2f,\n" \
@@ -97,8 +96,7 @@ typedef struct {
             (mat).col0.x, (mat).col1.x, (mat).col2.x, (mat).col3.x, \
             (mat).col0.y, (mat).col1.y, (mat).col2.y, (mat).col3.y, \
             (mat).col0.z, (mat).col1.z, (mat).col2.z, (mat).col3.z, \
-            (mat).col0.w, (mat).col1.w, (mat).col2.w, (mat).col3.w); \
-})
+            (mat).col0.w, (mat).col1.w, (mat).col2.w, (mat).col3.w)
 
 
 #define avdMat3x3( \
@@ -137,25 +135,24 @@ typedef struct {
     (r0).z, (r1).z, (r2).z  \
 )
 #define avdMat3x3Transpose(mat) avdMat3x3( \
-    (mat).col0.x, (mat).col1.x, (mat).col2.x, \
-    (mat).col0.y, (mat).col1.y, (mat).col2.y, \
-    (mat).col0.z, (mat).col1.z, (mat).col2.z  \
+    (mat).col0.x, (mat).col0.y, (mat).col0.z, \
+    (mat).col1.x, (mat).col1.y, (mat).col1.z, \
+    (mat).col2.x, (mat).col2.y, (mat).col2.z  \
 )
 #define avdMat3x3FromMat4x4(mat) avdMat3x3( \
     (mat).col0.x, (mat).col1.x, (mat).col2.x, \
     (mat).col0.y, (mat).col1.y, (mat).col2.y, \
     (mat).col0.z, (mat).col1.z, (mat).col2.z  \
 )
-#define avdMat3x3Log(mat) ({ \
-    AVD_LOG("Matrix3x3[ \n" \
+#define avdMat3x3Log(mat) AVD_LOG("Matrix3x3[ \n" \
             "  %.2f, %.2f, %.2f,\n" \
             "  %.2f, %.2f, %.2f,\n" \
             "  %.2f, %.2f, %.2f\n" \
             "]", \
             (mat).col0.x, (mat).col1.x, (mat).col2.x, \
             (mat).col0.y, (mat).col1.y, (mat).col2.y, \
-            (mat).col0.z, (mat).col1.z, (mat).col2.z); \
-})
+            (mat).col0.z, (mat).col1.z, (mat).col2.z)
+            
 
 
 
