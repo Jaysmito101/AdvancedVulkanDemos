@@ -218,6 +218,22 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device)
     return true;
 }
 
+static bool __avdVulkanPhysicalDeviceCheckFeatures(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceFeatures features = {0};
+    vkGetPhysicalDeviceFeatures(device, &features);
+
+    if (!features.samplerAnisotropy) {
+        AVD_LOG("Sampler anisotropy not supported\n");
+        return false;
+    }
+
+    // TODO: Add all the feature checks here! (NOW ITS INCOMPLETE)
+
+
+    return true;
+}
+
 static bool __avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
@@ -237,6 +253,11 @@ static bool __avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
 
         if (!__avdVulkanPhysicalDeviceCheckExtensions(devices[i])) {
             AVD_LOG("Physical device %s does not support required extensions\n", deviceProperties.deviceName);
+            continue;
+        }
+
+        if (!__avdVulkanPhysicalDeviceCheckFeatures(devices[i])) {
+            AVD_LOG("Physical device %s does not support required features\n", deviceProperties.deviceName);
             continue;
         }
 
