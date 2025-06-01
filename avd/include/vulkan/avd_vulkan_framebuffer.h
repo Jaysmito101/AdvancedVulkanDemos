@@ -7,6 +7,7 @@
 typedef struct AVD_VulkanFramebufferAttachment {
     AVD_VulkanImage image;
     VkAttachmentDescription attachmentDescription;
+    VkFramebufferAttachmentImageInfo attachmentImageInfo;    
 
     VkDescriptorSet descriptorSet;
     VkDescriptorSetLayout descriptorSetLayout;
@@ -24,10 +25,12 @@ typedef struct AVD_VulkanFramebuffer {
     uint32_t height;
 } AVD_VulkanFramebuffer;
 
+
 bool avdVulkanFormatIsDepth(VkFormat format);
 bool avdVulkanFormatIsStencil(VkFormat format);
 bool avdVulkanFormatIsDepthStencil(VkFormat format);
 bool avdVulkanFramebufferCreate(AVD_Vulkan *vulkan, AVD_VulkanFramebuffer *framebuffer, int32_t width, int32_t height, bool hasDepthStencil, VkFormat colorFormat, VkFormat depthStencilFormat);
 void avdVulkanFramebufferDestroy(AVD_Vulkan *vulkan, AVD_VulkanFramebuffer *framebuffer);
+bool avdVulkanFramebufferGetAttachmentViews(AVD_VulkanFramebuffer *framebuffer, VkImageView *colorAttachmentView, size_t *attachmentCount);
 
 #endif // AVD_VULKAN_FRAMEBUFFER_H

@@ -67,6 +67,16 @@ static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_Vulka
     else
         attachment->attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+    attachment->attachmentImageInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO;
+    attachment->attachmentImageInfo.flags           = 0;
+    attachment->attachmentImageInfo.usage           = usage;
+    attachment->attachmentImageInfo.width           = width;
+    attachment->attachmentImageInfo.height          = height;
+    attachment->attachmentImageInfo.layerCount      = 1;
+    attachment->attachmentImageInfo.viewFormatCount = 1;
+    attachment->attachmentImageInfo.pViewFormats    = &attachment->image.format;
+    attachment->attachmentImageInfo.pNext           = NULL;
+
     return true;
 }
 
@@ -136,19 +146,27 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
     VkResult result                       = vkCreateRenderPass(device, &renderPassInfo, NULL, &framebuffer->renderPass);
     AVD_CHECK_VK_RESULT(result, "Failed to create render pass");
 
-    static VkImageView attachmentViews[16] = {0};
-    attachmentViews[0]                     = framebuffer->colorAttachment.image.imageView;
+    static VkFramebufferAttachmentImageInfo attachmentImageInfos[16] = {0};
+    attachmentImageInfos[0]                                          = framebuffer->colorAttachment.attachmentImageInfo;
     if (framebuffer->hasDepthStencil)
-        attachmentViews[1] = framebuffer->depthStencilAttachment.image.imageView;
+        attachmentImageInfos[1] = framebuffer->depthStencilAttachment.attachmentImageInfo;
+
+    VkFramebufferAttachmentsCreateInfo framebufferAttachmentsInfo = {0};
+    framebufferAttachmentsInfo.sType                              = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO;
+    framebufferAttachmentsInfo.pNext                              = NULL;
+    framebufferAttachmentsInfo.attachmentImageInfoCount           = attachmentCount;
+    framebufferAttachmentsInfo.pAttachmentImageInfos              = attachmentImageInfos;
 
     VkFramebufferCreateInfo framebufferInfo = {0};
     framebufferInfo.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    framebufferInfo.flags                   = VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT;
     framebufferInfo.renderPass              = framebuffer->renderPass;
     framebufferInfo.attachmentCount         = attachmentCount;
-    framebufferInfo.pAttachments            = attachmentViews;
+    framebufferInfo.pAttachments            = NULL;
     framebufferInfo.width                   = framebuffer->width;
     framebufferInfo.height                  = framebuffer->height;
     framebufferInfo.layers                  = 1;
+    framebufferInfo.pNext                   = &framebufferAttachmentsInfo;
     result                                  = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffer->framebuffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create framebuffer");
 
@@ -256,4 +274,21 @@ void avdVulkanFramebufferDestroy(AVD_Vulkan *vulkan, AVD_VulkanFramebuffer *fram
     }
     vkDestroyRenderPass(vulkan->device, framebuffer->renderPass, NULL);
     vkDestroyFramebuffer(vulkan->device, framebuffer->framebuffer, NULL);
+}
+
+bool avdVulkanFramebufferGetAttachmentViews(AVD_VulkanFramebuffer *framebuffer, VkImageView *colorAttachmentView, size_t *attachmentCount)
+{
+    AVD_ASSERT(framebuffer != NULL);
+    AVD_ASSERT(colorAttachmentView != NULL);
+    AVD_ASSERT(attachmentCount != NULL);
+
+    *colorAttachmentView = framebuffer->colorAttachment.image.imageView;
+    *attachmentCount     = 1;
+
+    if (framebuffer->hasDepthStencil) {
+        *attachmentCount += 1;
+        colorAttachmentView[1] = framebuffer->depthStencilAttachment.image.imageView;
+    }
+
+    return true;
 }

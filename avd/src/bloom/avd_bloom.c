@@ -115,10 +115,19 @@ static bool __avdBloomPass(
         targetPipeline    = bloom->pipelineComposite;
     }
 
+    static VkImageView attachments[16] = {0};
+    static size_t attachmentCount   = 0;
+    AVD_CHECK(avdVulkanFramebufferGetAttachmentViews(
+        targetFramebuffer,
+        attachments,
+        &attachmentCount));
+
     AVD_CHECK(avdBeginRenderPass(
         commandBuffer,
         targetFramebuffer->renderPass,
         targetFramebuffer->framebuffer,
+        attachments,
+        attachmentCount,
         targetFramebuffer->width,
         targetFramebuffer->height,
         NULL, 0));

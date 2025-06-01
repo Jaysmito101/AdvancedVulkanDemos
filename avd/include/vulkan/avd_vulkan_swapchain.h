@@ -9,7 +9,7 @@ typedef struct AVD_VulkanSwapchain {
     VkSwapchainKHR swapchain;
     VkImage images[64];
     VkImageView imageViews[64];
-    VkFramebuffer framebuffers[64];
+    VkFramebuffer framebuffer;
     VkSurfaceFormatKHR surfaceFormat;
     VkPresentModeKHR presentMode;
     uint32_t imageCount;

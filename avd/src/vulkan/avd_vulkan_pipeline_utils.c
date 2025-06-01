@@ -334,7 +334,7 @@ bool avdWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDes
     return true;
 }
 
-bool avdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer, uint32_t framebufferWidth, uint32_t framebufferHeight, VkClearValue *customClearValues, size_t customClearValueCount)
+bool avdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer, const VkImageView *attachments, size_t attachmentCount, uint32_t framebufferWidth, uint32_t framebufferHeight, VkClearValue *customClearValues, size_t customClearValueCount)
 {
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
     AVD_ASSERT(renderPass != VK_NULL_HANDLE);
@@ -357,6 +357,11 @@ bool avdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, 
         clearValueCount = AVD_ARRAY_COUNT(defaultClearValues);
     }
 
+    VkRenderPassAttachmentBeginInfo attachmentBeginInfo = {0};
+    attachmentBeginInfo.sType                           = VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO;
+    attachmentBeginInfo.attachmentCount                 = (uint32_t)attachmentCount;
+    attachmentBeginInfo.pAttachments                    = attachments;
+
     VkRenderPassBeginInfo renderPassInfo    = {0};
     renderPassInfo.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass               = renderPass;
@@ -367,6 +372,7 @@ bool avdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, 
     renderPassInfo.renderArea.extent.height = framebufferHeight;
     renderPassInfo.clearValueCount          = (uint32_t)clearValueCount;
     renderPassInfo.pClearValues             = clearValues;
+    renderPassInfo.pNext                    = &attachmentBeginInfo;
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -398,7 +404,24 @@ bool avdEndRenderPass(VkCommandBuffer commandBuffer)
 bool avdBeginSceneRenderPass(VkCommandBuffer commandBuffer, AVD_VulkanRenderer *renderer)
 {
     AVD_ASSERT(renderer != NULL);
-    avdBeginRenderPass(commandBuffer, renderer->sceneFramebuffer.renderPass, renderer->sceneFramebuffer.framebuffer, renderer->sceneFramebuffer.width, renderer->sceneFramebuffer.height, NULL, 0);
+    static VkImageView attachments[16] = {0};
+    static size_t attachmentCount   = 0;
+
+    AVD_CHECK(avdVulkanFramebufferGetAttachmentViews(
+        &renderer->sceneFramebuffer,
+        attachments,
+        &attachmentCount));
+
+    avdBeginRenderPass(
+        commandBuffer,
+        renderer->sceneFramebuffer.renderPass,
+        renderer->sceneFramebuffer.framebuffer,
+        attachments,
+        attachmentCount,
+        renderer->sceneFramebuffer.width,
+        renderer->sceneFramebuffer.height,
+        NULL,
+        0);
     return true;
 }
 

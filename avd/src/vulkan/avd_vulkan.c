@@ -10,6 +10,8 @@ static const char *__avd_RequiredVulkanExtensions[] = {
     VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
     VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+    VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,
+    VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME
 };
 
 static bool __avdVulkanLayersSupported(const char **layers, uint32_t layerCount)
@@ -344,6 +346,7 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     deviceVulkan12Features.uniformAndStorageBuffer8BitAccess = VK_TRUE;
     deviceVulkan12Features.storageBuffer8BitAccess           = VK_TRUE;
     deviceVulkan12Features.drawIndirectCount                 = VK_TRUE;
+    deviceVulkan12Features.imagelessFramebuffer              = VK_TRUE;
     deviceVulkan12Features.pNext                             = &accelerationStructureFeatures;
 
     VkPhysicalDeviceVulkan11Features deviceVulkan11Features   = {0};
