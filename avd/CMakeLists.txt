@@ -32,6 +32,8 @@ add_executable(avd
     
     ./src/ui/avd_ui.c
 
+    ./src/math/avd_matrix_non_simd.c
+
     ./src/scenes/avd_scenes.c
     ./src/scenes/avd_scenes_main_menu.c
     ./src/scenes/bloom/avd_scenes_bloom.c

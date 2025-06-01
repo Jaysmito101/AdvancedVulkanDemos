@@ -4,6 +4,7 @@
 #include "core/avd_core.h"
 #include "shader/avd_shader_compiler.h"
 #include "vulkan/avd_vulkan.h"
+#include "math/avd_math.h"
 
 VkShaderModule avdShaderModuleCreate(VkDevice device, const char *shaderCode, VkShaderStageFlagBits shaderType, const char *inputFileName);
 VkShaderModule avdShaderModuleCreateFromAsset(VkDevice device, const char *asset);
