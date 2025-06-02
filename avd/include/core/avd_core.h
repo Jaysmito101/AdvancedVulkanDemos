@@ -5,5 +5,6 @@
 #include "core/avd_input.h"
 #include "core/avd_utils.h"
 #include "core/avd_window.h"
+#include "core/avd_list.h"
 
 #endif // AVD_CORE_H

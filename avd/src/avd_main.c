@@ -9,6 +9,7 @@ int main()
 #ifdef AVD_DEBUG
     // Run tests only in debug mode for now
     AVD_CHECK(avdMathTestsRun());
+    AVD_CHECK(avdListTestsRun());
 #endif
 
     if (!avdApplicationInit(&g_appState)) {

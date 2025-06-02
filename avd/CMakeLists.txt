@@ -7,6 +7,8 @@ add_executable(avd
     ./src/core/avd_utils.c
     ./src/core/avd_window.c
     ./src/core/avd_window_cb.c
+    ./src/core/avd_list.c
+    ./src/core/avd_list_tests.c
     ./src/core/avd_input.c
 
     ./src/avd_main.c
