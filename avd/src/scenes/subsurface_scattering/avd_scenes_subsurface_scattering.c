@@ -13,6 +13,60 @@ static AVD_SceneSubsurfaceScattering *__avdSceneGetTypePtr(AVD_Scene *scene)
     return &scene->subsurfaceScattering;
 }
 
+static void __avdSetupBindlessDescriptorWrite(
+    AVD_Vulkan *vulkan,
+    AVD_VulkanDescriptorType descriptorType,
+    uint32_t index,
+    AVD_VulkanImage *image,
+    VkWriteDescriptorSet *write)
+{
+    AVD_ASSERT(write != NULL);
+    AVD_ASSERT(image != NULL);
+
+    write->sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write->dstSet          = vulkan->bindlessDescriptorSet;
+    write->descriptorCount = 1;
+    write->dstBinding      = (uint32_t)descriptorType;
+    write->descriptorType  = avdVulkanToVkDescriptorType(descriptorType);
+    write->dstArrayElement = index;
+    write->pImageInfo      = &image->descriptorImageInfo;
+}
+
+#define AVD_SETUP_BINDLESS_DEPTH_DESCRIPTOR_WRITE(index, framebuffer) \
+    __avdSetupBindlessDescriptorWrite( \
+        vulkan, \
+        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, \
+        index, \
+        &subsurfaceScattering->framebuffer.depthStencilAttachment.image, \
+        &descriptorSetWrites[descriptorWriteCount++]); 
+
+#define AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(index, framebuffer, imageIndex) \
+    __avdSetupBindlessDescriptorWrite( \
+        vulkan, \
+        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, \
+        index, \
+        &avdVulkanFramebufferGetColorAttachment(&subsurfaceScattering->framebuffer, 0)->image, \
+        &descriptorSetWrites[descriptorWriteCount++]); 
+
+static bool __avdSetupBindlessDescriptors(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_Vulkan *vulkan)
+{
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(vulkan != NULL);
+
+    VkWriteDescriptorSet descriptorSetWrites[64] = {0};
+    uint32_t descriptorWriteCount                = 0;
+    AVD_SETUP_BINDLESS_DEPTH_DESCRIPTOR_WRITE(1, depthBuffer);
+    AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(2, aoBuffer, 0);
+    AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(3, lightingBuffer, 0)
+    AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(4, lightingBuffer, 1);
+    AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(5, lightingBuffer, 2);
+    AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(6, diffusedIrradianceBuffer, 0);
+
+    vkUpdateDescriptorSets(vulkan->device, descriptorWriteCount, descriptorSetWrites, 0, NULL);
+
+    return true;
+}
+
 bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene)
 {
     AVD_ASSERT(appState != NULL);
@@ -25,7 +79,6 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
     subsurfaceScattering->sceneHeight  = (uint32_t)((float)GAME_HEIGHT * 1.5f);
 
     avd3DSceneCreate(&subsurfaceScattering->models);
-
 
     AVD_CHECK(avdVulkanFramebufferCreate(
         &appState->vulkan,
@@ -46,7 +99,7 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         (VkFormat[]){VK_FORMAT_R16_SFLOAT},
         1, // Number of color attachments
         VK_FORMAT_D32_SFLOAT));
-    
+
     AVD_CHECK(avdVulkanFramebufferCreate(
         &appState->vulkan,
         &subsurfaceScattering->lightingBuffer,
@@ -56,10 +109,11 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         (VkFormat[]){
             VK_FORMAT_R16G16B16A16_SFLOAT, // The diffuse irradiance lighting
             VK_FORMAT_R16G16B16A16_SFLOAT, // The specular irradiance lighting
+            VK_FORMAT_R16G16B16A16_SFLOAT, // Extra
         },
-        2, // Number of color attachments
+        3, // Number of color attachments
         VK_FORMAT_D32_SFLOAT));
-    
+
     AVD_CHECK(avdVulkanFramebufferCreate(
         &appState->vulkan,
         &subsurfaceScattering->diffusedIrradianceBuffer,
@@ -69,7 +123,6 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         (VkFormat[]){VK_FORMAT_R16G16B16A16_SFLOAT},
         1, // Number of color attachments
         VK_FORMAT_D32_SFLOAT));
-
 
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &subsurfaceScattering->set0Layout,
@@ -108,6 +161,8 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         "...",
         24.0f));
 
+    AVD_CHECK(__avdSetupBindlessDescriptors(subsurfaceScattering, &appState->vulkan));
+
     return true;
 }
 
@@ -143,8 +198,8 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
         case 0:
             *statusMessage = "Loading Alien Model";
             AVD_CHECK(avd3DSceneLoadObj(
-                "assets/scene_subsurface_scattering/alien.obj", 
-                &subsurfaceScattering->models, 
+                "assets/scene_subsurface_scattering/alien.obj",
+                &subsurfaceScattering->models,
                 AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
         case 1:
@@ -164,7 +219,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
         case 3:
             // NOTE: Pretty dumb thing to do! Ideally we should generate the sphere
             // geometry on the fly but for now we will just load a sphere model
-            // as I am out of time. 
+            // as I am out of time.
             // TODO: Revisit this and generate the sphere geometry on the fly.
             *statusMessage = "Loading Sphere Model";
             AVD_CHECK(avd3DSceneLoadObj(
@@ -195,7 +250,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
 
     subsurfaceScattering->loadStage++;
     *progress += (float)subsurfaceScattering->loadStage / 7.0f; // Update progress based on load stage
-    return false;                                              // Continue loading
+    return false;                                               // Continue loading
 }
 
 void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
@@ -291,7 +346,6 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
 
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
-
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
         &subsurfaceScattering->depthBuffer,
@@ -299,8 +353,6 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
             {.depthStencil = {.depth = 1.0f, .stencil = 0}},
         },
         1));
-
-    
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
 
