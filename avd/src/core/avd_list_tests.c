@@ -6,7 +6,7 @@ static bool __avdTestListInit()
     AVD_LOG("  Testing List initialization...\n");
     
     AVD_List list;
-    avdLisrtCreate(&list, sizeof(int));
+    avdListCreate(&list, sizeof(int));
     
     if (list.itemSize != sizeof(int) ||
         list.count != 0 ||
@@ -27,7 +27,7 @@ static bool __avdTestListPushBack()
     AVD_LOG("  Testing List push back operations...\n");
     
     AVD_List list;
-    avdLisrtCreate(&list, sizeof(int));
+    avdListCreate(&list, sizeof(int));
     
     // Test pushing single element
     int value1 = 42;
@@ -79,7 +79,7 @@ static bool __avdTestListPushFront()
     AVD_LOG("  Testing List push front operations...\n");
     
     AVD_List list;
-    avdLisrtCreate(&list, sizeof(int));
+    avdListCreate(&list, sizeof(int));
     
     // Push elements to front
     for (int i = 0; i < 5; i++) {
@@ -114,7 +114,7 @@ static bool __avdTestListPopOperations()
     AVD_LOG("  Testing List pop operations...\n");
     
     AVD_List list;
-    avdLisrtCreate(&list, sizeof(int));
+    avdListCreate(&list, sizeof(int));
     
     // Test pop on empty list
     void *result = avdListPopBack(&list);
@@ -173,7 +173,7 @@ static bool __avdTestListInsertRemove()
     AVD_LOG("  Testing List insert/remove operations...\n");
     
     AVD_List list;
-    avdLisrtCreate(&list, sizeof(int));
+    avdListCreate(&list, sizeof(int));
     
     // Add initial elements [1, 2, 3, 4, 5]
     for (int i = 1; i <= 5; i++) {
@@ -257,7 +257,7 @@ static bool __avdTestListSort()
     AVD_LOG("  Testing List sort operations...\n");
     
     AVD_List list;
-    avdLisrtCreate(&list, sizeof(int));
+    avdListCreate(&list, sizeof(int));
     
     // Test sort on empty list
     avdListSort(&list, __compareInts);
@@ -308,7 +308,7 @@ static bool __avdTestListUtilities()
     AVD_LOG("  Testing List utility functions...\n");
     
     AVD_List list;
-    avdLisrtCreate(&list, sizeof(int));
+    avdListCreate(&list, sizeof(int));
     
     // Test isEmpty on empty list
     if (!avdListIsEmpty(&list)) {
@@ -388,7 +388,7 @@ static bool __avdTestListWithStrings()
     AVD_LOG("  Testing List with string data...\n");
     
     AVD_List list;
-    avdLisrtCreate(&list, sizeof(char[32]));
+    avdListCreate(&list, sizeof(char[32]));
     
     // Add string data
     char str1[32] = "Hello";
@@ -428,7 +428,7 @@ static bool __avdTestListEdgeCases()
     AVD_LOG("  Testing List edge cases...\n");
     
     AVD_List list;
-    avdLisrtCreate(&list, sizeof(int));
+    avdListCreate(&list, sizeof(int));
     
     // Test get with invalid index
     void *result = avdListGet(&list, 0);

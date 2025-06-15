@@ -251,7 +251,7 @@ AVD_CHECK(avdVulkanInit(&appState->vulkan));
 - Use `avdListDestroy` pattern for cleanup functions
 
 ```c
-void avdLisrtCreate(AVD_List *list, size_t itemSize)
+void avdListCreate(AVD_List *list, size_t itemSize)
 {
     assert(list != NULL);
     assert(itemSize > 0);
@@ -347,7 +347,7 @@ typedef struct AVD_List {
 } AVD_List;
 
 // "Methods"
-void avdLisrtCreate(AVD_List *list, size_t itemSize);
+void avdListCreate(AVD_List *list, size_t itemSize);
 void avdListDestroy(AVD_List *list);
 void *avdListPushBack(AVD_List *list, const void *item);
 ```
