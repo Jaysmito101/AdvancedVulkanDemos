@@ -8,6 +8,10 @@
 #include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
 #include "scenes/subsurface_scattering/avd_scenes_subsurface_scattering.h"
 
+#ifndef AVD_SCENE_MAX_SCENE_LOAD_POLL_COUNT
+#define AVD_SCENE_MAX_SCENE_LOAD_POLL_COUNT 100
+#endif 
+
 typedef union AVD_Scene {
     AVD_SceneType type;
     AVD_SceneMainMenu mainMenu;
@@ -22,6 +26,7 @@ typedef struct AVD_SceneManager {
     AVD_Scene scene;
     AVD_SceneType currentSceneType;
     bool isSceneLoaded;
+    size_t sceneLoadPollCount;
     bool isSceneInitialized;
 
     float sceneLoadingProgress;

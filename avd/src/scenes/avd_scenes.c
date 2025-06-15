@@ -73,6 +73,12 @@ bool avdSceneManagerUpdate(AVD_SceneManager *sceneManager, AVD_AppState *appStat
             AVD_CHECK(sceneManager->api[sceneManager->currentSceneType].update(appState, &sceneManager->scene));
         } else {
             sceneManager->isSceneLoaded = sceneManager->api[sceneManager->currentSceneType].load(appState, &sceneManager->scene, &sceneManager->sceneLoadingStatusMessage, &sceneManager->sceneLoadingProgress);
+            sceneManager->sceneLoadPollCount++;
+            if (sceneManager->sceneLoadPollCount >= AVD_SCENE_MAX_SCENE_LOAD_POLL_COUNT && !sceneManager->isSceneLoaded) {
+                AVD_LOG("Scene loading timed out after %zu polls. Status: %s\n", sceneManager->sceneLoadPollCount, sceneManager->sceneLoadingStatusMessage ? sceneManager->sceneLoadingStatusMessage : "No status message");
+                AVD_LOG("Falling back to main menu scene.\n");
+                AVD_CHECK(avdSceneManagerSwitchToScene(sceneManager, AVD_SCENE_TYPE_MAIN_MENU, appState));
+            }
         }
     }
 
@@ -130,6 +136,7 @@ bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType 
 
     sceneManager->isSceneInitialized        = true;
     sceneManager->isSceneLoaded             = false;
+    sceneManager->sceneLoadPollCount        = 0;
     sceneManager->sceneLoadingProgress      = 0.0f;
     sceneManager->sceneLoadingStatusMessage = NULL;
     return true;
