@@ -34,7 +34,8 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
             framebufferWidth,
             framebufferHeight,
             false,
-            VK_FORMAT_R16G16B16A16_SFLOAT, // could play with this a bit for a more efficient format
+            (VkFormat[]) {VK_FORMAT_R16G16B16A16_SFLOAT},
+            1,
             VK_FORMAT_D32_SFLOAT_S8_UINT));
     }
 
@@ -50,7 +51,8 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
             framebufferWidth,
             framebufferHeight,
             false,
-            VK_FORMAT_R16G16B16A16_SFLOAT, // could play with this a bit for a more efficient format
+            (VkFormat[]) {VK_FORMAT_R16G16B16A16_SFLOAT}, 
+            1,
             VK_FORMAT_D32_SFLOAT_S8_UINT));
     }
 
@@ -83,21 +85,21 @@ static bool __avdBloomPass(
     switch (passType) {
         case AVD_BLOOM_PASS_TYPE_PREFILTER:
         case AVD_BLOOM_PASS_TYPE_DOWNSAMPLE_PREFILTER:
-            customTexture0 = srcFramebuffer->colorAttachment.descriptorSet;
+            customTexture0 = avdVulkanFramebufferGetColorAttachment(srcFramebuffer, 0)->descriptorSet;
             // unused, TODO: use a fallback image descriptor set here
-            customTexture1 = bloom->bloomPasses[1].colorAttachment.descriptorSet;
+            customTexture1 = avdVulkanFramebufferGetColorAttachment(&bloom->bloomPasses[1], 0)->descriptorSet;
             break;
         case AVD_BLOOM_PASS_TYPE_DOWNSAMPLE:
-            customTexture0 = bloom->bloomPasses[sourceIndex].colorAttachment.descriptorSet;
-            customTexture1 = bloom->bloomPasses[0].colorAttachment.descriptorSet;
+            customTexture0 = avdVulkanFramebufferGetColorAttachment(&bloom->bloomPasses[sourceIndex], 0)->descriptorSet;
+            customTexture1 = avdVulkanFramebufferGetColorAttachment(&bloom->bloomPasses[0], 0)->descriptorSet;
             break;
         case AVD_BLOOM_PASS_TYPE_UPSAMPLE:
-            customTexture0 = bloom->bloomPasses[sourceIndex].colorAttachment.descriptorSet;
-            customTexture1 = bloom->bloomPasses[2 * bloom->passCount - 5 - sourceIndex].colorAttachment.descriptorSet;
+            customTexture0 = avdVulkanFramebufferGetColorAttachment(&bloom->bloomPasses[sourceIndex], 0)->descriptorSet;
+            customTexture1 = avdVulkanFramebufferGetColorAttachment(&bloom->bloomPasses[2 * bloom->passCount - 5 - sourceIndex], 0)->descriptorSet;
             break;
         case AVD_BLOOM_PASS_TYPE_COMPOSITE:
-            customTexture0 = bloom->bloomPasses[2 * bloom->passCount - 4].colorAttachment.descriptorSet;
-            customTexture1 = bloom->bloomPasses[2 * bloom->passCount - 3].colorAttachment.descriptorSet;
+            customTexture0 = avdVulkanFramebufferGetColorAttachment(&bloom->bloomPasses[2 * bloom->passCount - 4], 0)->descriptorSet;
+            customTexture1 = avdVulkanFramebufferGetColorAttachment(&bloom->bloomPasses[2 * bloom->passCount - 3], 0)->descriptorSet;
             break;
         default:
             AVD_ASSERT(false);

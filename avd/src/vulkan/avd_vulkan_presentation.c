@@ -104,7 +104,7 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, presentation->pipeline);
     vkCmdPushConstants(commandBuffer, presentation->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(AVD_VulkanPresentationPushConstants), &pushConstants);
     VkDescriptorSet descriptorSetsToBind[] = {
-        renderer->sceneFramebuffer.colorAttachment.descriptorSet, // Set 0
+        avdVulkanFramebufferGetColorAttachment(&renderer->sceneFramebuffer, 0)->descriptorSet, // Set 0
     };
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, presentation->pipelineLayout, 0, AVD_ARRAY_COUNT(descriptorSetsToBind), descriptorSetsToBind, 0, NULL);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);

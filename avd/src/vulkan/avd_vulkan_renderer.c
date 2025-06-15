@@ -158,7 +158,7 @@ bool avdVulkanRendererCreate(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, A
 
     // create the command buffer and synchronization objects
     AVD_CHECK(__avdVulkanRendererCreateRenderResources(renderer, vulkan, swapchain->imageCount));
-    AVD_CHECK(avdVulkanFramebufferCreate(vulkan, &renderer->sceneFramebuffer, width, height, true, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_D32_SFLOAT));
+    AVD_CHECK(avdVulkanFramebufferCreate(vulkan, &renderer->sceneFramebuffer, width, height, true, (VkFormat[]){VK_FORMAT_R32G32B32A32_SFLOAT}, 1, VK_FORMAT_D32_SFLOAT));
     return true;
 }
 

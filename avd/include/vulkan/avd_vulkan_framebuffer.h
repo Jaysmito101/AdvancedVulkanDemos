@@ -18,7 +18,7 @@ typedef struct AVD_VulkanFramebuffer {
     VkRenderPass renderPass;
     bool hasDepthStencil;
 
-    AVD_VulkanFramebufferAttachment colorAttachment;
+    AVD_List colorAttachments;
     AVD_VulkanFramebufferAttachment depthStencilAttachment;
 
     uint32_t width;
@@ -29,8 +29,9 @@ typedef struct AVD_VulkanFramebuffer {
 bool avdVulkanFormatIsDepth(VkFormat format);
 bool avdVulkanFormatIsStencil(VkFormat format);
 bool avdVulkanFormatIsDepthStencil(VkFormat format);
-bool avdVulkanFramebufferCreate(AVD_Vulkan *vulkan, AVD_VulkanFramebuffer *framebuffer, int32_t width, int32_t height, bool hasDepthStencil, VkFormat colorFormat, VkFormat depthStencilFormat);
+bool avdVulkanFramebufferCreate(AVD_Vulkan *vulkan, AVD_VulkanFramebuffer *framebuffer, int32_t width, int32_t height, bool hasDepthStencil, VkFormat* colorFormats, uint32_t formatCount, VkFormat depthStencilFormat);
 void avdVulkanFramebufferDestroy(AVD_Vulkan *vulkan, AVD_VulkanFramebuffer *framebuffer);
+AVD_VulkanFramebufferAttachment *avdVulkanFramebufferGetColorAttachment(AVD_VulkanFramebuffer *framebuffer, size_t index);
 bool avdVulkanFramebufferGetAttachmentViews(AVD_VulkanFramebuffer *framebuffer, VkImageView *colorAttachmentView, size_t *attachmentCount);
 
 #endif // AVD_VULKAN_FRAMEBUFFER_H
