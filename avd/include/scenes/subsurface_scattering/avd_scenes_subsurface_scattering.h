@@ -3,11 +3,13 @@
 #define AVD_SCENES_SUBSURFACE_SCATTERING_H
 
 #include "scenes/avd_scenes_base.h"
+#include "model/avd_3d_scene.h"
 
 typedef struct AVD_SceneSubsurfaceScattering {
     AVD_SceneType type;
-    
     AVD_RenderableText title;
+
+    AVD_3DScene models;
 } AVD_SceneSubsurfaceScattering;
 
 bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene);

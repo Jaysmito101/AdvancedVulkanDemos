@@ -12,7 +12,9 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
+    AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
+    avd3DSceneCreate(&subsurfaceScattering->models);
 
     return true;
 }
@@ -44,7 +46,8 @@ void avdSceneSubsurfaceScatteringDestroy(struct AVD_AppState *appState, union AV
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-
+    AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
+    avd3DSceneDestroy(&subsurfaceScattering->models);
 }
 
 bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char **statusMessage, float *progress)
@@ -52,10 +55,12 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
     AVD_ASSERT(statusMessage != NULL);
     AVD_ASSERT(progress != NULL);
     *statusMessage = NULL;
-    *progress      = 1.0f;
+    *progress      = 1.1f;
 
-    // The Subsurface Scattering scene does not have any external dependencies
-    // and is always considered to be in a valid state.
+    AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
+
+    AVD_CHECK(avd3DSceneLoadObj("assets/scene_subsurface_scattering/alien.obj", &subsurfaceScattering->models));
+
     return true;
 }
 
@@ -74,9 +79,12 @@ bool avdSceneSubsurfaceScatteringCheckIntegrity(struct AVD_AppState *appState, c
     *statusMessage = NULL;
 
     // Not really a dependency but we should ensure that its present
-    AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/LICENSE");
-
-
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/alien.obj");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/alien_thickness_map.png");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/buddha.obj");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/buddha_thickness_map.png");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/standford_dragon.obj");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/standford_dragon_thickness_map.png");
     return true;
 }
 
