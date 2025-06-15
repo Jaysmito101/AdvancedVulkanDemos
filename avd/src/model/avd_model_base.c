@@ -14,8 +14,8 @@ bool avdModelResourcesCreate(AVD_ModelResources *resources)
 {
     AVD_ASSERT(resources != NULL);
 
-    avdListInit(&resources->verticesList, sizeof(AVD_ModelVertex));
-    avdListInit(&resources->indicesList, sizeof(uint32_t));
+    avdLisrtCreate(&resources->verticesList, sizeof(AVD_ModelVertex));
+    avdLisrtCreate(&resources->indicesList, sizeof(uint32_t));
 
     return true;
 }

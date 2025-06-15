@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void avdListInit(AVD_List *list, size_t itemSize)
+void avdLisrtCreate(AVD_List *list, size_t itemSize)
 {
     assert(list != NULL);
     assert(itemSize > 0);

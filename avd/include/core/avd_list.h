@@ -19,7 +19,7 @@ typedef struct {
     void *items;
 } AVD_List;
 
-void avdListInit(AVD_List *list, size_t itemSize);
+void avdLisrtCreate(AVD_List *list, size_t itemSize);
 void avdListDestroy(AVD_List *list);
 void *avdListPushBack(AVD_List *list, const void *item);
 void *avdListPushFront(AVD_List *list, const void *item);

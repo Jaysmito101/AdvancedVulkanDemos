@@ -39,6 +39,8 @@ add_executable(avd
     ./src/math/avd_math_tests.c
 
     ./src/model/avd_model_base.c
+    ./src/model/avd_3d_scene.c
+    ./src/model/avd_model_obj_loader.c
 
     ./src/scenes/avd_scenes.c
     ./src/scenes/avd_scenes_main_menu.c
