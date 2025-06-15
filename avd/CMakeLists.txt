@@ -56,6 +56,7 @@ include_directories(avd
     ../dep/cgltf
     ../dep/cute_headers
     ../dep/volk
+    ../dep/tinyobjloader-c
     ../avd_assets/generated/include
     ${Vulkan_INCLUDE_DIRS}
 )

@@ -7,3 +7,6 @@
 [submodule "dep/volk"]
 	path = dep/volk
 	url = https://github.com/zeux/volk.git
+[submodule "dep/tineyobjloader-c"]
+	path = dep/tineyobjloader-c
+	url = https://github.com/syoyo/tinyobjloader-c
