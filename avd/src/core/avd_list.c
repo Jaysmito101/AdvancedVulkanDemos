@@ -15,9 +15,27 @@ void avdLisrtCreate(AVD_List *list, size_t itemSize)
     assert(list->items != NULL);
 }
 
+void avdListSetDestructor(AVD_List *list, AVD_ListDestructor *destructor, void *context)
+{
+    assert(list != NULL);
+    assert(destructor != NULL);
+
+    list->destructor = destructor;
+    list->destructorContext = context;
+}
+
 void avdListDestroy(AVD_List *list)
 {
+    AVD_ASSERT(list != NULL);
+
     if (list && list->items) {
+        if (list->destructor) {
+            for (size_t i = 0; i < list->count; i++) {
+                void *item = (char *)list->items + (i * list->itemSize);
+                list->destructor(item, list->destructorContext);
+            }
+        }
+
         free(list->items);
         list->items    = NULL;
         list->count    = 0;
@@ -124,6 +142,12 @@ void *avdListGet(AVD_List *list, size_t index)
 void avdListClear(AVD_List *list)
 {
     assert(list != NULL);
+    if (list->destructor) {
+        for (size_t i = 0; i < list->count; i++) {
+            void *item = (char *)list->items + (i * list->itemSize);
+            list->destructor(item, list->destructorContext);
+        }
+    }
     list->count = 0;
 }
 
@@ -150,6 +174,11 @@ void avdListRemove(AVD_List *list, size_t index)
 
     if (index >= list->count) {
         return;
+    }
+
+    if (list->destructor) {
+        void *item = (char *)list->items + (index * list->itemSize);
+        list->destructor(item, list->destructorContext);
     }
 
     // Shift elements after index to the left
