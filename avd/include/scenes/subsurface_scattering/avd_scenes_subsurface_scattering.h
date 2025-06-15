@@ -10,6 +10,7 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_RenderableText title;
 
     AVD_3DScene models;
+    uint32_t loadStage;
 } AVD_SceneSubsurfaceScattering;
 
 bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene);

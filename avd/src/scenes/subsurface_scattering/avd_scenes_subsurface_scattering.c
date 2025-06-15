@@ -14,6 +14,7 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
     AVD_ASSERT(scene != NULL);
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
+    subsurfaceScattering->loadStage = 0;
     avd3DSceneCreate(&subsurfaceScattering->models);
 
     return true;
@@ -54,14 +55,46 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
 {
     AVD_ASSERT(statusMessage != NULL);
     AVD_ASSERT(progress != NULL);
-    *statusMessage = NULL;
-    *progress      = 1.1f;
 
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
-    AVD_CHECK(avd3DSceneLoadObj("assets/scene_subsurface_scattering/alien.obj", &subsurfaceScattering->models));
+    switch (subsurfaceScattering->loadStage) {
+        case 0:
+            *statusMessage = "Loading Alien Model";
+            AVD_CHECK(avd3DSceneLoadObj("assets/scene_subsurface_scattering/alien.obj", &subsurfaceScattering->models, AVD_OBJ_LOAD_FLAG_NONE));
+            break;
+        case 1:
+            *statusMessage = "Loading Buddha Model";
+            AVD_CHECK(avd3DSceneLoadObj("assets/scene_subsurface_scattering/buddha.obj", &subsurfaceScattering->models, AVD_OBJ_LOAD_FLAG_NONE));
+            break;
+        case 2:
+            *statusMessage = "Loading Standford Dragon Model";
+            AVD_CHECK(avd3DSceneLoadObj("assets/scene_subsurface_scattering/standford_dragon.obj", &subsurfaceScattering->models, AVD_OBJ_LOAD_FLAG_NONE));
+            break;
+        case 3:
+            *statusMessage = "Loading Alien Thickness Map";
+            break;
+        case 4:
+            *statusMessage = "Loading Buddha Thickness Map";
+            break;
+        case 5:
+            *statusMessage = "Loading Standford Dragon Thickness Map";
+            break;
+        case 6:
+            *statusMessage = NULL;
+            *progress      = 1.0f;
+            subsurfaceScattering->loadStage = 0; // Reset load stage for next load
+            AVD_LOG("Subsurface Scattering scene loaded successfully.\n");
+            avd3DSceneDebugLog(&subsurfaceScattering->models, "SubsurfaceScattering/Models");
+            return true;
+        default:
+            AVD_LOG("Subsurface Scattering scene load stage is invalid: %d\n", subsurfaceScattering->loadStage);
+            return false;
+    }
 
-    return true;
+    subsurfaceScattering->loadStage++;
+    *progress = (float)subsurfaceScattering->loadStage / 6.0f; // Update progress based on load stage
+    return false; // Continue loading
 }
 
 void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
