@@ -126,7 +126,7 @@ void avdSceneSubsurfaceScatteringDestroy(struct AVD_AppState *appState, union AV
     avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->aoBuffer);
     avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->lightingBuffer);
     avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->diffusedIrradianceBuffer);
-    
+
     vkDestroyDescriptorSetLayout(appState->vulkan.device, subsurfaceScattering->set0Layout, NULL);
     vkDestroyPipelineLayout(appState->vulkan.device, subsurfaceScattering->compositePipelineLayout, NULL);
     vkDestroyPipeline(appState->vulkan.device, subsurfaceScattering->compositePipeline, NULL);
@@ -142,26 +142,46 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
     switch (subsurfaceScattering->loadStage) {
         case 0:
             *statusMessage = "Loading Alien Model";
-            AVD_CHECK(avd3DSceneLoadObj("assets/scene_subsurface_scattering/alien.obj", &subsurfaceScattering->models, AVD_OBJ_LOAD_FLAG_NONE));
+            AVD_CHECK(avd3DSceneLoadObj(
+                "assets/scene_subsurface_scattering/alien.obj", 
+                &subsurfaceScattering->models, 
+                AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
         case 1:
             *statusMessage = "Loading Buddha Model";
-            AVD_CHECK(avd3DSceneLoadObj("assets/scene_subsurface_scattering/buddha.obj", &subsurfaceScattering->models, AVD_OBJ_LOAD_FLAG_NONE));
+            AVD_CHECK(avd3DSceneLoadObj(
+                "assets/scene_subsurface_scattering/buddha.obj",
+                &subsurfaceScattering->models,
+                AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
         case 2:
             *statusMessage = "Loading Standford Dragon Model";
-            AVD_CHECK(avd3DSceneLoadObj("assets/scene_subsurface_scattering/standford_dragon.obj", &subsurfaceScattering->models, AVD_OBJ_LOAD_FLAG_NONE));
+            AVD_CHECK(avd3DSceneLoadObj(
+                "assets/scene_subsurface_scattering/standford_dragon.obj",
+                &subsurfaceScattering->models,
+                AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
         case 3:
-            *statusMessage = "Loading Alien Thickness Map";
+            // NOTE: Pretty dumb thing to do! Ideally we should generate the sphere
+            // geometry on the fly but for now we will just load a sphere model
+            // as I am out of time. 
+            // TODO: Revisit this and generate the sphere geometry on the fly.
+            *statusMessage = "Loading Sphere Model";
+            AVD_CHECK(avd3DSceneLoadObj(
+                "assets/scene_subsurface_scattering/sphere.obj",
+                &subsurfaceScattering->models,
+                AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
         case 4:
-            *statusMessage = "Loading Buddha Thickness Map";
+            *statusMessage = "Loading Alien Thickness Map";
             break;
         case 5:
-            *statusMessage = "Loading Standford Dragon Thickness Map";
+            *statusMessage = "Loading Buddha Thickness Map";
             break;
         case 6:
+            *statusMessage = "Loading Standford Dragon Thickness Map";
+            break;
+        case 7:
             *statusMessage                  = NULL;
             *progress                       = 1.0f;
             subsurfaceScattering->loadStage = 0; // Reset load stage for next load
@@ -174,7 +194,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
     }
 
     subsurfaceScattering->loadStage++;
-    *progress = (float)subsurfaceScattering->loadStage / 6.0f; // Update progress based on load stage
+    *progress += (float)subsurfaceScattering->loadStage / 7.0f; // Update progress based on load stage
     return false;                                              // Continue loading
 }
 
@@ -209,6 +229,7 @@ bool avdSceneSubsurfaceScatteringCheckIntegrity(struct AVD_AppState *appState, c
     AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/buddha_thickness_map.png");
     AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/standford_dragon.obj");
     AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/standford_dragon_thickness_map.png");
+    AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/sphere.obj");
     return true;
 }
 
@@ -270,7 +291,18 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
 
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
-    // Render to the G-Buffer
+
+    AVD_CHECK(avdBeginRenderPassWithFramebuffer(
+        commandBuffer,
+        &subsurfaceScattering->depthBuffer,
+        (VkClearValue[]){
+            {.depthStencil = {.depth = 1.0f, .stencil = 0}},
+        },
+        1));
+
+    
+
+    AVD_CHECK(avdEndRenderPass(commandBuffer));
 
     // Composite to the main framebuffer
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));

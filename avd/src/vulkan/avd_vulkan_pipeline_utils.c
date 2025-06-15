@@ -404,6 +404,32 @@ bool avdEndRenderPass(VkCommandBuffer commandBuffer)
     return true;
 }
 
+
+bool avdBeginRenderPassWithFramebuffer(VkCommandBuffer commandBuffer, AVD_VulkanFramebuffer* framebuffer, VkClearValue *customClearValues, size_t customClearValueCount)
+{
+    AVD_ASSERT(framebuffer != NULL);
+    static VkImageView attachments[16] = {0};
+    static size_t attachmentCount      = 0;
+
+    AVD_CHECK(avdVulkanFramebufferGetAttachmentViews(
+        framebuffer,
+        attachments,
+        &attachmentCount));
+
+    AVD_CHECK(avdBeginRenderPass(
+        commandBuffer,
+        framebuffer->renderPass,
+        framebuffer->framebuffer,
+        attachments,
+        attachmentCount,
+        framebuffer->width,
+        framebuffer->height,
+        customClearValues,
+        customClearValueCount));
+
+    return true;
+}
+
 bool avdBeginSceneRenderPass(VkCommandBuffer commandBuffer, AVD_VulkanRenderer *renderer)
 {
     AVD_ASSERT(renderer != NULL);

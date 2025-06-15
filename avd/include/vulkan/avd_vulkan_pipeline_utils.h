@@ -7,6 +7,7 @@
 #define AVD_MAX_DESCRIPTOR_SET_BINDINGS 32
 #endif
 
+struct AVD_VulkanFramebuffer;
 struct AVD_VulkanRenderer;
 
 bool avdPipelineUtilsShaderStage(VkPipelineShaderStageCreateInfo *shaderStageInfo, VkShaderModule shaderModule, VkShaderStageFlagBits stageFlags);
@@ -45,6 +46,7 @@ bool avdWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDesc
 bool avdWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorBufferInfo *bufferInfo);
 
 bool avdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer, const VkImageView *attachments, size_t attachmentCount, uint32_t framebufferWidth, uint32_t framebufferHeight, VkClearValue *customClearValues, size_t customClearValueCount);
+bool avdBeginRenderPassWithFramebuffer(VkCommandBuffer commandBuffer, struct AVD_VulkanFramebuffer* framebuffer, VkClearValue *customClearValues, size_t customClearValueCount);
 bool avdEndRenderPass(VkCommandBuffer commandBuffer);
 bool avdBeginSceneRenderPass(VkCommandBuffer commandBuffer, struct AVD_VulkanRenderer *renderer);
 bool avdEndSceneRenderPass(VkCommandBuffer commandBuffer);
