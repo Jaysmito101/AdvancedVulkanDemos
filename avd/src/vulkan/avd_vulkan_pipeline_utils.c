@@ -282,6 +282,9 @@ bool avdWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDesc
     return true;
 }
 
+// TODO: Ideally this shouldn't return the ownership of the descriptor set layout
+// but rather just cache it in AVD_Vulkan or something similar and sort of
+// have a cache layer for descriptor set layouts.
 bool avdCreateDescriptorSetLayout(
     VkDescriptorSetLayout *descriptorSetLayout,
     VkDevice device,
