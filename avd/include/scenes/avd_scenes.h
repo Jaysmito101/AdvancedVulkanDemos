@@ -6,6 +6,7 @@
 #include "scenes/bloom/avd_scenes_bloom.h"
 #include "scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.h"
 #include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
+#include "scenes/subsurface_scattering/avd_scenes_subsurface_scattering.h"
 
 typedef union AVD_Scene {
     AVD_SceneType type;
@@ -13,6 +14,7 @@ typedef union AVD_Scene {
     AVD_SceneBloom bloom;
     AVD_Scene2DRadianceCascades radianceCascades;
     AVD_SceneDeccerCubes deccerCubes;
+    AVD_SceneSubsurfaceScattering subsurfaceScattering;
 } AVD_Scene;
 
 typedef struct AVD_SceneManager {

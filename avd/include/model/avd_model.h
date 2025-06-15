@@ -7,6 +7,11 @@ typedef struct {
     AVD_Int32 id;
     AVD_Int32 indexOffset;
     AVD_Int32 triangleCount;
+    char name[64];
+} AVD_Mesh;
+
+typedef struct {
+    AVD_Int32 id;
 } AVD_Model;
 
 

@@ -35,6 +35,7 @@ static bool __avdRegisterSceneApis(AVD_SceneManager *sceneManager)
     avdSceneBloomRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_BLOOM]);
     avdScene2DRadianceCascadesRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_2D_RADIANCE_CASCADES]);
     avdSceneDeccerCubesRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_DECCER_CUBES]);
+    avdSceneSubsurfaceScatteringRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_SUBSURFACE_SCATTERING]);
     return true;
 }
 
