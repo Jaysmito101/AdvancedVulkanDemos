@@ -12,6 +12,8 @@ void avdLisrtCreate(AVD_List *list, size_t itemSize)
     list->capacity = AVD_LIST_INITIAL_CAPACITY;
     list->count    = 0;
     list->items    = malloc(list->capacity * itemSize);
+    list->destructor = NULL;
+    list->destructorContext = NULL;
     assert(list->items != NULL);
 }
 
