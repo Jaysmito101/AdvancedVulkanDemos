@@ -17,3 +17,6 @@ Radiance Cascades:
 * EA GIBS (Surfels): https://www.youtube.com/watch?v=Uea9Wq1XdA4
 * UE5 Radiance Caching: https://www.youtube.com/watch?v=2GYXuM10riw&t=719s
 * DDGI (Dynamic Diffuse Global Illumination): https://www.gdcvault.com/play/1026182/
+
+
+* Point-Based Color Bleeding (Fake GI/Indirect Illumination) (Pixar): https://graphics.pixar.com/library/PointBasedColorBleeding/SlidesFromAnnecy09.pdf
