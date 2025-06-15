@@ -1,6 +1,5 @@
 #include "model/avd_model.h"
 
-
 bool avdModelCreate(AVD_Model *model, AVD_Int32 id)
 {
     AVD_ASSERT(model != NULL);
@@ -12,7 +11,7 @@ bool avdModelCreate(AVD_Model *model, AVD_Int32 id)
 void avdModelDestroy(AVD_Model *model)
 {
     AVD_ASSERT(model != NULL);
-    
+
     model->id = -1;
     avdListClear(&model->meshes);
 }

@@ -554,10 +554,10 @@ void avdVulkanShutdown(AVD_Vulkan *vulkan)
 
     vkDestroyCommandPool(vulkan->device, vulkan->graphicsCommandPool, NULL);
     vkDestroyCommandPool(vulkan->device, vulkan->computeCommandPool, NULL);
-    
+
     vkDestroyDescriptorPool(vulkan->device, vulkan->descriptorPool, NULL);
     vkDestroyDescriptorPool(vulkan->device, vulkan->bindlessDescriptorPool, NULL);
-    
+
     vkDestroyDescriptorSetLayout(vulkan->device, vulkan->bindlessDescriptorSetLayout, NULL);
 
     vkDestroyDevice(vulkan->device, NULL);

@@ -34,7 +34,7 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
             framebufferWidth,
             framebufferHeight,
             false,
-            (VkFormat[]) {VK_FORMAT_R16G16B16A16_SFLOAT},
+            (VkFormat[]){VK_FORMAT_R16G16B16A16_SFLOAT},
             1,
             VK_FORMAT_D32_SFLOAT_S8_UINT));
     }
@@ -51,7 +51,7 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
             framebufferWidth,
             framebufferHeight,
             false,
-            (VkFormat[]) {VK_FORMAT_R16G16B16A16_SFLOAT}, 
+            (VkFormat[]){VK_FORMAT_R16G16B16A16_SFLOAT},
             1,
             VK_FORMAT_D32_SFLOAT_S8_UINT));
     }
@@ -118,7 +118,7 @@ static bool __avdBloomPass(
     }
 
     static VkImageView attachments[16] = {0};
-    static size_t attachmentCount   = 0;
+    static size_t attachmentCount      = 0;
     AVD_CHECK(avdVulkanFramebufferGetAttachmentViews(
         targetFramebuffer,
         attachments,

@@ -1,16 +1,16 @@
 #ifndef AVD_SCENES_H
 #define AVD_SCENES_H
 
+#include "scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.h"
 #include "scenes/avd_scenes_base.h"
 #include "scenes/avd_scenes_main_menu.h"
 #include "scenes/bloom/avd_scenes_bloom.h"
-#include "scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.h"
 #include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
 #include "scenes/subsurface_scattering/avd_scenes_subsurface_scattering.h"
 
 #ifndef AVD_SCENE_MAX_SCENE_LOAD_POLL_COUNT
 #define AVD_SCENE_MAX_SCENE_LOAD_POLL_COUNT 100
-#endif 
+#endif
 
 typedef union AVD_Scene {
     AVD_SceneType type;
@@ -44,12 +44,12 @@ void avdSceneManagerPushInputEvent(AVD_SceneManager *sceneManager, struct AVD_Ap
 bool avdSceneManagerCheckSceneIntegrity(AVD_SceneManager *sceneManager, AVD_SceneType type, struct AVD_AppState *appState, const char **statusMessage);
 bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType type, struct AVD_AppState *appState);
 
-#define AVD_FILE_INTEGRITY_CHECK(path) \
-    if (!avdPathExists(path)) { \
-        static char statusBuffer[256]; \
+#define AVD_FILE_INTEGRITY_CHECK(path)                                                                        \
+    if (!avdPathExists(path)) {                                                                               \
+        static char statusBuffer[256];                                                                        \
         snprintf(statusBuffer, sizeof(statusBuffer), "File integrity check failed: %s does not exist", path); \
-        *statusMessage = statusBuffer; \
-        AVD_CHECK_MSG(false, "File integrity check failed: %s does not exist", path); \
+        *statusMessage = statusBuffer;                                                                        \
+        AVD_CHECK_MSG(false, "File integrity check failed: %s does not exist", path);                         \
     }
 
 #endif // AVD_SCENES_H

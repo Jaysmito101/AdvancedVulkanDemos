@@ -13,10 +13,8 @@ bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-
     return true;
 }
-
 
 bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *scene)
 {
@@ -24,7 +22,6 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
     AVD_ASSERT(scene != NULL);
 
     AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
-
 
     return true;
 }
@@ -43,8 +40,6 @@ void avdSceneDeccerCubesDestroy(struct AVD_AppState *appState, union AVD_Scene *
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
-
-
 }
 
 bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char **statusMessage, float *progress)
@@ -94,7 +89,7 @@ bool avdSceneDeccerCubesCheckIntegrity(struct AVD_AppState *appState, const char
     return true;
 }
 
-bool avdSceneDeccerCubesRegisterApi(AVD_SceneAPI *api) 
+bool avdSceneDeccerCubesRegisterApi(AVD_SceneAPI *api)
 {
     AVD_ASSERT(api != NULL);
 
@@ -106,8 +101,8 @@ bool avdSceneDeccerCubesRegisterApi(AVD_SceneAPI *api)
     api->load           = avdSceneDeccerCubesLoad;
     api->inputEvent     = avdSceneDeccerCubesInputEvent;
 
-    api->displayName    = "Deccer Cubes";
-    api->id             = "DDGIPlaceholder";
+    api->displayName = "Deccer Cubes";
+    api->id          = "DDGIPlaceholder";
 
     return true;
 }

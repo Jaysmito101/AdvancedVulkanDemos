@@ -6,7 +6,7 @@
 
 typedef struct AVD_SceneDeccerCubes {
     AVD_SceneType type;
-    
+
     AVD_RenderableText title;
 } AVD_SceneDeccerCubes;
 
@@ -19,7 +19,5 @@ void avdSceneDeccerCubesInputEvent(struct AVD_AppState *appState, union AVD_Scen
 
 bool avdSceneDeccerCubesCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage);
 bool avdSceneDeccerCubesRegisterApi(AVD_SceneAPI *api);
-
-
 
 #endif // AVD_SCENES_DECCER_CUBES_H

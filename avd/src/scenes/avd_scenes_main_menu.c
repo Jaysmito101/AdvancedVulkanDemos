@@ -69,8 +69,8 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
     AVD_SceneMainMenuCard *card = NULL;
     static char title[64];
     mainMenu->cardCount = 0;
-   
-    AVD_SceneAPI* api = &appState->sceneManager.api[0];
+
+    AVD_SceneAPI *api = &appState->sceneManager.api[0];
 
     for (int i = 0; i < AVD_SCENE_TYPE_COUNT; i++) {
         if (i == AVD_SCENE_TYPE_MAIN_MENU) {
@@ -86,9 +86,7 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
                 card,
                 &appState->vulkan,
                 &appState->fontRenderer,
-                mainMenu->descriptorSetLayout
-            )
-        );
+                mainMenu->descriptorSetLayout));
     }
 
     return true;
@@ -123,8 +121,8 @@ bool avdSceneMainMenuRegisterApi(AVD_SceneAPI *api)
     api->inputEvent     = avdSceneMainMenuInputEvent;
 
     // These wont be use for the main menu scene, but they are required for the scene API to be valid
-    api->displayName    = "Main Menu";
-    api->id             = "DDGIPlaceholder";
+    api->displayName = "Main Menu";
+    api->id          = "DDGIPlaceholder";
 
     return true;
 }

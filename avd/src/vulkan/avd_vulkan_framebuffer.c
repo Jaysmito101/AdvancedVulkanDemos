@@ -86,14 +86,14 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
     AVD_ASSERT(framebuffer != NULL);
 
     static VkAttachmentDescription colorAttachmentDescriptions[64] = {0};
-    uint32_t attachmentCount = (uint32_t)framebuffer->colorAttachments.count;
+    uint32_t attachmentCount                                       = (uint32_t)framebuffer->colorAttachments.count;
     if (attachmentCount > (uint32_t)AVD_ARRAY_COUNT(colorAttachmentDescriptions)) {
         AVD_LOG("Too many color attachments for framebuffer, max is %zu", AVD_ARRAY_COUNT(colorAttachmentDescriptions));
         return false;
     }
     for (size_t i = 0; i < framebuffer->colorAttachments.count; ++i) {
         AVD_VulkanFramebufferAttachment *attachment = (AVD_VulkanFramebufferAttachment *)avdListGet(&framebuffer->colorAttachments, i);
-        colorAttachmentDescriptions[i]               = attachment->attachmentDescription;
+        colorAttachmentDescriptions[i]              = attachment->attachmentDescription;
     }
     if (framebuffer->hasDepthStencil) {
         colorAttachmentDescriptions[attachmentCount] = framebuffer->depthStencilAttachment.attachmentDescription;
@@ -257,7 +257,7 @@ bool avdVulkanFramebufferCreate(
 
     for (uint32_t i = 0; i < formatCount; ++i) {
         AVD_VulkanFramebufferAttachment attachment = {0};
-        if (!__avdVulkanFramebufferAttachmentCreate(vulkan, &attachment, colorFormats[i], VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {   
+        if (!__avdVulkanFramebufferAttachmentCreate(vulkan, &attachment, colorFormats[i], VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
             AVD_LOG("Failed to create color attachment for format %d\n", colorFormats[i]);
             return false;
         }

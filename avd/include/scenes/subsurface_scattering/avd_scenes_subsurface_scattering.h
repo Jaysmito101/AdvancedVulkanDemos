@@ -2,8 +2,8 @@
 #ifndef AVD_SCENES_SUBSURFACE_SCATTERING_H
 #define AVD_SCENES_SUBSURFACE_SCATTERING_H
 
-#include "scenes/avd_scenes_base.h"
 #include "model/avd_3d_scene.h"
+#include "scenes/avd_scenes_base.h"
 
 typedef struct AVD_SceneSubsurfaceScattering {
     AVD_SceneType type;
@@ -22,7 +22,5 @@ void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union
 
 bool avdSceneSubsurfaceScatteringCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage);
 bool avdSceneSubsurfaceScatteringRegisterApi(AVD_SceneAPI *api);
-
-
 
 #endif // AVD_SCENES_SUBSURFACE_SCATTERING_H

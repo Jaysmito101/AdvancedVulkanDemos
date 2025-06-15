@@ -405,7 +405,7 @@ bool avdBeginSceneRenderPass(VkCommandBuffer commandBuffer, AVD_VulkanRenderer *
 {
     AVD_ASSERT(renderer != NULL);
     static VkImageView attachments[16] = {0};
-    static size_t attachmentCount   = 0;
+    static size_t attachmentCount      = 0;
 
     AVD_CHECK(avdVulkanFramebufferGetAttachmentViews(
         &renderer->sceneFramebuffer,

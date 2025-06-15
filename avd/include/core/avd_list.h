@@ -3,16 +3,15 @@
 
 #include "core/avd_base.h"
 
-
 #ifndef AVD_LIST_INITIAL_CAPACITY
 #define AVD_LIST_INITIAL_CAPACITY 8
-#endif 
+#endif
 
 #ifndef AVD_LIST_GROWTH_FACTOR
 #define AVD_LIST_GROWTH_FACTOR 2
-#endif 
+#endif
 
-typedef void(AVD_ListDestructor)(void *item, void* context);
+typedef void(AVD_ListDestructor)(void *item, void *context);
 
 typedef struct {
     size_t itemSize;
@@ -20,7 +19,7 @@ typedef struct {
     size_t count;
     void *items;
     AVD_ListDestructor *destructor;
-    void* destructorContext;
+    void *destructorContext;
 } AVD_List;
 
 void avdListCreate(AVD_List *list, size_t itemSize);
@@ -29,10 +28,10 @@ void avdListDestroy(AVD_List *list);
 void *avdListPushBack(AVD_List *list, const void *item);
 void *avdListPushFront(AVD_List *list, const void *item);
 // NOTE: Pop functions dont call the destructor,
-// the transfer of ownership is assumed (though the data 
+// the transfer of ownership is assumed (though the data
 // maybe overwritten). It is advised to use the destructor
 // if you want to free the data after popping.
-void *avdListPopBack(AVD_List *list); 
+void *avdListPopBack(AVD_List *list);
 void *avdListPopFront(AVD_List *list);
 void *avdListGet(const AVD_List *list, size_t index);
 void avdListClear(AVD_List *list);

@@ -6,7 +6,7 @@
 
 typedef struct AVD_Scene2DRadianceCascades {
     AVD_SceneType type;
-    
+
     AVD_RenderableText title;
 } AVD_Scene2DRadianceCascades;
 
@@ -19,7 +19,5 @@ void avdScene2DRadianceCascadesInputEvent(struct AVD_AppState *appState, union A
 
 bool avdScene2DRadianceCascadesCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage);
 bool avdScene2DRadianceCascadesRegisterApi(AVD_SceneAPI *api);
-
-
 
 #endif // AVD_SCENES_2D_RADIANCE_CASCADES_H

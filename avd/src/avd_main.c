@@ -25,6 +25,5 @@ int main()
 
     AVD_LOG("Application shutdown successfully\n");
 
-    
     return EXIT_SUCCESS;
 }

@@ -26,7 +26,7 @@ void avd3DSceneDestroy(AVD_3DScene *scene)
     avdListDestroy(&scene->modelsList);
 }
 
-void avd3DSceneDebugLog(const AVD_3DScene *scene, const char* name)
+void avd3DSceneDebugLog(const AVD_3DScene *scene, const char *name)
 {
     AVD_ASSERT(scene != NULL);
 

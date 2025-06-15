@@ -59,7 +59,7 @@ static bool __avdMeshLoadFaces(
 
     uint32_t attribFaceOffset = 0;
 
-    for (uint32_t faceIndex = 0 ; faceIndex < faceOffset ; faceIndex ++) {
+    for (uint32_t faceIndex = 0; faceIndex < faceOffset; faceIndex++) {
         attribFaceOffset += (uint32_t)attrib->face_num_verts[faceIndex];
     }
 
@@ -170,15 +170,13 @@ bool avdModelLoadObj(const char *filename, AVD_Model *model, AVD_ModelResources 
         // Load all shapes as separate meshes
         for (size_t i = 0; i < shapeCount; i++) {
             tinyobj_shape_t *shape = &shapes[i];
-            AVD_Mesh mesh = {0};
+            AVD_Mesh mesh          = {0};
             snprintf(mesh.name, sizeof(mesh.name), "%s/%s", model->name, shape->name);
             mesh.id = avdHashString(mesh.name);
             AVD_CHECK(__avdMeshLoadFaces(&attrib, resources, &mesh, shape->face_offset, shape->length));
             avdListPushBack(&model->meshes, &mesh);
         }
     }
-
-
 
     tinyobj_attrib_free(&attrib);
     tinyobj_shapes_free(shapes, shapeCount);

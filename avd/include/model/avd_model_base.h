@@ -18,10 +18,8 @@ typedef struct {
     AVD_List indicesList;
 } AVD_ModelResources;
 
-
 void avdModelVertexInit(AVD_ModelVertex *vertex);
 bool avdModelResourcesCreate(AVD_ModelResources *resources);
 void avdModelResourcesDestroy(AVD_ModelResources *resources);
-
 
 #endif // AVD_MODEL_BASE_H

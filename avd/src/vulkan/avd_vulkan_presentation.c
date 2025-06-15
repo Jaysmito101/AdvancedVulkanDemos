@@ -84,7 +84,7 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
         commandBuffer,
         swapchain->renderPass,
         swapchain->framebuffer,
-        (const VkImageView []){swapchain->imageViews[imageIndex]},
+        (const VkImageView[]){swapchain->imageViews[imageIndex]},
         1,
         swapchain->extent.width,
         swapchain->extent.height,

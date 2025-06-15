@@ -8,11 +8,11 @@ void avdListCreate(AVD_List *list, size_t itemSize)
     assert(list != NULL);
     assert(itemSize > 0);
 
-    list->itemSize = itemSize;
-    list->capacity = AVD_LIST_INITIAL_CAPACITY;
-    list->count    = 0;
-    list->items    = malloc(list->capacity * itemSize);
-    list->destructor = NULL;
+    list->itemSize          = itemSize;
+    list->capacity          = AVD_LIST_INITIAL_CAPACITY;
+    list->count             = 0;
+    list->items             = malloc(list->capacity * itemSize);
+    list->destructor        = NULL;
     list->destructorContext = NULL;
     assert(list->items != NULL);
 }
@@ -22,7 +22,7 @@ void avdListSetDestructor(AVD_List *list, AVD_ListDestructor *destructor, void *
     assert(list != NULL);
     assert(destructor != NULL);
 
-    list->destructor = destructor;
+    list->destructor        = destructor;
     list->destructorContext = context;
 }
 

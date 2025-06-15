@@ -20,14 +20,12 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
     return true;
 }
 
-
 bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD_Scene *scene)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
-
 
     return true;
 }
@@ -81,8 +79,8 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             *statusMessage = "Loading Standford Dragon Thickness Map";
             break;
         case 6:
-            *statusMessage = NULL;
-            *progress      = 1.0f;
+            *statusMessage                  = NULL;
+            *progress                       = 1.0f;
             subsurfaceScattering->loadStage = 0; // Reset load stage for next load
             AVD_LOG("Subsurface Scattering scene loaded successfully.\n");
             avd3DSceneDebugLog(&subsurfaceScattering->models, "SubsurfaceScattering/Models");
@@ -94,7 +92,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
 
     subsurfaceScattering->loadStage++;
     *progress = (float)subsurfaceScattering->loadStage / 6.0f; // Update progress based on load stage
-    return false; // Continue loading
+    return false;                                              // Continue loading
 }
 
 void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
@@ -121,7 +119,7 @@ bool avdSceneSubsurfaceScatteringCheckIntegrity(struct AVD_AppState *appState, c
     return true;
 }
 
-bool avdSceneSubsurfaceScatteringRegisterApi(AVD_SceneAPI *api) 
+bool avdSceneSubsurfaceScatteringRegisterApi(AVD_SceneAPI *api)
 {
     AVD_ASSERT(api != NULL);
 
@@ -133,8 +131,8 @@ bool avdSceneSubsurfaceScatteringRegisterApi(AVD_SceneAPI *api)
     api->load           = avdSceneSubsurfaceScatteringLoad;
     api->inputEvent     = avdSceneSubsurfaceScatteringInputEvent;
 
-    api->displayName    = "Subsurface Scattering";
-    api->id             = "DDGIPlaceholder";
+    api->displayName = "Subsurface Scattering";
+    api->id          = "DDGIPlaceholder";
 
     return true;
 }

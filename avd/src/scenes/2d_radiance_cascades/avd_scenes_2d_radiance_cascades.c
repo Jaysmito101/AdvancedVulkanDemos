@@ -13,18 +13,15 @@ bool avdScene2DRadianceCascadesInit(struct AVD_AppState *appState, union AVD_Sce
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-
     return true;
 }
-
 
 bool avdScene2DRadianceCascadesRender(struct AVD_AppState *appState, union AVD_Scene *scene)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
-    
-    AVD_Scene2DRadianceCascades *radianceCascades = __avdSceneGetTypePtr(scene);
 
+    AVD_Scene2DRadianceCascades *radianceCascades = __avdSceneGetTypePtr(scene);
 
     return true;
 }
@@ -43,8 +40,6 @@ void avdScene2DRadianceCascadesDestroy(struct AVD_AppState *appState, union AVD_
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
-
-
 }
 
 bool avdScene2DRadianceCascadesLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char **statusMessage, float *progress)
@@ -78,7 +73,7 @@ bool avdScene2DRadianceCascadesCheckIntegrity(struct AVD_AppState *appState, con
     return true;
 }
 
-bool avdScene2DRadianceCascadesRegisterApi(AVD_SceneAPI *api) 
+bool avdScene2DRadianceCascadesRegisterApi(AVD_SceneAPI *api)
 {
     AVD_ASSERT(api != NULL);
 
@@ -90,8 +85,8 @@ bool avdScene2DRadianceCascadesRegisterApi(AVD_SceneAPI *api)
     api->load           = avdScene2DRadianceCascadesLoad;
     api->inputEvent     = avdScene2DRadianceCascadesInputEvent;
 
-    api->displayName    = "2D GI (Radiance Cascades)";
-    api->id             = "DDGIPlaceholder";
+    api->displayName = "2D GI (Radiance Cascades)";
+    api->id          = "DDGIPlaceholder";
 
     return true;
 }

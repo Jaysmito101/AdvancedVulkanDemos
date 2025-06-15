@@ -156,21 +156,21 @@ static bool __avdVulkanSwapchainCreateFramebuffer(AVD_VulkanSwapchain *swapchain
     AVD_ASSERT(swapchain != NULL);
 
     VkFramebufferAttachmentImageInfo attachmentInfo = {0};
-    attachmentInfo.sType                           = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO;
-    attachmentInfo.flags                           = 0;
-    attachmentInfo.usage                           = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    attachmentInfo.viewFormatCount                 = 1;
-    attachmentInfo.pViewFormats                    = &swapchain->surfaceFormat.format;
-    attachmentInfo.width                           = swapchain->extent.width;
-    attachmentInfo.height                          = swapchain->extent.height;
-    attachmentInfo.layerCount                      = 1;
-    attachmentInfo.pNext                           = NULL;
+    attachmentInfo.sType                            = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO;
+    attachmentInfo.flags                            = 0;
+    attachmentInfo.usage                            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    attachmentInfo.viewFormatCount                  = 1;
+    attachmentInfo.pViewFormats                     = &swapchain->surfaceFormat.format;
+    attachmentInfo.width                            = swapchain->extent.width;
+    attachmentInfo.height                           = swapchain->extent.height;
+    attachmentInfo.layerCount                       = 1;
+    attachmentInfo.pNext                            = NULL;
 
     VkFramebufferAttachmentsCreateInfo framebufferAttachmentsInfo = {0};
-    framebufferAttachmentsInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO;
-    framebufferAttachmentsInfo.attachmentImageInfoCount = 1;
-    framebufferAttachmentsInfo.pAttachmentImageInfos = &attachmentInfo;
-    framebufferAttachmentsInfo.pNext = NULL;
+    framebufferAttachmentsInfo.sType                              = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO;
+    framebufferAttachmentsInfo.attachmentImageInfoCount           = 1;
+    framebufferAttachmentsInfo.pAttachmentImageInfos              = &attachmentInfo;
+    framebufferAttachmentsInfo.pNext                              = NULL;
 
     VkFramebufferCreateInfo framebufferInfo = {0};
     framebufferInfo.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
