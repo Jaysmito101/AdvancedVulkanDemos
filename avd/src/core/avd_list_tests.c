@@ -470,6 +470,169 @@ static bool __avdTestListEdgeCases()
     return true;
 }
 
+static int destructorCallCount = 0;
+static int *destructorCalledValues = NULL;
+static size_t destructorCalledValuesSize = 0;
+
+static void __testDestructor(void *item, void *context)
+{
+    int *value = (int*)item;
+    int *expectedContext = (int*)context;
+    
+    if (destructorCalledValues == NULL) {
+        destructorCalledValues = malloc(sizeof(int) * 100);
+        destructorCalledValuesSize = 0;
+    }
+    
+    if (destructorCalledValuesSize < 100) {
+        destructorCalledValues[destructorCalledValuesSize++] = *value;
+    }
+    
+    destructorCallCount++;
+    
+    if (expectedContext != NULL && *expectedContext != 42) {
+        AVD_LOG("    WARNING: Destructor context mismatch\n");
+    }
+}
+
+static void __resetDestructorTracking()
+{
+    destructorCallCount = 0;
+    if (destructorCalledValues) {
+        free(destructorCalledValues);
+        destructorCalledValues = NULL;
+    }
+    destructorCalledValuesSize = 0;
+}
+
+static bool __avdTestListDestructor()
+{
+    AVD_LOG("  Testing List destructor functionality...\n");
+    
+    __resetDestructorTracking();
+    
+    AVD_List list;
+    avdListCreate(&list, sizeof(int));
+    
+    int contextValue = 42;
+    avdListSetDestructor(&list, __testDestructor, &contextValue);
+    
+    // Test destructor is not called when list is empty
+    avdListDestroy(&list);
+    if (destructorCallCount != 0) {
+        AVD_LOG("    FAILED: Destructor called on empty list\n");
+        __resetDestructorTracking();
+        return false;
+    }
+    
+    // Recreate list for next tests
+    avdListCreate(&list, sizeof(int));
+    avdListSetDestructor(&list, __testDestructor, &contextValue);
+    
+    // Add elements and test destructor on destroy
+    for (int i = 1; i <= 5; i++) {
+        avdListPushBack(&list, &i);
+    }
+    
+    avdListDestroy(&list);
+    
+    if (destructorCallCount != 5) {
+        AVD_LOG("    FAILED: Destructor call count on destroy (expected 5, got %d)\n", destructorCallCount);
+        __resetDestructorTracking();
+        return false;
+    }
+    
+    // Verify destructor was called with correct values
+    for (size_t i = 0; i < destructorCalledValuesSize; i++) {
+        int expectedValue = (int)(i + 1);
+        if (destructorCalledValues[i] != expectedValue) {
+            AVD_LOG("    FAILED: Destructor called with wrong value at index %zu\n", i);
+            __resetDestructorTracking();
+            return false;
+        }
+    }
+    
+    __resetDestructorTracking();
+    
+    // Test destructor on clear
+    avdListCreate(&list, sizeof(int));
+    avdListSetDestructor(&list, __testDestructor, &contextValue);
+    
+    for (int i = 10; i <= 13; i++) {
+        avdListPushBack(&list, &i);
+    }
+    
+    avdListClear(&list);
+    
+    if (destructorCallCount != 4) {
+        AVD_LOG("    FAILED: Destructor call count on clear (expected 4, got %d)\n", destructorCallCount);
+        avdListDestroy(&list);
+        __resetDestructorTracking();
+        return false;
+    }
+    
+    __resetDestructorTracking();
+    
+    // Test destructor on remove
+    for (int i = 20; i <= 22; i++) {
+        avdListPushBack(&list, &i);
+    }
+    
+    avdListRemove(&list, 1); // Remove middle element (21)
+    
+    if (destructorCallCount != 1) {
+        AVD_LOG("    FAILED: Destructor call count on remove (expected 1, got %d)\n", destructorCallCount);
+        avdListDestroy(&list);
+        __resetDestructorTracking();
+        return false;
+    }
+    
+    if (destructorCalledValues[0] != 21) {
+        AVD_LOG("    FAILED: Destructor called with wrong value on remove\n");
+        avdListDestroy(&list);
+        __resetDestructorTracking();
+        return false;
+    }
+    
+    __resetDestructorTracking();
+    
+    // Test that destructor is NOT called on pop operations
+    void *popped = avdListPopBack(&list);
+    if (destructorCallCount != 0 || popped == NULL) {
+        AVD_LOG("    FAILED: Destructor should not be called on pop operations\n");
+        avdListDestroy(&list);
+        __resetDestructorTracking();
+        return false;
+    }
+    
+    popped = avdListPopFront(&list);
+    if (destructorCallCount != 0 || popped == NULL) {
+        AVD_LOG("    FAILED: Destructor should not be called on pop front operations\n");
+        avdListDestroy(&list);
+        __resetDestructorTracking();
+        return false;
+    }
+    
+    // Test destructor with NULL context
+    avdListSetDestructor(&list, __testDestructor, NULL);
+    int value = 99;
+    avdListPushBack(&list, &value);
+    avdListClear(&list);
+    
+    if (destructorCallCount != 1) {
+        AVD_LOG("    FAILED: Destructor with NULL context\n");
+        avdListDestroy(&list);
+        __resetDestructorTracking();
+        return false;
+    }
+    
+    avdListDestroy(&list);
+    __resetDestructorTracking();
+    
+    AVD_LOG("    List destructor functionality PASSED\n");
+    return true;
+}
+
 bool avdListTestsRun(void)
 {
     AVD_LOG("Running AVD List Tests...\n");
@@ -483,6 +646,7 @@ bool avdListTestsRun(void)
     AVD_CHECK(__avdTestListUtilities());
     AVD_CHECK(__avdTestListWithStrings());
     AVD_CHECK(__avdTestListEdgeCases());
+    AVD_CHECK(__avdTestListDestructor());
     
     AVD_LOG("All AVD List Tests passed successfully!\n");
     return true;
