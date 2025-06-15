@@ -204,9 +204,9 @@ bool avdSceneSubsurfaceScatteringUpdate(struct AVD_AppState *appState, union AVD
     snprintf(infoText, sizeof(infoText),
              "Subsurface Scattering Demo:\n"
              "  - Bloom Enabled: %s [Press B to toggle]\n"
-             "  - Press ESC to return to the main menu",
+             "  - Press ESC to return to the main menu"
              "General Stats:\n"
-             "  - Frame Rate: %.2f FPS\n"
+             "  - Frame Rate: %zu FPS\n"
              "  - Frame Time: %.2f ms\n",
              subsurfaceScattering->bloomEnabled ? "Yes" : "No",
              appState->framerate.fps,
