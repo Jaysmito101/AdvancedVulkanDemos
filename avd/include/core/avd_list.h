@@ -34,7 +34,7 @@ void *avdListPushFront(AVD_List *list, const void *item);
 // if you want to free the data after popping.
 void *avdListPopBack(AVD_List *list); 
 void *avdListPopFront(AVD_List *list);
-void *avdListGet(AVD_List *list, size_t index);
+void *avdListGet(const AVD_List *list, size_t index);
 void avdListClear(AVD_List *list);
 void avdListResize(AVD_List *list, size_t newSize);
 void avdListEnsureCapacity(AVD_List *list, size_t newCapacity);

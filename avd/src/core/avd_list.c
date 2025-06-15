@@ -130,7 +130,7 @@ void *avdListPopFront(AVD_List *list)
     return front;
 }
 
-void *avdListGet(AVD_List *list, size_t index)
+void *avdListGet(const AVD_List *list, size_t index)
 {
     assert(list != NULL);
 
