@@ -8,8 +8,17 @@
 typedef struct AVD_SceneSubsurfaceScattering {
     AVD_SceneType type;
     AVD_RenderableText title;
+    AVD_RenderableText info;
+
+    AVD_VulkanFramebuffer gBuffer;
+    bool bloomEnabled;
 
     AVD_3DScene models;
+
+    VkDescriptorSetLayout set0Layout;
+    VkPipelineLayout compositePipelineLayout;
+    VkPipeline compositePipeline;
+
     uint32_t loadStage;
 } AVD_SceneSubsurfaceScattering;
 
