@@ -12,6 +12,8 @@ typedef struct AVD_3DScene {
 
 bool avd3DSceneCreate(AVD_3DScene *scene);
 void avd3DSceneDestroy(AVD_3DScene *scene);
-bool avd3DSceneLoadObj(const char *filename, AVD_3DScene *scene);
+bool avd3DSceneLoadObj(const char *filename, AVD_3DScene *scene, AVD_ObjLoadFlags flags);
+
+void avd3DSceneDebugLog(const AVD_3DScene *scene, const char *message);
 
 #endif // AVD_3D_SCENE_H
