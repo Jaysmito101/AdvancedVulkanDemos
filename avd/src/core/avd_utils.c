@@ -107,3 +107,29 @@ void avdMessageBox(const char *title, const char *message)
     }
 #endif
 }
+
+bool avdReadBinaryFile(const char *filename, void **data, size_t *size)
+{
+    if (filename == NULL || data == NULL || size == NULL) {
+        return false;
+    }
+
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        return false;
+    }
+
+    fseek(file, 0, SEEK_END);
+    *size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+
+    *data = malloc(*size);
+    if (*data == NULL) {
+        fclose(file);
+        return false;
+    }
+
+    fread(*data, 1, *size, file);
+    fclose(file);
+    return true;
+}

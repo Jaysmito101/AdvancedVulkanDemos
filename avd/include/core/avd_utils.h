@@ -10,5 +10,6 @@ const char *avdGetTempDirPath(void);
 bool avdPathExists(const char *path);
 void avdSleep(uint32_t milliseconds);
 void avdMessageBox(const char *title, const char *message);
+bool avdReadBinaryFile(const char *filename, void **data, size_t *size);
 
 #endif // AVD_UTILS_H
