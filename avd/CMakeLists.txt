@@ -38,6 +38,8 @@ add_executable(avd
     ./src/math/avd_3d_matrices.c
     ./src/math/avd_math_tests.c
 
+    ./src/model/avd_model_base.c
+
     ./src/scenes/avd_scenes.c
     ./src/scenes/avd_scenes_main_menu.c
     ./src/scenes/bloom/avd_scenes_bloom.c
