@@ -10,7 +10,14 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_RenderableText title;
     AVD_RenderableText info;
 
-    AVD_VulkanFramebuffer gBuffer;
+    uint32_t sceneWidth;
+    uint32_t sceneHeight;
+
+    AVD_VulkanFramebuffer depthBuffer;
+    AVD_VulkanFramebuffer aoBuffer;
+    AVD_VulkanFramebuffer lightingBuffer;
+    AVD_VulkanFramebuffer diffusedIrradianceBuffer;
+
     bool bloomEnabled;
 
     AVD_3DScene models;

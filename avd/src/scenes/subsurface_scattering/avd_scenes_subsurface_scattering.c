@@ -21,22 +21,55 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
 
     subsurfaceScattering->loadStage    = 0;
     subsurfaceScattering->bloomEnabled = false;
+    subsurfaceScattering->sceneWidth   = (uint32_t)((float)GAME_WIDTH * 1.5f);
+    subsurfaceScattering->sceneHeight  = (uint32_t)((float)GAME_HEIGHT * 1.5f);
 
     avd3DSceneCreate(&subsurfaceScattering->models);
 
+
     AVD_CHECK(avdVulkanFramebufferCreate(
         &appState->vulkan,
-        &subsurfaceScattering->gBuffer,
-        GAME_WIDTH * 2,
-        GAME_HEIGHT * 2,
+        &subsurfaceScattering->depthBuffer,
+        subsurfaceScattering->sceneWidth,
+        subsurfaceScattering->sceneHeight,
         true,
-        (VkFormat[]){
-            VK_FORMAT_R16G16B16A16_SFLOAT, // Color attachment 0
-            VK_FORMAT_R16G16B16A16_SFLOAT, // Color attachment 1
-            VK_FORMAT_R16G16B16A16_SFLOAT  // Color attachment 2
-        },
-        3, // Number of color attachments
+        NULL,
+        0,
         VK_FORMAT_D32_SFLOAT));
+
+    AVD_CHECK(avdVulkanFramebufferCreate(
+        &appState->vulkan,
+        &subsurfaceScattering->aoBuffer,
+        subsurfaceScattering->sceneWidth,
+        subsurfaceScattering->sceneHeight,
+        false,
+        (VkFormat[]){VK_FORMAT_R16_SFLOAT},
+        1, // Number of color attachments
+        VK_FORMAT_D32_SFLOAT));
+    
+    AVD_CHECK(avdVulkanFramebufferCreate(
+        &appState->vulkan,
+        &subsurfaceScattering->lightingBuffer,
+        subsurfaceScattering->sceneWidth,
+        subsurfaceScattering->sceneHeight,
+        false,
+        (VkFormat[]){
+            VK_FORMAT_R16G16B16A16_SFLOAT, // The diffuse irradiance lighting
+            VK_FORMAT_R16G16B16A16_SFLOAT, // The specular irradiance lighting
+        },
+        2, // Number of color attachments
+        VK_FORMAT_D32_SFLOAT));
+    
+    AVD_CHECK(avdVulkanFramebufferCreate(
+        &appState->vulkan,
+        &subsurfaceScattering->diffusedIrradianceBuffer,
+        subsurfaceScattering->sceneWidth,
+        subsurfaceScattering->sceneHeight,
+        false,
+        (VkFormat[]){VK_FORMAT_R16G16B16A16_SFLOAT},
+        1, // Number of color attachments
+        VK_FORMAT_D32_SFLOAT));
+
 
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &subsurfaceScattering->set0Layout,
@@ -89,7 +122,11 @@ void avdSceneSubsurfaceScatteringDestroy(struct AVD_AppState *appState, union AV
     avdRenderableTextDestroy(&subsurfaceScattering->title, &appState->vulkan);
     avdRenderableTextDestroy(&subsurfaceScattering->info, &appState->vulkan);
 
-    avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->gBuffer);
+    avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->depthBuffer);
+    avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->aoBuffer);
+    avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->lightingBuffer);
+    avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->diffusedIrradianceBuffer);
+    
     vkDestroyDescriptorSetLayout(appState->vulkan.device, subsurfaceScattering->set0Layout, NULL);
     vkDestroyPipelineLayout(appState->vulkan.device, subsurfaceScattering->compositePipelineLayout, NULL);
     vkDestroyPipeline(appState->vulkan.device, subsurfaceScattering->compositePipeline, NULL);
