@@ -35,6 +35,7 @@ bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan 
         presentation->pipelineLayout,
         vulkan->device,
         swapchain->renderPass,
+        1,
         "PresentationVert",
         "PresentationFrag"));
     AVD_CHECK(avdRenderableTextCreate(

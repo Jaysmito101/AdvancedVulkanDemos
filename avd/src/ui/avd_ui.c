@@ -50,6 +50,7 @@ bool avdUiInit(AVD_Ui *ui, struct AVD_AppState *appState)
         ui->pipelineLayout,
         vulkan->device,
         appState->renderer.sceneFramebuffer.renderPass,
+        (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count,
         "FullScreenQuadVert",
         "UiFrag"));
 

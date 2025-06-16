@@ -32,6 +32,7 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(
     VkPipelineLayout layout,
     VkDevice device,
     VkRenderPass renderPass,
+    uint32_t attachmentCount,
     const char *vertShaderAsset,
     const char *fragShaderAsset);
 
@@ -43,6 +44,7 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
     size_t descriptorSetLayoutCount,
     uint32_t pushConstantSize,
     VkRenderPass renderPass,
+    uint32_t attachmentCount,
     const char *vertShaderAsset,
     const char *fragShaderAsset);
 

@@ -180,7 +180,7 @@ bool avdPipelineUtilsCreateGraphicsPipelineLayout(
     return true;
 }
 
-bool avdPipelineUtilsCreateGenericGraphicsPipeline(VkPipeline *pipeline, VkPipelineLayout layout, VkDevice device, VkRenderPass renderPass, const char *vertShaderAsset, const char *fragShaderAsset)
+bool avdPipelineUtilsCreateGenericGraphicsPipeline(VkPipeline *pipeline, VkPipelineLayout layout, VkDevice device, VkRenderPass renderPass, uint32_t attachmentCount, const char *vertShaderAsset, const char *fragShaderAsset)
 {
     AVD_ASSERT(pipeline != NULL);
     AVD_ASSERT(layout != VK_NULL_HANDLE);
@@ -221,11 +221,13 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(VkPipeline *pipeline, VkPipel
     VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {0};
     AVD_CHECK(avdPipelineUtilsDepthStencilState(&depthStencilInfo, false));
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachment = {0};
-    AVD_CHECK(avdPipelineUtilsBlendAttachment(&colorBlendAttachment, true));
+    VkPipelineColorBlendAttachmentState colorBlendAttachment[64] = {0};
+    for (uint32_t i = 0; i < attachmentCount; ++i) {
+        AVD_CHECK(avdPipelineUtilsBlendAttachment(&colorBlendAttachment[i], true));
+    }
 
     VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {0};
-    AVD_CHECK(avdPipelineUtilsColorBlendState(&colorBlendStateInfo, &colorBlendAttachment, 1));
+    AVD_CHECK(avdPipelineUtilsColorBlendState(&colorBlendStateInfo, colorBlendAttachment, attachmentCount));
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
     vertexInputInfo.sType                                = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -270,6 +272,7 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
     size_t descriptorSetLayoutCount,
     uint32_t pushConstantSize,
     VkRenderPass renderPass,
+    uint32_t attachmentCount,
     const char *vertShaderAsset,
     const char *fragShaderAsset)
 {
@@ -291,6 +294,7 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         *pipelineLayout,
         device,
         renderPass,
+        attachmentCount,
         vertShaderAsset,
         fragShaderAsset));
 }

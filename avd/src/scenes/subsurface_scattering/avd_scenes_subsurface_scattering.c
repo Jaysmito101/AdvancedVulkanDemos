@@ -137,20 +137,32 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(appState != NULL);
     
-    AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
+        &subsurfaceScattering->lightingPipelineLayout,
+        &subsurfaceScattering->lightingPipeline,
+        appState->vulkan.device,
+        (VkDescriptorSetLayout[]){
+            subsurfaceScattering->set0Layout},
+        1,
+        sizeof(AVD_SubSurfaceScatteringUberPushConstants),
+        subsurfaceScattering->lightingBuffer.renderPass,
+        (uint32_t)subsurfaceScattering->lightingBuffer.colorAttachments.count,
+        "SubSurfaceScatteringSceneVert",
+        "SubSurfaceScatteringLightingFrag"));
+
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         &subsurfaceScattering->compositePipelineLayout,
+        &subsurfaceScattering->compositePipeline,
         appState->vulkan.device,
         (VkDescriptorSetLayout[]){
             appState->vulkan.bindlessDescriptorSetLayout},
         1,
-        sizeof(AVD_SubSurfaceScatteringUberPushConstants)));
-    AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
-        &subsurfaceScattering->compositePipeline,
-        subsurfaceScattering->compositePipelineLayout,
-        appState->vulkan.device,
+        sizeof(AVD_SubSurfaceScatteringUberPushConstants),
         appState->renderer.sceneFramebuffer.renderPass,
+        (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count,
         "FullScreenQuadVert",
         "SubSurfaceScatteringCompositeFrag"));
+
 
     return true;
 }
@@ -219,8 +231,12 @@ void avdSceneSubsurfaceScatteringDestroy(struct AVD_AppState *appState, union AV
     avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->standfordDragonThicknessMap);
 
     vkDestroyDescriptorSetLayout(appState->vulkan.device, subsurfaceScattering->set0Layout, NULL);
+
     vkDestroyPipelineLayout(appState->vulkan.device, subsurfaceScattering->compositePipelineLayout, NULL);
     vkDestroyPipeline(appState->vulkan.device, subsurfaceScattering->compositePipeline, NULL);
+
+    vkDestroyPipelineLayout(appState->vulkan.device, subsurfaceScattering->lightingPipelineLayout, NULL);
+    vkDestroyPipeline(appState->vulkan.device, subsurfaceScattering->lightingPipeline, NULL);
 }
 
 bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char **statusMessage, float *progress)

@@ -185,6 +185,7 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         bloom->pipelineLayout,
         vulkan->device,
         bloom->bloomPasses[0].renderPass,
+        1,
         "FullScreenQuadVert",
         "BloomFrag"));
 
@@ -193,6 +194,7 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         bloom->pipelineLayout,
         vulkan->device,
         compositeRenderPass,
+        1,
         "FullScreenQuadVert",
         "BloomFrag"));
 
