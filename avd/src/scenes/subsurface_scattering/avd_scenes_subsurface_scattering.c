@@ -149,8 +149,8 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
     pipelineCreationInfo.enableDepthTest = true;
     pipelineCreationInfo.enableBlend     = true;
     // pipelineCreationInfo.cullMode        = VK_CULL_MODE_BACK_BIT;
-    pipelineCreationInfo.cullMode        = VK_CULL_MODE_NONE;
-    pipelineCreationInfo.frontFace       = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    pipelineCreationInfo.cullMode  = VK_CULL_MODE_NONE;
+    pipelineCreationInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         &subsurfaceScattering->lightingPipelineLayout,

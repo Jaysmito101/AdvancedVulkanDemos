@@ -152,15 +152,15 @@ bool avdPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorB
     return true;
 }
 
-void avdPipelineUtilsPipelineCreationInfoInit(AVD_VulkanPipelineCreationInfo* info) 
+void avdPipelineUtilsPipelineCreationInfoInit(AVD_VulkanPipelineCreationInfo *info)
 {
     AVD_ASSERT(info != NULL);
 
-    info->enableBlend = false;
+    info->enableBlend     = false;
     info->enableDepthTest = false;
-    info->polygonMode = VK_POLYGON_MODE_FILL;
-    info->cullMode = VK_CULL_MODE_NONE;
-    info->frontFace = VK_FRONT_FACE_CLOCKWISE;
+    info->polygonMode     = VK_POLYGON_MODE_FILL;
+    info->cullMode        = VK_CULL_MODE_NONE;
+    info->frontFace       = VK_FRONT_FACE_CLOCKWISE;
 }
 
 bool avdPipelineUtilsCreateGraphicsPipelineLayout(
@@ -318,7 +318,7 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         vertShaderAsset,
         fragShaderAsset,
         pipelineCreationInfo));
-    
+
     return true;
 }
 

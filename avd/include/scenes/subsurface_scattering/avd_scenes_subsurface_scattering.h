@@ -47,7 +47,7 @@ typedef struct AVD_SceneSubsurfaceScattering {
 
     AVD_Vector3 cameraPosition;
     AVD_Vector3 cameraTarget;
-    
+
     AVD_Vector3 alienPosition;
     AVD_Vector3 buddhaPosition;
     AVD_Vector3 standfordDragonPosition;
