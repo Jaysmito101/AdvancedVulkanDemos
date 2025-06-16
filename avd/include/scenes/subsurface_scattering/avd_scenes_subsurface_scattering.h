@@ -18,6 +18,12 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_VulkanFramebuffer lightingBuffer;
     AVD_VulkanFramebuffer diffusedIrradianceBuffer;
 
+    AVD_VulkanImage alienThicknessMap;
+    AVD_VulkanImage buddhaThicknessMap;
+    AVD_VulkanImage standfordDragonThicknessMap;
+
+    AVD_VulkanBuffer vertexBuffer;
+
     bool bloomEnabled;
 
     AVD_3DScene models;

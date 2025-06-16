@@ -32,6 +32,14 @@ static void __avdSetupBindlessDescriptorWrite(
     write->pImageInfo      = &image->descriptorImageInfo;
 }
 
+#define AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(index, image) \
+    __avdSetupBindlessDescriptorWrite( \
+        vulkan, \
+        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, \
+        index, \
+        &subsurfaceScattering->image, \
+        &descriptorSetWrites[descriptorWriteCount++]); 
+
 #define AVD_SETUP_BINDLESS_DEPTH_DESCRIPTOR_WRITE(index, framebuffer) \
     __avdSetupBindlessDescriptorWrite( \
         vulkan, \
@@ -61,6 +69,9 @@ static bool __avdSetupBindlessDescriptors(AVD_SceneSubsurfaceScattering *subsurf
     AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(4, lightingBuffer, 1);
     AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(5, lightingBuffer, 2);
     AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(6, diffusedIrradianceBuffer, 0);
+    AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(8, alienThicknessMap);
+    AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(9, buddhaThicknessMap);
+    AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(10, standfordDragonThicknessMap);
 
     vkUpdateDescriptorSets(vulkan->device, descriptorWriteCount, descriptorSetWrites, 0, NULL);
 
@@ -161,8 +172,6 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         "...",
         24.0f));
 
-    AVD_CHECK(__avdSetupBindlessDescriptors(subsurfaceScattering, &appState->vulkan));
-
     return true;
 }
 
@@ -181,6 +190,12 @@ void avdSceneSubsurfaceScatteringDestroy(struct AVD_AppState *appState, union AV
     avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->aoBuffer);
     avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->lightingBuffer);
     avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->diffusedIrradianceBuffer);
+
+    avdVulkanBufferDestroy(&appState->vulkan, &subsurfaceScattering->vertexBuffer);
+
+    avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->alienThicknessMap);
+    avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->buddhaThicknessMap);
+    avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->standfordDragonThicknessMap);
 
     vkDestroyDescriptorSetLayout(appState->vulkan.device, subsurfaceScattering->set0Layout, NULL);
     vkDestroyPipelineLayout(appState->vulkan.device, subsurfaceScattering->compositePipelineLayout, NULL);
@@ -229,28 +244,57 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             break;
         case 4:
             *statusMessage = "Loading Alien Thickness Map";
+            AVD_CHECK(avdVulkanImageLoadFromFile(
+                &appState->vulkan,
+                "assets/scene_subsurface_scattering/alien_thickness_map.png",
+                &subsurfaceScattering->alienThicknessMap));
             break;
         case 5:
             *statusMessage = "Loading Buddha Thickness Map";
+            AVD_CHECK(avdVulkanImageLoadFromFile(
+                &appState->vulkan,
+                "assets/scene_subsurface_scattering/buddha_thickness_map.png",
+                &subsurfaceScattering->buddhaThicknessMap));
             break;
         case 6:
             *statusMessage = "Loading Standford Dragon Thickness Map";
+            AVD_CHECK(avdVulkanImageLoadFromFile(
+                &appState->vulkan,
+                "assets/scene_subsurface_scattering/standford_dragon_thickness_map.png",
+                &subsurfaceScattering->standfordDragonThicknessMap));
             break;
         case 7:
-            *statusMessage                  = NULL;
-            *progress                       = 1.0f;
-            subsurfaceScattering->loadStage = 0; // Reset load stage for next load
+            *statusMessage = "Setting Up GPU buffers";
+            size_t bufferSize = subsurfaceScattering->models.modelResources.verticesList.count * subsurfaceScattering->models.modelResources.verticesList.itemSize;
+            AVD_CHECK(avdVulkanBufferCreate(
+                &appState->vulkan,
+                &subsurfaceScattering->vertexBuffer,
+                bufferSize,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+            AVD_CHECK(avdVulkanBufferUpload(
+                &appState->vulkan,
+                &subsurfaceScattering->vertexBuffer,
+                subsurfaceScattering->models.modelResources.verticesList.items,
+                bufferSize
+            ));
+            break;
+        case 8:
+            *statusMessage = "Setting Up Bindless Descriptors";
+            AVD_CHECK(__avdSetupBindlessDescriptors(subsurfaceScattering, &appState->vulkan));
+            break;
+        case 9:
             AVD_LOG("Subsurface Scattering scene loaded successfully.\n");
             avd3DSceneDebugLog(&subsurfaceScattering->models, "SubsurfaceScattering/Models");
-            return true;
+            break;
         default:
             AVD_LOG("Subsurface Scattering scene load stage is invalid: %d\n", subsurfaceScattering->loadStage);
             return false;
     }
 
     subsurfaceScattering->loadStage++;
-    *progress += (float)subsurfaceScattering->loadStage / 7.0f; // Update progress based on load stage
-    return false;                                               // Continue loading
+    *progress = (float)subsurfaceScattering->loadStage / 9.0f;
+    return *progress > 1.0f;
 }
 
 void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
