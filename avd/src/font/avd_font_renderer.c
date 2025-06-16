@@ -80,7 +80,7 @@ static bool __avdCreatePipeline(AVD_FontRenderer *fr, VkDevice device, VkRenderP
     AVD_CHECK(avdPipelineUtilsViewportState(&viewportStateInfo, &viewport, &scissor));
 
     VkPipelineRasterizationStateCreateInfo rasterizerInfo = {0};
-    AVD_CHECK(avdPipelineUtilsRasterizationState(&rasterizerInfo));
+    AVD_CHECK(avdPipelineUtilsRasterizationState(&rasterizerInfo, NULL));
 
     VkPipelineMultisampleStateCreateInfo multisampleInfo = {0};
     AVD_CHECK(avdPipelineUtilsMultisampleState(&multisampleInfo));

@@ -76,16 +76,16 @@ bool avdPipelineUtilsViewportState(VkPipelineViewportStateCreateInfo *viewportSt
     return true;
 }
 
-bool avdPipelineUtilsRasterizationState(VkPipelineRasterizationStateCreateInfo *rasterizerInfo)
+bool avdPipelineUtilsRasterizationState(VkPipelineRasterizationStateCreateInfo *rasterizerInfo, AVD_VulkanPipelineCreationInfo *creationInfo)
 {
     AVD_ASSERT(rasterizerInfo != NULL);
 
     rasterizerInfo->sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizerInfo->depthClampEnable        = VK_FALSE;
     rasterizerInfo->rasterizerDiscardEnable = VK_FALSE;
-    rasterizerInfo->polygonMode             = VK_POLYGON_MODE_FILL;
-    rasterizerInfo->cullMode                = VK_CULL_MODE_NONE;
-    rasterizerInfo->frontFace               = VK_FRONT_FACE_CLOCKWISE;
+    rasterizerInfo->polygonMode             = creationInfo ? creationInfo->polygonMode : VK_POLYGON_MODE_FILL;
+    rasterizerInfo->cullMode                = creationInfo ? creationInfo->cullMode : VK_CULL_MODE_NONE;
+    rasterizerInfo->frontFace               = creationInfo ? creationInfo->frontFace : VK_FRONT_FACE_CLOCKWISE;
     rasterizerInfo->depthBiasEnable         = VK_FALSE;
     rasterizerInfo->lineWidth               = 1.0f;
 
@@ -158,6 +158,9 @@ void avdPipelineUtilsPipelineCreationInfoInit(AVD_VulkanPipelineCreationInfo* in
 
     info->enableBlend = false;
     info->enableDepthTest = false;
+    info->polygonMode = VK_POLYGON_MODE_FILL;
+    info->cullMode = VK_CULL_MODE_NONE;
+    info->frontFace = VK_FRONT_FACE_CLOCKWISE;
 }
 
 bool avdPipelineUtilsCreateGraphicsPipelineLayout(
@@ -229,7 +232,7 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(
     AVD_CHECK(avdPipelineUtilsViewportState(&viewportStateInfo, &viewport, &scissor));
 
     VkPipelineRasterizationStateCreateInfo rasterizerInfo = {0};
-    AVD_CHECK(avdPipelineUtilsRasterizationState(&rasterizerInfo));
+    AVD_CHECK(avdPipelineUtilsRasterizationState(&rasterizerInfo, creationInfo));
 
     VkPipelineMultisampleStateCreateInfo multisampleInfo = {0};
     AVD_CHECK(avdPipelineUtilsMultisampleState(&multisampleInfo));
@@ -315,6 +318,8 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         vertShaderAsset,
         fragShaderAsset,
         pipelineCreationInfo));
+    
+    return true;
 }
 
 bool avdWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorImageInfo *imageInfo)

@@ -13,6 +13,9 @@ struct AVD_VulkanRenderer;
 typedef struct {
     bool enableDepthTest;
     bool enableBlend;
+    VkPolygonMode polygonMode;
+    VkCullModeFlags cullMode;
+    VkFrontFace frontFace;
 } AVD_VulkanPipelineCreationInfo;
 
 
@@ -21,13 +24,13 @@ bool avdPipelineUtilsDynamicState(VkPipelineDynamicStateCreateInfo *dynamicState
 bool avdPipelineUtilsInputAssemblyState(VkPipelineInputAssemblyStateCreateInfo *inputAssemblyInfo);
 bool avdPipelineUtilsViewportScissor(VkViewport *viewport, VkRect2D *scissor);
 bool avdPipelineUtilsViewportState(VkPipelineViewportStateCreateInfo *viewportStateInfo, VkViewport *viewport, VkRect2D *scissor);
-bool avdPipelineUtilsRasterizationState(VkPipelineRasterizationStateCreateInfo *rasterizerInfo);
+bool avdPipelineUtilsRasterizationState(VkPipelineRasterizationStateCreateInfo *rasterizerInfo, AVD_VulkanPipelineCreationInfo *creationInfo);
 bool avdPipelineUtilsMultisampleState(VkPipelineMultisampleStateCreateInfo *multisampleInfo);
 bool avdPipelineUtilsDepthStencilState(VkPipelineDepthStencilStateCreateInfo *depthStencilInfo, bool enableDepthTest);
 bool avdPipelineUtilsBlendAttachment(VkPipelineColorBlendAttachmentState *blendAttachment, bool enableBlend);
 bool avdPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorBlendStateInfo, VkPipelineColorBlendAttachmentState *blendAttachments, size_t attachmentCount);
 
-void avdPipelineUtilsPipelineCreationInfoInit(struct AVD_VulkanPipelineCreationInfo *creationInfo);
+void avdPipelineUtilsPipelineCreationInfoInit(AVD_VulkanPipelineCreationInfo *creationInfo);
 
 bool avdPipelineUtilsCreateGraphicsPipelineLayout(
     VkPipelineLayout *pipelineLayout,
