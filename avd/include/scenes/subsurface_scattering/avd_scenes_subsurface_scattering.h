@@ -46,6 +46,16 @@ typedef struct AVD_SceneSubsurfaceScattering {
     VkPipelineLayout compositePipelineLayout;
     VkPipeline compositePipeline;
 
+    AVD_Vector3 cameraPosition;
+    AVD_Vector3 cameraTarget;
+    
+    AVD_Vector3 alienPosition;
+    AVD_Vector3 buddhaPosition;
+    AVD_Vector3 standfordDragonPosition;
+
+    AVD_Matrix4x4 projectionMatrix;
+    AVD_Matrix4x4 viewMatrix;
+
     uint32_t loadStage;
 } AVD_SceneSubsurfaceScattering;
 

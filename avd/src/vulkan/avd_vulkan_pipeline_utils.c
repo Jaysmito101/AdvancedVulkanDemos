@@ -366,7 +366,7 @@ bool avdWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDes
     writeDescriptorSet->dstBinding       = binding;
     writeDescriptorSet->dstArrayElement  = 0;
     writeDescriptorSet->descriptorCount  = 1;
-    writeDescriptorSet->descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    writeDescriptorSet->descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     writeDescriptorSet->pImageInfo       = NULL;
     writeDescriptorSet->pBufferInfo      = bufferInfo;
     writeDescriptorSet->pTexelBufferView = NULL;

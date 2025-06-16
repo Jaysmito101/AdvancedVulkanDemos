@@ -6,6 +6,12 @@ typedef struct {
     AVD_Matrix4x4 modelMatrix;
     AVD_Matrix4x4 viewMatrix;
     AVD_Matrix4x4 projectionMatrix;
+
+    int32_t vertexOffset;
+    int32_t vertexCount;
+    int32_t pad0;
+    int32_t pad1;
+
 } AVD_SubSurfaceScatteringUberPushConstants;
 
 static AVD_SceneSubsurfaceScattering *__avdSceneGetTypePtr(AVD_Scene *scene)
@@ -147,8 +153,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         sizeof(AVD_SubSurfaceScatteringUberPushConstants),
         subsurfaceScattering->lightingBuffer.renderPass,
         (uint32_t)subsurfaceScattering->lightingBuffer.colorAttachments.count,
-        // "SubSurfaceScatteringSceneVert",
-        "FullScreenQuadVert",
+        "SubSurfaceScatteringSceneVert",
         "SubSurfaceScatteringLightingFrag"));
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
@@ -177,6 +182,13 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
     subsurfaceScattering->bloomEnabled = false;
     subsurfaceScattering->sceneWidth   = (uint32_t)((float)GAME_WIDTH * 1.5f);
     subsurfaceScattering->sceneHeight  = (uint32_t)((float)GAME_HEIGHT * 1.5f);
+
+    subsurfaceScattering->cameraPosition = avdVec3(15.0f, 15.0f, 15.0f);
+    subsurfaceScattering->cameraTarget   = avdVec3(0.0f, 0.0f, 0.0f);
+    subsurfaceScattering->alienPosition = avdVec3(-2.0f, 0.0f, 0.0f);
+    subsurfaceScattering->buddhaPosition = avdVec3(2.0f, 0.0f, 0.0f);
+    subsurfaceScattering->standfordDragonPosition = avdVec3(0.0f, 0.0f, 0.0f);
+
 
     avd3DSceneCreate(&subsurfaceScattering->models);
 
@@ -330,6 +342,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                                                   subsurfaceScattering->set0,
                                                   0,
                                                   &subsurfaceScattering->vertexBuffer.descriptorBufferInfo));
+            vkUpdateDescriptorSets(appState->vulkan.device, 1, &descriptorSetWrite, 0, NULL);
             break;
         case 8:
             *statusMessage = "Setting Up Bindless Descriptors";
@@ -426,7 +439,100 @@ bool avdSceneSubsurfaceScatteringUpdate(struct AVD_AppState *appState, union AVD
                                       &appState->vulkan,
                                       infoText));
 
+
+    subsurfaceScattering->viewMatrix = avdMatLookAt(
+        subsurfaceScattering->cameraPosition,
+        subsurfaceScattering->cameraTarget,
+        avdVec3(0.0f, 1.0f, 0.0f));
+    
+    subsurfaceScattering->projectionMatrix = avdMatPerspective(
+        avdDeg2Rad(60.0f),
+        (float)subsurfaceScattering->sceneWidth / (float)subsurfaceScattering->sceneHeight,
+        0.1f,
+        100.0f);
+
     return true;
+}
+
+static bool __avdSceneRenderFirstMesh(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, uint32_t modelIndex, VkPipelineLayout pipelineLayout, AVD_Matrix4x4 modelMatrix)
+{
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    if (modelIndex >= subsurfaceScattering->models.modelsList.count) {
+        AVD_LOG("Invalid model index: %u\n", modelIndex);
+        return false;
+    }
+
+    AVD_Model *model = (AVD_Model *)avdListGet(&subsurfaceScattering->models.modelsList, modelIndex);
+    AVD_Mesh *mesh   = (AVD_Mesh *)avdListGet(&model->meshes, 0); // We only render the first mesh for now
+
+    // NOTE: We arent using the indices for now as the models loaded from obj files
+    // are garunteed to have a single index for a single vertex and no re-use,
+    // however for a proper renderer we need to use the indices.
+
+    AVD_SubSurfaceScatteringUberPushConstants pushConstants = {
+        .modelMatrix      = modelMatrix,
+        .viewMatrix       = subsurfaceScattering->viewMatrix,
+        .projectionMatrix = subsurfaceScattering->projectionMatrix,
+        .vertexOffset     = mesh->indexOffset,
+        .vertexCount      = mesh->triangleCount * 3,
+    };
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
+    vkCmdDraw(commandBuffer, mesh->triangleCount * 3, 1, 0, 0);
+
+    return true;
+}
+
+static bool __avdSceneRenderAlien(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, VkPipelineLayout pipelineLayout)
+{
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+    AVD_ASSERT(pipelineLayout != VK_NULL_HANDLE);
+
+    AVD_Matrix4x4 modelMatrix = avdMatScale(0.5, 0.5, 0.5);
+    modelMatrix               = avdMat4x4Multiply(
+        modelMatrix,
+        avdMatTranslation(
+            subsurfaceScattering->alienPosition.x,
+            subsurfaceScattering->alienPosition.y,
+            subsurfaceScattering->alienPosition.z));
+
+    return __avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, 0, pipelineLayout, modelMatrix);
+}
+
+static bool __avdSceneRenderBuddha(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, VkPipelineLayout pipelineLayout)
+{
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+    AVD_ASSERT(pipelineLayout != VK_NULL_HANDLE);
+
+    AVD_Matrix4x4 modelMatrix = avdMatScale(0.5, 0.5, 0.5);
+    modelMatrix = avdMat4x4Multiply(
+        modelMatrix,
+        avdMatTranslation(
+            subsurfaceScattering->buddhaPosition.x,
+            subsurfaceScattering->buddhaPosition.y,
+            subsurfaceScattering->buddhaPosition.z));
+
+    return __avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, 1, pipelineLayout, modelMatrix);
+}
+
+static bool __avdSceneRenderStandfordDragon(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, VkPipelineLayout pipelineLayout)
+{
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+    AVD_ASSERT(pipelineLayout != VK_NULL_HANDLE);
+
+    AVD_Matrix4x4 modelMatrix = avdMatScale(0.5, 0.5, 0.5);
+    modelMatrix = avdMat4x4Multiply(
+        modelMatrix,
+        avdMatTranslation(
+            subsurfaceScattering->standfordDragonPosition.x,
+            subsurfaceScattering->standfordDragonPosition.y,
+            subsurfaceScattering->standfordDragonPosition.z));
+
+    return __avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, 2, pipelineLayout, modelMatrix);
 }
 
 bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
@@ -496,7 +602,8 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipelineLayout, 0, 1, &subsurfaceScattering->set0, 0, NULL);
-    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+
+    __avdSceneRenderStandfordDragon(commandBuffer, subsurfaceScattering, subsurfaceScattering->lightingPipelineLayout);
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
 

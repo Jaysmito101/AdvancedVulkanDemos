@@ -11,6 +11,11 @@ struct PushConstantData {
     mat4 modelMatrix;
     mat4 viewMatrix;
     mat4 projectionMatrix;
+
+    int vertexOffset;
+    int vertexCount;
+    int pad0;
+    int pad1;
 };
 
 layout(push_constant) uniform PushConstants {
