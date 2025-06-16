@@ -6,23 +6,26 @@ AVD_Matrix4x4 avdMatLookAt(const AVD_Vector3 eye, const AVD_Vector3 center, cons
     AVD_Vector3 s = avdVec3Normalize(avdVec3Cross(f, up));
     AVD_Vector3 u = avdVec3Cross(s, f);
 
+    // return avdMat4x4(
+    //     s.x, u.x, -f.x, 0.0f,
+    //     s.y, u.y, -f.y, 0.0f,
+    //     s.z, u.z, -f.z, 0.0f,
+    //     -avdVec3Dot(s, eye), -avdVec3Dot(u, eye), avdVec3Dot(f, eye), 1.0f);
     return avdMat4x4(
-        s.x, u.x, -f.x, 0.0f,
-        s.y, u.y, -f.y, 0.0f,
-        s.z, u.z, -f.z, 0.0f,
-        -avdVec3Dot(s, eye), -avdVec3Dot(u, eye), avdVec3Dot(f, eye), 1.0f);
+        s.x, s.y, s.z, -avdVec3Dot(s, eye),
+        u.x, u.y, u.z, -avdVec3Dot(u, eye),
+        -f.x, -f.y, -f.z, avdVec3Dot(f, eye),
+        0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 AVD_Matrix4x4 avdMatPerspective(AVD_Float fovY, AVD_Float aspect, AVD_Float nearZ, AVD_Float farZ)
 {
-    AVD_Float f        = 1.0f / avdTan(fovY * 0.5f);
-    AVD_Float rangeInv = 1.0f / (nearZ - farZ);
-
+    AVD_Float tanHalfFovY = avdTan(fovY * 0.5f);
     return avdMat4x4(
-        f / aspect, 0.0f, 0.0f, 0.0f,
-        0.0f, f, 0.0f, 0.0f,
-        0.0f, 0.0f, (farZ + nearZ) * rangeInv, -1.0f,
-        0.0f, 0.0f, farZ * nearZ * rangeInv * 2.0f, 0.0f);
+        1.0f / (aspect * tanHalfFovY), 0.0f, 0.0f, 0.0f,
+        0.0f, 1.0f / tanHalfFovY, 0.0f, 0.0f,
+        0.0f, 0.0f, -(farZ + nearZ) / (farZ - nearZ), -2.0f * farZ * nearZ / (farZ - nearZ),
+        0.0f, 0.0f, -1.0f, 0.0f);
 }
 
 AVD_Matrix4x4 avdMatOrthographic(AVD_Float left, AVD_Float right, AVD_Float bottom, AVD_Float top, AVD_Float nearZ, AVD_Float farZ)
