@@ -1,4 +1,3 @@
-
 #ifndef AVD_SCENES_SUBSURFACE_SCATTERING_H
 #define AVD_SCENES_SUBSURFACE_SCATTERING_H
 
@@ -57,6 +56,14 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_Matrix4x4 viewMatrix;
 
     uint32_t loadStage;
+
+    bool isDragging;
+    float lastMouseX;
+    float lastMouseY;
+    float cameraRadius;
+    float cameraPhi;
+    float cameraTheta;
+    int32_t currentFocusModelIndex; // 0: Dragon, 1: Alien, 2: Buddha
 } AVD_SceneSubsurfaceScattering;
 
 bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene);

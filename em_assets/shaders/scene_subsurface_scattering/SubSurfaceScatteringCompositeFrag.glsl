@@ -23,7 +23,7 @@ layout(push_constant) uniform PushConstants {
 
 void main() {
    // vec2 uv = (inUV * 2.0 - 1.0);
-   vec4 color = texture(textures[3], inUV);
+   vec4 color = texture(textures[3], vec2(inUV.x, 1.0 - inUV.y));
    outColor = vec4(color.rgb, 1.0); 
 }
 

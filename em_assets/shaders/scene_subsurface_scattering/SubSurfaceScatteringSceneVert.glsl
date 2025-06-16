@@ -4,6 +4,10 @@
 #pragma shader_stage(vertex)
 
 layout(location = 0) out vec2 outUV;
+layout(location = 1) out vec3 outNormal;
+layout(location = 2) out vec4 outTangent;
+layout(location = 3) out vec4 outBitangent;
+layout(location = 4) out vec4 outPosition;
 
 struct ModelVertex {
     vec4 position;
@@ -13,10 +17,10 @@ struct ModelVertex {
     vec4 bitangent;
 };
 
-layout (set = 0, binding = 0, std430) readonly buffer VertexBuffer {
+layout(set = 0, binding = 0, std430) readonly buffer VertexBuffer
+{
     ModelVertex vertices[];
 };
-
 
 struct PushConstantData {
     mat4 modelMatrix;
@@ -29,17 +33,27 @@ struct PushConstantData {
     int pad1;
 };
 
-
-layout(push_constant) uniform PushConstants {
+layout(push_constant) uniform PushConstants
+{
     PushConstantData data;
-} pushConstants;
+}
+pushConstants;
 
-void main() {
+void main()
+{
     outUV = vec2(0.0, 0.0); // Initialize outUV to avoid warnings
 
-    int vertexIndex = gl_VertexIndex + pushConstants.data.vertexOffset;
+    int vertexIndex     = gl_VertexIndex + pushConstants.data.vertexOffset;
     vec4 vertexPosition = vertices[vertexIndex].position;
-    vec4 position = transpose(pushConstants.data.projectionMatrix) * pushConstants.data.viewMatrix * pushConstants.data.modelMatrix * vec4(vertexPosition.xyz, 1.0);
+    mat4 viewModel      = pushConstants.data.viewMatrix * pushConstants.data.modelMatrix;
+    mat4 projection     = pushConstants.data.projectionMatrix;
+    vec4 position       = projection * viewModel * vec4(vertexPosition.xyz, 1.0);
+
+    // Set the output variables
+    outNormal    = vertices[vertexIndex].normal.xyz;
+    outTangent   = vertices[vertexIndex].tangent;
+    outBitangent = vertices[vertexIndex].bitangent;
+    outPosition  = position;
 
     // Set the gl_Position for the vertex shader
     gl_Position = position;
