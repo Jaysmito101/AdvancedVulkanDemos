@@ -262,6 +262,39 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(VkPipeline *pipeline, VkPipel
     return true;
 }
 
+bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
+    VkPipelineLayout *pipelineLayout,
+    VkPipeline *pipeline,
+    VkDevice device,
+    VkDescriptorSetLayout *descriptorSetLayouts,
+    size_t descriptorSetLayoutCount,
+    uint32_t pushConstantSize,
+    VkRenderPass renderPass,
+    const char *vertShaderAsset,
+    const char *fragShaderAsset)
+{
+    AVD_ASSERT(pipelineLayout != NULL);
+    AVD_ASSERT(pipeline != NULL);
+    AVD_ASSERT(device != VK_NULL_HANDLE);
+    AVD_ASSERT(renderPass != VK_NULL_HANDLE);
+    AVD_ASSERT(vertShaderAsset != NULL);
+    AVD_ASSERT(fragShaderAsset != NULL);
+
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
+        pipelineLayout,
+        device,
+        descriptorSetLayouts,
+        descriptorSetLayoutCount,
+        pushConstantSize));
+    AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
+        pipeline,
+        *pipelineLayout,
+        device,
+        renderPass,
+        vertShaderAsset,
+        fragShaderAsset));
+}
+
 bool avdWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorImageInfo *imageInfo)
 {
     AVD_ASSERT(writeDescriptorSet != NULL);
@@ -404,8 +437,7 @@ bool avdEndRenderPass(VkCommandBuffer commandBuffer)
     return true;
 }
 
-
-bool avdBeginRenderPassWithFramebuffer(VkCommandBuffer commandBuffer, AVD_VulkanFramebuffer* framebuffer, VkClearValue *customClearValues, size_t customClearValueCount)
+bool avdBeginRenderPassWithFramebuffer(VkCommandBuffer commandBuffer, AVD_VulkanFramebuffer *framebuffer, VkClearValue *customClearValues, size_t customClearValueCount)
 {
     AVD_ASSERT(framebuffer != NULL);
     static VkImageView attachments[16] = {0};

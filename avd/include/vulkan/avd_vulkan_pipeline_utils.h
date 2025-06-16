@@ -35,6 +35,17 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(
     const char *vertShaderAsset,
     const char *fragShaderAsset);
 
+bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
+    VkPipelineLayout *pipelineLayout,
+    VkPipeline *pipeline,
+    VkDevice device,
+    VkDescriptorSetLayout *descriptorSetLayouts,
+    size_t descriptorSetLayoutCount,
+    uint32_t pushConstantSize,
+    VkRenderPass renderPass,
+    const char *vertShaderAsset,
+    const char *fragShaderAsset);
+
 bool avdCreateDescriptorSetLayout(
     VkDescriptorSetLayout *descriptorSetLayout,
     VkDevice device,
