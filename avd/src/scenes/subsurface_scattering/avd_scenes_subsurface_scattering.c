@@ -3,8 +3,10 @@
 #include "scenes/avd_scenes.h"
 
 typedef struct {
-    uint32_t placeholder;
-} AVD_SubSurfaceScatteringCompositePushConstants;
+    AVD_Matrix4x4 modelMatrix;
+    AVD_Matrix4x4 viewMatrix;
+    AVD_Matrix4x4 projectionMatrix;
+} AVD_SubSurfaceScatteringUberPushConstants;
 
 static AVD_SceneSubsurfaceScattering *__avdSceneGetTypePtr(AVD_Scene *scene)
 {
@@ -139,7 +141,7 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         &subsurfaceScattering->set0Layout,
         appState->vulkan.device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}, 1,
-        VK_SHADER_STAGE_FRAGMENT_BIT));
+        VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT));
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
         &subsurfaceScattering->compositePipelineLayout,
@@ -148,7 +150,7 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
             subsurfaceScattering->set0Layout,
             appState->vulkan.bindlessDescriptorSetLayout},
         2,
-        sizeof(AVD_SubSurfaceScatteringCompositePushConstants)));
+        sizeof(AVD_SubSurfaceScatteringUberPushConstants)));
     AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         &subsurfaceScattering->compositePipeline,
         subsurfaceScattering->compositePipelineLayout,
@@ -377,61 +379,12 @@ bool avdSceneSubsurfaceScatteringUpdate(struct AVD_AppState *appState, union AVD
     return true;
 }
 
-bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD_Scene *scene)
+bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
 {
     AVD_ASSERT(appState != NULL);
-    AVD_ASSERT(scene != NULL);
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_Vulkan *vulkan           = &appState->vulkan;
-    AVD_VulkanRenderer *renderer = &appState->renderer;
-
-    uint32_t currentFrameIndex    = renderer->currentFrameIndex;
-    VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
-
-    AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
-
-    AVD_CHECK(avdBeginRenderPassWithFramebuffer(
-        commandBuffer,
-        &subsurfaceScattering->depthBuffer,
-        (VkClearValue[]){
-            {.depthStencil = {.depth = 1.0f, .stencil = 0}},
-        },
-        1));
-
-    AVD_CHECK(avdEndRenderPass(commandBuffer));
-
-    // Composite to the main framebuffer
-    AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipeline);
-    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
-
-    float titleWidth, titleHeight;
-    float infoWidth, infoHeight;
-    avdRenderableTextGetSize(&subsurfaceScattering->title, &titleWidth, &titleHeight);
-    avdRenderableTextGetSize(&subsurfaceScattering->info, &infoWidth, &infoHeight);
-
-    avdRenderText(
-        vulkan,
-        &appState->fontRenderer,
-        &subsurfaceScattering->title,
-        commandBuffer,
-        ((float)renderer->sceneFramebuffer.width - titleWidth) / 2.0f,
-        titleHeight + 10.0f,
-        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-        renderer->sceneFramebuffer.width,
-        renderer->sceneFramebuffer.height);
-    avdRenderText(
-        vulkan,
-        &appState->fontRenderer,
-        &subsurfaceScattering->info,
-        commandBuffer,
-        10.0f, 10.0f + infoHeight,
-        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
-        renderer->sceneFramebuffer.width,
-        renderer->sceneFramebuffer.height);
-
-    AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
 
     if (subsurfaceScattering->bloomEnabled) {
         AVD_BloomParams params = {
@@ -446,10 +399,106 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
         AVD_CHECK(avdBloomApplyInplace(
             commandBuffer,
             &appState->bloom,
-            &renderer->sceneFramebuffer,
-            vulkan,
+            &appState->renderer.sceneFramebuffer,
+            &appState->vulkan,
             params));
     }
+
+    return true;
+}
+
+bool __avdSceneRenderDepthPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    return true;
+}
+
+bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    return true;
+}
+
+bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    return true;
+}
+
+bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    return true;
+}
+
+
+bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipeline);
+    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+
+    float titleWidth, titleHeight;
+    float infoWidth, infoHeight;
+    avdRenderableTextGetSize(&subsurfaceScattering->title, &titleWidth, &titleHeight);
+    avdRenderableTextGetSize(&subsurfaceScattering->info, &infoWidth, &infoHeight);
+
+    avdRenderText(
+        &appState->vulkan,
+        &appState->fontRenderer,
+        &subsurfaceScattering->title,
+        commandBuffer,
+        ((float)appState->renderer.sceneFramebuffer.width - titleWidth) / 2.0f,
+        titleHeight + 10.0f,
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+        appState->renderer.sceneFramebuffer.width,
+        appState->renderer.sceneFramebuffer.height);
+    avdRenderText(
+        &appState->vulkan,
+        &appState->fontRenderer,
+        &subsurfaceScattering->info,
+        commandBuffer,
+        10.0f, 10.0f + infoHeight,
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+        appState->renderer.sceneFramebuffer.width,
+        appState->renderer.sceneFramebuffer.height);
+
+    AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
+
+    return true;
+}
+
+bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD_Scene *scene)
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(scene != NULL);
+
+    VkCommandBuffer commandBuffer = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
+    AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
+
+    AVD_CHECK(__avdSceneRenderDepthPass(commandBuffer, subsurfaceScattering, appState));
+    AVD_CHECK(__avdSceneRenderAOPass(commandBuffer, subsurfaceScattering, appState));
+    AVD_CHECK(__avdSceneRenderLightingPass(commandBuffer, subsurfaceScattering, appState));
+    AVD_CHECK(__avdSceneRenderIrradianceDiffusionPass(commandBuffer, subsurfaceScattering, appState));
+    AVD_CHECK(__avdSceneRenderCompositePass(commandBuffer, subsurfaceScattering, appState));  
+    AVD_CHECK(__avdSceneRenderBloomIfNeeded(commandBuffer, subsurfaceScattering, appState));
 
     return true;
 }
