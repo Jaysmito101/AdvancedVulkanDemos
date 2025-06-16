@@ -114,7 +114,7 @@ bool avdPipelineUtilsDepthStencilState(VkPipelineDepthStencilStateCreateInfo *de
     depthStencilInfo->sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depthStencilInfo->depthTestEnable       = enableDepthTest ? VK_TRUE : VK_FALSE;
     depthStencilInfo->depthWriteEnable      = enableDepthTest ? VK_TRUE : VK_FALSE;
-    depthStencilInfo->depthCompareOp        = VK_COMPARE_OP_ALWAYS;
+    depthStencilInfo->depthCompareOp        = VK_COMPARE_OP_LESS;
     depthStencilInfo->depthBoundsTestEnable = VK_FALSE;
     depthStencilInfo->stencilTestEnable     = VK_FALSE;
 

@@ -34,8 +34,8 @@ void main() {
     vec3 normal = normalize(inNormal);
     vec3 lightDirection = normalize(vec3(1.0, 5.0, 1.0)); // Example light direction
     float diffuse = max(dot(normal, lightDirection), 0.0);
-    vec3 diffuseColor = vec3(1.0, 0.5, 0.5); // Example diffuse color
-    vec3 ambientColor = vec3(0.1, 0.1, 0.1); // Example ambient color
+    vec3 diffuseColor = vec3(1.0, 1.0, 1.0) * 3.0; // Example diffuse color
+    vec3 ambientColor = vec3(0.1, 0.1, 0.1) * 2.0; // Example ambient color
     vec3 finalColor = ambientColor + diffuse * diffuseColor;
 
     outColor = vec4(finalColor, 1.0); // Set the output color with full opacity
