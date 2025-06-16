@@ -80,6 +80,7 @@ static bool __avdSetupBindlessDescriptors(AVD_SceneSubsurfaceScattering *subsurf
     AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(8, alienThicknessMap);
     AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(9, buddhaThicknessMap);
     AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(10, standfordDragonThicknessMap);
+    AVD_SETUP_BINDLESS_DEPTH_DESCRIPTOR_WRITE(11, lightingBuffer);
 
     vkUpdateDescriptorSets(vulkan->device, descriptorWriteCount, descriptorSetWrites, 0, NULL);
 
@@ -147,7 +148,8 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
     avdPipelineUtilsPipelineCreationInfoInit(&pipelineCreationInfo);
     pipelineCreationInfo.enableDepthTest = true;
     pipelineCreationInfo.enableBlend     = true;
-    pipelineCreationInfo.cullMode        = VK_CULL_MODE_BACK_BIT;
+    // pipelineCreationInfo.cullMode        = VK_CULL_MODE_BACK_BIT;
+    pipelineCreationInfo.cullMode        = VK_CULL_MODE_NONE;
     pipelineCreationInfo.frontFace       = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
