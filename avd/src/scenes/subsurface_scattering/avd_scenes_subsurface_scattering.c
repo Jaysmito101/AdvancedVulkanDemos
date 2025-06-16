@@ -147,9 +147,8 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         &subsurfaceScattering->compositePipelineLayout,
         appState->vulkan.device,
         (VkDescriptorSetLayout[]){
-            subsurfaceScattering->set0Layout,
             appState->vulkan.bindlessDescriptorSetLayout},
-        2,
+        1,
         sizeof(AVD_SubSurfaceScatteringUberPushConstants)));
     AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         &subsurfaceScattering->compositePipeline,
@@ -272,7 +271,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &appState->vulkan,
                 &subsurfaceScattering->vertexBuffer,
                 bufferSize,
-                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
             AVD_CHECK(avdVulkanBufferUpload(
                 &appState->vulkan,
@@ -453,6 +452,7 @@ bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     float titleWidth, titleHeight;
