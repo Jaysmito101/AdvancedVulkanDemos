@@ -12,9 +12,6 @@ typedef struct {
     int32_t pad0;
     int32_t pad1;
 
-    AVD_Vector4 cameraPosition;
-    AVD_Vector4 cameraTarget;
-
 } AVD_SubSurfaceScatteringUberPushConstants;
 
 static AVD_SceneSubsurfaceScattering *__avdSceneGetTypePtr(AVD_Scene *scene)
@@ -193,14 +190,13 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
     subsurfaceScattering->sceneWidth   = (uint32_t)((float)GAME_WIDTH * 1.5f);
     subsurfaceScattering->sceneHeight  = (uint32_t)((float)GAME_HEIGHT * 1.5f);
 
-    subsurfaceScattering->cameraPosition = avdVec3(2.0f, 2.0f, 2.0f);
-    // Initial target is Standford Dragon
     subsurfaceScattering->currentFocusModelIndex = 0; 
+    subsurfaceScattering->cameraPosition = avdVec3(2.0f, 2.0f, 2.0f);
     subsurfaceScattering->cameraTarget   = avdVec3(0.0f, 0.0f, 0.0f); // Will be updated in Update based on index
 
-    subsurfaceScattering->alienPosition = avdVec3(-6.0f, 2.0f, 0.0f);
-    subsurfaceScattering->buddhaPosition = avdVec3(6.0f, 2.0f, 0.0f);
-    subsurfaceScattering->standfordDragonPosition = avdVec3(8.0f, 1.5f, 0.0f);
+    subsurfaceScattering->alienPosition = avdVec3(-6.0f, 0.0f, 0.0f);
+    subsurfaceScattering->buddhaPosition = avdVec3(6.0f, 0.0f, 0.0f);
+    subsurfaceScattering->standfordDragonPosition = avdVec3(0.0f, 0.0f, 0.0f);
 
 
     subsurfaceScattering->isDragging = false;
@@ -688,8 +684,8 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipelineLayout, 0, 1, &subsurfaceScattering->set0, 0, NULL);
 
     __avdSceneRenderStandfordDragon(commandBuffer, subsurfaceScattering, subsurfaceScattering->lightingPipelineLayout);
-    // __avdSceneRenderAlien(commandBuffer, subsurfaceScattering, subsurfaceScattering->lightingPipelineLayout);
-    // __avdSceneRenderBuddha(commandBuffer, subsurfaceScattering, subsurfaceScattering->lightingPipelineLayout);
+    __avdSceneRenderAlien(commandBuffer, subsurfaceScattering, subsurfaceScattering->lightingPipelineLayout);
+    __avdSceneRenderBuddha(commandBuffer, subsurfaceScattering, subsurfaceScattering->lightingPipelineLayout);
 
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));

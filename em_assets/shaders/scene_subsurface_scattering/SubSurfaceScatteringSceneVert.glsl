@@ -5,8 +5,8 @@
 
 layout(location = 0) out vec2 outUV;
 layout(location = 1) out vec3 outNormal;
-layout(location = 2) out vec4 outTangent;
-layout(location = 3) out vec4 outBitangent;
+layout(location = 2) out vec3 outTangent;
+layout(location = 3) out vec3 outBitangent;
 layout(location = 4) out vec4 outPosition;
 
 struct ModelVertex {
@@ -43,16 +43,19 @@ void main()
 {
     outUV = vec2(0.0, 0.0); // Initialize outUV to avoid warnings
 
-    int vertexIndex     = gl_VertexIndex + pushConstants.data.vertexOffset;
+    int vertexIndex = gl_VertexIndex + pushConstants.data.vertexOffset;
+
+    mat4 viewModel    = pushConstants.data.viewMatrix * pushConstants.data.modelMatrix;
+    mat4 projection   = pushConstants.data.projectionMatrix;
+    mat3 normalMatrix = transpose(inverse(mat3(pushConstants.data.modelMatrix)));
+
     vec4 vertexPosition = vertices[vertexIndex].position;
-    mat4 viewModel      = pushConstants.data.viewMatrix * pushConstants.data.modelMatrix;
-    mat4 projection     = pushConstants.data.projectionMatrix;
     vec4 position       = projection * viewModel * vec4(vertexPosition.xyz, 1.0);
 
     // Set the output variables
-    outNormal    = vertices[vertexIndex].normal.xyz;
-    outTangent   = vertices[vertexIndex].tangent;
-    outBitangent = vertices[vertexIndex].bitangent;
+    outNormal    = normalMatrix * vertices[vertexIndex].normal.xyz;
+    outTangent   = normalMatrix * vertices[vertexIndex].tangent.xyz;
+    outBitangent = normalMatrix * vertices[vertexIndex].bitangent.xyz;
     outPosition  = position;
 
     // Set the gl_Position for the vertex shader
