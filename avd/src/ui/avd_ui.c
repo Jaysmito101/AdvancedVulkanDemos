@@ -50,7 +50,8 @@ bool avdUiInit(AVD_Ui *ui, struct AVD_AppState *appState)
         appState->renderer.sceneFramebuffer.renderPass,
         (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count,
         "FullScreenQuadVert",
-        "UiFrag"));
+        "UiFrag",
+        NULL));
 
     return true;
 }

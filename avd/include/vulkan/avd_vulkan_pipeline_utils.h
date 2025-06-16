@@ -10,6 +10,12 @@
 struct AVD_VulkanFramebuffer;
 struct AVD_VulkanRenderer;
 
+typedef struct {
+    bool enableDepthTest;
+    bool enableBlend;
+} AVD_VulkanPipelineCreationInfo;
+
+
 bool avdPipelineUtilsShaderStage(VkPipelineShaderStageCreateInfo *shaderStageInfo, VkShaderModule shaderModule, VkShaderStageFlagBits stageFlags);
 bool avdPipelineUtilsDynamicState(VkPipelineDynamicStateCreateInfo *dynamicStateInfo);
 bool avdPipelineUtilsInputAssemblyState(VkPipelineInputAssemblyStateCreateInfo *inputAssemblyInfo);
@@ -20,6 +26,8 @@ bool avdPipelineUtilsMultisampleState(VkPipelineMultisampleStateCreateInfo *mult
 bool avdPipelineUtilsDepthStencilState(VkPipelineDepthStencilStateCreateInfo *depthStencilInfo, bool enableDepthTest);
 bool avdPipelineUtilsBlendAttachment(VkPipelineColorBlendAttachmentState *blendAttachment, bool enableBlend);
 bool avdPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorBlendStateInfo, VkPipelineColorBlendAttachmentState *blendAttachments, size_t attachmentCount);
+
+void avdPipelineUtilsPipelineCreationInfoInit(struct AVD_VulkanPipelineCreationInfo *creationInfo);
 
 bool avdPipelineUtilsCreateGraphicsPipelineLayout(
     VkPipelineLayout *pipelineLayout,
@@ -34,7 +42,8 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(
     VkRenderPass renderPass,
     uint32_t attachmentCount,
     const char *vertShaderAsset,
-    const char *fragShaderAsset);
+    const char *fragShaderAsset,
+    AVD_VulkanPipelineCreationInfo *creationInfo);
 
 bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
     VkPipelineLayout *pipelineLayout,
@@ -46,7 +55,8 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
     VkRenderPass renderPass,
     uint32_t attachmentCount,
     const char *vertShaderAsset,
-    const char *fragShaderAsset);
+    const char *fragShaderAsset,
+    AVD_VulkanPipelineCreationInfo *creationInfo);
 
 bool avdCreateDescriptorSetLayout(
     VkDescriptorSetLayout *descriptorSetLayout,

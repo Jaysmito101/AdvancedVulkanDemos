@@ -187,7 +187,8 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         bloom->bloomPasses[0].renderPass,
         1,
         "FullScreenQuadVert",
-        "BloomFrag"));
+        "BloomFrag",
+        NULL));
 
     AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         &bloom->pipelineComposite,
@@ -196,7 +197,8 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         compositeRenderPass,
         1,
         "FullScreenQuadVert",
-        "BloomFrag"));
+        "BloomFrag",
+        NULL));
 
     return true;
 }

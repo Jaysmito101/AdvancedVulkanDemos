@@ -25,19 +25,18 @@ bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan 
         vulkan->device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT));
-    AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         &presentation->pipelineLayout,
-        vulkan->device,
-        &presentation->descriptorSetLayout, 1,
-        sizeof(AVD_VulkanPresentationPushConstants)));
-    AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         &presentation->pipeline,
-        presentation->pipelineLayout,
         vulkan->device,
+        (VkDescriptorSetLayout[]){presentation->descriptorSetLayout},
+        1,
+        sizeof(AVD_VulkanPresentationPushConstants),
         swapchain->renderPass,
         1,
         "PresentationVert",
-        "PresentationFrag"));
+        "PresentationFrag",
+        NULL));
     AVD_CHECK(avdRenderableTextCreate(
         &presentation->loadingText,
         fontRenderer,

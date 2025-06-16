@@ -152,6 +152,14 @@ bool avdPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorB
     return true;
 }
 
+void avdPipelineUtilsPipelineCreationInfoInit(AVD_VulkanPipelineCreationInfo* info) 
+{
+    AVD_ASSERT(info != NULL);
+
+    info->enableBlend = false;
+    info->enableDepthTest = false;
+}
+
 bool avdPipelineUtilsCreateGraphicsPipelineLayout(
     VkPipelineLayout *pipelineLayout,
     VkDevice device,
@@ -180,7 +188,15 @@ bool avdPipelineUtilsCreateGraphicsPipelineLayout(
     return true;
 }
 
-bool avdPipelineUtilsCreateGenericGraphicsPipeline(VkPipeline *pipeline, VkPipelineLayout layout, VkDevice device, VkRenderPass renderPass, uint32_t attachmentCount, const char *vertShaderAsset, const char *fragShaderAsset)
+bool avdPipelineUtilsCreateGenericGraphicsPipeline(
+    VkPipeline *pipeline,
+    VkPipelineLayout layout,
+    VkDevice device,
+    VkRenderPass renderPass,
+    uint32_t attachmentCount,
+    const char *vertShaderAsset,
+    const char *fragShaderAsset,
+    AVD_VulkanPipelineCreationInfo *creationInfo)
 {
     AVD_ASSERT(pipeline != NULL);
     AVD_ASSERT(layout != VK_NULL_HANDLE);
@@ -219,11 +235,11 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(VkPipeline *pipeline, VkPipel
     AVD_CHECK(avdPipelineUtilsMultisampleState(&multisampleInfo));
 
     VkPipelineDepthStencilStateCreateInfo depthStencilInfo = {0};
-    AVD_CHECK(avdPipelineUtilsDepthStencilState(&depthStencilInfo, false));
+    AVD_CHECK(avdPipelineUtilsDepthStencilState(&depthStencilInfo, creationInfo ? creationInfo->enableDepthTest : false));
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment[64] = {0};
     for (uint32_t i = 0; i < attachmentCount; ++i) {
-        AVD_CHECK(avdPipelineUtilsBlendAttachment(&colorBlendAttachment[i], true));
+        AVD_CHECK(avdPipelineUtilsBlendAttachment(&colorBlendAttachment[i], creationInfo ? creationInfo->enableBlend : true));
     }
 
     VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {0};
@@ -274,7 +290,8 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
     VkRenderPass renderPass,
     uint32_t attachmentCount,
     const char *vertShaderAsset,
-    const char *fragShaderAsset)
+    const char *fragShaderAsset,
+    AVD_VulkanPipelineCreationInfo *pipelineCreationInfo)
 {
     AVD_ASSERT(pipelineLayout != NULL);
     AVD_ASSERT(pipeline != NULL);
@@ -296,7 +313,8 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         renderPass,
         attachmentCount,
         vertShaderAsset,
-        fragShaderAsset));
+        fragShaderAsset,
+        pipelineCreationInfo));
 }
 
 bool avdWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorImageInfo *imageInfo)
