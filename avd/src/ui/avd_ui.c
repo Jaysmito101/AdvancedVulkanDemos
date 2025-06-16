@@ -40,15 +40,13 @@ bool avdUiInit(AVD_Ui *ui, struct AVD_AppState *appState)
         vulkan->device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT));
-    AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         &ui->pipelineLayout,
-        vulkan->device,
-        &ui->descriptorSetLayout, 1,
-        sizeof(AVD_UiPushConstants)));
-    AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         &ui->pipeline,
-        ui->pipelineLayout,
         vulkan->device,
+        (VkDescriptorSetLayout[]){ui->descriptorSetLayout},
+        1,
+        sizeof(AVD_UiPushConstants),
         appState->renderer.sceneFramebuffer.renderPass,
         (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count,
         "FullScreenQuadVert",
