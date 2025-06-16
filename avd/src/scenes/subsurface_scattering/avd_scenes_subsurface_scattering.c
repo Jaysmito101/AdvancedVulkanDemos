@@ -281,7 +281,6 @@ bool avdSceneSubsurfaceScatteringCheckIntegrity(struct AVD_AppState *appState, c
     AVD_ASSERT(statusMessage != NULL);
     *statusMessage = NULL;
 
-    // Not really a dependency but we should ensure that its present
     AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/alien.obj");
     AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/alien_thickness_map.png");
     AVD_FILE_INTEGRITY_CHECK("assets/scene_subsurface_scattering/buddha.obj");
