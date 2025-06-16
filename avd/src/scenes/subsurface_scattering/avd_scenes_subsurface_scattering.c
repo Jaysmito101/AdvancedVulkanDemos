@@ -35,28 +35,28 @@ static void __avdSetupBindlessDescriptorWrite(
 }
 
 #define AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(index, image) \
-    __avdSetupBindlessDescriptorWrite( \
-        vulkan, \
-        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, \
-        index, \
-        &subsurfaceScattering->image, \
-        &descriptorSetWrites[descriptorWriteCount++]); 
+    __avdSetupBindlessDescriptorWrite(                          \
+        vulkan,                                                 \
+        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,      \
+        index,                                                  \
+        &subsurfaceScattering->image,                           \
+        &descriptorSetWrites[descriptorWriteCount++]);
 
-#define AVD_SETUP_BINDLESS_DEPTH_DESCRIPTOR_WRITE(index, framebuffer) \
-    __avdSetupBindlessDescriptorWrite( \
-        vulkan, \
-        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, \
-        index, \
+#define AVD_SETUP_BINDLESS_DEPTH_DESCRIPTOR_WRITE(index, framebuffer)    \
+    __avdSetupBindlessDescriptorWrite(                                   \
+        vulkan,                                                          \
+        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,               \
+        index,                                                           \
         &subsurfaceScattering->framebuffer.depthStencilAttachment.image, \
-        &descriptorSetWrites[descriptorWriteCount++]); 
+        &descriptorSetWrites[descriptorWriteCount++]);
 
-#define AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(index, framebuffer, imageIndex) \
-    __avdSetupBindlessDescriptorWrite( \
-        vulkan, \
-        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, \
-        index, \
+#define AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(index, framebuffer, imageIndex)                    \
+    __avdSetupBindlessDescriptorWrite(                                                         \
+        vulkan,                                                                                \
+        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,                                     \
+        index,                                                                                 \
         &avdVulkanFramebufferGetColorAttachment(&subsurfaceScattering->framebuffer, 0)->image, \
-        &descriptorSetWrites[descriptorWriteCount++]); 
+        &descriptorSetWrites[descriptorWriteCount++]);
 
 static bool __avdSetupBindlessDescriptors(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_Vulkan *vulkan)
 {
@@ -80,18 +80,10 @@ static bool __avdSetupBindlessDescriptors(AVD_SceneSubsurfaceScattering *subsurf
     return true;
 }
 
-bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene)
+bool __avdSceneCreateFramebuffers(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
+    AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(appState != NULL);
-    AVD_ASSERT(scene != NULL);
-    AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
-
-    subsurfaceScattering->loadStage    = 0;
-    subsurfaceScattering->bloomEnabled = false;
-    subsurfaceScattering->sceneWidth   = (uint32_t)((float)GAME_WIDTH * 1.5f);
-    subsurfaceScattering->sceneHeight  = (uint32_t)((float)GAME_HEIGHT * 1.5f);
-
-    avd3DSceneCreate(&subsurfaceScattering->models);
 
     AVD_CHECK(avdVulkanFramebufferCreate(
         &appState->vulkan,
@@ -137,12 +129,14 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         1, // Number of color attachments
         VK_FORMAT_D32_SFLOAT));
 
-    AVD_CHECK(avdCreateDescriptorSetLayout(
-        &subsurfaceScattering->set0Layout,
-        appState->vulkan.device,
-        (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}, 1,
-        VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT));
+    return true;
+}
 
+bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
+{
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(appState != NULL);
+    
     AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
         &subsurfaceScattering->compositePipelineLayout,
         appState->vulkan.device,
@@ -157,6 +151,32 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         appState->renderer.sceneFramebuffer.renderPass,
         "FullScreenQuadVert",
         "SubSurfaceScatteringCompositeFrag"));
+
+    return true;
+}
+
+bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene)
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(scene != NULL);
+    AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
+
+    subsurfaceScattering->loadStage    = 0;
+    subsurfaceScattering->bloomEnabled = false;
+    subsurfaceScattering->sceneWidth   = (uint32_t)((float)GAME_WIDTH * 1.5f);
+    subsurfaceScattering->sceneHeight  = (uint32_t)((float)GAME_HEIGHT * 1.5f);
+
+    avd3DSceneCreate(&subsurfaceScattering->models);
+
+    AVD_CHECK(__avdSceneCreateFramebuffers(subsurfaceScattering, appState));
+
+    AVD_CHECK(avdCreateDescriptorSetLayout(
+        &subsurfaceScattering->set0Layout,
+        appState->vulkan.device,
+        (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}, 1,
+        VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT));
+
+    AVD_CHECK(__avdSceneCreatePipelines(subsurfaceScattering, appState));
 
     AVD_CHECK(avdRenderableTextCreate(
         &subsurfaceScattering->title,
@@ -265,7 +285,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &subsurfaceScattering->standfordDragonThicknessMap));
             break;
         case 7:
-            *statusMessage = "Setting Up GPU buffers";
+            *statusMessage    = "Setting Up GPU buffers";
             size_t bufferSize = subsurfaceScattering->models.modelResources.verticesList.count * subsurfaceScattering->models.modelResources.verticesList.itemSize;
             AVD_CHECK(avdVulkanBufferCreate(
                 &appState->vulkan,
@@ -277,8 +297,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &appState->vulkan,
                 &subsurfaceScattering->vertexBuffer,
                 subsurfaceScattering->models.modelResources.verticesList.items,
-                bufferSize
-            ));
+                bufferSize));
             break;
         case 8:
             *statusMessage = "Setting Up Bindless Descriptors";
@@ -378,12 +397,11 @@ bool avdSceneSubsurfaceScatteringUpdate(struct AVD_AppState *appState, union AVD
     return true;
 }
 
-bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
-
 
     if (subsurfaceScattering->bloomEnabled) {
         AVD_BloomParams params = {
@@ -406,7 +424,7 @@ bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     return true;
 }
 
-bool __avdSceneRenderDepthPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+bool __avdSceneRenderDepthPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -415,7 +433,7 @@ bool __avdSceneRenderDepthPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfac
     return true;
 }
 
-bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -424,7 +442,7 @@ bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceSc
     return true;
 }
 
-bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -433,7 +451,7 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
     return true;
 }
 
-bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -442,8 +460,7 @@ bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_
     return true;
 }
 
-
-bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState) 
+bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -490,14 +507,14 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    VkCommandBuffer commandBuffer = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
+    VkCommandBuffer commandBuffer                       = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
     AVD_CHECK(__avdSceneRenderDepthPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderAOPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderLightingPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderIrradianceDiffusionPass(commandBuffer, subsurfaceScattering, appState));
-    AVD_CHECK(__avdSceneRenderCompositePass(commandBuffer, subsurfaceScattering, appState));  
+    AVD_CHECK(__avdSceneRenderCompositePass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderBloomIfNeeded(commandBuffer, subsurfaceScattering, appState));
 
     return true;
