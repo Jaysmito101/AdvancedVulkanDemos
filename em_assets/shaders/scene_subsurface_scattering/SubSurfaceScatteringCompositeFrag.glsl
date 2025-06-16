@@ -7,6 +7,8 @@ layout(location = 0) in vec2 inUV;
 
 layout(location = 0) out vec4 outColor;
 
+layout (set = 0, binding = 1) uniform sampler2D textures[];
+
 struct PushConstantData {
    mat4 modelMatrix;
    mat4 viewMatrix;
@@ -20,7 +22,8 @@ layout(push_constant) uniform PushConstants {
 
 
 void main() {
-    vec2 uv = (inUV * 2.0 - 1.0);
-    outColor = vec4(uv, 0.0, 1.0); 
+   // vec2 uv = (inUV * 2.0 - 1.0);
+   vec4 color = texture(textures[3], inUV);
+   outColor = vec4(color.rgb, 1.0); 
 }
 

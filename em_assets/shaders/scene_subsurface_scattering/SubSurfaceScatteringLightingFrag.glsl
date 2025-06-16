@@ -20,7 +20,6 @@ layout(push_constant) uniform PushConstants {
 
 
 void main() {
-    vec2 uv = (inUV * 2.0 - 1.0);
-    outColor = vec4(uv, 0.0, 1.0); 
+    outColor = vec4(1.0, 1.0, 0.0, 1.0); 
 }
 

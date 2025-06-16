@@ -136,7 +136,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
 {
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(appState != NULL);
-    
+
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         &subsurfaceScattering->lightingPipelineLayout,
         &subsurfaceScattering->lightingPipeline,
@@ -147,7 +147,8 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         sizeof(AVD_SubSurfaceScatteringUberPushConstants),
         subsurfaceScattering->lightingBuffer.renderPass,
         (uint32_t)subsurfaceScattering->lightingBuffer.colorAttachments.count,
-        "SubSurfaceScatteringSceneVert",
+        // "SubSurfaceScatteringSceneVert",
+        "FullScreenQuadVert",
         "SubSurfaceScatteringLightingFrag"));
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
@@ -162,7 +163,6 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count,
         "FullScreenQuadVert",
         "SubSurfaceScatteringCompositeFrag"));
-
 
     return true;
 }
@@ -314,6 +314,22 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &subsurfaceScattering->vertexBuffer,
                 subsurfaceScattering->models.modelResources.verticesList.items,
                 bufferSize));
+
+            VkDescriptorSetAllocateInfo allocateInfo = {0};
+            allocateInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocateInfo.descriptorPool              = appState->vulkan.descriptorPool;
+            allocateInfo.descriptorSetCount          = 1;
+            allocateInfo.pSetLayouts                 = &subsurfaceScattering->set0Layout;
+            AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(
+                                    appState->vulkan.device,
+                                    &allocateInfo,
+                                    &subsurfaceScattering->set0),
+                                "Failed to allocate descriptor set");
+            VkWriteDescriptorSet descriptorSetWrite = {0};
+            AVD_CHECK(avdWriteBufferDescriptorSet(&descriptorSetWrite,
+                                                  subsurfaceScattering->set0,
+                                                  0,
+                                                  &subsurfaceScattering->vertexBuffer.descriptorBufferInfo));
             break;
         case 8:
             *statusMessage = "Setting Up Bindless Descriptors";
@@ -463,6 +479,26 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    AVD_CHECK(avdBeginRenderPassWithFramebuffer(
+        commandBuffer,
+        &subsurfaceScattering->lightingBuffer,
+        (VkClearValue[]){
+            {
+                .color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}, // Diffuse irradiance
+            },
+            {
+                .color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}, // Specular irradiance
+            },
+            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}} // Extra
+        },
+        3));
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipelineLayout, 0, 1, &subsurfaceScattering->set0, 0, NULL);
+    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+
+    AVD_CHECK(avdEndRenderPass(commandBuffer));
 
     return true;
 }

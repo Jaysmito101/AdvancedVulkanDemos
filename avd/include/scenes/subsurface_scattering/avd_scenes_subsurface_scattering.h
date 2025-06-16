@@ -29,6 +29,7 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_3DScene models;
 
     VkDescriptorSetLayout set0Layout;
+    VkDescriptorSet set0;
 
     VkPipelineLayout depthPipelineLayout;
     VkPipeline depthPipeline;
