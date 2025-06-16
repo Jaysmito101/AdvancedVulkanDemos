@@ -6,11 +6,6 @@ AVD_Matrix4x4 avdMatLookAt(const AVD_Vector3 eye, const AVD_Vector3 center, cons
     AVD_Vector3 s = avdVec3Normalize(avdVec3Cross(f, up));
     AVD_Vector3 u = avdVec3Cross(s, f);
 
-    // return avdMat4x4(
-    //     s.x, u.x, -f.x, 0.0f,
-    //     s.y, u.y, -f.y, 0.0f,
-    //     s.z, u.z, -f.z, 0.0f,
-    //     -avdVec3Dot(s, eye), -avdVec3Dot(u, eye), avdVec3Dot(f, eye), 1.0f);
     return avdMat4x4(
         s.x, s.y, s.z, -avdVec3Dot(s, eye),
         u.x, u.y, u.z, -avdVec3Dot(u, eye),
