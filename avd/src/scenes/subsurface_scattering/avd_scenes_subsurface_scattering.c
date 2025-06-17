@@ -252,10 +252,12 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
     AVD_ASSERT(scene != NULL);
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
+    AVD_Float scalar = 1.5f;
+
     subsurfaceScattering->loadStage    = 0;
     subsurfaceScattering->bloomEnabled = false;
-    subsurfaceScattering->sceneWidth   = (uint32_t)((float)GAME_WIDTH * 1.5f);
-    subsurfaceScattering->sceneHeight  = (uint32_t)((float)GAME_HEIGHT * 1.5f);
+    subsurfaceScattering->sceneWidth   = (uint32_t)((float)GAME_WIDTH * scalar);
+    subsurfaceScattering->sceneHeight  = (uint32_t)((float)GAME_HEIGHT * scalar);
 
     subsurfaceScattering->currentFocusModelIndex = 0;
     subsurfaceScattering->cameraPosition         = avdVec3(2.0f, 2.0f, 2.0f);
