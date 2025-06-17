@@ -133,3 +133,54 @@ bool avdReadBinaryFile(const char *filename, void **data, size_t *size)
     fclose(file);
     return true;
 }
+
+// NOTE: These implementations are taken from the meshoptimizer library.
+// Source: https://github.com/zeux/meshoptimizer/blob/3beccf6f3653992cf1724a5ff954af8455eb9965/src/quantization.cpp
+
+typedef union {
+    float f;
+    uint32_t ui;
+} AVD_FloatBits;
+
+uint16_t avdQuantizeHalf(float v)
+{
+    AVD_FloatBits u     = {v};
+    unsigned int ui = u.ui;
+
+    int s  = (ui >> 16) & 0x8000;
+    int em = ui & 0x7fffffff;
+
+    // bias exponent and round to nearest; 112 is relative exponent bias (127-15)
+    int h = (em - (112 << 23) + (1 << 12)) >> 13;
+
+    // underflow: flush to zero; 113 encodes exponent -14
+    h = (em < (113 << 23)) ? 0 : h;
+
+    // overflow: infinity; 143 encodes exponent 16
+    h = (em >= (143 << 23)) ? 0x7c00 : h;
+
+    // NaN; note that we convert all types of NaN to qNaN
+    h = (em > (255 << 23)) ? 0x7e00 : h;
+
+    return (unsigned short)(s | h);
+}
+
+float avdDequantizeHalf(uint16_t h)
+{
+    unsigned int s = (unsigned)(h & 0x8000) << 16;
+    int em         = h & 0x7fff;
+
+    // bias exponent and pad mantissa with 0; 112 is relative exponent bias (127-15)
+    int r = (em + (112 << 10)) << 13;
+
+    // denormal: flush to zero
+    r = (em < (1 << 10)) ? 0 : r;
+
+    // infinity/NaN; note that we preserve NaN payload as a byproduct of unifying inf/nan cases
+    // 112 is an exponent bias fixup; since we already applied it once, applying it twice converts 31 to 255
+    r += (em >= (31 << 10)) ? (112 << 23) : 0;
+
+    AVD_FloatBits u;
+    u.ui = s | r;
+    return u.f;
+}

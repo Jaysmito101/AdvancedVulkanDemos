@@ -12,4 +12,8 @@ void avdSleep(uint32_t milliseconds);
 void avdMessageBox(const char *title, const char *message);
 bool avdReadBinaryFile(const char *filename, void **data, size_t *size);
 
+uint16_t avdQuantizeHalf(float value);
+float avdDequantizeHalf(uint16_t value);
+
+
 #endif // AVD_UTILS_H
