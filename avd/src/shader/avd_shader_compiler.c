@@ -11,6 +11,11 @@ uint32_t *avdCompileShader(const char *shaderCode, const char *inputFileName, si
     shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
     shaderc_compile_options_set_warnings_as_errors(options);
 
+#ifdef AVD_DEBUG
+    AVD_LOG("Compiling shader: %s with debug info enabled\n", inputFileName);
+    shaderc_compile_options_set_generate_debug_info(options);
+#endif
+
     shaderc_shader_kind kind = shaderc_glsl_infer_from_source;
 
     shaderc_compilation_result_t result = shaderc_compile_into_spv(compiler, shaderCode, strlen(shaderCode), kind, inputFileName, "main", options);
@@ -52,7 +57,11 @@ uint32_t *avdCompileShaderAndCache(const char *shaderCode, const char *inputFile
 {
     static char cacheFilePath[1024 * 4];
     uint32_t shaderHash = avdHashString(shaderCode);
+#ifdef AVD_DEBUG
+    snprintf(cacheFilePath, sizeof(cacheFilePath), "%s%u.%s.debug.psshader", avdGetTempDirPath(), shaderHash, inputFileName);
+#else
     snprintf(cacheFilePath, sizeof(cacheFilePath), "%s%u.%s.psshader", avdGetTempDirPath(), shaderHash, inputFileName);
+#endif
 
     FILE *file = fopen(cacheFilePath, "rb");
     if (file) {
