@@ -20,6 +20,9 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_VulkanImage alienThicknessMap;
     AVD_VulkanImage buddhaThicknessMap;
     AVD_VulkanImage standfordDragonThicknessMap;
+    AVD_VulkanImage buddhaORMMap;
+    AVD_VulkanImage buddhaAlbedoMap;
+    AVD_VulkanImage buddhaNormalMap;
 
     AVD_VulkanBuffer vertexBuffer;
 
