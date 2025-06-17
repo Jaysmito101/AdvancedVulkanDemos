@@ -289,8 +289,6 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT));
 
-    AVD_CHECK(__avdSceneCreatePipelines(subsurfaceScattering, appState));
-
     AVD_CHECK(avdRenderableTextCreate(
         &subsurfaceScattering->title,
         &appState->fontRenderer,
@@ -385,27 +383,31 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
 
     switch (subsurfaceScattering->loadStage) {
         case 0:
+            *statusMessage = "Creating Framebuffers";
+            AVD_CHECK(__avdSceneCreatePipelines(subsurfaceScattering, appState));
+            break;
+        case 1:
             *statusMessage = "Loading Alien Model";
             AVD_CHECK(avd3DSceneLoadObj(
                 "assets/scene_subsurface_scattering/alien.obj",
                 &subsurfaceScattering->models,
                 AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
-        case 1:
+        case 2:
             *statusMessage = "Loading Buddha Model";
             AVD_CHECK(avd3DSceneLoadObj(
                 "assets/scene_subsurface_scattering/buddha.obj",
                 &subsurfaceScattering->models,
                 AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
-        case 2:
+        case 3:
             *statusMessage = "Loading Standford Dragon Model";
             AVD_CHECK(avd3DSceneLoadObj(
                 "assets/scene_subsurface_scattering/standford_dragon.obj",
                 &subsurfaceScattering->models,
                 AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
-        case 3:
+        case 4:
             // NOTE: Pretty dumb thing to do! Ideally we should generate the sphere
             // geometry on the fly but for now we will just load a sphere model
             // as I am out of time.
@@ -416,28 +418,28 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &subsurfaceScattering->models,
                 AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
-        case 4:
+        case 5:
             *statusMessage = "Loading Alien Thickness Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/alien_thickness_map.png",
                 &subsurfaceScattering->alienThicknessMap));
             break;
-        case 5:
+        case 6:
             *statusMessage = "Loading Buddha Thickness Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_thickness_map.png",
                 &subsurfaceScattering->buddhaThicknessMap));
             break;
-        case 6:
+        case 7:
             *statusMessage = "Loading Standford Dragon Thickness Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/standford_dragon_thickness_map.png",
                 &subsurfaceScattering->standfordDragonThicknessMap));
             break;
-        case 7:
+        case 8:
             *statusMessage    = "Setting Up GPU buffers";
             size_t bufferSize = subsurfaceScattering->models.modelResources.verticesList.count * subsurfaceScattering->models.modelResources.verticesList.itemSize;
             AVD_CHECK(avdVulkanBufferCreate(
@@ -469,11 +471,11 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                                                   &subsurfaceScattering->vertexBuffer.descriptorBufferInfo));
             vkUpdateDescriptorSets(appState->vulkan.device, 1, &descriptorSetWrite, 0, NULL);
             break;
-        case 8:
+        case 9:
             *statusMessage = "Setting Up Bindless Descriptors";
             AVD_CHECK(__avdSetupBindlessDescriptors(subsurfaceScattering, &appState->vulkan));
             break;
-        case 9:
+        case 10:
             AVD_LOG("Subsurface Scattering scene loaded successfully.\n");
             avd3DSceneDebugLog(&subsurfaceScattering->models, "SubsurfaceScattering/Models");
             break;
@@ -483,7 +485,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
     }
 
     subsurfaceScattering->loadStage++;
-    *progress = (float)subsurfaceScattering->loadStage / 9.0f;
+    *progress = (float)subsurfaceScattering->loadStage / 10.0f;
     return *progress > 1.0f;
 }
 
