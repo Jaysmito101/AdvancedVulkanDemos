@@ -5,13 +5,19 @@
 #include "math/avd_math.h"
 
 typedef struct {
-    AVD_Vector4 position;
-    AVD_Vector4 normal;
-    AVD_Vector4 texCoord;
-    // NOTE: Vertex weights may be optionally be present in  (position.w, normal.w, texCoord.zw)
+    AVD_Vector3 position;
+    AVD_Vector3 normal;
+    AVD_Vector2 texCoord;
     AVD_Vector4 tangent;
-    AVD_Vector4 bitangent;
+    AVD_Vector3 bitangent;
 } AVD_ModelVertex;
+
+typedef struct {
+    uint16_t vx, vy, vz;
+	uint16_t tp; // packed tangent: 8-8 octahedral
+	uint32_t np; // packed normal: 10-10-10-2 vector + bitangent sign
+	uint16_t tu, tv;
+} AVD_ModelVertexPacked;
 
 typedef struct {
     AVD_List verticesList;
@@ -19,6 +25,7 @@ typedef struct {
 } AVD_ModelResources;
 
 void avdModelVertexInit(AVD_ModelVertex *vertex);
+bool avdModelVertexPack(AVD_ModelVertex *vertex, AVD_ModelVertexPacked *packed);
 bool avdModelResourcesCreate(AVD_ModelResources *resources);
 void avdModelResourcesDestroy(AVD_ModelResources *resources);
 

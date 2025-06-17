@@ -64,6 +64,7 @@ static bool __avdMeshLoadFaces(
     }
 
     AVD_ModelVertex vertex = {0};
+    AVD_ModelVertexPacked packedVertex = {0};
 
     for (size_t faceIndex = faceOffset; faceIndex < faceOffset + faceCount; faceIndex++) {
         // Ensure the face has a multiple of 3 vertices (triangles)
@@ -81,27 +82,24 @@ static bool __avdMeshLoadFaces(
             vertex.position.x = attrib->vertices[3 * index.v_idx + 0];
             vertex.position.y = attrib->vertices[3 * index.v_idx + 1];
             vertex.position.z = attrib->vertices[3 * index.v_idx + 2];
-            vertex.position.w = 1.0f;
 
             if (attrib->num_normals > 0) {
                 vertex.normal.x = attrib->normals[3 * index.vn_idx + 0];
                 vertex.normal.y = attrib->normals[3 * index.vn_idx + 1];
                 vertex.normal.z = attrib->normals[3 * index.vn_idx + 2];
-                vertex.normal.w = 1.0f;
             } else {
-                vertex.normal = avdVec4Zero();
+                vertex.normal = avdVec3Zero();
             }
 
             if (attrib->num_texcoords > 0) {
                 vertex.texCoord.x = attrib->texcoords[2 * index.vt_idx + 0];
                 vertex.texCoord.y = attrib->texcoords[2 * index.vt_idx + 1];
-                vertex.texCoord.z = 0.0f;
-                vertex.texCoord.w = 1.0f;
             } else {
-                vertex.texCoord = avdVec4Zero();
+                vertex.texCoord = avdVec2Zero();
             }
 
-            avdListPushBack(&resources->verticesList, &vertex);
+            AVD_CHECK(avdModelVertexPack(&vertex, &packedVertex));
+            avdListPushBack(&resources->verticesList, &packedVertex);
 
             currentIndex = (uint32_t)resources->verticesList.count - 1;
             avdListPushBack(&resources->indicesList, &currentIndex);
