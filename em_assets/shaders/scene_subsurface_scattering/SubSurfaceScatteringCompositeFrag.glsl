@@ -10,10 +10,10 @@ precision highp float;
 #define AVD_SSS_RENDER_MODE_SCENE_SPECULAR            4
 #define AVD_SSS_RENDER_MODE_SCENE_EMISSIVE            5
 #define AVD_SSS_RENDER_MODE_SCENE_DIFFUSED_IRRADIANCE 6
-#define AVD_SSS_ALIEN_THICKNESS_MAP                   8
-#define AVD_SSS_BUDDHA_THICKNESS_MAP                  9
-#define AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP         10
-#define AVD_SSS_RENDER_MODE_COUNT                     11
+#define AVD_SSS_ALIEN_THICKNESS_MAP                   7
+#define AVD_SSS_BUDDHA_THICKNESS_MAP                  8
+#define AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP         8
+#define AVD_SSS_RENDER_MODE_COUNT                     10
 
 layout(location = 0) in vec2 inUV;
 

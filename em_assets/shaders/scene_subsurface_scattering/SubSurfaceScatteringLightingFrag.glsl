@@ -42,8 +42,8 @@ pushConstants;
 
 // light a slight yellow sun color
 // light b sky color
-const vec3 lightAColor = vec3(1.0, 1.0, 0.8) * 25.0;
-const vec3 lightBColor = vec3(0.8, 0.9, 1.0) * 20.0;
+const vec3 lightAColor = vec3(1.0, 1.0, 0.4) * 12.0;
+const vec3 lightBColor = vec3(0.4, 0.6, 0.8);
 
 struct Light {
     vec3 position;

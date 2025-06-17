@@ -63,10 +63,10 @@ void main()
 
     int vertexIndex = gl_VertexIndex + pushConstants.data.vertexOffset;
 
-    mat4 viewModel      = pushConstants.data.viewMatrix * pushConstants.data.modelMatrix;
-    mat4 lightViewModel = pushConstants.data.viewMatrix * removeScaleFromMat4(pushConstants.data.modelMatrix);
-    mat4 projection     = pushConstants.data.projectionMatrix;
-    mat3 normalMatrix   = transpose(inverse(mat3(pushConstants.data.modelMatrix)));
+    mat4 unscaledModel = removeScaleFromMat4(pushConstants.data.modelMatrix);
+    mat4 viewModel     = pushConstants.data.viewMatrix * pushConstants.data.modelMatrix;
+    mat4 projection    = pushConstants.data.projectionMatrix;
+    mat3 normalMatrix  = transpose(inverse(mat3(pushConstants.data.modelMatrix)));
 
     vec4 vertexPosition = vec4(0.0);
     if (pushConstants.data.renderingLight == 1) {
@@ -80,23 +80,22 @@ void main()
             outRenderingLight = 2;
             vertexPosition    = pushConstants.data.lightB + lightVertexPosition;
         }
-        viewModel = lightViewModel;
+        viewModel = pushConstants.data.viewMatrix * unscaledModel;
     } else {
         outRenderingLight = 0;
         vertexPosition    = vertices[vertexIndex].position;
     }
 
     vec4 worldPosition = pushConstants.data.modelMatrix * vertexPosition;
-    vec4 position = projection * viewModel * vec4(vertexPosition.xyz, 1.0);
+    vec4 position      = projection * viewModel * vec4(vertexPosition.xyz, 1.0);
 
     // Set the output variables
     outNormal    = normalMatrix * vertices[vertexIndex].normal.xyz;
     outTangent   = normalMatrix * vertices[vertexIndex].tangent.xyz;
     outBitangent = normalMatrix * vertices[vertexIndex].bitangent.xyz;
     outPosition  = worldPosition;
-    outLightAPos = (lightViewModel * pushConstants.data.lightA).xyz;
-    outLightBPos = (lightViewModel * pushConstants.data.lightB).xyz;
-
+    outLightAPos = (unscaledModel * pushConstants.data.lightA).xyz;
+    outLightBPos = (unscaledModel * pushConstants.data.lightB).xyz;
 
     // Set the gl_Position for the vertex shader
     gl_Position = position;
