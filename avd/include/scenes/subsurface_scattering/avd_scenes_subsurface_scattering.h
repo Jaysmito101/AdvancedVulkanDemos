@@ -54,6 +54,7 @@ typedef struct AVD_SceneSubsurfaceScattering {
 
     AVD_Matrix4x4 projectionMatrix;
     AVD_Matrix4x4 viewMatrix;
+    AVD_Matrix4x4 viewProjectionMatrix;
 
     uint32_t loadStage;
     int32_t renderMode;

@@ -4,8 +4,7 @@
 
 typedef struct {
     AVD_Matrix4x4 modelMatrix;
-    AVD_Matrix4x4 viewMatrix;
-    AVD_Matrix4x4 projectionMatrix;
+    AVD_Matrix4x4 viewProjectionMatrix;
 
     AVD_Vector4 lightA;
     AVD_Vector4 lightB;
@@ -105,11 +104,11 @@ static void __avdSetupBindlessDescriptorWrite(
         &subsurfaceScattering->framebuffer.depthStencilAttachment.image, \
         &descriptorSetWrites[descriptorWriteCount++]);
 
-#define AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(index, framebuffer, imageIndex)                    \
-    __avdSetupBindlessDescriptorWrite(                                                         \
-        vulkan,                                                                                \
-        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,                                     \
-        index,                                                                                 \
+#define AVD_SETUP_BINDLESS_DESCRIPTOR_WRITE(index, framebuffer, imageIndex)                             \
+    __avdSetupBindlessDescriptorWrite(                                                                  \
+        vulkan,                                                                                         \
+        AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,                                              \
+        index,                                                                                          \
         &avdVulkanFramebufferGetColorAttachment(&subsurfaceScattering->framebuffer, imageIndex)->image, \
         &descriptorSetWrites[descriptorWriteCount++]);
 
@@ -615,6 +614,10 @@ bool avdSceneSubsurfaceScatteringUpdate(struct AVD_AppState *appState, union AVD
         0.1f,
         1000.0f);
 
+    subsurfaceScattering->viewProjectionMatrix = avdMat4x4Multiply(
+        subsurfaceScattering->projectionMatrix,
+        subsurfaceScattering->viewMatrix);
+
     return true;
 }
 
@@ -665,15 +668,14 @@ static bool __avdSceneRenderFirstMesh(
         radius * sinf(time * lightSpeed + phaseOffsetB + AVD_PI / 4.0f));
 
     AVD_SubSurfaceScatteringUberPushConstants pushConstants = {
-        .modelMatrix      = modelMatrix,
-        .viewMatrix       = subsurfaceScattering->viewMatrix,
-        .projectionMatrix = subsurfaceScattering->projectionMatrix,
-        .lightA           = avdVec4FromVec3(lightAPosition, 1.0),
-        .lightB           = avdVec4FromVec3(lightBPosition, 1.0),
-        .cameraPosition   = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
-        .vertexOffset     = mesh->indexOffset,
-        .vertexCount      = mesh->triangleCount * 3,
-        .renderingLight   = 0};
+        .modelMatrix          = modelMatrix,
+        .viewProjectionMatrix = subsurfaceScattering->viewProjectionMatrix,
+        .lightA               = avdVec4FromVec3(lightAPosition, 1.0),
+        .lightB               = avdVec4FromVec3(lightBPosition, 1.0),
+        .cameraPosition       = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
+        .vertexOffset         = mesh->indexOffset,
+        .vertexCount          = mesh->triangleCount * 3,
+        .renderingLight       = 0};
     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
     vkCmdDraw(commandBuffer, mesh->triangleCount * 3, 1, 0, 0);
 

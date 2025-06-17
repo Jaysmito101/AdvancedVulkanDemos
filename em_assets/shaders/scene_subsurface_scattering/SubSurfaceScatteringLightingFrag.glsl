@@ -5,13 +5,11 @@ precision highp float;
 
 layout(location = 0) in vec2 inUV;
 layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec3 inTangent;
-layout(location = 3) in vec3 inBitangent;
-layout(location = 4) in vec4 inPosition;
-layout(location = 5) flat in int inRenderingLight;
+layout(location = 2) in vec4 inPosition;
+layout(location = 3) flat in int inRenderingLight;
 // Extremely inefficient thing to do but well, this is just a demo.
-layout(location = 6) in vec3 inLightAPos;
-layout(location = 7) in vec3 inLightBPos;
+layout(location = 4) in vec3 inLightAPos;
+layout(location = 5) in vec3 inLightBPos;
 
 layout(location = 0) out vec4 outDiffuse;
 layout(location = 1) out vec4 outSpecular;
@@ -21,8 +19,7 @@ layout(location = 2) out vec4 outEmissive;
 
 struct PushConstantData {
     mat4 modelMatrix;
-    mat4 viewMatrix;
-    mat4 projectionMatrix;
+    mat4 viewProjectionMatrix;
 
     vec4 lightA;
     vec4 lightB;

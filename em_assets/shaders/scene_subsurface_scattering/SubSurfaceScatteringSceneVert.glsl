@@ -5,13 +5,11 @@
 
 layout(location = 0) out vec2 outUV;
 layout(location = 1) out vec3 outNormal;
-layout(location = 2) out vec3 outTangent;
-layout(location = 3) out vec3 outBitangent;
-layout(location = 4) out vec4 outPosition;
-layout(location = 5) flat out int outRenderingLight;
+layout(location = 2) out vec4 outPosition;
+layout(location = 3) flat out int outRenderingLight;
 // Extremely inefficient thing to do but well, this is just a demo.
-layout(location = 6) out vec3 outLightAPos;
-layout(location = 7) out vec3 outLightBPos;
+layout(location = 4) out vec3 outLightAPos;
+layout(location = 5) out vec3 outLightBPos;
 
 struct ModelVertex {
     vec4 position;
@@ -28,8 +26,7 @@ layout(set = 0, binding = 0, std430) readonly buffer VertexBuffer
 
 struct PushConstantData {
     mat4 modelMatrix;
-    mat4 viewMatrix;
-    mat4 projectionMatrix;
+    mat4 viewProjectionMatrix;
 
     vec4 lightA;
     vec4 lightB;
@@ -63,10 +60,10 @@ void main()
 
     int vertexIndex = gl_VertexIndex + pushConstants.data.vertexOffset;
 
-    mat4 unscaledModel = removeScaleFromMat4(pushConstants.data.modelMatrix);
-    mat4 viewModel     = pushConstants.data.viewMatrix * pushConstants.data.modelMatrix;
-    mat4 projection    = pushConstants.data.projectionMatrix;
-    mat3 normalMatrix  = transpose(inverse(mat3(pushConstants.data.modelMatrix)));
+    mat4 unscaledModel  = removeScaleFromMat4(pushConstants.data.modelMatrix);
+    mat4 modelMatrix    = pushConstants.data.modelMatrix;
+    mat4 viewProjection = pushConstants.data.viewProjectionMatrix;
+    mat3 normalMatrix   = transpose(inverse(mat3(pushConstants.data.modelMatrix)));
 
     vec4 vertexPosition = vec4(0.0);
     if (pushConstants.data.renderingLight == 1) {
@@ -80,19 +77,17 @@ void main()
             outRenderingLight = 2;
             vertexPosition    = pushConstants.data.lightB + lightVertexPosition;
         }
-        viewModel = pushConstants.data.viewMatrix * unscaledModel;
+        modelMatrix = unscaledModel;
     } else {
         outRenderingLight = 0;
         vertexPosition    = vertices[vertexIndex].position;
     }
 
     vec4 worldPosition = pushConstants.data.modelMatrix * vertexPosition;
-    vec4 position      = projection * viewModel * vec4(vertexPosition.xyz, 1.0);
+    vec4 position      = viewProjection * modelMatrix * vec4(vertexPosition.xyz, 1.0);
 
     // Set the output variables
     outNormal    = normalMatrix * vertices[vertexIndex].normal.xyz;
-    outTangent   = normalMatrix * vertices[vertexIndex].tangent.xyz;
-    outBitangent = normalMatrix * vertices[vertexIndex].bitangent.xyz;
     outPosition  = worldPosition;
     outLightAPos = (unscaledModel * pushConstants.data.lightA).xyz;
     outLightBPos = (unscaledModel * pushConstants.data.lightB).xyz;
