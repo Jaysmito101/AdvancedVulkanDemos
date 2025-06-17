@@ -184,3 +184,16 @@ float avdDequantizeHalf(uint16_t h)
     u.ui = s | r;
     return u.f;
 }
+
+// Source: https://github.com/zeux/meshoptimizer/blob/3beccf6f3653992cf1724a5ff954af8455eb9965/src/meshoptimizer.h#L875
+int avdQuantizeSnorm(float v, int N)
+{
+    const float scale = (float)((1 << (N - 1)) - 1);
+
+	float round = (v >= 0 ? 0.5f : -0.5f);
+
+	v = (v >= -1) ? v : -1;
+	v = (v <= +1) ? v : +1;
+
+	return (int)(v * scale + round);
+}
