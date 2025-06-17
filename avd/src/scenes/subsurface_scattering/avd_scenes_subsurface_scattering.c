@@ -10,6 +10,8 @@ typedef struct {
     AVD_Vector4 lightA;
     AVD_Vector4 lightB;
 
+    AVD_Vector4 cameraPosition;
+
     int32_t vertexOffset;
     int32_t vertexCount;
     int32_t renderingLight;
@@ -108,7 +110,7 @@ static void __avdSetupBindlessDescriptorWrite(
         vulkan,                                                                                \
         AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,                                     \
         index,                                                                                 \
-        &avdVulkanFramebufferGetColorAttachment(&subsurfaceScattering->framebuffer, 0)->image, \
+        &avdVulkanFramebufferGetColorAttachment(&subsurfaceScattering->framebuffer, imageIndex)->image, \
         &descriptorSetWrites[descriptorWriteCount++]);
 
 static bool __avdSetupBindlessDescriptors(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_Vulkan *vulkan)
@@ -662,10 +664,11 @@ static bool __avdSceneRenderFirstMesh(
         .modelMatrix      = modelMatrix,
         .viewMatrix       = subsurfaceScattering->viewMatrix,
         .projectionMatrix = subsurfaceScattering->projectionMatrix,
-        .vertexOffset     = mesh->indexOffset,
-        .vertexCount      = mesh->triangleCount * 3,
         .lightA           = avdVec4FromVec3(lightAPosition, 1.0),
         .lightB           = avdVec4FromVec3(lightBPosition, 1.0),
+        .cameraPosition   = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
+        .vertexOffset     = mesh->indexOffset,
+        .vertexCount      = mesh->triangleCount * 3,
         .renderingLight   = 0};
     vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
     vkCmdDraw(commandBuffer, mesh->triangleCount * 3, 1, 0, 0);

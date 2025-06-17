@@ -33,6 +33,7 @@ struct PushConstantData {
 
     vec4 lightA;
     vec4 lightB;
+    vec4 cameraPosition;
 
     int vertexOffset;
     int vertexCount;
@@ -85,13 +86,14 @@ void main()
         vertexPosition    = vertices[vertexIndex].position;
     }
 
+    vec4 worldPosition = pushConstants.data.modelMatrix * vertexPosition;
     vec4 position = projection * viewModel * vec4(vertexPosition.xyz, 1.0);
 
     // Set the output variables
     outNormal    = normalMatrix * vertices[vertexIndex].normal.xyz;
     outTangent   = normalMatrix * vertices[vertexIndex].tangent.xyz;
     outBitangent = normalMatrix * vertices[vertexIndex].bitangent.xyz;
-    outPosition  = position;
+    outPosition  = worldPosition;
     outLightAPos = (lightViewModel * pushConstants.data.lightA).xyz;
     outLightBPos = (lightViewModel * pushConstants.data.lightB).xyz;
 

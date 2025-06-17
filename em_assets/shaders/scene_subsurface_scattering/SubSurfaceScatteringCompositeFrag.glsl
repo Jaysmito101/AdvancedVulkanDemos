@@ -40,30 +40,34 @@ float linearizeDepth(float depth)
 
 void main()
 {
-    vec2 uv = (inUV * 2.0 - 1.0);
+    vec2 uv = vec2(inUV.x, 1.0 - inUV.y); 
+
     int renderMode = pushConstants.data.renderMode;
-        
+    
+
     if (renderMode == AVD_SSS_RENDER_MODE_RESULT) {
-        // TEST 
-        outColor = texture(textures[3], vec2(inUV.x, 1.0 - inUV.y));
+        vec4 diffuse = texture(textures[3], uv);
+        vec4 specular = texture(textures[4], uv);
+        vec4 emissive = texture(textures[5], uv);
+        outColor = vec4(diffuse.rgb + specular.rgb + emissive.rgb, 1.0);
     } else if (renderMode == AVD_SSS_RENDER_MODE_SCENE_DEPTH) {
-        float depth = texture(textures[1], vec2(inUV.x, 1.0 - inUV.y)).r;
+        float depth = texture(textures[1], uv).r;
         outColor    = vec4(vec3(linearizeDepth(depth)), 1.0);
     } else if (renderMode == AVD_SSS_RENDER_MODE_SCENE_AO) {
-        outColor = texture(textures[2], vec2(inUV.x, 1.0 - inUV.y));
+        outColor = texture(textures[2], uv);
     } else if (renderMode == AVD_SSS_RENDER_MODE_SCENE_DIFFUSE) {
-        outColor = texture(textures[3], vec2(inUV.x, 1.0 - inUV.y));
+        outColor = texture(textures[3], uv);
     } else if (renderMode == AVD_SSS_RENDER_MODE_SCENE_SPECULAR) {
-        outColor = texture(textures[4], vec2(inUV.x, 1.0 - inUV.y));
+        outColor = texture(textures[4], uv);
     } else if (renderMode == AVD_SSS_RENDER_MODE_SCENE_EMISSIVE) {
-        outColor = texture(textures[5], vec2(inUV.x, 1.0 - inUV.y));
+        outColor = texture(textures[5], uv);
     } else if (renderMode == AVD_SSS_RENDER_MODE_SCENE_DIFFUSED_IRRADIANCE) {
-        outColor = texture(textures[6], vec2(inUV.x, 1.0 - inUV.y));
+        outColor = texture(textures[6], uv);
     } else if (renderMode == AVD_SSS_ALIEN_THICKNESS_MAP) {
-        outColor = texture(textures[8], vec2(inUV.x, 1.0 - inUV.y));
+        outColor = texture(textures[8], uv);
     } else if (renderMode == AVD_SSS_BUDDHA_THICKNESS_MAP) {
-        outColor = texture(textures[9], vec2(inUV.x, 1.0 - inUV.y));
+        outColor = texture(textures[9], uv);
     } else if (renderMode == AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP) {
-        outColor = texture(textures[10], vec2(inUV.x, 1.0 - inUV.y));
+        outColor = texture(textures[10], uv);
     }
 }
