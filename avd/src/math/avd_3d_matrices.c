@@ -48,3 +48,13 @@ AVD_Matrix4x4 avdMatFrustum(AVD_Float left, AVD_Float right, AVD_Float bottom, A
         0.0f, 0.0f, -(farZ + nearZ) / depth, -2.0f * farZ * nearZ / depth,
         0.0f, 0.0f, -1.0f, 0.0f);
 }
+
+AVD_Vector3 avdMatGetScale(const AVD_Matrix4x4* mat)
+{
+    AVD_ASSERT(mat != NULL);
+    return avdVec3(
+        avdVec3Length(avdMat4x4Col(*mat, 0)),
+        avdVec3Length(avdMat4x4Col(*mat, 1)),
+        avdVec3Length(avdMat4x4Col(*mat, 2))
+    );
+}
