@@ -23,6 +23,7 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_VulkanImage buddhaORMMap;
     AVD_VulkanImage buddhaAlbedoMap;
     AVD_VulkanImage buddhaNormalMap;
+    AVD_VulkanImage noiseTexture;
 
     AVD_VulkanBuffer vertexBuffer;
 

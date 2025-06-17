@@ -33,7 +33,11 @@ typedef struct {
 #define AVD_SSS_ALIEN_THICKNESS_MAP                   7
 #define AVD_SSS_BUDDHA_THICKNESS_MAP                  8
 #define AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP         9
-#define AVD_SSS_RENDER_MODE_COUNT                     10
+#define AVD_SSS_BUDDHA_ORM_MAP                        10
+#define AVD_SSS_BUDDHA_ALBEDO_MAP                     11
+#define AVD_SSS_BUDDHA_NORMAL_MAP                     12
+#define AVD_SSS_NOISE_TEXTURE                         13
+#define AVD_SSS_RENDER_MODE_COUNT                     14
 
 typedef struct {
     int32_t renderMode;
@@ -69,6 +73,14 @@ static const char *__avdSceneSubsurfaceScatteringGetRenderModeName(int32_t rende
             return "Buddha Thickness Map";
         case AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP:
             return "Standford Dragon Thickness Map";
+        case AVD_SSS_BUDDHA_ORM_MAP:
+            return "Buddha ORM Map";
+        case AVD_SSS_BUDDHA_ALBEDO_MAP:
+            return "Buddha Albedo Map";
+        case AVD_SSS_BUDDHA_NORMAL_MAP:
+            return "Buddha Normal Map";
+        case AVD_SSS_NOISE_TEXTURE:
+            return "Noise Texture";
         default:
             return "Unknown Render Mode";
     }
@@ -137,6 +149,7 @@ static bool __avdSetupBindlessDescriptors(AVD_SceneSubsurfaceScattering *subsurf
     AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(11, buddhaORMMap);
     AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(12, buddhaAlbedoMap);
     AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(13, buddhaNormalMap);
+    AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(14, noiseTexture);
 
     vkUpdateDescriptorSets(vulkan->device, descriptorWriteCount, descriptorSetWrites, 0, NULL);
 
@@ -332,15 +345,16 @@ void avdSceneSubsurfaceScatteringDestroy(struct AVD_AppState *appState, union AV
     avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->aoBuffer);
     avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->lightingBuffer);
     avdVulkanFramebufferDestroy(&appState->vulkan, &subsurfaceScattering->diffusedIrradianceBuffer);
-
+    
     avdVulkanBufferDestroy(&appState->vulkan, &subsurfaceScattering->vertexBuffer);
-
+    
     avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->alienThicknessMap);
     avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->buddhaThicknessMap);
     avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->standfordDragonThicknessMap);
     avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->buddhaORMMap);
     avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->buddhaAlbedoMap);
     avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->buddhaNormalMap);
+    avdVulkanImageDestroy(&appState->vulkan, &subsurfaceScattering->noiseTexture);
 
     vkDestroyDescriptorSetLayout(appState->vulkan.device, subsurfaceScattering->set0Layout, NULL);
 
@@ -480,6 +494,24 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &subsurfaceScattering->buddhaNormalMap));
             break;
         case 12:
+            *statusMessage = "Generating Noise Texture for AO";
+            AVD_CHECK(avdVulkanImageCreate(
+                &appState->vulkan,
+                &subsurfaceScattering->noiseTexture,
+                VK_FORMAT_R8G8B8A8_UNORM,
+                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                64,
+                64));
+            uint32_t noiseTextureData[64 * 64] = {0};
+            for (uint32_t i = 0; i < 64 * 64; i++) {
+                noiseTextureData[i] = rand();
+            }
+            AVD_CHECK(avdVulkanImageUploadSimple(
+                &appState->vulkan,
+                &subsurfaceScattering->noiseTexture,
+                noiseTextureData));
+            break;
+        case 13:
             *statusMessage    = "Setting Up GPU buffers";
             size_t bufferSize = subsurfaceScattering->models.modelResources.verticesList.count * subsurfaceScattering->models.modelResources.verticesList.itemSize;
             AVD_CHECK(avdVulkanBufferCreate(
@@ -511,11 +543,11 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                                                   &subsurfaceScattering->vertexBuffer.descriptorBufferInfo));
             vkUpdateDescriptorSets(appState->vulkan.device, 1, &descriptorSetWrite, 0, NULL);
             break;
-        case 13:
+        case 14:
             *statusMessage = "Setting Up Bindless Descriptors";
             AVD_CHECK(__avdSetupBindlessDescriptors(subsurfaceScattering, &appState->vulkan));
             break;
-        case 14:
+        case 15:
             AVD_LOG("Subsurface Scattering scene loaded successfully.\n");
             avd3DSceneDebugLog(&subsurfaceScattering->models, "SubsurfaceScattering/Models");
             break;
@@ -525,7 +557,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
     }
 
     subsurfaceScattering->loadStage++;
-    *progress = (float)subsurfaceScattering->loadStage / 14.0f;
+    *progress = (float)subsurfaceScattering->loadStage / 15.0f;
     return *progress > 1.0f;
 }
 

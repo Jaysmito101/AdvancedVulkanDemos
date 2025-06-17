@@ -13,7 +13,11 @@ precision highp float;
 #define AVD_SSS_ALIEN_THICKNESS_MAP                   7
 #define AVD_SSS_BUDDHA_THICKNESS_MAP                  8
 #define AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP         8
-#define AVD_SSS_RENDER_MODE_COUNT                     10
+#define AVD_SSS_BUDDHA_ORM_MAP                        10
+#define AVD_SSS_BUDDHA_ALBEDO_MAP                     11
+#define AVD_SSS_BUDDHA_NORMAL_MAP                     12
+#define AVD_SSS_NOISE_TEXTURE                         13
+#define AVD_SSS_RENDER_MODE_COUNT                     14
 
 layout(location = 0) in vec2 inUV;
 
@@ -43,7 +47,6 @@ void main()
     vec2 uv = vec2(inUV.x, 1.0 - inUV.y); 
 
     int renderMode = pushConstants.data.renderMode;
-    
 
     if (renderMode == AVD_SSS_RENDER_MODE_RESULT) {
         vec4 diffuse = texture(textures[3], uv);
@@ -69,5 +72,15 @@ void main()
         outColor = texture(textures[9], uv);
     } else if (renderMode == AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP) {
         outColor = texture(textures[10], uv);
+    } else if (renderMode == AVD_SSS_BUDDHA_ORM_MAP) {
+        outColor = texture(textures[11], uv);
+    } else if (renderMode == AVD_SSS_BUDDHA_ALBEDO_MAP) {
+        outColor = texture(textures[12], uv);
+    } else if (renderMode == AVD_SSS_BUDDHA_NORMAL_MAP) {
+        outColor = texture(textures[13], uv);
+    } else if (renderMode == AVD_SSS_NOISE_TEXTURE) {
+        outColor = vec4(texture(textures[14], uv).rgb, 1.0);
+    } else {
+        outColor = vec4(0.0, 0.0, 0.0, 1.0); // Fallback color
     }
 }
