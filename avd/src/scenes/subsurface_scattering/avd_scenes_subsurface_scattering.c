@@ -198,8 +198,8 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
     subsurfaceScattering->cameraPosition         = avdVec3(2.0f, 2.0f, 2.0f);
     subsurfaceScattering->cameraTarget           = avdVec3(0.0f, 0.0f, 0.0f); // Will be updated in Update based on index
 
-    subsurfaceScattering->alienPosition           = avdVec3(-6.0f, 0.0f, 0.0f);
-    subsurfaceScattering->buddhaPosition          = avdVec3(6.0f, 0.0f, 0.0f);
+    subsurfaceScattering->alienPosition           = avdVec3(-3.0f, 0.0f, 0.0f);
+    subsurfaceScattering->buddhaPosition          = avdVec3(3.0f, 0.0f, 0.0f);
     subsurfaceScattering->standfordDragonPosition = avdVec3(0.0f, 0.0f, 0.0f);
 
     subsurfaceScattering->isDragging = false;
@@ -460,7 +460,7 @@ void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union
             float deltaY = appState->input.mouseY - subsurfaceScattering->lastMouseY;
 
             subsurfaceScattering->cameraTheta += deltaX * mouseDragSensitivity;
-            subsurfaceScattering->cameraPhi -= deltaY * mouseDragSensitivity;
+            subsurfaceScattering->cameraPhi += deltaY * mouseDragSensitivity;
 
             subsurfaceScattering->cameraPhi = avdClamp(subsurfaceScattering->cameraPhi, minPhi, maxPhi);
 
@@ -579,7 +579,7 @@ static bool __avdSceneRenderAlien(VkCommandBuffer commandBuffer, AVD_SceneSubsur
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
     AVD_ASSERT(pipelineLayout != VK_NULL_HANDLE);
 
-    AVD_Matrix4x4 modelMatrix = avdMatScale(0.5f, 0.5f, 0.5f);
+    AVD_Matrix4x4 modelMatrix = avdMatScale(1.0f, 1.0f, 1.0f);
     modelMatrix               = avdMat4x4Multiply(
         avdMatTranslation(
             subsurfaceScattering->alienPosition.x,
