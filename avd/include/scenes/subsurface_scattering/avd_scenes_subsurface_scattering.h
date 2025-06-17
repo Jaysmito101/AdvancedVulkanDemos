@@ -56,6 +56,7 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_Matrix4x4 viewMatrix;
 
     uint32_t loadStage;
+    int32_t renderMode;
 
     bool isDragging;
     float lastMouseX;

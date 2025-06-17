@@ -14,11 +14,55 @@ typedef struct {
 
 } AVD_SubSurfaceScatteringUberPushConstants;
 
+#define AVD_SSS_RENDER_MODE_RESULT                    0
+#define AVD_SSS_RENDER_MODE_SCENE_DEPTH               1
+#define AVD_SSS_RENDER_MODE_SCENE_AO                  2
+#define AVD_SSS_RENDER_MODE_SCENE_DIFFUSE             3
+#define AVD_SSS_RENDER_MODE_SCENE_SPECULAR            4
+#define AVD_SSS_RENDER_MODE_SCENE_EMISSIVE            5
+#define AVD_SSS_RENDER_MODE_SCENE_DIFFUSED_IRRADIANCE 6
+#define AVD_SSS_ALIEN_THICKNESS_MAP                   7
+#define AVD_SSS_BUDDHA_THICKNESS_MAP                  8
+#define AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP         9
+#define AVD_SSS_RENDER_MODE_COUNT                     10
+
+typedef struct {
+    int32_t renderMode;
+} AVD_SubSurfaceScatteringCompositePushConstants;
+
 static AVD_SceneSubsurfaceScattering *__avdSceneGetTypePtr(AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_SUBSURFACE_SCATTERING);
     return &scene->subsurfaceScattering;
+}
+
+static const char *__avdSceneSubsurfaceScatteringGetRenderModeName(int32_t renderMode)
+{
+    switch (renderMode) {
+        case AVD_SSS_RENDER_MODE_RESULT:
+            return "Result";
+        case AVD_SSS_RENDER_MODE_SCENE_DEPTH:
+            return "Scene Depth";
+        case AVD_SSS_RENDER_MODE_SCENE_AO:
+            return "Scene AO";
+        case AVD_SSS_RENDER_MODE_SCENE_DIFFUSE:
+            return "Scene Diffuse";
+        case AVD_SSS_RENDER_MODE_SCENE_SPECULAR:
+            return "Scene Specular";
+        case AVD_SSS_RENDER_MODE_SCENE_EMISSIVE:
+            return "Scene Emissive";
+        case AVD_SSS_RENDER_MODE_SCENE_DIFFUSED_IRRADIANCE:
+            return "Scene Diffused Irradiance";
+        case AVD_SSS_ALIEN_THICKNESS_MAP:
+            return "Alien Thickness Map";
+        case AVD_SSS_BUDDHA_THICKNESS_MAP:
+            return "Buddha Thickness Map";
+        case AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP:
+            return "Standford Dragon Thickness Map";
+        default:
+            return "Unknown Render Mode";
+    }
 }
 
 static void __avdSetupBindlessDescriptorWrite(
@@ -173,7 +217,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         (VkDescriptorSetLayout[]){
             appState->vulkan.bindlessDescriptorSetLayout},
         1,
-        sizeof(AVD_SubSurfaceScatteringUberPushConstants),
+        sizeof(AVD_SubSurfaceScatteringCompositePushConstants),
         appState->renderer.sceneFramebuffer.renderPass,
         (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count,
         "FullScreenQuadVert",
@@ -202,6 +246,7 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
     subsurfaceScattering->buddhaPosition          = avdVec3(3.0f, 0.0f, 0.0f);
     subsurfaceScattering->standfordDragonPosition = avdVec3(0.0f, 0.0f, 0.0f);
 
+    subsurfaceScattering->renderMode = AVD_SSS_RENDER_MODE_RESULT;
     subsurfaceScattering->isDragging = false;
     subsurfaceScattering->lastMouseX = 0.0f;
     subsurfaceScattering->lastMouseY = 0.0f;
@@ -444,6 +489,9 @@ void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union
         } else if (event->key.key == GLFW_KEY_F && event->key.action == GLFW_PRESS) {
             subsurfaceScattering->currentFocusModelIndex = (subsurfaceScattering->currentFocusModelIndex + 1) % 3;
         }
+        else if (event->key.key == GLFW_KEY_R && event->key.action == GLFW_PRESS) {
+            subsurfaceScattering->renderMode = (subsurfaceScattering->renderMode + 1) % AVD_SSS_RENDER_MODE_COUNT;
+        }
     } else if (event->type == AVD_INPUT_EVENT_MOUSE_BUTTON) {
         if (event->mouseButton.button == GLFW_MOUSE_BUTTON_LEFT) {
             if (event->mouseButton.action == GLFW_PRESS) {
@@ -514,6 +562,7 @@ bool avdSceneSubsurfaceScatteringUpdate(struct AVD_AppState *appState, union AVD
              "Subsurface Scattering Demo:\n"
              "  - Bloom Enabled: %s [Press B to toggle]\n"
              "  - Focus Target: %s [Press F to cycle]\n"
+             "  - Render Mode: %s [Press R to cycle]\n"
              "  - Camera: Drag LMB to orbit, Scroll to zoom\n"
              "  - Press ESC to return to the main menu\n"
              "General Stats:\n"
@@ -521,6 +570,7 @@ bool avdSceneSubsurfaceScatteringUpdate(struct AVD_AppState *appState, union AVD
              "  - Frame Time: %.2f ms\n",
              subsurfaceScattering->bloomEnabled ? "Yes" : "No",
              currentFocusName,
+                __avdSceneSubsurfaceScatteringGetRenderModeName(subsurfaceScattering->renderMode),
              appState->framerate.fps,
              appState->framerate.deltaTime * 1000.0f);
 
@@ -579,7 +629,7 @@ static bool __avdSceneRenderAlien(VkCommandBuffer commandBuffer, AVD_SceneSubsur
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
     AVD_ASSERT(pipelineLayout != VK_NULL_HANDLE);
 
-    AVD_Matrix4x4 modelMatrix = avdMatScale(1.0f, 1.0f, 1.0f);
+    AVD_Matrix4x4 modelMatrix = avdMatScale(0.02f, 0.02f, 0.02f);
     modelMatrix               = avdMat4x4Multiply(
         avdMatTranslation(
             subsurfaceScattering->alienPosition.x,
@@ -596,8 +646,11 @@ static bool __avdSceneRenderBuddha(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
     AVD_ASSERT(pipelineLayout != VK_NULL_HANDLE);
 
-    AVD_Matrix4x4 modelMatrix = avdMatScale(0.5f, 0.5f, 0.5f);
+    AVD_Matrix4x4 modelMatrix = avdMatScale(0.1f, 0.1f, 0.1f);
     modelMatrix               = avdMat4x4Multiply(
+        avdMatRotationY(avdDeg2Rad(-90.0f)),
+        modelMatrix);
+    modelMatrix = avdMat4x4Multiply(
         avdMatTranslation(
             subsurfaceScattering->buddhaPosition.x,
             subsurfaceScattering->buddhaPosition.y,
@@ -714,8 +767,11 @@ bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipeline);
+    AVD_SubSurfaceScatteringCompositePushConstants pushConstants = {
+        .renderMode = subsurfaceScattering->renderMode,
+    };
+    vkCmdPushConstants(commandBuffer, subsurfaceScattering->compositePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
