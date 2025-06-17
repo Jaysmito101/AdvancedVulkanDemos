@@ -37,7 +37,12 @@ struct PushConstantData {
     int vertexOffset;
     int vertexCount;
     int renderingLight;
-    int pad1;
+    int hasPBRTextures;
+
+    uint albedoTextureIndex;
+    uint normalTextureIndex;
+    uint ormTextureIndex;
+    uint thicknessMapIndex;
 };
 
 layout(push_constant) uniform PushConstants

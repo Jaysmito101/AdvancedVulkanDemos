@@ -14,7 +14,12 @@ typedef struct {
     int32_t vertexOffset;
     int32_t vertexCount;
     int32_t renderingLight;
-    int32_t pad1;
+    int32_t hasPBRTextures;
+
+    uint32_t albedoTextureIndex;
+    uint32_t normalTextureIndex;
+    uint32_t ormTextureIndex; // Occlusion, Roughness, Metallic
+    uint32_t thicknessTextureIndex;
 
 } AVD_SubSurfaceScatteringUberPushConstants;
 
@@ -222,8 +227,9 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         &subsurfaceScattering->lightingPipeline,
         appState->vulkan.device,
         (VkDescriptorSetLayout[]){
-            subsurfaceScattering->set0Layout},
-        1,
+            subsurfaceScattering->set0Layout,
+            appState->vulkan.bindlessDescriptorSetLayout},
+        2,
         sizeof(AVD_SubSurfaceScatteringUberPushConstants),
         subsurfaceScattering->lightingBuffer.renderPass,
         (uint32_t)subsurfaceScattering->lightingBuffer.colorAttachments.count,
@@ -465,13 +471,13 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_albedo_map.png",
                 &subsurfaceScattering->buddhaAlbedoMap));
-            break; 
+            break;
         case 11:
             *statusMessage = "Loading Buddha Normal Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_normal_map.png",
-                &subsurfaceScattering->buddhaNormalMap));   
+                &subsurfaceScattering->buddhaNormalMap));
             break;
         case 12:
             *statusMessage    = "Setting Up GPU buffers";
@@ -659,9 +665,9 @@ static bool __avdSceneRenderFirstMesh(
     AVD_SceneSubsurfaceScattering *subsurfaceScattering,
     uint32_t modelIndex,
     VkPipelineLayout pipelineLayout,
-    AVD_Matrix4x4 modelMatrix,
     AVD_Float time,
-    bool renderLightSpheres)
+    bool renderLightSpheres,
+    AVD_SubSurfaceScatteringUberPushConstants *pushConstants)
 {
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
@@ -700,23 +706,21 @@ static bool __avdSceneRenderFirstMesh(
         radius * sinf(time * lightSpeed + phaseOffsetB + AVD_PI / 2.0f),
         radius * sinf(time * lightSpeed + phaseOffsetB + AVD_PI / 4.0f));
 
-    AVD_SubSurfaceScatteringUberPushConstants pushConstants = {
-        .modelMatrix          = modelMatrix,
-        .viewProjectionMatrix = subsurfaceScattering->viewProjectionMatrix,
-        .lightA               = avdVec4FromVec3(lightAPosition, 1.0),
-        .lightB               = avdVec4FromVec3(lightBPosition, 1.0),
-        .cameraPosition       = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
-        .vertexOffset         = mesh->indexOffset,
-        .vertexCount          = mesh->triangleCount * 3,
-        .renderingLight       = 0};
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
+    pushConstants->viewProjectionMatrix = subsurfaceScattering->viewProjectionMatrix,
+    pushConstants->lightA               = avdVec4FromVec3(lightAPosition, 1.0),
+    pushConstants->lightB               = avdVec4FromVec3(lightBPosition, 1.0),
+    pushConstants->cameraPosition       = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
+    pushConstants->vertexOffset         = mesh->indexOffset,
+    pushConstants->vertexCount          = mesh->triangleCount * 3,
+    pushConstants->renderingLight       = 0;
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(*pushConstants), pushConstants);
     vkCmdDraw(commandBuffer, mesh->triangleCount * 3, 1, 0, 0);
 
     if (renderLightSpheres) {
-        pushConstants.renderingLight = 1;
-        pushConstants.vertexOffset   = sphereMesh->indexOffset;
-        pushConstants.vertexCount    = sphereMesh->triangleCount * 3;
-        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
+        pushConstants->renderingLight = 1;
+        pushConstants->vertexOffset   = sphereMesh->indexOffset;
+        pushConstants->vertexCount    = sphereMesh->triangleCount * 3;
+        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(*pushConstants), pushConstants);
         vkCmdDraw(commandBuffer, sphereMesh->triangleCount * 3 * 2, 1, 0, 0);
     }
 
@@ -742,7 +746,12 @@ static bool __avdSceneRenderAlien(
             subsurfaceScattering->alienPosition.z),
         modelMatrix);
 
-    return __avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, 0, pipelineLayout, modelMatrix, time, renderLightSpheres);
+    AVD_SubSurfaceScatteringUberPushConstants pushConstants = {
+        .modelMatrix           = modelMatrix,
+        .hasPBRTextures        = false,
+        .thicknessTextureIndex = 8};
+
+    return __avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, 0, pipelineLayout, time, renderLightSpheres, &pushConstants);
 }
 
 static bool __avdSceneRenderBuddha(
@@ -756,7 +765,7 @@ static bool __avdSceneRenderBuddha(
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
     AVD_ASSERT(pipelineLayout != VK_NULL_HANDLE);
 
-    AVD_Matrix4x4 modelMatrix = avdMatScale(0.1f, 0.1f, 0.1f);
+    AVD_Matrix4x4 modelMatrix = avdMatScale(0.01f, 0.01f, 0.01f);
     modelMatrix               = avdMat4x4Multiply(
         avdMatRotationY(avdDeg2Rad(-90.0f)),
         modelMatrix);
@@ -767,7 +776,14 @@ static bool __avdSceneRenderBuddha(
             subsurfaceScattering->buddhaPosition.z),
         modelMatrix);
 
-    return __avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, 1, pipelineLayout, modelMatrix, time, renderLightSpheres);
+    AVD_SubSurfaceScatteringUberPushConstants pushConstants = {
+        .modelMatrix           = modelMatrix,
+        .hasPBRTextures        = true,
+        .thicknessTextureIndex = 9,
+        .ormTextureIndex       = 11,
+        .albedoTextureIndex    = 12,
+        .normalTextureIndex    = 13};
+    return __avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, 1, pipelineLayout, time, renderLightSpheres, &pushConstants);
 }
 
 static bool __avdSceneRenderStandfordDragon(
@@ -789,7 +805,12 @@ static bool __avdSceneRenderStandfordDragon(
             subsurfaceScattering->standfordDragonPosition.z),
         modelMatrix);
 
-    return __avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, 2, pipelineLayout, modelMatrix, time, renderLightSpheres);
+    AVD_SubSurfaceScatteringUberPushConstants pushConstants = {
+        .modelMatrix           = modelMatrix,
+        .hasPBRTextures        = false,
+        .thicknessTextureIndex = 7}; // Standford Dragon thickness map index
+
+    return __avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, 2, pipelineLayout, time, renderLightSpheres, &pushConstants);
 }
 
 bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
@@ -872,7 +893,10 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
         4));
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipeline);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipelineLayout, 0, 1, &subsurfaceScattering->set0, 0, NULL);
+    VkDescriptorSet descriptorSets[] = {
+        subsurfaceScattering->set0,
+        appState->vulkan.bindlessDescriptorSet};
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipelineLayout, 0, 2, descriptorSets, 0, NULL);
 
     AVD_Float time = (AVD_Float)appState->framerate.currentTime;
 
