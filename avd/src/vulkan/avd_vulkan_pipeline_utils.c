@@ -141,7 +141,6 @@ bool avdPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorB
 {
     AVD_ASSERT(colorBlendStateInfo != NULL);
     AVD_ASSERT(blendAttachments != NULL);
-    AVD_ASSERT(attachmentCount > 0);
 
     colorBlendStateInfo->sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlendStateInfo->logicOpEnable   = VK_FALSE;
