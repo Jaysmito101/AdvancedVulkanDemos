@@ -49,23 +49,43 @@ AVD_Matrix4x4 avdMatFrustum(AVD_Float left, AVD_Float right, AVD_Float bottom, A
         0.0f, 0.0f, -1.0f, 0.0f);
 }
 
-AVD_Vector3 avdMatGetScale(const AVD_Matrix4x4* mat)
+AVD_Vector3 avdMatGetScale(const AVD_Matrix4x4 *mat)
 {
     AVD_ASSERT(mat != NULL);
     return avdVec3(
         avdVec3Length(avdMat4x4Col(*mat, 0)),
         avdVec3Length(avdMat4x4Col(*mat, 1)),
-        avdVec3Length(avdMat4x4Col(*mat, 2))
-    );
+        avdVec3Length(avdMat4x4Col(*mat, 2)));
 }
 
-
-AVD_Matrix4x4 avdMatRemoveScale(const AVD_Matrix4x4* mat)
+AVD_Matrix4x4 avdMatRemoveScale(const AVD_Matrix4x4 *mat)
 {
     AVD_ASSERT(mat != NULL);
     AVD_Matrix4x4 result = *mat;
-    result.col0 = avdVec4FromVec3(avdVec3Normalize(avdVecSwizzle3(mat->col0, x, y, z)), 0.0f);
-    result.col1 = avdVec4FromVec3(avdVec3Normalize(avdVecSwizzle3(mat->col1, x, y, z)), 0.0f);
-    result.col2 = avdVec4FromVec3(avdVec3Normalize(avdVecSwizzle3(mat->col2, x, y, z)), 0.0f);
+    result.col0          = avdVec4FromVec3(avdVec3Normalize(avdVecSwizzle3(mat->col0, x, y, z)), 0.0f);
+    result.col1          = avdVec4FromVec3(avdVec3Normalize(avdVecSwizzle3(mat->col1, x, y, z)), 0.0f);
+    result.col2          = avdVec4FromVec3(avdVec3Normalize(avdVecSwizzle3(mat->col2, x, y, z)), 0.0f);
     return result;
+}
+
+AVD_Matrix4x4 avdMatCalculateTransform(
+    const AVD_Vector3 position,
+    const AVD_Vector3 rotation,
+    const AVD_Vector3 scale)
+{
+    AVD_Matrix4x4 translation = avdMatTranslation(position.x, position.y, position.z);
+    AVD_Matrix4x4 rotationX   = avdMatRotationX(rotation.x);
+    AVD_Matrix4x4 rotationY   = avdMatRotationY(rotation.y);
+    AVD_Matrix4x4 rotationZ   = avdMatRotationZ(rotation.z);
+    AVD_Matrix4x4 scaling     = avdMatScale(scale.x, scale.y, scale.z);
+
+    AVD_Matrix4x4 rotationMatrix = avdMat4x4Multiply(
+        avdMat4x4Multiply(rotationX, rotationY),
+        rotationZ);
+    
+    AVD_Matrix4x4 transform = avdMat4x4Multiply(
+        translation,
+        avdMat4x4Multiply(rotationMatrix, scaling));
+
+    return transform;
 }

@@ -42,6 +42,10 @@ AVD_Matrix4x4 avdMatPerspective(AVD_Float fovY, AVD_Float aspect, AVD_Float near
 AVD_Matrix4x4 avdMatOrthographic(AVD_Float left, AVD_Float right, AVD_Float bottom, AVD_Float top, AVD_Float nearZ, AVD_Float farZ);
 AVD_Matrix4x4 avdMatFrustum(AVD_Float left, AVD_Float right, AVD_Float bottom, AVD_Float top, AVD_Float nearZ, AVD_Float farZ);
 
+AVD_Matrix4x4 avdMatCalculateTransform(
+    const AVD_Vector3 position,
+    const AVD_Vector3 rotation,
+    const AVD_Vector3 scale);
 AVD_Vector3 avdMatGetScale(const AVD_Matrix4x4* mat);
 AVD_Matrix4x4 avdMatRemoveScale(const AVD_Matrix4x4* mat);
 
