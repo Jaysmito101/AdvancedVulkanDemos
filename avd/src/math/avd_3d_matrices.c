@@ -58,3 +58,14 @@ AVD_Vector3 avdMatGetScale(const AVD_Matrix4x4* mat)
         avdVec3Length(avdMat4x4Col(*mat, 2))
     );
 }
+
+
+AVD_Matrix4x4 avdMatRemoveScale(const AVD_Matrix4x4* mat)
+{
+    AVD_ASSERT(mat != NULL);
+    AVD_Matrix4x4 result = *mat;
+    result.col0 = avdVec4FromVec3(avdVec3Normalize(avdVecSwizzle3(mat->col0, x, y, z)), 0.0f);
+    result.col1 = avdVec4FromVec3(avdVec3Normalize(avdVecSwizzle3(mat->col1, x, y, z)), 0.0f);
+    result.col2 = avdVec4FromVec3(avdVec3Normalize(avdVecSwizzle3(mat->col2, x, y, z)), 0.0f);
+    return result;
+}
