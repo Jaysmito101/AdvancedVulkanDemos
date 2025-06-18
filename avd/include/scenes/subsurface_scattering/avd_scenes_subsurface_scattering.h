@@ -4,6 +4,22 @@
 #include "model/avd_3d_scene.h"
 #include "scenes/avd_scenes_base.h"
 
+typedef struct AVD_SceneSubsurfaceScatteringModelInfo {
+    uint32_t modelIndex;
+    char name[64]; 
+    AVD_Vector3 position;
+    AVD_Vector3 rotation;
+    AVD_Vector3 scale;
+    bool hasPBRTextures;
+    uint32_t albedoTextureIndex;
+    uint32_t normalTextureIndex;
+    uint32_t ormTextureIndex;
+    uint32_t thicknessTextureIndex;
+
+    AVD_Vector4 lightPositionA;
+    AVD_Vector4 lightPositionB;
+} AVD_SceneSubsurfaceScatteringModelInfo;
+
 typedef struct AVD_SceneSubsurfaceScattering {
     AVD_SceneType type;
     AVD_RenderableText title;
@@ -52,24 +68,23 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_Vector3 cameraPosition;
     AVD_Vector3 cameraTarget;
 
-    AVD_Vector3 alienPosition;
-    AVD_Vector3 buddhaPosition;
-    AVD_Vector3 standfordDragonPosition;
 
     AVD_Matrix4x4 projectionMatrix;
     AVD_Matrix4x4 viewMatrix;
     AVD_Matrix4x4 viewProjectionMatrix;
-
+    
     uint32_t loadStage;
     int32_t renderMode;
-
+    
     bool isDragging;
     float lastMouseX;
     float lastMouseY;
     float cameraRadius;
     float cameraPhi;
     float cameraTheta;
-    int32_t currentFocusModelIndex; // 0: Dragon, 1: Alien, 2: Buddha
+
+    int32_t currentFocusModelIndex; 
+    AVD_SceneSubsurfaceScatteringModelInfo modelsInfo[3];
 } AVD_SceneSubsurfaceScattering;
 
 bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene);
