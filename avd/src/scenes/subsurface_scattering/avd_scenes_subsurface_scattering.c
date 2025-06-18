@@ -773,12 +773,16 @@ static bool __avdSceneRenderFirstMesh(
         radius * sinf(time * lightSpeed + phaseOffsetB + AVD_PI / 2.0f),
         radius * sinf(time * lightSpeed + phaseOffsetB + AVD_PI / 4.0f));
 
+    AVD_Matrix4x4 unscaledModelMatrix = avdMatRemoveScale(&pushConstants->viewModelMatrix);
+    AVD_Vector4 lightAWorldSpacePosition = avdMat4x4MultiplyVec4(unscaledModelMatrix, avdVec4FromVec3(lightAPosition, 1.0f));
+    AVD_Vector4 lightBWorldSpacePosition = avdMat4x4MultiplyVec4(unscaledModelMatrix, avdVec4FromVec3(lightBPosition, 1.0f));
+
     pushConstants->projectionMatrix = subsurfaceScattering->projectionMatrix,
     pushConstants->viewModelMatrix  = avdMat4x4Multiply(
         subsurfaceScattering->viewMatrix,
         pushConstants->viewModelMatrix),
-    pushConstants->lightA         = avdVec4FromVec3(lightAPosition, 1.0),
-    pushConstants->lightB         = avdVec4FromVec3(lightBPosition, 1.0),
+    pushConstants->lightA         = lightAWorldSpacePosition,
+    pushConstants->lightB         = lightBWorldSpacePosition,
     pushConstants->cameraPosition = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
     pushConstants->vertexOffset   = mesh->indexOffset,
     pushConstants->vertexCount    = mesh->triangleCount * 3,
@@ -789,11 +793,12 @@ static bool __avdSceneRenderFirstMesh(
     vkCmdDraw(commandBuffer, mesh->triangleCount * 3, 1, 0, 0);
 
     if (renderLightSpheres) {
+        pushConstants->viewModelMatrix = subsurfaceScattering->viewMatrix; // no model matrix needed here
         pushConstants->renderingLight = 1;
         pushConstants->vertexOffset   = sphereMesh->indexOffset;
         pushConstants->vertexCount    = sphereMesh->triangleCount * 3;
         vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(*pushConstants), pushConstants);
-        // vkCmdDraw(commandBuffer, sphereMesh->triangleCount * 3 * 2, 1, 0, 0);
+        vkCmdDraw(commandBuffer, sphereMesh->triangleCount * 3 * 2, 1, 0, 0);
     }
 
     return true;
@@ -837,7 +842,7 @@ static bool __avdSceneRenderBuddha(
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
     AVD_ASSERT(pipelineLayout != VK_NULL_HANDLE);
 
-    AVD_Matrix4x4 modelMatrix = avdMatScale(0.01f, 0.01f, 0.01f);
+    AVD_Matrix4x4 modelMatrix = avdMatScale(0.02f, 0.02f, 0.02f);
     modelMatrix               = avdMat4x4Multiply(
         avdMatRotationY(avdDeg2Rad(-90.0f)),
         modelMatrix);
