@@ -28,6 +28,7 @@ struct PushConstantData {
     vec4 lightA;
     vec4 lightB;
     vec4 cameraPosition;
+    vec4 screenSizes;
 
     int vertexOffset;
     int vertexCount;
@@ -46,15 +47,6 @@ layout(push_constant) uniform PushConstants
 }
 pushConstants;
 
-// light a slight yellow sun color
-// light b sky color
-const vec3 lightAColor = vec3(1.0, 1.0, 0.4) * 12.0;
-const vec3 lightBColor = vec3(0.4, 0.6, 0.8);
-
-struct Light {
-    vec3 position;
-    vec3 color;
-};
 
 float distributionGGX(vec3 N, vec3 H, float roughness)
 {

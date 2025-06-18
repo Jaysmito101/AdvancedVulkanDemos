@@ -1,7 +1,32 @@
 #include "shader/avd_shader_compiler.h"
 #include "core/avd_core.h"
+#include "avd_asset.h"
 
 #include "shaderc/shaderc.h"
+
+static shaderc_include_result* __avdIncludeResolver(void *userData, const char *requestedSource, int type, const char *requestingSource, size_t includeDepth)
+{
+    AVD_ASSERT(requestedSource != NULL);
+
+    shaderc_include_result* result = (shaderc_include_result*)malloc(sizeof(*result));
+    if (!result) {
+        AVD_LOG("Failed to allocate memory for include result\n");
+        return NULL;
+    }
+
+    result->source_name = requestedSource;
+    result->content = avdAssetShader(requestedSource);
+    result->content_length = strlen(result->content);
+    result->source_name = requestedSource;
+    result->source_name_length = strlen(requestedSource);
+    result->user_data = NULL;
+    return result;
+}
+
+static void __avdIncludeResultReleaser(void *userData, shaderc_include_result *includeResult)
+{
+    (void)userData; (void)includeResult;
+}
 
 uint32_t *avdCompileShader(const char *shaderCode, const char *inputFileName, size_t *outSize)
 {
@@ -10,6 +35,7 @@ uint32_t *avdCompileShader(const char *shaderCode, const char *inputFileName, si
     shaderc_compile_options_set_source_language(options, shaderc_source_language_glsl);
     shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
     shaderc_compile_options_set_warnings_as_errors(options);
+    shaderc_compile_options_set_include_callbacks(options, __avdIncludeResolver, __avdIncludeResultReleaser, NULL);
 
 #ifdef AVD_DEBUG
     AVD_LOG("Compiling shader: %s with debug info enabled\n", inputFileName);

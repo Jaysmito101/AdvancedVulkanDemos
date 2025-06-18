@@ -54,7 +54,7 @@ static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_Vulka
     AVD_CHECK(__avdVulkanFramebufferAttachmentDescriptorsCreate(vulkan, attachment));
 
     attachment->attachmentDescription.flags          = 0;
-    attachment->attachmentDescription.format         = format;
+    attachment->attachmentDescription.format         = attachment->image.format;
     attachment->attachmentDescription.samples        = VK_SAMPLE_COUNT_1_BIT;
     attachment->attachmentDescription.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachment->attachmentDescription.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -257,11 +257,11 @@ bool avdVulkanFramebufferCreate(
 
     for (uint32_t i = 0; i < formatCount; ++i) {
         AVD_VulkanFramebufferAttachment attachment = {0};
-        if (!__avdVulkanFramebufferAttachmentCreate(vulkan, &attachment, colorFormats[i], VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
+        AVD_VulkanFramebufferAttachment* attachmentPtr = (AVD_VulkanFramebufferAttachment*)avdListPushBack(&framebuffer->colorAttachments, &attachment);
+        if (!__avdVulkanFramebufferAttachmentCreate(vulkan, attachmentPtr, colorFormats[i], VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
             AVD_LOG("Failed to create color attachment for format %d\n", colorFormats[i]);
             return false;
         }
-        avdListPushBack(&framebuffer->colorAttachments, &attachment);
     }
 
     for (size_t i = 0; i < framebuffer->colorAttachments.count; ++i) {

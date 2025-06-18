@@ -12,7 +12,7 @@ typedef struct AVD_SceneSubsurfaceScattering {
     uint32_t sceneWidth;
     uint32_t sceneHeight;
 
-    AVD_VulkanFramebuffer depthBuffer;
+    AVD_VulkanFramebuffer gBuffer;
     AVD_VulkanFramebuffer aoBuffer;
     AVD_VulkanFramebuffer lightingBuffer;
     AVD_VulkanFramebuffer diffusedIrradianceBuffer;
@@ -34,8 +34,8 @@ typedef struct AVD_SceneSubsurfaceScattering {
     VkDescriptorSetLayout set0Layout;
     VkDescriptorSet set0;
 
-    VkPipelineLayout depthPipelineLayout;
-    VkPipeline depthPipeline;
+    VkPipelineLayout gBufferPipelineLayout;
+    VkPipeline gBufferPipeline;
 
     VkPipelineLayout aoPipelineLayout;
     VkPipeline aoPipeline;
