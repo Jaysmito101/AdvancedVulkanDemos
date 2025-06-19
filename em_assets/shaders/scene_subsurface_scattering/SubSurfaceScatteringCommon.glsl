@@ -47,6 +47,21 @@ struct LightPushConstantData {
     vec4 cameraPosition;
     vec4 screenSizes;
     vec4 lightColor;
+
+    float materialRoughness;
+    float materialMetallic;
+    float translucencyScale;
+    
+    float translucencyDistortion;
+    float translucencyPower;
+    float translucencyAmbientDiffusion;
+    float screenSpaceIrradianceScale;    
+};
+
+
+struct CompositePushConstantData {
+    int renderMode;
+    int useScreenSpaceIrradiance;
 };
 
 struct ModelVertex {

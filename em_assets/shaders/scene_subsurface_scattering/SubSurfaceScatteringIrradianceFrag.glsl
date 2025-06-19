@@ -27,13 +27,15 @@ void main()
     vec2 texelSize = vec2(1.0 / textureSize(textures[AVD_SSS_RENDER_MODE_SCENE_DIFFUSE], 0));
     vec2 uv = inUV;
 
-    const float sssWidth = 6.0;
+    const float sssWidth = pushConstants.data.screenSpaceIrradianceScale;
 
     float depth = linearizeDepth(texture(textures[AVD_SSS_RENDER_MODE_SCENE_DEPTH], uv).r);
     float depthScale = sssWidth / (depth + 0.0001);
 
     vec3 irradiance = vec3(0.0);
     
+    // Ideally we should do this in two passes as they are seperable kernels,
+    // but for simplicity we will do it in one pass here.
     for (int i = 0; i < NUM_SAMPLES; ++i) {
         for (int j = 0; j < NUM_SAMPLES; ++j) {
             vec2 offset = vec2(sss_offsets[i], sss_offsets[j]) * texelSize * depthScale;

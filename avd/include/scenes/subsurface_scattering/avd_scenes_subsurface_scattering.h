@@ -6,7 +6,7 @@
 
 typedef struct AVD_SceneSubsurfaceScatteringModelInfo {
     uint32_t modelIndex;
-    char name[64]; 
+    char name[64];
     AVD_Vector3 position;
     AVD_Vector3 rotation;
     AVD_Vector3 scale;
@@ -68,14 +68,13 @@ typedef struct AVD_SceneSubsurfaceScattering {
     AVD_Vector3 cameraPosition;
     AVD_Vector3 cameraTarget;
 
-
     AVD_Matrix4x4 projectionMatrix;
     AVD_Matrix4x4 viewMatrix;
     AVD_Matrix4x4 viewProjectionMatrix;
-    
+
     uint32_t loadStage;
     int32_t renderMode;
-    
+
     bool isDragging;
     float lastMouseX;
     float lastMouseY;
@@ -83,7 +82,19 @@ typedef struct AVD_SceneSubsurfaceScattering {
     float cameraPhi;
     float cameraTheta;
 
-    int32_t currentFocusModelIndex; 
+    float materialRoughness;
+    float materialMetallic;
+    float translucencyScale;
+    float translucencyDistortion;
+    float translucencyPower;
+    float translucencyAmbientDiffusion;
+    float screenSpaceIrradianceScale;
+    float bloomThreshold;
+    float bloomIntensity;
+    float bloomSoftKnee;
+    bool useScreenSpaceIrradiance;
+
+    int32_t currentFocusModelIndex;
     AVD_SceneSubsurfaceScatteringModelInfo modelsInfo[3];
 } AVD_SceneSubsurfaceScattering;
 

@@ -49,16 +49,16 @@ void main()
         vec4 trm          = texture(textures[AVD_SSS_RENDER_MODE_SCENE_THICKNESS_ROUGHNESS_METALLIC], inUV);
         float sceneAo     = sampleAOBlurred(inUV);
 
-        float roughness = trm.g;
-        float metallic  = trm.b;
+        float roughness = trm.g + pushConstants.data.materialRoughness;
+        float metallic  = trm.b + pushConstants.data.materialMetallic;
         vec3 F0         = vec3(0.04);
         F0              = mix(F0, albedo.rgb, metallic);
 
-        float distortion = 0.1;
-        float ambientDiffusion = 0.1;
-        float thickness = 1.0 - trm.r;
-        float diffusionScale = 1.0;
-        float diffusionPower = 2.0;
+        float distortion       = pushConstants.data.translucencyDistortion;
+        float ambientDiffusion = pushConstants.data.translucencyAmbientDiffusion;
+        float thickness        = 1.0 - trm.r;
+        float diffusionScale   = pushConstants.data.translucencyScale;
+        float diffusionPower   = pushConstants.data.translucencyPower;
 
         vec3 diffuseLo  = vec3(0.0);
         vec3 specularLo = vec3(0.0);
@@ -70,16 +70,13 @@ void main()
             vec3 lightDir    = normalize(lightDirUn);
             vec3 halfViewDir = normalize(lightDir + viewDir);
 
-
             float lightDist   = length(lightDirUn);
             float attenuation = 1.0 / (lightDist * lightDist);
 
-            vec3 viewLightDir = lightDir + normal * distortion;
-            float FdotL = pow(max(dot(viewDir, -viewLightDir), 0.0), diffusionPower) * diffusionScale;
-            float NdotL = max(dot(normal, lightDir), 0.0);
+            vec3 viewLightDir       = lightDir + normal * distortion;
+            float FdotL             = pow(max(dot(viewDir, -viewLightDir), 0.0), diffusionPower) * diffusionScale;
+            float NdotL             = max(dot(normal, lightDir), 0.0);
             float diffusionRadiance = attenuation * (FdotL + ambientDiffusion * sceneAo + NdotL) * thickness;
-            // float diffusionRadiance = attenuation * NdotL; 
-
 
             // The Cook-Torrance BRDF
             float ndf    = distributionGGX(normal, halfViewDir, roughness);
@@ -98,9 +95,8 @@ void main()
             kD *= 1.0 - metallic;
 
             diffuseLo += kD * albedo.rgb / PI * (diffusionRadiance * pushConstants.data.lightColor.rgb);
-            specularLo += specular * diffusionRadiance;
+            specularLo += specular * (diffusionRadiance * pushConstants.data.lightColor.rgb);
         }
-
 
         vec3 ambient = vec3(0.05) * albedo.rgb;
         diffuseLo += ambient * sceneAo;

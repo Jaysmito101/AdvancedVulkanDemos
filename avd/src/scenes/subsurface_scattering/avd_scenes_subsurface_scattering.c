@@ -47,10 +47,18 @@ typedef struct {
     AVD_Vector4 cameraPosition;
     AVD_Vector4 screenSize;
     AVD_Vector4 lightColor;
+    AVD_Float materialRoughness;
+    AVD_Float materialMetallic;
+    AVD_Float translucencyScale;
+    AVD_Float translucencyDistortion;
+    AVD_Float translucencyPower;
+    AVD_Float translucencyAmbientDiffusion;
+    AVD_Float screenSpaceIrradianceScale;
 } AVD_SubSurfaceScatteringLightingPushConstants;
 
 typedef struct {
     int32_t renderMode;
+    AVD_Int32 useScreenSpaceIrradiance;
 } AVD_SubSurfaceScatteringCompositePushConstants;
 
 static AVD_SceneSubsurfaceScattering *__avdSceneGetTypePtr(AVD_Scene *scene)
@@ -286,7 +294,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         "FullScreenQuadVert",
         "SubSurfaceScatteringLightingFrag",
         &pipelineCreationInfo));
-    
+
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         &subsurfaceScattering->irradianceDiffusionPipelineLayout,
         &subsurfaceScattering->irradianceDiffusionPipeline,
@@ -359,14 +367,11 @@ bool __avdSceneFillModelInfos(AVD_SceneSubsurfaceScattering *subsurfaceScatterin
     return true;
 }
 
-bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene)
+bool __avdSceneInitializeParams(AVD_SceneSubsurfaceScattering *subsurfaceScattering)
 {
-    AVD_ASSERT(appState != NULL);
-    AVD_ASSERT(scene != NULL);
-    AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
+    AVD_ASSERT(subsurfaceScattering != NULL);
 
     AVD_Float scalar = 1.5f;
-
     subsurfaceScattering->loadStage    = 0;
     subsurfaceScattering->bloomEnabled = false;
     subsurfaceScattering->sceneWidth   = (uint32_t)((float)GAME_WIDTH * scalar);
@@ -384,18 +389,38 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
     subsurfaceScattering->lastMouseX = 0.0f;
     subsurfaceScattering->lastMouseY = 0.0f;
 
+    subsurfaceScattering->bloomIntensity = 1.f;
+    subsurfaceScattering->bloomThreshold = 2.0f;
+    subsurfaceScattering->bloomSoftKnee  = 1.2f;
+
+    subsurfaceScattering->screenSpaceIrradianceScale   = 6.0f;
+    subsurfaceScattering->materialRoughness            = 0.0f;
+    subsurfaceScattering->materialMetallic             = 0.0f;
+    subsurfaceScattering->translucencyScale            = 1.0f;
+    subsurfaceScattering->translucencyDistortion       = 0.1f;
+    subsurfaceScattering->translucencyPower            = 2.0f;
+    subsurfaceScattering->translucencyAmbientDiffusion = 0.1f;
+    subsurfaceScattering->useScreenSpaceIrradiance     = true;
+
+
+    return true;
+}
+
+bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene)
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(scene != NULL);
+    AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
+
+    AVD_CHECK(__avdSceneInitializeParams(subsurfaceScattering));
     AVD_CHECK(__avdSceneFillModelInfos(subsurfaceScattering));
-
-    avd3DSceneCreate(&subsurfaceScattering->models);
-
+    AVD_CHECK(avd3DSceneCreate(&subsurfaceScattering->models));
     AVD_CHECK(__avdSceneCreateFramebuffers(subsurfaceScattering, appState));
-
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &subsurfaceScattering->set0Layout,
         appState->vulkan.device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT));
-
     AVD_CHECK(avdRenderableTextCreate(
         &subsurfaceScattering->title,
         &appState->fontRenderer,
@@ -770,9 +795,8 @@ bool __avdSceneUpdateLightingForModel(uint32_t sceneModelIndex, AVD_SceneSubsurf
     subsurfaceScattering->modelsInfo[sceneModelIndex].lightPositionA = lightAWorldSpacePosition;
     subsurfaceScattering->modelsInfo[sceneModelIndex].lightPositionB = lightBWorldSpacePosition;
 
-
     // Disable light B for now
-    subsurfaceScattering->modelsInfo[sceneModelIndex].lightPositionB = avdVec4(10000.0f, 10000.0f, 10000.0f, 1.0f); 
+    subsurfaceScattering->modelsInfo[sceneModelIndex].lightPositionB = avdVec4(10000.0f, 10000.0f, 10000.0f, 1.0f);
 
     return true;
 }
@@ -907,9 +931,9 @@ bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     if (subsurfaceScattering->bloomEnabled) {
         AVD_BloomParams params = {
             .prefilterType   = AVD_BLOOM_PREFILTER_TYPE_SOFTKNEE,
-            .threshold       = 2.0f,
-            .softKnee        = 1.2f,
-            .bloomAmount     = 1.0f,
+            .threshold       = subsurfaceScattering->bloomThreshold,
+            .softKnee        = subsurfaceScattering->bloomSoftKnee,
+            .bloomAmount     = subsurfaceScattering->bloomIntensity,
             .lowQuality      = false,
             .applyGamma      = false,
             .tonemappingType = AVD_BLOOM_TONEMAPPING_TYPE_ACES};
@@ -1006,9 +1030,16 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
 
     AVD_SubSurfaceScatteringLightingPushConstants pushConstants = {
-        .screenSize     = avdVec4((AVD_Float)subsurfaceScattering->sceneWidth, (AVD_Float)subsurfaceScattering->sceneHeight, 1.0f, 1.0f),
-        .cameraPosition = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
-        .lightColor     = avdVec4Scale(avdVec4(1.0f, 0.8f, 0.6f, 1.0f), 8.0f),
+        .screenSize                   = avdVec4((AVD_Float)subsurfaceScattering->sceneWidth, (AVD_Float)subsurfaceScattering->sceneHeight, 1.0f, 1.0f),
+        .cameraPosition               = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
+        .lightColor                   = avdVec4Scale(avdVec4(1.0f, 0.8f, 0.6f, 1.0f), 8.0f),
+        .materialRoughness            = subsurfaceScattering->materialRoughness,
+        .materialMetallic             = subsurfaceScattering->materialMetallic,
+        .translucencyScale            = subsurfaceScattering->translucencyScale,
+        .translucencyDistortion       = subsurfaceScattering->translucencyDistortion,
+        .translucencyPower            = subsurfaceScattering->translucencyPower,
+        .translucencyAmbientDiffusion = subsurfaceScattering->translucencyAmbientDiffusion,
+        .screenSpaceIrradianceScale   = subsurfaceScattering->screenSpaceIrradianceScale,
     };
     for (uint32_t i = 0; i < AVD_ARRAY_COUNT(subsurfaceScattering->modelsInfo); i++) {
         pushConstants.lights[i * 2 + 0] = subsurfaceScattering->modelsInfo[i].lightPositionA;
@@ -1028,7 +1059,7 @@ bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-        AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
@@ -1044,9 +1075,16 @@ bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->irradianceDiffusionPipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
 
     AVD_SubSurfaceScatteringLightingPushConstants pushConstants = {
-        .screenSize     = avdVec4((AVD_Float)subsurfaceScattering->sceneWidth, (AVD_Float)subsurfaceScattering->sceneHeight, 1.0f, 1.0f),
-        .cameraPosition = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
-        .lightColor     = avdVec4Scale(avdVec4(1.0f, 0.8f, 0.6f, 1.0f), 8.0f),
+        .screenSize                   = avdVec4((AVD_Float)subsurfaceScattering->sceneWidth, (AVD_Float)subsurfaceScattering->sceneHeight, 1.0f, 1.0f),
+        .cameraPosition               = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
+        .lightColor                   = avdVec4Scale(avdVec4(1.0f, 0.8f, 0.6f, 1.0f), 8.0f),
+        .materialRoughness            = subsurfaceScattering->materialRoughness,
+        .materialMetallic             = subsurfaceScattering->materialMetallic,
+        .translucencyScale            = subsurfaceScattering->translucencyScale,
+        .translucencyDistortion       = subsurfaceScattering->translucencyDistortion,
+        .translucencyPower            = subsurfaceScattering->translucencyPower,
+        .translucencyAmbientDiffusion = subsurfaceScattering->translucencyAmbientDiffusion,
+        .screenSpaceIrradianceScale   = subsurfaceScattering->screenSpaceIrradianceScale,
     };
     for (uint32_t i = 0; i < AVD_ARRAY_COUNT(subsurfaceScattering->modelsInfo); i++) {
         pushConstants.lights[i * 2 + 0] = subsurfaceScattering->modelsInfo[i].lightPositionA;
@@ -1072,6 +1110,7 @@ bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipeline);
     AVD_SubSurfaceScatteringCompositePushConstants pushConstants = {
         .renderMode = subsurfaceScattering->renderMode,
+        .useScreenSpaceIrradiance     = subsurfaceScattering->useScreenSpaceIrradiance,
     };
     vkCmdPushConstants(commandBuffer, subsurfaceScattering->compositePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
