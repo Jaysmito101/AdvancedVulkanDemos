@@ -87,7 +87,7 @@ const vec3 kernel[KERNEL_SIZE] = vec3[KERNEL_SIZE](
 void main()
 {
     vec2 noiseScale    = pushConstants.data.screenSizes.xy / vec2(64.0, 64.0);
-    const float radius = 1.5;
+    const float radius = 4.5;
 
     // Ignore the names, the values are correct
     mat4 projectionMatrix = pushConstants.data.projectionMatrix;
@@ -119,7 +119,7 @@ void main()
             float sampleDepth = linearizeDepth(texture(textures[AVD_SSS_RENDER_MODE_SCENE_DEPTH], offset.xy).r);
 
             float rangeCheck = smoothstep(0.0, 1.0, radius / abs(origin.z - sampleDepth));
-            occlusion += (sampleDepth >= sampleValue.z + 0.001 ? 1.0 : 0.0) * rangeCheck;
+            occlusion += (sampleDepth >= sampleValue.z + 10e-8 ? 1.0 : 0.0) * rangeCheck;
         }
     }
     occlusion = 1.0 - (occlusion / float(KERNEL_SIZE));

@@ -5,7 +5,7 @@ precision highp float;
 
 #include "SubSurfaceScatteringCommon" 
 
-
+ 
 layout(location = 0) in vec2 inUV;
 
 layout(location = 0) out vec4 outColor;
@@ -30,11 +30,9 @@ void main()
     int renderMode = pushConstants.data.renderMode;
 
     if (renderMode == AVD_SSS_RENDER_MODE_RESULT) {
-        vec4 diffuse                    = texture(textures[0], uv);
-        vec4 normal                     = texture(textures[1], uv);
-        vec4 thicknessRoughnessMetallic = texture(textures[2], uv);
-        vec4 emissive                   = texture(textures[3], uv);
-        outColor                        = vec4(diffuse.rgb + emissive.rgb, 1.0);
+        vec4 diffuse                    = texture(textures[AVD_SSS_RENDER_MODE_SCENE_DIFFUSE], uv);
+        vec4 specular                   = texture(textures[AVD_SSS_RENDER_MODE_SCENE_SPECULAR], uv);
+        outColor                        = vec4(diffuse.rgb + specular.rgb, 1.0);
     } else {
         vec3 color = texture(textures[renderMode], uv).rgb;
 

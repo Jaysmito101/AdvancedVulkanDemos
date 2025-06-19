@@ -2,6 +2,25 @@
 #include "avd_application.h"
 #include "scenes/avd_scenes.h"
 
+#define AVD_SSS_RENDER_MODE_RESULT                             0
+#define AVD_SSS_RENDER_MODE_SCENE_ALBEDO                       1
+#define AVD_SSS_RENDER_MODE_SCENE_NORMAL                       2
+#define AVD_SSS_RENDER_MODE_SCENE_THICKNESS_ROUGHNESS_METALLIC 3
+#define AVD_SSS_RENDER_MODE_SCENE_POSITION                     4
+#define AVD_SSS_RENDER_MODE_SCENE_DEPTH                        5
+#define AVD_SSS_RENDER_MODE_SCENE_AO                           6
+#define AVD_SSS_RENDER_MODE_SCENE_DIFFUSE                      7
+#define AVD_SSS_RENDER_MODE_SCENE_SPECULAR                     8
+#define AVD_SSS_RENDER_MODE_SCENE_DIFFUSED_IRRADIANCE          9
+#define AVD_SSS_ALIEN_THICKNESS_MAP                            10
+#define AVD_SSS_BUDDHA_THICKNESS_MAP                           11
+#define AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP                  12
+#define AVD_SSS_BUDDHA_ORM_MAP                                 13
+#define AVD_SSS_BUDDHA_ALBEDO_MAP                              14
+#define AVD_SSS_BUDDHA_NORMAL_MAP                              15
+#define AVD_SSS_NOISE_TEXTURE                                  16
+#define AVD_SSS_RENDER_MODE_COUNT                              17
+
 typedef struct {
     AVD_Matrix4x4 viewModelMatrix;
     AVD_Matrix4x4 projectionMatrix;
@@ -23,24 +42,12 @@ typedef struct {
     uint32_t thicknessTextureIndex;
 } AVD_SubSurfaceScatteringUberPushConstants;
 
-#define AVD_SSS_RENDER_MODE_RESULT                             0
-#define AVD_SSS_RENDER_MODE_SCENE_ALBEDO                       1
-#define AVD_SSS_RENDER_MODE_SCENE_NORMAL                       2
-#define AVD_SSS_RENDER_MODE_SCENE_THICKNESS_ROUGHNESS_METALLIC 3
-#define AVD_SSS_RENDER_MODE_SCENE_POSITION                     4
-#define AVD_SSS_RENDER_MODE_SCENE_DEPTH                        5
-#define AVD_SSS_RENDER_MODE_SCENE_AO                           6
-#define AVD_SSS_RENDER_MODE_SCENE_DIFFUSE                      7
-#define AVD_SSS_RENDER_MODE_SCENE_SPECULAR                     8
-#define AVD_SSS_RENDER_MODE_SCENE_DIFFUSED_IRRADIANCE          9
-#define AVD_SSS_ALIEN_THICKNESS_MAP                            10
-#define AVD_SSS_BUDDHA_THICKNESS_MAP                           11
-#define AVD_SSS_STANFORD_DRAGON_THICKNESS_MAP                  12
-#define AVD_SSS_BUDDHA_ORM_MAP                                 13
-#define AVD_SSS_BUDDHA_ALBEDO_MAP                              14
-#define AVD_SSS_BUDDHA_NORMAL_MAP                              15
-#define AVD_SSS_NOISE_TEXTURE                                  16
-#define AVD_SSS_RENDER_MODE_COUNT                              17
+typedef struct {
+    AVD_Vector4 lights[6];
+    AVD_Vector4 cameraPosition;
+    AVD_Vector4 screenSize;
+    AVD_Vector4 lightColor;
+} AVD_SubSurfaceScatteringLightingPushConstants;
 
 typedef struct {
     int32_t renderMode;
@@ -267,18 +274,18 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         "SubSurfaceScatteringAOFrag",
         &pipelineCreationInfo));
 
-    // AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
-    //     &subsurfaceScattering->lightingPipelineLayout,
-    //     &subsurfaceScattering->lightingPipeline,
-    //     appState->vulkan.device,
-    //     &appState->vulkan.bindlessDescriptorSetLayout,
-    //     1,
-    //     sizeof(AVD_SubSurfaceScatteringUberPushConstants),
-    //     subsurfaceScattering->lightingBuffer.renderPass,
-    //     (uint32_t)subsurfaceScattering->lightingBuffer.colorAttachments.count,
-    //     "FullScreenQuadVert",
-    //     "SubSurfaceScatteringLightingFrag",
-    //     &pipelineCreationInfo));
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
+        &subsurfaceScattering->lightingPipelineLayout,
+        &subsurfaceScattering->lightingPipeline,
+        appState->vulkan.device,
+        &appState->vulkan.bindlessDescriptorSetLayout,
+        1,
+        sizeof(AVD_SubSurfaceScatteringLightingPushConstants),
+        subsurfaceScattering->lightingBuffer.renderPass,
+        (uint32_t)subsurfaceScattering->lightingBuffer.colorAttachments.count,
+        "FullScreenQuadVert",
+        "SubSurfaceScatteringLightingFrag",
+        &pipelineCreationInfo));
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         &subsurfaceScattering->compositePipelineLayout,
@@ -354,8 +361,8 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
 
     subsurfaceScattering->currentFocusModelIndex = 1;
     subsurfaceScattering->cameraPosition         = avdVec3(2.0f, 2.0f, 2.0f);
-    subsurfaceScattering->cameraTarget           = avdVec3(0.0f, 0.0f, 0.0f); // Will be updated in Update based on index
-    subsurfaceScattering->cameraRadius           = 3.0; // Will be updated in Update based on index
+    subsurfaceScattering->cameraTarget           = avdVec3(0.0f, 0.0f, 0.0f);  // Will be updated in Update based on index
+    subsurfaceScattering->cameraRadius           = 3.0;                        // Will be updated in Update based on index
     subsurfaceScattering->cameraPhi              = sinf(AVD_PI / 4.0f) * 2.0f; // 45 degrees in radians
     subsurfaceScattering->cameraTheta            = cosf(AVD_PI / 4.0f) * 2.0f; // 45 degrees in radians
 
@@ -686,7 +693,7 @@ void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union
     }
 }
 
-bool __avdSceneUpdateCamera(AVD_SceneSubsurfaceScattering* subsurfaceScattering)
+bool __avdSceneUpdateCamera(AVD_SceneSubsurfaceScattering *subsurfaceScattering)
 {
     subsurfaceScattering->cameraTarget     = subsurfaceScattering->modelsInfo[subsurfaceScattering->currentFocusModelIndex].position;
     subsurfaceScattering->cameraPosition.x = subsurfaceScattering->cameraTarget.x + subsurfaceScattering->cameraRadius * sinf(subsurfaceScattering->cameraPhi) * cosf(subsurfaceScattering->cameraTheta);
@@ -707,6 +714,8 @@ bool __avdSceneUpdateCamera(AVD_SceneSubsurfaceScattering* subsurfaceScattering)
     subsurfaceScattering->viewProjectionMatrix = avdMat4x4Multiply(
         subsurfaceScattering->projectionMatrix,
         subsurfaceScattering->viewMatrix);
+
+    return true;
 }
 
 bool __avdSceneUpdateLightingForModel(uint32_t sceneModelIndex, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_Float time)
@@ -721,8 +730,10 @@ bool __avdSceneUpdateLightingForModel(uint32_t sceneModelIndex, AVD_SceneSubsurf
         subsurfaceScattering->modelsInfo[sceneModelIndex].position,
         subsurfaceScattering->modelsInfo[sceneModelIndex].rotation,
         avdVec3(1.0f, 1.0f, 1.0f));
-    
-        
+    AVD_Matrix4x4 viewModelMatrix = avdMat4x4Multiply(
+        subsurfaceScattering->viewMatrix,
+        unscaledModelMatrix);
+
     AVD_Float seedA        = (AVD_Float)sceneModelIndex * 1.234f;
     AVD_Float seedB        = (AVD_Float)sceneModelIndex * 5.678f;
     AVD_Float phaseOffsetA = seedA * AVD_PI;
@@ -737,11 +748,15 @@ bool __avdSceneUpdateLightingForModel(uint32_t sceneModelIndex, AVD_SceneSubsurf
         radius * sinf(time * lightSpeed + phaseOffsetB + AVD_PI / 2.0f),
         radius * sinf(time * lightSpeed + phaseOffsetB + AVD_PI / 4.0f));
 
-    AVD_Vector4 lightAWorldSpacePosition = avdMat4x4MultiplyVec4(unscaledModelMatrix, avdVec4FromVec3(lightAPosition, 1.0f));
-    AVD_Vector4 lightBWorldSpacePosition = avdMat4x4MultiplyVec4(unscaledModelMatrix, avdVec4FromVec3(lightBPosition, 1.0f));
+    AVD_Vector4 lightAWorldSpacePosition = avdMat4x4MultiplyVec4(viewModelMatrix, avdVec4FromVec3(lightAPosition, 1.0f));
+    AVD_Vector4 lightBWorldSpacePosition = avdMat4x4MultiplyVec4(viewModelMatrix, avdVec4FromVec3(lightBPosition, 1.0f));
 
     subsurfaceScattering->modelsInfo[sceneModelIndex].lightPositionA = lightAWorldSpacePosition;
     subsurfaceScattering->modelsInfo[sceneModelIndex].lightPositionB = lightBWorldSpacePosition;
+
+
+    // Disable light B for now
+    subsurfaceScattering->modelsInfo[sceneModelIndex].lightPositionB = avdVec4(10000.0f, 10000.0f, 10000.0f, 1.0f); 
 
     return true;
 }
@@ -798,7 +813,6 @@ static bool __avdSceneRenderFirstMesh(
     VkCommandBuffer commandBuffer,
     AVD_SceneSubsurfaceScattering *subsurfaceScattering,
     VkPipelineLayout pipelineLayout,
-    AVD_Float time,
     uint32_t sceneModelIndex,
     bool renderLightSpheres)
 {
@@ -844,7 +858,7 @@ static bool __avdSceneRenderFirstMesh(
     vkCmdDraw(commandBuffer, mesh->triangleCount * 3, 1, 0, 0);
 
     if (renderLightSpheres) {
-        pushConstants.viewModelMatrix = subsurfaceScattering->viewMatrix; // no model matrix needed here
+        pushConstants.viewModelMatrix = avdMat4x4Identity(); // no model matrix needed here
         pushConstants.renderingLight  = 1;
         pushConstants.vertexOffset    = sphereMesh->indexOffset;
         pushConstants.vertexCount     = sphereMesh->triangleCount * 3;
@@ -859,11 +873,10 @@ bool __avdSceneRenderModels(
     VkCommandBuffer commandBuffer,
     AVD_SceneSubsurfaceScattering *subsurfaceScattering,
     VkPipelineLayout pipelineLayout,
-    AVD_Float time,
     bool renderLightSpheres)
 {
     for (uint32_t i = 0; i < AVD_ARRAY_COUNT(subsurfaceScattering->modelsInfo); i++) {
-        AVD_CHECK(__avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, pipelineLayout, time, i, renderLightSpheres));
+        AVD_CHECK(__avdSceneRenderFirstMesh(commandBuffer, subsurfaceScattering, pipelineLayout, i, renderLightSpheres));
     }
 
     return true;
@@ -883,7 +896,7 @@ bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsu
             .bloomAmount     = 1.0f,
             .lowQuality      = false,
             .applyGamma      = false,
-            .tonemappingType = AVD_BLOOM_TONEMAPPING_TYPE_NONE};
+            .tonemappingType = AVD_BLOOM_TONEMAPPING_TYPE_ACES};
 
         AVD_CHECK(avdBloomApplyInplace(
             commandBuffer,
@@ -906,10 +919,10 @@ bool __avdSceneRenderGBufferPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurf
         commandBuffer,
         &subsurfaceScattering->gBuffer,
         (VkClearValue[]){
-            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
-            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
-            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
-            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
+            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 0.0f}}},
+            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 0.0f}}},
+            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 0.0f}}},
+            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 0.0f}}},
             {.depthStencil = {1.0f, 0}},
         },
         5));
@@ -920,9 +933,7 @@ bool __avdSceneRenderGBufferPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurf
         appState->vulkan.bindlessDescriptorSet};
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->gBufferPipelineLayout, 0, 2, descriptorSets, 0, NULL);
 
-    AVD_Float time = (AVD_Float)appState->framerate.currentTime;
-
-    __avdSceneRenderModels(commandBuffer, subsurfaceScattering, subsurfaceScattering->gBufferPipelineLayout, time, true);
+    __avdSceneRenderModels(commandBuffer, subsurfaceScattering, subsurfaceScattering->gBufferPipelineLayout, true);
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
 
@@ -948,7 +959,6 @@ bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceSc
 
     AVD_SubSurfaceScatteringUberPushConstants pushConstants = {
         .projectionMatrix = subsurfaceScattering->projectionMatrix,
-        .viewModelMatrix  = subsurfaceScattering->viewMatrix,
         .cameraPosition   = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
         .screenSize       = avdVec4((AVD_Float)subsurfaceScattering->sceneWidth, (AVD_Float)subsurfaceScattering->sceneHeight, 1.0f, 1.0f),
         .renderingLight   = 0,
@@ -973,18 +983,24 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
         (VkClearValue[]){
             {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
             {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
-            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
             {.depthStencil = {1.0f, 0}},
         },
-        4));
+        3));
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipeline);
-    VkDescriptorSet descriptorSets[] = {
-        subsurfaceScattering->set0,
-        appState->vulkan.bindlessDescriptorSet};
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipelineLayout, 0, 2, descriptorSets, 0, NULL);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
 
-    AVD_Float time = (AVD_Float)appState->framerate.currentTime;
+    AVD_SubSurfaceScatteringLightingPushConstants pushConstants = {
+        .screenSize     = avdVec4((AVD_Float)subsurfaceScattering->sceneWidth, (AVD_Float)subsurfaceScattering->sceneHeight, 1.0f, 1.0f),
+        .cameraPosition = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
+        .lightColor     = avdVec4Scale(avdVec4(1.0f, 0.8f, 0.6f, 1.0f), 8.0f),
+    };
+    for (uint32_t i = 0; i < AVD_ARRAY_COUNT(subsurfaceScattering->modelsInfo); i++) {
+        pushConstants.lights[i * 2 + 0] = subsurfaceScattering->modelsInfo[i].lightPositionA;
+        pushConstants.lights[i * 2 + 1] = subsurfaceScattering->modelsInfo[i].lightPositionB;
+    }
+    vkCmdPushConstants(commandBuffer, subsurfaceScattering->lightingPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
+    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
 
@@ -1055,7 +1071,7 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
 
     AVD_CHECK(__avdSceneRenderGBufferPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderAOPass(commandBuffer, subsurfaceScattering, appState));
-    // AVD_CHECK(__avdSceneRenderLightingPass(commandBuffer, subsurfaceScattering, appState));
+    AVD_CHECK(__avdSceneRenderLightingPass(commandBuffer, subsurfaceScattering, appState));
     // AVD_CHECK(__avdSceneRenderIrradianceDiffusionPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderCompositePass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderBloomIfNeeded(commandBuffer, subsurfaceScattering, appState));

@@ -3,153 +3,82 @@
 
 precision highp float;
 
-#extension GL_EXT_nonuniform_qualifier : require
+#include "SubSurfaceScatteringCommon"
 
 layout(location = 0) in vec2 inUV;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec4 inPosition;
-layout(location = 3) flat in int inRenderingLight;
-// Extremely inefficient thing to do but well, this is just a demo.
-layout(location = 4) in vec3 inLightAPos;
-layout(location = 5) in vec3 inLightBPos;
+
+layout(set = 0, binding = 1) uniform sampler2D textures[];
 
 layout(location = 0) out vec4 outDiffuse;
 layout(location = 1) out vec4 outSpecular;
-layout(location = 2) out vec4 outEmissive;
-
-layout(set = 1, binding = 1) uniform sampler2D textures[];
-
-#define PI 3.14159265359
-
-struct PushConstantData {
-    mat4 modelMatrix;
-    mat4 viewProjectionMatrix;
-
-    vec4 lightA;
-    vec4 lightB;
-    vec4 cameraPosition;
-    vec4 screenSizes;
-
-    int vertexOffset;
-    int vertexCount;
-    int renderingLight;
-    int hasPBRTextures;
-
-    uint albedoTextureIndex;
-    uint normalTextureIndex;
-    uint ormTextureIndex;
-    uint thicknessMapIndex;
-};
 
 layout(push_constant) uniform PushConstants
 {
-    PushConstantData data;
+    LightPushConstantData data;
 }
 pushConstants;
 
-
-float distributionGGX(vec3 N, vec3 H, float roughness)
+float sampleAOBlurred(vec2 uv)
 {
-    float a      = roughness * roughness;
-    float a2     = a * a;
-    float NdotH  = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH * NdotH;
-
-    float nom   = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom       = PI * denom * denom;
-
-    return nom / denom;
-}
-
-float geometrySchlickGGX(float NdotV, float roughness)
-{
-    float r = (roughness + 1.0);
-    float k = (r * r) / 8.0;
-
-    float nom   = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
-
-    return nom / denom;
-}
-
-float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
-{
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx2  = geometrySchlickGGX(NdotV, roughness);
-    float ggx1  = geometrySchlickGGX(NdotL, roughness);
-
-    return ggx1 * ggx2;
-}
-
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
-{
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
-}
-
-// Soruce: https://learnopengl.com/code_viewer_gh.php?code=src/6.pbr/1.2.lighting_textured/1.2.pbr.fs
-mat3 calculateTBN()
-{
-    vec3 Q1  = dFdx(inPosition.xyz);
-    vec3 Q2  = dFdy(inPosition.xyz);
-    vec2 st1 = dFdx(inUV);
-    vec2 st2 = dFdy(inUV);
-
-    vec3 N   = normalize(inNormal);
-    vec3 T   = normalize(Q1 * st2.t - Q2 * st1.t);
-    vec3 B   = -normalize(cross(N, T));
-    mat3 TBN = mat3(T, B, N);
-    return TBN;
+    int kernelSize = 2;
+    vec2 texelSize = vec2(1.0 / textureSize(textures[AVD_SSS_RENDER_MODE_SCENE_AO], 0));
+    float ao       = 0.0;
+    for (int x = -2; x <= 2; ++x) {
+        for (int y = -2; y <= 2; ++y) {
+            vec2 offset = vec2(float(x), float(y)) * texelSize;
+            ao += texture(textures[AVD_SSS_RENDER_MODE_SCENE_AO], uv + offset).r;
+        }
+    }
+    ao /= float((2 * kernelSize + 1) * (2 * kernelSize + 1));
+    return ao;
 }
 
 void main()
 {
     outDiffuse  = vec4(0.0, 0.0, 0.0, 1.0);
     outSpecular = vec4(0.0, 0.0, 0.0, 1.0);
-    outEmissive = vec4(0.0, 0.0, 0.0, 1.0);
 
-    if (inRenderingLight == 1) {
-        outEmissive = vec4(lightAColor, 1.0);
-    } else if (inRenderingLight == 2) {
-        outEmissive = vec4(lightBColor, 1.0);
+    vec4 albedo = texture(textures[AVD_SSS_RENDER_MODE_SCENE_ALBEDO], inUV);
+
+    if (albedo.a == 1) {
+        outDiffuse = vec4(pushConstants.data.lightColor.rgb, 1.0);
     } else {
-        Light lights[2];
-        lights[0].position = inLightAPos;
-        lights[0].color    = lightAColor;
-        lights[1].position = inLightBPos;
-        lights[1].color    = lightBColor;
+        vec3 viewPosition = texture(textures[AVD_SSS_RENDER_MODE_SCENE_POSITION], inUV).xyz;
+        vec3 normal       = normalize(texture(textures[AVD_SSS_RENDER_MODE_SCENE_NORMAL], inUV).xyz * 2.0 - 1.0);
+        vec3 viewDir      = normalize(-viewPosition);
+        vec4 trm          = texture(textures[AVD_SSS_RENDER_MODE_SCENE_THICKNESS_ROUGHNESS_METALLIC], inUV);
+        float sceneAo     = sampleAOBlurred(inUV);
 
-        vec3 viewDir = normalize(pushConstants.data.cameraPosition.xyz - inPosition.xyz);
-        vec3 normal  = normalize(inNormal);
-
-        vec3 albedo     = vec3(0.5, 0.6, 0.7);
-        float roughness = 0.2;
-        float metallic  = 0.6;
+        float roughness = trm.g;
+        float metallic  = trm.b;
         vec3 F0         = vec3(0.04);
+        F0              = mix(F0, albedo.rgb, metallic);
 
-        if (pushConstants.data.hasPBRTextures == 1) {
-            vec2 uv  = vec2(inUV.x, 1.0 - inUV.y);
-            mat3 TBN = calculateTBN();
-
-            albedo    = texture(textures[pushConstants.data.albedoTextureIndex], uv).rgb;
-            normal    = normalize(TBN * texture(textures[pushConstants.data.normalTextureIndex], uv).rgb);
-            // roughness = texture(textures[pushConstants.data.ormTextureIndex], uv).g;
-            // metallic  = texture(textures[pushConstants.data.ormTextureIndex], uv).b;
-            // F0        = mix(F0, albedo, metallic);
-        }
+        float distortion = 0.1;
+        float ambientDiffusion = 0.1;
+        float thickness = 1.0 - trm.r;
+        float diffusionScale = 1.0;
+        float diffusionPower = 2.0;
 
         vec3 diffuseLo  = vec3(0.0);
         vec3 specularLo = vec3(0.0);
 
-        // Standard PBR implementation from learnopengl.com
-        for (int i = 0; i < 2; ++i) {
-            vec3 lightDir    = normalize(lights[i].position - inPosition.xyz);
+        // // Standard PBR implementation from learnopengl.com
+        for (int i = 0; i < 6; ++i) {
+            vec3 lightPos    = pushConstants.data.lights[i].xyz;
+            vec3 lightDirUn  = lightPos - viewPosition;
+            vec3 lightDir    = normalize(lightDirUn);
             vec3 halfViewDir = normalize(lightDir + viewDir);
 
-            float lightDist   = length(lights[i].position - inPosition.xyz);
+
+            float lightDist   = length(lightDirUn);
             float attenuation = 1.0 / (lightDist * lightDist);
-            vec3 radiance     = lights[i].color * attenuation;
+
+            vec3 viewLightDir = lightDir + normal * distortion;
+            float FdotL = pow(max(dot(viewDir, -viewLightDir), 0.0), diffusionPower) * diffusionScale;
+            float NdotL = max(dot(normal, lightDir), 0.0);
+            float diffusionRadiance = attenuation * (FdotL + ambientDiffusion * sceneAo + NdotL) * thickness;
+
 
             // The Cook-Torrance BRDF
             float ndf    = distributionGGX(normal, halfViewDir, roughness);
@@ -160,22 +89,22 @@ void main()
             float denominator = 4.0 * max(dot(normal, viewDir), 0.0) * max(dot(normal, lightDir), 0.0) + 1e-4;
             vec3 specular     = numerator / denominator;
 
-            vec3 kS = fresnel;
-
+            // NOTE: I am skipping the frenel component here, even though it breaks
+            // the law of conservation of energy but this to me looks visually more
+            // interesting.
+            vec3 kS = fresnel * 0.0;
             vec3 kD = vec3(1.0) - kS;
             kD *= 1.0 - metallic;
 
-            float NdotL = max(dot(normal, lightDir), 0.0);
-
-            diffuseLo += kD * albedo / PI * radiance * NdotL;
-            specularLo += specular * radiance * NdotL;
+            diffuseLo += kD * albedo.rgb / PI * (diffusionRadiance * pushConstants.data.lightColor.rgb);
+            specularLo += specular * diffusionRadiance;
         }
 
-        vec3 ambient = vec3(0.03) * albedo;
-        diffuseLo += ambient;
+
+        vec3 ambient = vec3(0.05) * albedo.rgb;
+        diffuseLo += ambient * sceneAo;
 
         outDiffuse  = vec4(diffuseLo, 1.0);
         outSpecular = vec4(specularLo, 1.0);
-        outEmissive = vec4(0.0, 0.0, 0.0, 1.0);
     }
 }

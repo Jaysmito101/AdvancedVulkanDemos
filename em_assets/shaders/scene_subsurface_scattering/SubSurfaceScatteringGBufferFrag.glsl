@@ -54,13 +54,13 @@ void main()
 
     vec2 uv = vec2(inUV.x, 1.0 - inUV.y);
     if (inRenderingLight == 1) {
-        albedo = vec4(lightAColor, 1.0);
+        albedo = vec4(1.0f, 0.8f, 0.6f, 1.0f);
     } else if (inRenderingLight == 2) {
-        albedo = vec4(lightBColor, 1.0);
+        albedo = vec4(1.0f, 0.8f, 0.6f, 1.0f);
     } else {
         albedo = vec4(1.0, 1.0, 1.0, 0.0);
         float thickness = texture(textures[pushConstants.data.thicknessMapIndex], uv).r;
-        trm = vec4(thickness, 0.2, 0.6, 0.0);
+        trm = vec4(thickness, 0.5, 0.2, 0.0);
         normal = normalize(inNormal);
         if (pushConstants.data.hasPBRTextures == 1) {
             albedo = texture(textures[pushConstants.data.albedoTextureIndex], uv);

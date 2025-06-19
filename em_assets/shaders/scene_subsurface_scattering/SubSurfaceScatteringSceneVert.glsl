@@ -9,9 +9,6 @@ layout(location = 0) out vec2 outUV;
 layout(location = 1) out vec3 outNormal;
 layout(location = 2) out vec4 outPosition;
 layout(location = 3) flat out int outRenderingLight;
-// Extremely inefficient thing to do but well, this is just a demo.
-layout(location = 4) out vec3 outLightAPos;
-layout(location = 5) out vec3 outLightBPos;
 
 layout(set = 0, binding = 0, std430) readonly buffer VertexBuffer
 {
@@ -57,7 +54,6 @@ void main()
             outRenderingLight = 2;
             vertexPosition    = pushConstants.data.lightB + lightVertexPosition;
         }
-        // modelMatrix = unscaledModel;
     } else {
         outRenderingLight = 0;
         vertexPosition    = samplePosition(vertexIndex);
@@ -74,9 +70,6 @@ void main()
     outUV        = sampleTextureCoords(vertexIndex);
     outPosition  = viewPosition;
     outNormal    = normalMatrix * normal;
-    // outLightAPos = (unscaledModel * pushConstants.data.lightA).xyz;
-    // outLightBPos = (unscaledModel * pushConstants.data.lightB).xyz;
 
-    // Set the gl_Position for the vertex shader
     gl_Position = position;
 }
