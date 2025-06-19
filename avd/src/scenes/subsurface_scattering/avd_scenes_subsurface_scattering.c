@@ -286,6 +286,19 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         "FullScreenQuadVert",
         "SubSurfaceScatteringLightingFrag",
         &pipelineCreationInfo));
+    
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
+        &subsurfaceScattering->irradianceDiffusionPipelineLayout,
+        &subsurfaceScattering->irradianceDiffusionPipeline,
+        appState->vulkan.device,
+        &appState->vulkan.bindlessDescriptorSetLayout,
+        1,
+        sizeof(AVD_SubSurfaceScatteringLightingPushConstants),
+        subsurfaceScattering->diffusedIrradianceBuffer.renderPass,
+        (uint32_t)subsurfaceScattering->diffusedIrradianceBuffer.colorAttachments.count,
+        "FullScreenQuadVert",
+        "SubSurfaceScatteringIrradianceFrag",
+        &pipelineCreationInfo));
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         &subsurfaceScattering->compositePipelineLayout,
@@ -440,6 +453,9 @@ void avdSceneSubsurfaceScatteringDestroy(struct AVD_AppState *appState, union AV
 
     vkDestroyPipelineLayout(appState->vulkan.device, subsurfaceScattering->aoPipelineLayout, NULL);
     vkDestroyPipeline(appState->vulkan.device, subsurfaceScattering->aoPipeline, NULL);
+
+    vkDestroyPipelineLayout(appState->vulkan.device, subsurfaceScattering->irradianceDiffusionPipelineLayout, NULL);
+    vkDestroyPipeline(appState->vulkan.device, subsurfaceScattering->irradianceDiffusionPipeline, NULL);
 }
 
 bool avdSceneSubsurfaceScatteringCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage)
@@ -983,9 +999,8 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
         (VkClearValue[]){
             {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
             {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
-            {.depthStencil = {1.0f, 0}},
         },
-        3));
+        2));
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->lightingPipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
@@ -1012,6 +1027,37 @@ bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+        AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(subsurfaceScattering != NULL);
+    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    AVD_CHECK(avdBeginRenderPassWithFramebuffer(
+        commandBuffer,
+        &subsurfaceScattering->diffusedIrradianceBuffer,
+        (VkClearValue[]){
+            {.color = {.float32 = {0.0f, 0.0f, 0.0f, 1.0f}}},
+        },
+        1));
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->irradianceDiffusionPipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->irradianceDiffusionPipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
+
+    AVD_SubSurfaceScatteringLightingPushConstants pushConstants = {
+        .screenSize     = avdVec4((AVD_Float)subsurfaceScattering->sceneWidth, (AVD_Float)subsurfaceScattering->sceneHeight, 1.0f, 1.0f),
+        .cameraPosition = avdVec4FromVec3(subsurfaceScattering->cameraPosition, 1.0f),
+        .lightColor     = avdVec4Scale(avdVec4(1.0f, 0.8f, 0.6f, 1.0f), 8.0f),
+    };
+    for (uint32_t i = 0; i < AVD_ARRAY_COUNT(subsurfaceScattering->modelsInfo); i++) {
+        pushConstants.lights[i * 2 + 0] = subsurfaceScattering->modelsInfo[i].lightPositionA;
+        pushConstants.lights[i * 2 + 1] = subsurfaceScattering->modelsInfo[i].lightPositionB;
+    }
+    vkCmdPushConstants(commandBuffer, subsurfaceScattering->irradianceDiffusionPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
+    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+
+    AVD_CHECK(avdEndRenderPass(commandBuffer));
+
+    return true;
 
     return true;
 }
@@ -1072,7 +1118,7 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
     AVD_CHECK(__avdSceneRenderGBufferPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderAOPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderLightingPass(commandBuffer, subsurfaceScattering, appState));
-    // AVD_CHECK(__avdSceneRenderIrradianceDiffusionPass(commandBuffer, subsurfaceScattering, appState));
+    AVD_CHECK(__avdSceneRenderIrradianceDiffusionPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderCompositePass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderBloomIfNeeded(commandBuffer, subsurfaceScattering, appState));
 

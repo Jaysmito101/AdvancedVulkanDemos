@@ -30,9 +30,9 @@ void main()
     int renderMode = pushConstants.data.renderMode;
 
     if (renderMode == AVD_SSS_RENDER_MODE_RESULT) {
-        vec4 diffuse                    = texture(textures[AVD_SSS_RENDER_MODE_SCENE_DIFFUSE], uv);
+        vec4 diffuseIrradiance         = texture(textures[AVD_SSS_RENDER_MODE_SCENE_DIFFUSED_IRRADIANCE], uv);
         vec4 specular                   = texture(textures[AVD_SSS_RENDER_MODE_SCENE_SPECULAR], uv);
-        outColor                        = vec4(diffuse.rgb + specular.rgb, 1.0);
+        outColor                        = vec4(diffuseIrradiance.rgb + specular.rgb, 1.0);
     } else {
         vec3 color = texture(textures[renderMode], uv).rgb;
 

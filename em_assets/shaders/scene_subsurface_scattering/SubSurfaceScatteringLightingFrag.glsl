@@ -78,6 +78,7 @@ void main()
             float FdotL = pow(max(dot(viewDir, -viewLightDir), 0.0), diffusionPower) * diffusionScale;
             float NdotL = max(dot(normal, lightDir), 0.0);
             float diffusionRadiance = attenuation * (FdotL + ambientDiffusion * sceneAo + NdotL) * thickness;
+            // float diffusionRadiance = attenuation * NdotL; 
 
 
             // The Cook-Torrance BRDF
