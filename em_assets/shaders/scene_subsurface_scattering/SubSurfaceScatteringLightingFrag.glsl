@@ -31,7 +31,7 @@ float sampleAOBlurred(vec2 uv)
     }
     ao /= float((2 * kernelSize + 1) * (2 * kernelSize + 1));
     return ao;
-}
+} 
 
 void main()
 {

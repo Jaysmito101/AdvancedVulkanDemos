@@ -704,6 +704,8 @@ void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union
             subsurfaceScattering->currentFocusModelIndex = (subsurfaceScattering->currentFocusModelIndex + 1) % 3;
         } else if (event->key.key == GLFW_KEY_R && event->key.action == GLFW_PRESS) {
             subsurfaceScattering->renderMode = (subsurfaceScattering->renderMode + 1) % AVD_SSS_RENDER_MODE_COUNT;
+        } else if (event->key.key == GLFW_KEY_S && event->key.action == GLFW_PRESS) {
+            subsurfaceScattering->useScreenSpaceIrradiance = !subsurfaceScattering->useScreenSpaceIrradiance;
         }
     } else if (event->type == AVD_INPUT_EVENT_MOUSE_BUTTON) {
         if (event->mouseButton.button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -823,21 +825,101 @@ bool avdSceneSubsurfaceScatteringUpdate(struct AVD_AppState *appState, union AVD
     AVD_CHECK(__avdSceneUpdateCamera(subsurfaceScattering));
     AVD_CHECK(__avdSceneUpdateLighting(subsurfaceScattering, (AVD_Float)appState->framerate.currentTime));
 
-    static char infoText[512];
+    const float scale = (float)appState->framerate.deltaTime * 2.0f;
+    
+    if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_1]) {
+        subsurfaceScattering->materialRoughness += scale;
+        subsurfaceScattering->materialRoughness = avdClamp(subsurfaceScattering->materialRoughness, 0.0f, 1.0f);
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_1]) {
+        subsurfaceScattering->materialRoughness -= scale;
+        subsurfaceScattering->materialRoughness = avdClamp(subsurfaceScattering->materialRoughness, 0.0f, 1.0f);
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_2]) {
+        subsurfaceScattering->materialMetallic += scale;
+        subsurfaceScattering->materialMetallic = avdClamp(subsurfaceScattering->materialMetallic, 0.0f, 1.0f);
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_2]) {
+        subsurfaceScattering->materialMetallic -= scale;
+        subsurfaceScattering->materialMetallic = avdClamp(subsurfaceScattering->materialMetallic, 0.0f, 1.0f);
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_3]) {
+        subsurfaceScattering->translucencyScale += scale;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_3]) {
+        subsurfaceScattering->translucencyScale -= scale;
+        subsurfaceScattering->translucencyScale = avdMax(subsurfaceScattering->translucencyScale, 0.0f);
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_4]) {
+        subsurfaceScattering->translucencyDistortion += scale * 0.1f;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_4]) {
+        subsurfaceScattering->translucencyDistortion -= scale * 0.1f;
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_5]) {
+        subsurfaceScattering->translucencyPower += scale;
+        subsurfaceScattering->translucencyPower = avdMax(subsurfaceScattering->translucencyPower, 0.1f);
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_5]) {
+        subsurfaceScattering->translucencyPower -= scale;
+        subsurfaceScattering->translucencyPower = avdMax(subsurfaceScattering->translucencyPower, 0.1f);
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_6]) {
+        subsurfaceScattering->translucencyAmbientDiffusion += scale * 0.1f;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_6]) {
+        subsurfaceScattering->translucencyAmbientDiffusion -= scale * 0.1f;
+        subsurfaceScattering->translucencyAmbientDiffusion = avdMax(subsurfaceScattering->translucencyAmbientDiffusion, 0.0f);
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_7]) {
+        subsurfaceScattering->screenSpaceIrradianceScale += scale;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_7]) {
+        subsurfaceScattering->screenSpaceIrradianceScale -= scale;
+        subsurfaceScattering->screenSpaceIrradianceScale = avdMax(subsurfaceScattering->screenSpaceIrradianceScale, 0.0f);
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_8]) {
+        subsurfaceScattering->bloomThreshold += scale;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_8]) {
+        subsurfaceScattering->bloomThreshold -= scale;
+        subsurfaceScattering->bloomThreshold = avdMax(subsurfaceScattering->bloomThreshold, 0.0f);
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_9]) {
+        subsurfaceScattering->bloomIntensity += scale;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_9]) {
+        subsurfaceScattering->bloomIntensity -= scale;
+        subsurfaceScattering->bloomIntensity = avdMax(subsurfaceScattering->bloomIntensity, 0.0f);
+    } else if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_0]) {
+        subsurfaceScattering->bloomSoftKnee += scale;
+    } else if (appState->input.keyState[GLFW_KEY_DOWN] && appState->input.keyState[GLFW_KEY_0]) {
+        subsurfaceScattering->bloomSoftKnee -= scale;
+        subsurfaceScattering->bloomSoftKnee = avdMax(subsurfaceScattering->bloomSoftKnee, 0.0f);
+    }
+
+    static char infoText[1024];
     const char *currentFocusName = subsurfaceScattering->modelsInfo[subsurfaceScattering->currentFocusModelIndex].name;
     snprintf(infoText, sizeof(infoText),
              "Subsurface Scattering Demo:\n"
              "  - Bloom Enabled: %s [Press B to toggle]\n"
              "  - Focus Target: %s [Press F to cycle]\n"
              "  - Render Mode: %s [Press R to cycle]\n"
+             "  - Screen Space Irradiance: %s [Press S to toggle]\n"
              "  - Camera: Drag LMB to orbit, Scroll to zoom\n"
-             "  - Press ESC to return to the main menu\n"
+             "Material Parameters:\n"
+             "  - Roughness: %.2f [1 + Up/Down]\n"
+             "  - Metallic: %.2f [2 + Up/Down]\n"
+             "  - Translucency Scale: %.2f [3 + Up/Down]\n"
+             "  - Translucency Distortion: %.2f [4 + Up/Down]\n"
+             "  - Translucency Power: %.2f [5 + Up/Down]\n"
+             "  - Ambient Diffusion: %.2f [6 + Up/Down]\n"
+             "  - SS Irradiance Scale: %.2f [7 + Up/Down]\n"
+             "Bloom Parameters:\n"
+             "  - Threshold: %.2f [8 + Up/Down]\n"
+             "  - Intensity: %.2f [9 + Up/Down]\n"
+             "  - Soft Knee: %.2f [0 + Up/Down]\n"
              "General Stats:\n"
              "  - Frame Rate: %zu FPS\n"
-             "  - Frame Time: %.2f ms\n",
+             "  - Frame Time: %.2f ms\n"
+             "Press ESC to return to the main menu",
              subsurfaceScattering->bloomEnabled ? "Yes" : "No",
              currentFocusName,
              __avdSceneSubsurfaceScatteringGetRenderModeName(subsurfaceScattering->renderMode),
+             subsurfaceScattering->useScreenSpaceIrradiance ? "Yes" : "No",
+             subsurfaceScattering->materialRoughness,
+             subsurfaceScattering->materialMetallic,
+             subsurfaceScattering->translucencyScale,
+             subsurfaceScattering->translucencyDistortion,
+             subsurfaceScattering->translucencyPower,
+             subsurfaceScattering->translucencyAmbientDiffusion,
+             subsurfaceScattering->screenSpaceIrradianceScale,
+             subsurfaceScattering->bloomThreshold,
+             subsurfaceScattering->bloomIntensity,
+             subsurfaceScattering->bloomSoftKnee,
              appState->framerate.fps,
              appState->framerate.deltaTime * 1000.0f);
 
@@ -1055,10 +1137,6 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
 
 bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
-    AVD_ASSERT(appState != NULL);
-    AVD_ASSERT(subsurfaceScattering != NULL);
-    AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
-
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);

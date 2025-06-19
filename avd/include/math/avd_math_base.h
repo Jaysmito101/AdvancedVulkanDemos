@@ -18,6 +18,8 @@ typedef size_t AVD_Size;
 #define avdDeg2Rad(deg)           ((deg) * (AVD_PI / 180.0f))
 #define avdRad2Deg(rad)           ((rad) * (180.0f / AVD_PI))
 #define avdClamp(value, min, max) ((value) < (min) ? (min) : ((value) > (max) ? (max) : (value)))
+#define avdMax(a, b)              ((a) > (b) ? (a) : (b))
+#define avdMin(a, b)              ((a) < (b) ? (a) : (b))
 #define avdAbs(value)             (fabsf(value))
 #define avdSqrt(value)            sqrtf(value)
 #define avdSin(value)             sinf(value)
