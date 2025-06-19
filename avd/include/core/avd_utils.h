@@ -16,5 +16,4 @@ uint16_t avdQuantizeHalf(float value);
 float avdDequantizeHalf(uint16_t value);
 int avdQuantizeSnorm(float v, int N);
 
-
 #endif // AVD_UTILS_H

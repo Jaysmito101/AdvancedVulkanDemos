@@ -63,7 +63,7 @@ static bool __avdMeshLoadFaces(
         attribFaceOffset += (uint32_t)attrib->face_num_verts[faceIndex];
     }
 
-    AVD_ModelVertex vertex = {0};
+    AVD_ModelVertex vertex             = {0};
     AVD_ModelVertexPacked packedVertex = {0};
 
     for (size_t faceIndex = faceOffset; faceIndex < faceOffset + faceCount; faceIndex++) {

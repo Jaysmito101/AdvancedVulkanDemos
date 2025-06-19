@@ -144,7 +144,7 @@ typedef union {
 
 uint16_t avdQuantizeHalf(float v)
 {
-    AVD_FloatBits u     = {v};
+    AVD_FloatBits u = {v};
     unsigned int ui = u.ui;
 
     int s  = (ui >> 16) & 0x8000;
@@ -190,10 +190,10 @@ int avdQuantizeSnorm(float v, int N)
 {
     const float scale = (float)((1 << (N - 1)) - 1);
 
-	float round = (v >= 0 ? 0.5f : -0.5f);
+    float round = (v >= 0 ? 0.5f : -0.5f);
 
-	v = (v >= -1) ? v : -1;
-	v = (v <= +1) ? v : +1;
+    v = (v >= -1) ? v : -1;
+    v = (v <= +1) ? v : +1;
 
-	return (int)(v * scale + round);
+    return (int)(v * scale + round);
 }

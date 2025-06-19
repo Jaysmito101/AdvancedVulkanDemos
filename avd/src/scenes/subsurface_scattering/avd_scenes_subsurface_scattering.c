@@ -371,7 +371,7 @@ bool __avdSceneInitializeParams(AVD_SceneSubsurfaceScattering *subsurfaceScatter
 {
     AVD_ASSERT(subsurfaceScattering != NULL);
 
-    AVD_Float scalar = 1.5f;
+    AVD_Float scalar                   = 1.5f;
     subsurfaceScattering->loadStage    = 0;
     subsurfaceScattering->bloomEnabled = false;
     subsurfaceScattering->sceneWidth   = (uint32_t)((float)GAME_WIDTH * scalar);
@@ -401,7 +401,6 @@ bool __avdSceneInitializeParams(AVD_SceneSubsurfaceScattering *subsurfaceScatter
     subsurfaceScattering->translucencyPower            = 2.0f;
     subsurfaceScattering->translucencyAmbientDiffusion = 0.1f;
     subsurfaceScattering->useScreenSpaceIrradiance     = true;
-
 
     return true;
 }
@@ -826,7 +825,7 @@ bool avdSceneSubsurfaceScatteringUpdate(struct AVD_AppState *appState, union AVD
     AVD_CHECK(__avdSceneUpdateLighting(subsurfaceScattering, (AVD_Float)appState->framerate.currentTime));
 
     const float scale = (float)appState->framerate.deltaTime * 2.0f;
-    
+
     if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_1]) {
         subsurfaceScattering->materialRoughness += scale;
         subsurfaceScattering->materialRoughness = avdClamp(subsurfaceScattering->materialRoughness, 0.0f, 1.0f);
@@ -1187,8 +1186,8 @@ bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipeline);
     AVD_SubSurfaceScatteringCompositePushConstants pushConstants = {
-        .renderMode = subsurfaceScattering->renderMode,
-        .useScreenSpaceIrradiance     = subsurfaceScattering->useScreenSpaceIrradiance,
+        .renderMode               = subsurfaceScattering->renderMode,
+        .useScreenSpaceIrradiance = subsurfaceScattering->useScreenSpaceIrradiance,
     };
     vkCmdPushConstants(commandBuffer, subsurfaceScattering->compositePipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(pushConstants), &pushConstants);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);

@@ -1,31 +1,32 @@
 #include "shader/avd_shader_compiler.h"
-#include "core/avd_core.h"
 #include "avd_asset.h"
+#include "core/avd_core.h"
 
 #include "shaderc/shaderc.h"
 
-static shaderc_include_result* __avdIncludeResolver(void *userData, const char *requestedSource, int type, const char *requestingSource, size_t includeDepth)
+static shaderc_include_result *__avdIncludeResolver(void *userData, const char *requestedSource, int type, const char *requestingSource, size_t includeDepth)
 {
     AVD_ASSERT(requestedSource != NULL);
 
-    shaderc_include_result* result = (shaderc_include_result*)malloc(sizeof(*result));
+    shaderc_include_result *result = (shaderc_include_result *)malloc(sizeof(*result));
     if (!result) {
         AVD_LOG("Failed to allocate memory for include result\n");
         return NULL;
     }
 
-    result->source_name = requestedSource;
-    result->content = avdAssetShader(requestedSource);
-    result->content_length = strlen(result->content);
-    result->source_name = requestedSource;
+    result->source_name        = requestedSource;
+    result->content            = avdAssetShader(requestedSource);
+    result->content_length     = strlen(result->content);
+    result->source_name        = requestedSource;
     result->source_name_length = strlen(requestedSource);
-    result->user_data = NULL;
+    result->user_data          = NULL;
     return result;
 }
 
 static void __avdIncludeResultReleaser(void *userData, shaderc_include_result *includeResult)
 {
-    (void)userData; (void)includeResult;
+    (void)userData;
+    (void)includeResult;
 }
 
 uint32_t *avdCompileShader(const char *shaderCode, const char *inputFileName, size_t *outSize)

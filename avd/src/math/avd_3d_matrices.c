@@ -82,7 +82,7 @@ AVD_Matrix4x4 avdMatCalculateTransform(
     AVD_Matrix4x4 rotationMatrix = avdMat4x4Multiply(
         avdMat4x4Multiply(rotationX, rotationY),
         rotationZ);
-    
+
     AVD_Matrix4x4 transform = avdMat4x4Multiply(
         translation,
         avdMat4x4Multiply(rotationMatrix, scaling));

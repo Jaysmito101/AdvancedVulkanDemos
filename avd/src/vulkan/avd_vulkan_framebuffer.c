@@ -256,8 +256,8 @@ bool avdVulkanFramebufferCreate(
     avdListCreate(&framebuffer->colorAttachments, sizeof(AVD_VulkanFramebufferAttachment));
 
     for (uint32_t i = 0; i < formatCount; ++i) {
-        AVD_VulkanFramebufferAttachment attachment = {0};
-        AVD_VulkanFramebufferAttachment* attachmentPtr = (AVD_VulkanFramebufferAttachment*)avdListPushBack(&framebuffer->colorAttachments, &attachment);
+        AVD_VulkanFramebufferAttachment attachment     = {0};
+        AVD_VulkanFramebufferAttachment *attachmentPtr = (AVD_VulkanFramebufferAttachment *)avdListPushBack(&framebuffer->colorAttachments, &attachment);
         if (!__avdVulkanFramebufferAttachmentCreate(vulkan, attachmentPtr, colorFormats[i], VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
             AVD_LOG("Failed to create color attachment for format %d\n", colorFormats[i]);
             return false;

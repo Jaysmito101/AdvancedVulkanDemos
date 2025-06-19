@@ -14,9 +14,9 @@ typedef struct {
 
 typedef struct {
     uint16_t vx, vy, vz;
-	uint16_t tp; // packed tangent: 8-8 octahedral
-	uint32_t np; // packed normal: 10-10-10-2 vector + bitangent sign
-	uint16_t tu, tv;
+    uint16_t tp; // packed tangent: 8-8 octahedral
+    uint32_t np; // packed normal: 10-10-10-2 vector + bitangent sign
+    uint16_t tu, tv;
 } AVD_ModelVertexPacked;
 
 typedef struct {

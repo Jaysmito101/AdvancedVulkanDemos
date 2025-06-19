@@ -46,7 +46,7 @@ AVD_Matrix4x4 avdMatCalculateTransform(
     const AVD_Vector3 position,
     const AVD_Vector3 rotation,
     const AVD_Vector3 scale);
-AVD_Vector3 avdMatGetScale(const AVD_Matrix4x4* mat);
-AVD_Matrix4x4 avdMatRemoveScale(const AVD_Matrix4x4* mat);
+AVD_Vector3 avdMatGetScale(const AVD_Matrix4x4 *mat);
+AVD_Matrix4x4 avdMatRemoveScale(const AVD_Matrix4x4 *mat);
 
 #endif // AVD_3D_MATRICES_H
