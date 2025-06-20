@@ -513,7 +513,7 @@ bool avdSceneSubsurfaceScatteringRegisterApi(AVD_SceneAPI *api)
     api->inputEvent     = avdSceneSubsurfaceScatteringInputEvent;
 
     api->displayName = "Subsurface Scattering";
-    api->id          = "DDGIPlaceholder";
+    api->id          = "StaticSubsurfaceScattering";
 
     return true;
 }
