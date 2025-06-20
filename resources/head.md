@@ -1,3 +1,4 @@
+# Skin
 * Procedural Skin Shader Tutorial : https://www.youtube.com/watch?v=VTQvg8dqkto
 * Blender Tutorial - Realistic Skin Texture in 6 Minutes: https://www.youtube.com/watch?v=oD2tz_738GQ
 * How I gave Suzanne human skin in Blender: https://www.youtube.com/watch?v=UXKyagy2jAI
@@ -10,4 +11,15 @@
 * https://www.iryoku.com/separable-sss/downloads/Separable-Subsurface-Scattering.pdf
 * https://www.iryoku.com/translucency/downloads/Real-Time-Realistic-Skin-Translucency.pdf
 * https://www.cgtrader.com/free-3d-models/male-head
-* 
+* Boss (Sakura Rabbit) https://www.youtube.com/watch?v=uCApnREPQjA
+* Skin Texture: https://www.youtube.com/watch?v=FWeghbEx-OM
+* Skin Shader unity: https://www.youtube.com/watch?v=dN-PLDMa1i8
+
+# Hair
+
+# Eyes
+* Unity3D Eyes drive the eyelids: https://www.youtube.com/watch?v=i0AH2uuevfk
+* Blender Eye Addon: https://www.youtube.com/watch?v=qvRK8l2oS5Q
+
+# Misc:
+* Girl Blend Shapes (Sakura Rabbit): https://www.youtube.com/watch?v=sre5-Cq0EG0
