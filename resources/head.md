@@ -20,6 +20,8 @@
 # Eyes
 * Unity3D Eyes drive the eyelids: https://www.youtube.com/watch?v=i0AH2uuevfk
 * Blender Eye Addon: https://www.youtube.com/watch?v=qvRK8l2oS5Q
+* Cow Eye Disection: https://www.youtube.com/watch?v=6mNs_TcUyHc 
+* Nice 3D Animation of eyes: https://www.youtube.com/watch?v=eySkNWTI03Q
 
 # Misc:
 * Girl Blend Shapes (Sakura Rabbit): https://www.youtube.com/watch?v=sre5-Cq0EG0
