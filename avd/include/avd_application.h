@@ -1,7 +1,6 @@
 #ifndef AVD_APPLICATION_H
 #define AVD_APPLICATION_H
 
-#include "bloom/avd_bloom.h"
 #include "core/avd_core.h"
 #include "font/avd_font_renderer.h"
 #include "scenes/avd_scenes.h"

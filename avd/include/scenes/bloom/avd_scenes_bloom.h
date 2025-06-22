@@ -1,7 +1,7 @@
 #ifndef AVD_SCENES_BLOOM_H
 #define AVD_SCENES_BLOOM_H
 
-#include "bloom/avd_bloom.h"
+#include "common/avd_bloom.h"
 #include "scenes/avd_scenes_base.h"
 
 typedef struct AVD_SceneBloom {

@@ -1,9 +1,12 @@
 #ifndef AVD_SCENES_H
 #define AVD_SCENES_H
 
-#include "scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.h"
 #include "scenes/avd_scenes_base.h"
 #include "scenes/avd_scenes_main_menu.h"
+
+#include "common/avd_bloom.h"
+
+#include "scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.h"
 #include "scenes/bloom/avd_scenes_bloom.h"
 #include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
 #include "scenes/subsurface_scattering/avd_scenes_subsurface_scattering.h"
