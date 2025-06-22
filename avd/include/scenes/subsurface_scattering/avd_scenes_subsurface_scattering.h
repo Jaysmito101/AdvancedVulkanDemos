@@ -2,6 +2,7 @@
 #define AVD_SCENES_SUBSURFACE_SCATTERING_H
 
 #include "model/avd_3d_scene.h"
+#include "common/avd_bloom.h"
 #include "scenes/avd_scenes_base.h"
 
 typedef struct AVD_SceneSubsurfaceScatteringModelInfo {
@@ -96,6 +97,9 @@ typedef struct AVD_SceneSubsurfaceScattering {
 
     int32_t currentFocusModelIndex;
     AVD_SceneSubsurfaceScatteringModelInfo modelsInfo[3];
+
+    AVD_Bloom bloom;
+
 } AVD_SceneSubsurfaceScattering;
 
 bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_Scene *scene);

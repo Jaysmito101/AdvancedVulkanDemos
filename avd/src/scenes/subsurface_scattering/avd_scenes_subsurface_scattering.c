@@ -420,6 +420,13 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         appState->vulkan.device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT));
+    AVD_CHECK(avdBloomCreate(
+        &subsurfaceScattering->bloom,
+        &appState->vulkan,
+        appState->renderer.sceneFramebuffer.renderPass,
+        appState->renderer.sceneFramebuffer.width,
+        appState->renderer.sceneFramebuffer.height));
+
     AVD_CHECK(avdRenderableTextCreate(
         &subsurfaceScattering->title,
         &appState->fontRenderer,
@@ -446,6 +453,7 @@ void avdSceneSubsurfaceScatteringDestroy(struct AVD_AppState *appState, union AV
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
     avd3DSceneDestroy(&subsurfaceScattering->models);
 
+    avdBloomDestroy(&subsurfaceScattering->bloom, &appState->vulkan);
     avdRenderableTextDestroy(&subsurfaceScattering->title, &appState->vulkan);
     avdRenderableTextDestroy(&subsurfaceScattering->info, &appState->vulkan);
 
@@ -1021,7 +1029,7 @@ bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsu
 
         AVD_CHECK(avdBloomApplyInplace(
             commandBuffer,
-            &appState->bloom,
+            &subsurfaceScattering->bloom,
             &appState->renderer.sceneFramebuffer,
             &appState->vulkan,
             params));

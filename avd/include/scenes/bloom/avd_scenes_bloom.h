@@ -18,6 +18,8 @@ typedef struct AVD_SceneBloom {
     bool lowQuality;
     bool applyGamma;
     AVD_BloomTonemappingType tonemappingType;
+    
+    AVD_Bloom bloom;
 
     bool isBloomEnabled;
 } AVD_SceneBloom;

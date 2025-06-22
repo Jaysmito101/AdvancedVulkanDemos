@@ -31,7 +31,6 @@ bool avdApplicationInit(AVD_AppState *appState)
     AVD_CHECK(avdFontRendererInit(&appState->fontRenderer, &appState->vulkan, &appState->renderer));
     AVD_CHECK(avdFontRendererAddBasicFonts(&appState->fontRenderer));
     AVD_CHECK(avdVulkanPresentationInit(&appState->presentation, &appState->vulkan, &appState->swapchain, &appState->fontRenderer));
-    AVD_CHECK(avdBloomCreate(&appState->bloom, &appState->vulkan, appState->renderer.sceneFramebuffer.renderPass, GAME_WIDTH, GAME_HEIGHT));
     AVD_CHECK(avdUiInit(&appState->ui, appState));
     AVD_CHECK(avdSceneManagerInit(&appState->sceneManager, appState));
 
@@ -50,7 +49,6 @@ void avdApplicationShutdown(AVD_AppState *appState)
 
     avdSceneManagerDestroy(&appState->sceneManager, appState);
     avdUiDestroy(&appState->ui, appState);
-    avdBloomDestroy(&appState->bloom, &appState->vulkan);
     avdVulkanPresentationDestroy(&appState->presentation, &appState->vulkan);
     avdFontRendererShutdown(&appState->fontRenderer);
     avdVulkanRendererDestroy(&appState->renderer, &appState->vulkan);

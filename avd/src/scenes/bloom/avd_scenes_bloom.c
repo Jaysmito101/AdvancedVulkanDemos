@@ -72,6 +72,13 @@ bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
     bloom->applyGamma      = false; // usually we pick up a srgb framebuffer so the conversion is done by the hardware
     bloom->tonemappingType = AVD_BLOOM_TONEMAPPING_TYPE_ACES;
 
+    AVD_CHECK(avdBloomCreate(
+        &bloom->bloom,
+        &appState->vulkan,
+        appState->renderer.sceneFramebuffer.renderPass,
+        appState->renderer.sceneFramebuffer.width,
+        appState->renderer.sceneFramebuffer.height));
+        
     AVD_CHECK(__avdSetupDescriptors(&bloom->descriptorSetLayout, &appState->vulkan));
 
     AVD_CHECK(avdRenderableTextCreate(
@@ -99,6 +106,7 @@ void avdSceneBloomDestroy(AVD_AppState *appState, AVD_Scene *scene)
     AVD_LOG("Destroying bloom scene\n");
     avdRenderableTextDestroy(&bloom->title, &appState->vulkan);
     avdRenderableTextDestroy(&bloom->uiInfoText, &appState->vulkan);
+    avdBloomDestroy(&bloom->bloom, &appState->vulkan);
     vkDestroyDescriptorSetLayout(appState->vulkan.device, bloom->descriptorSetLayout, NULL);
 }
 
@@ -258,7 +266,7 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
 
         AVD_CHECK(avdBloomApplyInplace(
             commandBuffer,
-            &appState->bloom,
+            &bloom->bloom,
             &renderer->sceneFramebuffer,
             vulkan,
             params));
