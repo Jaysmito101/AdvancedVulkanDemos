@@ -415,6 +415,26 @@ bool avdWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDes
     return true;
 }
 
+bool avdWriteUniformBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorBufferInfo *bufferInfo)
+{
+    AVD_ASSERT(writeDescriptorSet != NULL);
+    AVD_ASSERT(descriptorSet != VK_NULL_HANDLE);
+    AVD_ASSERT(bufferInfo != NULL);
+
+    writeDescriptorSet->sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptorSet->pNext            = NULL;
+    writeDescriptorSet->dstSet           = descriptorSet;
+    writeDescriptorSet->dstBinding       = binding;
+    writeDescriptorSet->dstArrayElement  = 0;
+    writeDescriptorSet->descriptorCount  = 1;
+    writeDescriptorSet->descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    writeDescriptorSet->pImageInfo       = NULL;
+    writeDescriptorSet->pBufferInfo      = bufferInfo;
+    writeDescriptorSet->pTexelBufferView = NULL;
+
+    return true;
+}
+
 bool avdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer framebuffer, const VkImageView *attachments, size_t attachmentCount, uint32_t framebufferWidth, uint32_t framebufferHeight, VkClearValue *customClearValues, size_t customClearValueCount)
 {
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
