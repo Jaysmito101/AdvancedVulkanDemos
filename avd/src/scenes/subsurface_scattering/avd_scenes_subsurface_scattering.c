@@ -650,17 +650,11 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &subsurfaceScattering->vertexBuffer,
                 subsurfaceScattering->models.modelResources.verticesList.items,
                 bufferSize));
-
-            VkDescriptorSetAllocateInfo allocateInfo = {0};
-            allocateInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-            allocateInfo.descriptorPool              = appState->vulkan.descriptorPool;
-            allocateInfo.descriptorSetCount          = 1;
-            allocateInfo.pSetLayouts                 = &subsurfaceScattering->set0Layout;
-            AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(
-                                    appState->vulkan.device,
-                                    &allocateInfo,
-                                    &subsurfaceScattering->set0),
-                                "Failed to allocate descriptor set");
+            AVD_CHECK(avdAllocateDescriptorSet(
+                appState->vulkan.device,
+                appState->vulkan.descriptorPool,
+                subsurfaceScattering->set0Layout,
+                &subsurfaceScattering->set0));
             VkWriteDescriptorSet descriptorSetWrite = {0};
             AVD_CHECK(avdWriteBufferDescriptorSet(&descriptorSetWrite,
                                                   subsurfaceScattering->set0,

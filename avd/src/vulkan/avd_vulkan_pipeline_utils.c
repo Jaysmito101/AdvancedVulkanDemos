@@ -376,6 +376,25 @@ bool avdCreateDescriptorSetLayout(
     return true;
 }
 
+bool avdAllocateDescriptorSet(
+    VkDevice device,
+    VkDescriptorPool descriptorPool,
+    VkDescriptorSetLayout descriptorSetLayout,
+    VkDescriptorSet *descriptorSet)
+{
+    VkDescriptorSetAllocateInfo allocateInfo = {0};
+    allocateInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocateInfo.descriptorPool              = descriptorPool;
+    allocateInfo.descriptorSetCount          = 1;
+    allocateInfo.pSetLayouts                 = &descriptorSetLayout;
+    AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(
+                            device,
+                            &allocateInfo,
+                            descriptorSet),
+                        "Failed to allocate descriptor set");
+    return true;
+}
+
 bool avdWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorBufferInfo *bufferInfo)
 {
     AVD_ASSERT(writeDescriptorSet != NULL);

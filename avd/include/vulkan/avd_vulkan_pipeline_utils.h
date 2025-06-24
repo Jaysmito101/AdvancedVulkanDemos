@@ -66,6 +66,12 @@ bool avdCreateDescriptorSetLayout(
     VkDescriptorType *descriptorTypes,
     size_t descriptorTypesCount,
     VkShaderStageFlags stageFlags);
+bool avdAllocateDescriptorSet(
+    VkDevice device,
+    VkDescriptorPool descriptorPool,
+    VkDescriptorSetLayout descriptorSetLayout,
+    VkDescriptorSet *descriptorSet);
+
 
 bool avdWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorImageInfo *imageInfo);
 bool avdWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorBufferInfo *bufferInfo);
