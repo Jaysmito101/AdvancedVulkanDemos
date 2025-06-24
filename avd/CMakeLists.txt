@@ -19,6 +19,7 @@ add_executable(avd
     ./src/font/avd_font_renderer.c
     
     ./src/common/avd_bloom.c
+    ./src/common/avd_eyeball.c
 
     ./src/shader/avd_shader_compiler.c
     ./src/shader/avd_shader.c

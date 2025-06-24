@@ -1,5 +1,6 @@
-#include "avd_application.h"
 #include "scenes/eyeballs/avd_scenes_eyeballs.h"
+#include "avd_application.h"
+
 
 static AVD_SceneEyeballs *__avdSceneGetTypePtr(union AVD_Scene *scene)
 {
@@ -61,6 +62,12 @@ bool avdSceneEyeballsInit(struct AVD_AppState *appState, union AVD_Scene *scene)
         "This scene demonstrates the rendering of eyeballs with subsurface scattering.",
         24.0f));
 
+    AVD_CHECK(avdEyeballCreate(
+        &eyeballs->eyeballs[0],
+        &appState->vulkan,
+        appState->renderer.sceneFramebuffer.renderPass,
+        (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count));
+
     return true;
 }
 
@@ -70,6 +77,9 @@ void avdSceneEyeballsDestroy(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_ASSERT(scene != NULL);
 
     AVD_SceneEyeballs *eyeballs = __avdSceneGetTypePtr(scene);
+
+    // Destroy the eyeball
+    avdEyeballDestroy(&eyeballs->eyeballs[0], &appState->vulkan);
 
     avdRenderableTextDestroy(&eyeballs->title, &appState->vulkan);
     avdRenderableTextDestroy(&eyeballs->info, &appState->vulkan);
@@ -125,6 +135,16 @@ bool avdSceneEyeballsRender(struct AVD_AppState *appState, union AVD_Scene *scen
     float infoWidth, infoHeight;
     avdRenderableTextGetSize(&eyeballs->title, &titleWidth, &titleHeight);
     avdRenderableTextGetSize(&eyeballs->info, &infoWidth, &infoHeight);
+
+    AVD_CHECK(avdEyeballRender(
+        commandBuffer,
+        &eyeballs->eyeballs[0],
+        &appState->vulkan,
+        1.0f,
+        eyeballs->cameraPosition,
+        eyeballs->cameraDirection,
+        avdVec3(0.0f, 0.0f, 0.0f),   // Eye position
+        avdVec3(0.0f, 0.0f, 0.0f))); // Eye Rotation
 
     avdRenderText(
         &appState->vulkan,
