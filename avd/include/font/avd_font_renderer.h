@@ -13,14 +13,14 @@ struct AVD_FontRendererVertex;
 #define AVD_MAX_FONTS 128
 #endif
 
-typedef struct AVD_Font {
+typedef struct {
     AVD_FontData fontData;
     AVD_VulkanImage fontAtlasImage;
     VkDescriptorSet fontDescriptorSet;
     VkDescriptorSetLayout fontDescriptorSetLayout;
 } AVD_Font;
 
-typedef struct AVD_RenderableText {
+typedef struct {
     size_t characterCount;
     size_t renderableVertexCount;
     AVD_VulkanBuffer vertexBuffer;
@@ -36,15 +36,19 @@ typedef struct AVD_RenderableText {
     float boundsMaxY;
 } AVD_RenderableText;
 
-typedef struct AVD_FontRenderer {
+typedef struct {
     AVD_Font fonts[AVD_MAX_FONTS];
     size_t fontCount;
 
+    AVD_Vulkan *vulkan;
+} AVD_FontManager;
+
+typedef struct {
+    AVD_FontManager* fontManager;
+
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
-    VkDescriptorSetLayout fontDescriptorSetLayout;
-
-    AVD_Vulkan *vulkan;
+    VkDescriptorSetLayout fontDescriptorSetLayout;    
 } AVD_FontRenderer;
 
 bool avdFontCreate(AVD_FontData fontData, AVD_Vulkan *vulkan, AVD_Font *font);
@@ -56,12 +60,15 @@ void avdRenderableTextDestroy(AVD_RenderableText *renderableText, AVD_Vulkan *vu
 void avdRenderableTextGetBounds(AVD_RenderableText *renderableText, float *minX, float *minY, float *maxX, float *maxY);
 void avdRenderableTextGetSize(AVD_RenderableText *renderableText, float *width, float *height);
 
-bool avdFontRendererInit(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, AVD_VulkanRenderer *renderer);
-void avdFontRendererShutdown(AVD_FontRenderer *fontRenderer);
-bool avdFontRendererAddFontFromAsset(AVD_FontRenderer *fontRenderer, const char *asset);
-bool avdFontRendererAddBasicFonts(AVD_FontRenderer *fontRenderer);
-bool avdFontRendererHasFont(AVD_FontRenderer *fontRenderer, const char *fontName);
-bool avdFontRendererGetFont(AVD_FontRenderer *fontRenderer, const char *fontName, AVD_Font **font);
+bool avdFontManagerInit(AVD_FontManager *fontManager, AVD_Vulkan *vulkan);
+void avdFontManagerShutdown(AVD_FontManager *fontManager);
+bool avdFontManagerAddFontFromAsset(AVD_FontManager *fontManager, const char *asset);
+bool avdFontManagerAddBasicFonts(AVD_FontManager *fontManager);
+bool avdFontManagerHasFont(AVD_FontManager *fontManager, const char *fontName);
+bool avdFontManagerGetFont(AVD_FontManager *fontManager, const char *fontName, AVD_Font **font);
+
+bool avdFontRendererCreate(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, AVD_FontManager *fontManager, VkRenderPass renderPass);
+void avdFontRendererDestroy(AVD_FontRenderer *fontRenderer, AVD_Vulkan* vulkan);
 
 void avdRenderText(AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, AVD_RenderableText *renderableText, VkCommandBuffer cmd, float x, float y, float scale, float r, float g, float b, float a, uint32_t framebufferWidth, uint32_t framebufferHeight);
 

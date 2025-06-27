@@ -264,6 +264,8 @@ static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderab
     return true;
 }
 
+// ------------------------------- AVD_RenderableText -------------------------------
+
 bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, const char *fontName, const char *text, float charHeight)
 {
     AVD_ASSERT(renderableText != NULL);
@@ -291,7 +293,7 @@ bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRendere
 
     // get the font data
     AVD_Font *font = NULL;
-    AVD_CHECK(avdFontRendererGetFont(fontRenderer, fontName, &font));
+    AVD_CHECK(avdFontManagerGetFont(fontRenderer->fontManager, fontName, &font));
     AVD_CHECK(__avdUpdateFontText(vulkan, renderableText, font, text, charHeight));
 
     return true;
@@ -326,7 +328,7 @@ bool avdRenderableTextUpdate(AVD_RenderableText *renderableText, AVD_FontRendere
     }
     // get the font data
     AVD_Font *font = NULL;
-    AVD_CHECK(avdFontRendererGetFont(fontRenderer, renderableText->fontName, &font));
+    AVD_CHECK(avdFontManagerGetFont(fontRenderer->fontManager, renderableText->fontName, &font));
 
     // update the vertex buffer with the new text
     AVD_CHECK(__avdUpdateFontText(vulkan, renderableText, font, text, renderableText->charHeight));
@@ -367,6 +369,8 @@ void avdRenderableTextGetSize(AVD_RenderableText *renderableText, float *width, 
     *height = renderableText->boundsMaxY - renderableText->boundsMinY;
 }
 
+// ------------------------------- AVD_Font -------------------------------
+
 bool avdFontCreate(AVD_FontData fontData, AVD_Vulkan *vulkan, AVD_Font *font)
 {
     AVD_ASSERT(font != NULL);
@@ -390,14 +394,16 @@ void avdFontDestroy(AVD_Vulkan *vulkan, AVD_Font *font)
     vkDestroyDescriptorSetLayout(vulkan->device, font->fontDescriptorSetLayout, NULL);
 }
 
-bool avdFontRendererInit(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, AVD_VulkanRenderer *renderer)
+// ------------------------------- AVD_FontRenderer -------------------------------
+
+bool avdFontRendererCreate(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, AVD_FontManager *fontManager, VkRenderPass renderPass)
 {
     AVD_ASSERT(fontRenderer != NULL);
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(fontManager != NULL);
 
-    memset(&fontRenderer->fonts, 0, sizeof(fontRenderer->fonts));
-    fontRenderer->fontCount = 0;
-
-    fontRenderer->vulkan = vulkan;
+    fontRenderer->fontManager = fontManager;
+    
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &fontRenderer->fontDescriptorSetLayout,
         vulkan->device,
@@ -410,68 +416,94 @@ bool avdFontRendererInit(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, AVD
         &fontRenderer->fontDescriptorSetLayout, 1,
         sizeof(AVD_FontRendererPushConstants)));
 
-    AVD_CHECK(__avdCreatePipeline(fontRenderer, vulkan->device, renderer->sceneFramebuffer.renderPass));
+    AVD_CHECK(__avdCreatePipeline(fontRenderer, vulkan->device, renderPass));
 
     return true;
 }
 
-void avdFontRendererShutdown(AVD_FontRenderer *fontRenderer)
+void avdFontRendererDestroy(AVD_FontRenderer *fontRenderer, AVD_Vulkan* vulkan)
 {
     AVD_ASSERT(fontRenderer != NULL);
+    AVD_ASSERT(vulkan != NULL);
 
-    for (size_t i = 0; i < fontRenderer->fontCount; ++i) {
-        avdFontDestroy(fontRenderer->vulkan, &fontRenderer->fonts[i]);
-    }
-
-    vkDestroyPipeline(fontRenderer->vulkan->device, fontRenderer->pipeline, NULL);
-    vkDestroyPipelineLayout(fontRenderer->vulkan->device, fontRenderer->pipelineLayout, NULL);
-    vkDestroyDescriptorSetLayout(fontRenderer->vulkan->device, fontRenderer->fontDescriptorSetLayout, NULL);
-    fontRenderer->fontCount = 0;
-    fontRenderer->vulkan    = NULL;
+    vkDestroyPipeline(vulkan->device, fontRenderer->pipeline, NULL);
+    vkDestroyPipelineLayout(vulkan->device, fontRenderer->pipelineLayout, NULL);
+    vkDestroyDescriptorSetLayout(vulkan->device, fontRenderer->fontDescriptorSetLayout, NULL);
 }
 
-bool avdFontRendererAddFontFromAsset(AVD_FontRenderer *fontRenderer, const char *asset)
+
+// ------------------------------- AVD_FontManager -------------------------------
+
+bool avdFontManagerInit(AVD_FontManager *fontManager, AVD_Vulkan *vulkan)
 {
+    AVD_ASSERT(fontManager != NULL);
+
+    memset(&fontManager->fonts, 0, sizeof(fontManager->fonts));
+    fontManager->fontCount = 0;
+    fontManager->vulkan    = vulkan;
+
+    return true;
+}
+
+void avdFontManagerShutdown(AVD_FontManager *fontManager)
+{
+    AVD_ASSERT(fontManager != NULL);
+
+    for (size_t i = 0; i < fontManager->fontCount; ++i) {
+        avdFontDestroy(fontManager->vulkan, &fontManager->fonts[i]);
+    }
+    fontManager->fontCount = 0;
+}
+
+bool avdFontManagerAddFontFromAsset(AVD_FontManager *fontManager, const char *asset)
+{
+    AVD_ASSERT(fontManager != NULL);
+    AVD_ASSERT(asset != NULL);  
+
     AVD_FontData fontData = {0};
     snprintf(fontData.name, sizeof(fontData.name), "%s", asset);
     fontData.atlas     = (AVD_FontAtlas *)avdAssetFontMetrics(asset);
     fontData.atlasData = (uint8_t *)avdAssetFontAtlas(asset, &fontData.atlasDataSize);
     AVD_CHECK_MSG(fontData.atlasData != NULL, "Failed to load font asset\n");
     AVD_CHECK_MSG(fontData.atlas != NULL, "Failed to load font atlas\n");
-    AVD_CHECK_MSG(fontRenderer->fontCount < AVD_MAX_FONTS, "Font count exceeded maximum limit\n");
-    AVD_CHECK(avdFontCreate(fontData, fontRenderer->vulkan, &fontRenderer->fonts[fontRenderer->fontCount]));
-    fontRenderer->fontCount += 1;
+    AVD_CHECK_MSG(fontManager->fontCount < AVD_MAX_FONTS, "Font count exceeded maximum limit\n");
+    AVD_CHECK(avdFontCreate(fontData, fontManager->vulkan, &fontManager->fonts[fontManager->fontCount]));
+    fontManager->fontCount += 1;
     return true;
 }
 
-bool avdFontRendererAddBasicFonts(AVD_FontRenderer *fontRenderer)
+bool avdFontManagerAddBasicFonts(AVD_FontManager *fontManager)
 {
-    AVD_ASSERT(fontRenderer != NULL);
-    AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "OpenSansRegular"));
-    AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "ShantellSansBold"));
-    AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "RampartOneRegular"));
-    AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "RubikGlitchRegular"));
-    AVD_CHECK(avdFontRendererAddFontFromAsset(fontRenderer, "RobotoCondensedRegular"));
+    AVD_ASSERT(fontManager != NULL);
+
+    AVD_CHECK(avdFontManagerAddFontFromAsset(fontManager, "OpenSansRegular"));
+    AVD_CHECK(avdFontManagerAddFontFromAsset(fontManager, "ShantellSansBold"));
+    AVD_CHECK(avdFontManagerAddFontFromAsset(fontManager, "RampartOneRegular"));
+    AVD_CHECK(avdFontManagerAddFontFromAsset(fontManager, "RubikGlitchRegular"));
+    AVD_CHECK(avdFontManagerAddFontFromAsset(fontManager, "RobotoCondensedRegular"));
     return true;
 }
 
-bool avdFontRendererHasFont(AVD_FontRenderer *fontRenderer, const char *fontName)
+bool avdFontManagerHasFont(AVD_FontManager *fontManager, const char *fontName)
 {
-    AVD_ASSERT(fontRenderer != NULL);
-    for (size_t i = 0; i < fontRenderer->fontCount; ++i) {
-        if (strcmp(fontRenderer->fonts[i].fontData.name, fontName) == 0) {
+    AVD_ASSERT(fontManager != NULL);
+    AVD_ASSERT(fontName != NULL);
+
+    for (size_t i = 0; i < fontManager->fontCount; ++i) {
+        if (strcmp(fontManager->fonts[i].fontData.name, fontName) == 0) {
             return true;
         }
     }
     return false;
 }
 
-bool avdFontRendererGetFont(AVD_FontRenderer *fontRenderer, const char *fontName, AVD_Font **font)
+bool avdFontManagerGetFont(AVD_FontManager *fontManager, const char *fontName, AVD_Font **font)
 {
-    AVD_ASSERT(fontRenderer != NULL);
-    for (size_t i = 0; i < fontRenderer->fontCount; ++i) {
-        if (strcmp(fontRenderer->fonts[i].fontData.name, fontName) == 0) {
-            *font = &fontRenderer->fonts[i];
+    AVD_ASSERT(fontManager != NULL);
+    AVD_ASSERT(fontName != NULL);
+    for (size_t i = 0; i < fontManager->fontCount; ++i) {
+        if (strcmp(fontManager->fonts[i].fontData.name, fontName) == 0) {
+            *font = &fontManager->fonts[i];
             return true;
         }
     }

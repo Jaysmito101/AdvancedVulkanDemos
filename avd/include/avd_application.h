@@ -26,7 +26,8 @@ typedef struct AVD_AppState {
     AVD_VulkanSwapchain swapchain;       // The Vulkan swapchain
     AVD_VulkanRenderer renderer;         // The Vulkan renderer
     AVD_VulkanPresentation presentation; // The Vulkan presentation (system used to show rendered images on screen)
-    AVD_FontRenderer fontRenderer;       // The font renderer
+    AVD_FontManager fontManager;         // The font manager
+    AVD_FontRenderer fontRenderer;       // The default font renderer used for rendering text
     AVD_SceneManager sceneManager;       // The scene manager
     AVD_Ui ui;                           // The UI manager
 

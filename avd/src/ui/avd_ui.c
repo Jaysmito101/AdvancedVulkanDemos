@@ -120,7 +120,7 @@ void avdUiDrawRect(
     AVD_ASSERT(appState != NULL);
 
     // TODO: THIS IS A HACK!! Fix it with a proper descriptor set for the fallback image
-    VkDescriptorSet fallbackImage = appState->fontRenderer.fonts[0].fontDescriptorSet;
+    VkDescriptorSet fallbackImage = appState->fontManager.fonts[0].fontDescriptorSet;
     float fallbackImageWidth      = (float)imageWidth;
     float fallbackImageHeight     = (float)imageHeight;
 
