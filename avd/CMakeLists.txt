@@ -43,6 +43,7 @@ add_executable(avd
     ./src/model/avd_model.c
     ./src/model/avd_3d_scene.c
     ./src/model/avd_model_obj_loader.c
+    ./src/model/avd_meshgen.c
 
     ./src/scenes/avd_scenes.c
     ./src/scenes/avd_scenes_main_menu.c

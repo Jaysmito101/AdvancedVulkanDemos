@@ -26,6 +26,15 @@ void avd3DSceneDestroy(AVD_3DScene *scene)
     avdListDestroy(&scene->modelsList);
 }
 
+bool avd3DSceneAddModel(AVD_3DScene *scene, AVD_Model *model)
+{
+    AVD_ASSERT(scene != NULL);
+    AVD_ASSERT(model != NULL);
+
+    avdListPushBack(&scene->modelsList, model);
+    return true;
+}
+
 void avd3DSceneDebugLog(const AVD_3DScene *scene, const char *name)
 {
     AVD_ASSERT(scene != NULL);
