@@ -15,7 +15,7 @@ typedef struct AVD_VulkanPresentationPushConstants {
     float pad1;
 } AVD_VulkanPresentationPushConstants;
 
-bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain, AVD_FontRenderer *fontRenderer)
+bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain, AVD_FontManager *fontManager)
 {
     AVD_ASSERT(presentation != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -37,16 +37,21 @@ bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan 
         "PresentationVert",
         "PresentationFrag",
         NULL));
+    AVD_CHECK(avdFontRendererCreate(
+        &presentation->presentationFontRenderer,
+        vulkan,
+        fontManager,
+        swapchain->renderPass));
     AVD_CHECK(avdRenderableTextCreate(
         &presentation->loadingText,
-        fontRenderer,
+        &presentation->presentationFontRenderer,
         vulkan,
         "OpenSansRegular",
         "Loading...",
         24.0f));
     AVD_CHECK(avdRenderableTextCreate(
         &presentation->loadingStatusText,
-        fontRenderer,
+        &presentation->presentationFontRenderer,
         vulkan,
         "OpenSansRegular",
         "No status",
@@ -61,12 +66,13 @@ void avdVulkanPresentationDestroy(AVD_VulkanPresentation *presentation, AVD_Vulk
 
     avdRenderableTextDestroy(&presentation->loadingStatusText, vulkan);
     avdRenderableTextDestroy(&presentation->loadingText, vulkan);
+    avdFontRendererDestroy(&presentation->presentationFontRenderer, vulkan);
     vkDestroyPipeline(vulkan->device, presentation->pipeline, NULL);
     vkDestroyPipelineLayout(vulkan->device, presentation->pipelineLayout, NULL);
     vkDestroyDescriptorSetLayout(vulkan->device, presentation->descriptorSetLayout, NULL);
 }
 
-bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanRenderer *renderer, AVD_VulkanSwapchain *swapchain, AVD_SceneManager *sceneManager, AVD_FontRenderer *fontRenderer, uint32_t imageIndex)
+bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulkan *vulkan, AVD_VulkanRenderer *renderer, AVD_VulkanSwapchain *swapchain, AVD_SceneManager *sceneManager, uint32_t imageIndex)
 {
     AVD_ASSERT(presentation != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -109,11 +115,9 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, presentation->pipelineLayout, 0, AVD_ARRAY_COUNT(descriptorSetsToBind), descriptorSetsToBind, 0, NULL);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
-    // NOTE: This wont work for now, as the font renderer pipeline only works with
-    //       the scene framebuffer and not the swapchain framebuffer, this will be fixed later?
-#if 0
     if (!sceneManager->isSceneLoaded)
     {
+        AVD_FontRenderer *fontRenderer = &presentation->presentationFontRenderer;
         static char loadingText[256];
         snprintf(loadingText, sizeof(loadingText), "Loading... [%.2f%%]", sceneManager->sceneLoadingProgress * 100.0f);
         AVD_CHECK(avdRenderableTextUpdate(
@@ -122,14 +126,18 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
             vulkan,
             loadingText));
 
+        float textWidth, textHeight;
+        avdRenderableTextGetSize(&presentation->loadingText, &textWidth, &textHeight);
+
         avdRenderText(
             vulkan,
             fontRenderer,
             &presentation->loadingText,
             commandBuffer,
-            100.0f, 100.0f,
+            (swapchain->extent.width - textWidth) / 2.0f,
+            (swapchain->extent.height / 2.0f - textHeight) / 2.0f,
             1.0f,
-            1.0f, 1.0f, 0.0f, 1.0f,
+            1.0f, 1.0f, 1.0f, 1.0f,
             swapchain->extent.width, swapchain->extent.height);
 
         if (sceneManager->sceneLoadingStatusMessage != NULL)
@@ -139,19 +147,20 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
                 fontRenderer,
                 vulkan,
                 sceneManager->sceneLoadingStatusMessage));
+            avdRenderableTextGetSize(&presentation->loadingStatusText, &textWidth, &textHeight);
 
             avdRenderText(
                 vulkan,
                 fontRenderer,
                 &presentation->loadingStatusText,
                 commandBuffer,
-                100.0f, 500.0f,
+                (swapchain->extent.width - textWidth) / 2.0f,
+                (3.0f * swapchain->extent.height / 2.0f - textHeight) / 2.0f,
                 1.0f,
-                1.0f, 1.0f, 0.0f, 1.0f,
+                1.0f, 1.0f, 1.0f, 1.0f,
                 swapchain->extent.width, swapchain->extent.height);
         }
     }
-#endif
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
     return true;

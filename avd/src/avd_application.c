@@ -31,7 +31,7 @@ bool avdApplicationInit(AVD_AppState *appState)
     AVD_CHECK(avdFontManagerInit(&appState->fontManager, &appState->vulkan));
     AVD_CHECK(avdFontManagerAddBasicFonts(&appState->fontManager));
     AVD_CHECK(avdFontRendererCreate(&appState->fontRenderer, &appState->vulkan, &appState->fontManager, appState->renderer.sceneFramebuffer.renderPass));
-    AVD_CHECK(avdVulkanPresentationInit(&appState->presentation, &appState->vulkan, &appState->swapchain, &appState->fontRenderer));
+    AVD_CHECK(avdVulkanPresentationInit(&appState->presentation, &appState->vulkan, &appState->swapchain, &appState->fontManager));
     AVD_CHECK(avdUiInit(&appState->ui, appState));
     AVD_CHECK(avdSceneManagerInit(&appState->sceneManager, appState));
 
@@ -119,7 +119,7 @@ void avdApplicationRender(AVD_AppState *appState)
         return; // do not render this frame
     }
 
-    if (!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, &appState->sceneManager, &appState->fontRenderer, appState->renderer.currentImageIndex)) {
+    if (!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, &appState->sceneManager, appState->renderer.currentImageIndex)) {
         if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
             AVD_LOG("Failed to cancel Vulkan renderer frame\n");
         return; // do not render this frame
