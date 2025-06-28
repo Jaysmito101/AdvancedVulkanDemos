@@ -1,5 +1,7 @@
 // from: https://github.com/Unity-Technologies/Graphics/blob/master/com.unity.postprocessing/PostProcessing/Shaders/Builtins/Bloom.shader
 
+#include "MathUtils"
+
 Texture2D customTexture0 : register(t0, space0);
 SamplerState sampler0 : register(s0, space0);
 
