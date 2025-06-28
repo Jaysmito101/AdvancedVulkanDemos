@@ -1,51 +1,127 @@
 #include "shader/avd_shader.h"
 #include "avd_asset.h"
+#include "shader/avd_shader_shaderc.h"
+#include "shader/avd_shader_slang.h"
 
-VkShaderModule avdShaderModuleCreate(VkDevice device, const char *shaderCode, VkShaderStageFlagBits shaderType, const char *inputFileName)
+// Since this would be needed in a lot of places in code, its much
+// easier to have it be like a global singleton here,
+// so that we can access it from anywhere in the codebase.
+static AVD_ShaderManager* __AVD_SHADER_MANAGER_CACHE = NULL;
+
+bool avdShaderManagerInit(AVD_ShaderManager *shaderManager)
+{
+    shaderManager->shaderCContext = (AVD_ShaderShaderCContext *)malloc(sizeof(AVD_ShaderShaderCContext));
+    AVD_CHECK_MSG(shaderManager->shaderCContext != NULL, "Failed to allocate shaderCContext");
+    AVD_CHECK(avdShaderShaderCContextInit(shaderManager->shaderCContext));
+
+    shaderManager->slangContext = (AVD_ShaderSlangContext *)malloc(sizeof(AVD_ShaderSlangContext));
+    AVD_CHECK_MSG(shaderManager->slangContext != NULL, "Failed to allocate slangContext");
+    AVD_CHECK(avdShaderSlangContextInit(shaderManager->slangContext));
+
+    __AVD_SHADER_MANAGER_CACHE = shaderManager;
+
+    return true;
+}
+
+void avdShaderManagerDestroy(AVD_ShaderManager *shaderManager)
+{
+    if (shaderManager->shaderCContext != NULL) {
+        avdShaderShaderCContextDestroy(shaderManager->shaderCContext);
+        free(shaderManager->shaderCContext);
+    }
+
+    if (shaderManager->slangContext != NULL) {
+        avdShaderSlangContextDestroy(shaderManager->slangContext);
+        free(shaderManager->slangContext);
+    }
+
+    __AVD_SHADER_MANAGER_CACHE = NULL;
+}
+
+bool avdShaderModuleCreateWithoutCache(
+    VkDevice device,
+    const char *shaderName,
+    AVD_ShaderCompilationOptions *options, // optional
+    VkShaderModule *outModule)
 {
     AVD_ASSERT(device != VK_NULL_HANDLE);
-    AVD_ASSERT(shaderCode != NULL);
-    AVD_ASSERT(inputFileName != NULL);
+    AVD_ASSERT(shaderName != NULL);
 
-    size_t shaderSize        = 0;
-    uint32_t *compiledShader = avdCompileShaderAndCache(shaderCode, inputFileName, &shaderSize);
-    if (compiledShader == NULL) {
-        AVD_LOG("Failed to compile shader: %s\n", inputFileName);
-        return VK_NULL_HANDLE;
+    AVD_ShaderCompilationResult compilationResult      = {0};
+    static AVD_ShaderCompilationOptions defaultOptions = {0};
+    if (options == NULL) {
+        avdShaderCompilationOptionsDefault(&defaultOptions);
+        options = &defaultOptions;
     }
+    AVD_CHECK(avdShaderManagerCompile(__AVD_SHADER_MANAGER_CACHE, shaderName, options, &compilationResult));
 
     VkShaderModuleCreateInfo createInfo = {0};
     createInfo.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize                 = shaderSize * sizeof(uint32_t);
-    createInfo.pCode                    = compiledShader;
+    createInfo.codeSize                 = compilationResult.size * sizeof(uint32_t);
+    createInfo.pCode                    = compilationResult.compiledCode;
 
-    VkShaderModule shaderModule;
-    VkResult result = vkCreateShaderModule(device, &createInfo, NULL, &shaderModule);
-    if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to create shader module: %s\n", inputFileName);
-        free(compiledShader);
-        return VK_NULL_HANDLE;
-    }
-
-    free(compiledShader);
-    return shaderModule;
+    AVD_CHECK_VK_RESULT(vkCreateShaderModule(device, &createInfo, NULL, outModule),
+                        "Failed to create shader module from asset: %s", shaderName);
+    return true;
 }
 
-VkShaderModule avdShaderModuleCreateFromAsset(VkDevice device, const char *asset)
+bool avdShaderModuleCreate(
+    VkDevice device,
+    const char *shaderName,
+    AVD_ShaderCompilationOptions *options, // optional
+    VkShaderModule *outModule)
 {
-    VkShaderStageFlagBits shaderType = (VkShaderStageFlagBits)0;
-    if (strstr(asset, "Vert") != NULL) {
-        shaderType = VK_SHADER_STAGE_VERTEX_BIT;
-    } else if (strstr(asset, "Frag") != NULL) {
-        shaderType = VK_SHADER_STAGE_FRAGMENT_BIT;
-    } else if (strstr(asset, "Comp") != NULL) {
-        shaderType = VK_SHADER_STAGE_COMPUTE_BIT;
-    } else {
-        AVD_LOG("Unknown shader type for asset: %s\n", asset);
-        return VK_NULL_HANDLE;
-    }
+    AVD_ASSERT(device != VK_NULL_HANDLE);
+    AVD_ASSERT(shaderName != NULL);
 
-    VkShaderModule shaderModule = avdShaderModuleCreate(device, avdAssetShader(asset), shaderType, asset);
-    AVD_CHECK_VK_HANDLE(shaderModule, "Failed to create shader module from asset: %s\n", asset);
-    return shaderModule;
+    AVD_ShaderCompilationResult compilationResult      = {0};
+    static AVD_ShaderCompilationOptions defaultOptions = {0};
+    if (options == NULL) {
+        avdShaderCompilationOptionsDefault(&defaultOptions);
+        options = &defaultOptions;
+    }
+    AVD_CHECK(avdShaderManagerCompileAndCache(__AVD_SHADER_MANAGER_CACHE, shaderName, options, &compilationResult));
+
+    VkShaderModuleCreateInfo createInfo = {0};
+    createInfo.sType                    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize                 = compilationResult.size * sizeof(uint32_t);
+    createInfo.pCode                    = compilationResult.compiledCode;
+
+    AVD_CHECK_VK_RESULT(vkCreateShaderModule(device, &createInfo, NULL, outModule),
+                        "Failed to create shader module from asset: %s", shaderName);
+    return true;
+}
+
+bool avdShaderManagerCompile(
+    AVD_ShaderManager *manager,
+    const char *inputShaderName,
+    AVD_ShaderCompilationOptions *options,
+    AVD_ShaderCompilationResult *outResult)
+{
+    switch (avdAssetShaderLanguage(inputShaderName)) 
+    {
+        case AVD_SHADER_LANGUAGE_GLSL:
+        case AVD_SHADER_LANGUAGE_HLSL:
+            AVD_CHECK(avdShaderShaderCCompile(manager->shaderCContext, inputShaderName, options, outResult));
+            break;
+        case AVD_SHADER_LANGUAGE_SLANG:
+            AVD_CHECK(avdShaderSlangCompile(manager->slangContext, inputShaderName, options, outResult));
+            break;
+        default:
+            AVD_CHECK_MSG(false, "Unsupported shader language for %s, are you sure this is a valid shader asset?", inputShaderName);
+    };
+    return true;
+}
+
+bool avdShaderManagerCompileAndCache(
+    AVD_ShaderManager *manager,
+    const char *inputShaderName,
+    AVD_ShaderCompilationOptions *options,
+    AVD_ShaderCompilationResult *outResult)
+{
+    return avdShaderManagerCompile(
+        manager,
+        inputShaderName,
+        options,
+        outResult);
 }

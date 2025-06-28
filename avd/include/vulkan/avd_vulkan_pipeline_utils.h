@@ -2,6 +2,7 @@
 #define AVD_PIPELINE_UTILS_H
 
 #include "vulkan/avd_vulkan_base.h"
+#include "shader/avd_shader.h"
 
 #ifndef AVD_MAX_DESCRIPTOR_SET_BINDINGS
 #define AVD_MAX_DESCRIPTOR_SET_BINDINGS 32
@@ -45,6 +46,7 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(
     uint32_t attachmentCount,
     const char *vertShaderAsset,
     const char *fragShaderAsset,
+    AVD_ShaderCompilationOptions *compilationOptions,
     AVD_VulkanPipelineCreationInfo *creationInfo);
 
 bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
@@ -58,6 +60,7 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
     uint32_t attachmentCount,
     const char *vertShaderAsset,
     const char *fragShaderAsset,
+    AVD_ShaderCompilationOptions *compilationOptions,
     AVD_VulkanPipelineCreationInfo *creationInfo);
 
 bool avdCreateDescriptorSetLayout(

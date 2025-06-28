@@ -198,6 +198,7 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(
     uint32_t attachmentCount,
     const char *vertShaderAsset,
     const char *fragShaderAsset,
+    AVD_ShaderCompilationOptions *compilationOptions,
     AVD_VulkanPipelineCreationInfo *creationInfo)
 {
     AVD_ASSERT(pipeline != NULL);
@@ -207,11 +208,9 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(
     AVD_ASSERT(vertShaderAsset != NULL);
     AVD_ASSERT(fragShaderAsset != NULL);
 
-    VkShaderModule vertexShaderModule = avdShaderModuleCreateFromAsset(device, vertShaderAsset);
-    AVD_CHECK_VK_HANDLE(vertexShaderModule, "Failed to create vertex shader module\n");
-
-    VkShaderModule fragmentShaderModule = avdShaderModuleCreateFromAsset(device, fragShaderAsset);
-    AVD_CHECK_VK_HANDLE(fragmentShaderModule, "Failed to create fragment shader module\n");
+    VkShaderModule vertexShaderModule, fragmentShaderModule;
+    AVD_CHECK(avdShaderModuleCreate(device, vertShaderAsset, compilationOptions, &vertexShaderModule));
+    AVD_CHECK(avdShaderModuleCreate(device, fragShaderAsset, compilationOptions, &fragmentShaderModule));
 
     VkPipelineShaderStageCreateInfo shaderStages[2] = {0};
     AVD_CHECK(avdPipelineUtilsShaderStage(&shaderStages[0], vertexShaderModule, VK_SHADER_STAGE_VERTEX_BIT));
@@ -293,6 +292,7 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
     uint32_t attachmentCount,
     const char *vertShaderAsset,
     const char *fragShaderAsset,
+    AVD_ShaderCompilationOptions *compilationOptions,
     AVD_VulkanPipelineCreationInfo *pipelineCreationInfo)
 {
     AVD_ASSERT(pipelineLayout != NULL);
@@ -316,6 +316,7 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         attachmentCount,
         vertShaderAsset,
         fragShaderAsset,
+        compilationOptions,
         pipelineCreationInfo));
 
     return true;

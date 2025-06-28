@@ -1,12 +1,35 @@
 #ifndef AVD_SHADERS_H
 #define AVD_SHADERS_H
 
-#include "core/avd_core.h"
+#include "shader/avd_shader_base.h"
 #include "math/avd_math.h"
-#include "shader/avd_shader_compiler.h"
-#include "vulkan/avd_vulkan.h"
+#include "vulkan/avd_vulkan_base.h"
+ 
+bool avdShaderManagerInit(AVD_ShaderManager* shaderManager);
+void avdShaderManagerDestroy(AVD_ShaderManager* shaderManager);
 
-VkShaderModule avdShaderModuleCreate(VkDevice device, const char *shaderCode, VkShaderStageFlagBits shaderType, const char *inputFileName);
-VkShaderModule avdShaderModuleCreateFromAsset(VkDevice device, const char *asset);
+bool avdShaderManagerCompile(
+    AVD_ShaderManager *manager,
+    const char *inputShaderName,
+    AVD_ShaderCompilationOptions *options,
+    AVD_ShaderCompilationResult *outResult
+);
+bool avdShaderManagerCompileAndCache(
+    AVD_ShaderManager *manager,
+    const char *inputShaderName,
+    AVD_ShaderCompilationOptions *options,
+    AVD_ShaderCompilationResult *outResult
+);
+
+bool avdShaderModuleCreateWithoutCache(
+    VkDevice device,
+    const char *shaderName,
+    AVD_ShaderCompilationOptions *options, // optional
+    VkShaderModule *outModule);
+bool avdShaderModuleCreate(
+    VkDevice device,
+    const char *shaderName,
+    AVD_ShaderCompilationOptions *options, // optional
+    VkShaderModule *outModule);
 
 #endif // AVD_SHADERS_H

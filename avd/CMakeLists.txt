@@ -21,7 +21,9 @@ add_executable(avd
     ./src/common/avd_bloom.c
     ./src/common/avd_eyeball.c
 
-    ./src/shader/avd_shader_compiler.c
+    ./src/shader/avd_shader_shaderc.c
+    ./src/shader/avd_shader_slang.c
+    ./src/shader/avd_shader_base.c
     ./src/shader/avd_shader.c
 
     ./src/vulkan/avd_vulkan_pipeline_utils.c

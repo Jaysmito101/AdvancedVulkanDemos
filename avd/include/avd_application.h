@@ -6,6 +6,7 @@
 #include "scenes/avd_scenes.h"
 #include "ui/avd_ui.h"
 #include "vulkan/avd_vulkan.h"
+#include "shader/avd_shader.h"
 
 typedef struct AVD_Frametime {
     double lastTime;
@@ -29,6 +30,7 @@ typedef struct AVD_AppState {
     AVD_FontManager fontManager;         // The font manager
     AVD_FontRenderer fontRenderer;       // The default font renderer used for rendering text
     AVD_SceneManager sceneManager;       // The scene manager
+    AVD_ShaderManager shaderManager;     // The shader manager
     AVD_Ui ui;                           // The UI manager
 
     VkSurfaceKHR surface; // The Vulkan surface

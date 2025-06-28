@@ -57,10 +57,9 @@ static bool __avdCreatePipeline(AVD_FontRenderer *fr, VkDevice device, VkRenderP
     AVD_ASSERT(device != VK_NULL_HANDLE);
     AVD_ASSERT(renderPass != VK_NULL_HANDLE);
 
-    VkShaderModule vertexShaderModule = avdShaderModuleCreateFromAsset(device, "FontRendererVert");
-    AVD_CHECK_VK_HANDLE(vertexShaderModule, "Failed to create vertex shader module\n");
-    VkShaderModule fragmentShaderModule = avdShaderModuleCreateFromAsset(device, "FontRendererFrag");
-    AVD_CHECK_VK_HANDLE(fragmentShaderModule, "Failed to create fragment shader module\n");
+    VkShaderModule vertexShaderModule, fragmentShaderModule;
+    AVD_CHECK(avdShaderModuleCreate(device, "FontRendererVert", NULL, &vertexShaderModule));
+    AVD_CHECK(avdShaderModuleCreate(device, "FontRendererFrag", NULL, &fragmentShaderModule));
 
     VkPipelineShaderStageCreateInfo shaderStages[2] = {0};
     AVD_CHECK(avdPipelineUtilsShaderStage(&shaderStages[0], vertexShaderModule, VK_SHADER_STAGE_VERTEX_BIT));

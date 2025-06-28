@@ -36,6 +36,7 @@ bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan 
         1,
         "PresentationVert",
         "PresentationFrag",
+        NULL,
         NULL));
     AVD_CHECK(avdFontRendererCreate(
         &presentation->presentationFontRenderer,

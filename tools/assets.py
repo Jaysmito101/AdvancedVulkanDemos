@@ -80,7 +80,7 @@ def get_asset_type(file_path):
         return 'audio'
     elif file_path.endswith(('.mp4', '.avi', '.mov')):
         return 'video'
-    elif file_path.endswith(('.glsl', '.slang')):
+    elif file_path.endswith(('.glsl', ".hlsl", '.slang')):
         return 'shader'
     elif file_path.endswith('.txt'):
         return 'text'
@@ -570,6 +570,8 @@ def shader_stage_to_avd(shader_stage):
 def shader_language_to_avd(shader_language):
     if shader_language == 'glsl':
         return 'AVD_SHADER_LANGUAGE_GLSL'
+    elif shader_language == 'hlsl':
+        return 'AVD_SHADER_LANGUAGE_HLSL'
     elif shader_language == 'slang':
         return 'AVD_SHADER_LANGUAGE_SLANG'
     else:
@@ -595,8 +597,8 @@ def create_shader_asset(file_path, output_dir):
         shader_stage = 'compute'
     else:
         shader_stage = 'header'
-    
-    extension_slugs_to_remove = ['.glsl', '.slang']
+
+    extension_slugs_to_remove = ['.glsl', '.slang', '.hlsl']
     for slug in extension_slugs_to_remove:
         base_name_without_ext = base_name_without_ext.replace(slug, '')
     shader_name = to_correct_case(base_name_without_ext)

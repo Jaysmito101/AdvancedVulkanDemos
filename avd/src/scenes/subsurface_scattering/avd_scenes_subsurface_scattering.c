@@ -267,6 +267,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         (uint32_t)subsurfaceScattering->gBuffer.colorAttachments.count,
         "SubSurfaceScatteringSceneVert",
         "SubSurfaceScatteringGBufferFrag",
+        NULL,
         &pipelineCreationInfo));
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
@@ -280,6 +281,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         (uint32_t)subsurfaceScattering->aoBuffer.colorAttachments.count,
         "FullScreenQuadVert",
         "SubSurfaceScatteringAOFrag",
+        NULL,
         &pipelineCreationInfo));
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
@@ -293,6 +295,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         (uint32_t)subsurfaceScattering->lightingBuffer.colorAttachments.count,
         "FullScreenQuadVert",
         "SubSurfaceScatteringLightingFrag",
+        NULL,
         &pipelineCreationInfo));
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
@@ -306,6 +309,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         (uint32_t)subsurfaceScattering->diffusedIrradianceBuffer.colorAttachments.count,
         "FullScreenQuadVert",
         "SubSurfaceScatteringIrradianceFrag",
+        NULL,
         &pipelineCreationInfo));
 
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
@@ -319,6 +323,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
         (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count,
         "FullScreenQuadVert",
         "SubSurfaceScatteringCompositeFrag",
+        NULL,
         NULL));
 
     return true;

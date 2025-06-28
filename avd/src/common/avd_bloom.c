@@ -1,4 +1,4 @@
-#include "bloom/avd_bloom.h"
+#include "common/avd_bloom.h"
 
 typedef struct AVD_BloomUberPushConstants {
     float srcWidth;
@@ -188,6 +188,7 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         1,
         "FullScreenQuadVert",
         "BloomFrag",
+        NULL,
         NULL));
 
     AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
@@ -198,6 +199,7 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         1,
         "FullScreenQuadVert",
         "BloomFrag",
+        NULL,
         NULL));
 
     return true;

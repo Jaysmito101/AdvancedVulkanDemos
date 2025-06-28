@@ -24,6 +24,7 @@ bool avdApplicationInit(AVD_AppState *appState)
 
     appState->running = true;
 
+    AVD_CHECK(avdShaderManagerInit(&appState->shaderManager));
     AVD_CHECK(avdWindowInit(&appState->window, appState));
     AVD_CHECK(avdVulkanInit(&appState->vulkan, &appState->window, &appState->surface));
     AVD_CHECK(avdVulkanSwapchainCreate(&appState->swapchain, &appState->vulkan, appState->surface, &appState->window));
@@ -58,6 +59,7 @@ void avdApplicationShutdown(AVD_AppState *appState)
     avdVulkanDestroySurface(&appState->vulkan, appState->surface);
     avdVulkanShutdown(&appState->vulkan);
     avdWindowShutdown(&appState->window);
+    avdShaderManagerDestroy(&appState->shaderManager);
 }
 
 bool avdApplicationIsRunning(AVD_AppState *appState)

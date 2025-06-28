@@ -6,6 +6,7 @@
 #include "vulkan/avd_vulkan_buffer.h"
 #include "vulkan/avd_vulkan_image.h"
 #include "vulkan/avd_vulkan_renderer.h"
+#include "shader/avd_shader.h"
 
 struct AVD_FontRendererVertex;
 
