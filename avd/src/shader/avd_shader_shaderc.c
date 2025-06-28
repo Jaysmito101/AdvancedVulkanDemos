@@ -104,7 +104,7 @@ bool avdShaderShaderCCompile(
             kind = shaderc_compute_shader;
             break;
         default:
-            AVD_CHECK_MSG(false, "Unsupported shader stage for %s, are you sure this is a valid shader asset?", inputShaderName);
+            AVD_CHECK_MSG(false, "Unsupported shader stage for %s, are you sure this is a valid shader asset?\n", inputShaderName);
     }
 
     shaderc_compilation_result_t result = shaderc_compile_into_spv(

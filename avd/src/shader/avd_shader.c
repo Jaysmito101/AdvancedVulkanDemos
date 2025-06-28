@@ -111,7 +111,7 @@ bool avdShaderManagerCompile(
             AVD_CHECK(avdShaderSlangCompile(manager->slangContext, inputShaderName, options, outResult));
             break;
         default:
-            AVD_CHECK_MSG(false, "Unsupported shader language for %s, are you sure this is a valid shader asset?", inputShaderName);
+            AVD_CHECK_MSG(false, "Unsupported shader language for %s, are you sure this is a valid shader asset?\n", inputShaderName);
     };
     return true;
 }
