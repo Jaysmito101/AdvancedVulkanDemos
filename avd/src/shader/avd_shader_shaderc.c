@@ -74,6 +74,8 @@ bool avdShaderShaderCCompile(
             }
         }
     }
+    shaderc_compile_options_set_target_env(options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
+    shaderc_compile_options_set_target_spirv(options, shaderc_spirv_version_1_4);
 
     if (inOptions->debugSymbols) {
         AVD_LOG("Compiling shader: %s with debug info enabled\n", inputShaderName);
@@ -81,6 +83,20 @@ bool avdShaderShaderCCompile(
     }
 
     shaderc_shader_kind kind = shaderc_glsl_infer_from_source;
+    switch (avdAssetShaderStage(inputShaderName)) {
+        case AVD_SHADER_STAGE_VERTEX:
+            kind = shaderc_vertex_shader;
+            break;
+        case AVD_SHADER_STAGE_FRAGMENT:
+            kind = shaderc_fragment_shader;
+            break;
+        case AVD_SHADER_STAGE_COMPUTE:
+            kind = shaderc_compute_shader;
+            break;
+        default:
+            AVD_CHECK_MSG(false, "Unsupported shader stage for %s, are you sure this is a valid shader asset?", inputShaderName);
+    }
+
 
     shaderc_compilation_result_t result = shaderc_compile_into_spv(
         compiler,
