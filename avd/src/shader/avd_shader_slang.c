@@ -3,6 +3,12 @@
 
 bool avdShaderSlangContextInit(AVD_ShaderSlangContext *context)
 {
+    AVD_LOG("----------------------IMPORTANT------------------------------------\n");
+    AVD_LOG("Slang currently doesnt have a working C API.\n");
+    AVD_LOG("Refer to: https://github.com/shader-slang/slang/issues/5565\n");
+    AVD_LOG("And I am very reluctant to use C++ in this project.\n");
+    AVD_LOG("Thus slang compilation path will remain unimplemented for now.\n");
+    AVD_LOG("-------------------------------------------------------------------\n");
     context->userData = NULL;
     return true;
 }
