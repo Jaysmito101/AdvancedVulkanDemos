@@ -2,7 +2,6 @@
 #define AVD_SHADER_SLANG_H
 
 #include "shader/avd_shader_base.h"
-#include "shaderc/shaderc.h"
 
 struct AVD_ShaderSlangContext {
     void* userData;
