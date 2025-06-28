@@ -18,6 +18,24 @@ bool avdShaderCompilationOptionsDefault(AVD_ShaderCompilationOptions* options)
     return true;
 }
 
+uint32_t avdShaderCompilationOptionsHash(const AVD_ShaderCompilationOptions* options)
+{
+    AVD_ASSERT(options != NULL);
+
+    uint32_t hash = 5381; // Starting with a prime number
+    for (size_t i = 0; i < options->macroCount; ++i) {
+        const char* macro = options->macros[i];
+        while (*macro) {
+            hash = ((hash << 5) + hash) + *macro++; // hash * 33 + c
+        }
+    }
+    hash ^= options->warningsAsErrors ? 0x1 : 0x0;
+    hash ^= options->debugSymbols ? 0x2 : 0x0;
+    hash ^= options->optimize;
+
+    return hash;
+}
+
 const char* avdShaderStageToString(AVD_ShaderStage stage)
 {
     switch (stage) {

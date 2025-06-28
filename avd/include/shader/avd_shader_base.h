@@ -42,6 +42,7 @@ typedef struct {
 
 
 bool avdShaderCompilationOptionsDefault(AVD_ShaderCompilationOptions* options);
+uint32_t avdShaderCompilationOptionsHash(const AVD_ShaderCompilationOptions* options);
 const char* avdShaderStageToString(AVD_ShaderStage stage);
 const char* avdShaderLanguageToString(AVD_ShaderLanguage language);
 void avdShaderCompilationResultDestroy(AVD_ShaderCompilationResult* result);
