@@ -49,9 +49,11 @@ bool avdShaderShaderCCompile(
     switch (avdAssetShaderLanguage(inputShaderName)) {
         case AVD_SHADER_LANGUAGE_GLSL:
             shaderc_compile_options_set_source_language(options, shaderc_source_language_glsl);
+            shaderc_compile_options_add_macro_definition(options, "AVD_GLSL", strlen("AVD_GLSL"), NULL, 0);
             break;
         case AVD_SHADER_LANGUAGE_HLSL:
             shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
+            shaderc_compile_options_add_macro_definition(options, "AVD_HLSL", strlen("AVD_HLSL"), NULL, 0);
             break;
         default:
             AVD_CHECK_MSG(false, "Unsupported shader language for %s, are you sure you are using the correct compiler context?", inputShaderName);
@@ -64,7 +66,7 @@ bool avdShaderShaderCCompile(
     shaderc_compile_options_set_include_callbacks(options, __avdIncludeResolver, __avdIncludeResultReleaser, NULL);
     if (inOptions->macros && inOptions->macroCount > 0) {
         for (size_t i = 0; i < inOptions->macroCount; ++i) {
-            const char *macro = inOptions->macros[i];
+            const char *macro     = inOptions->macros[i];
             const char *equalSign = strchr(macro, '=');
             if (equalSign) {
                 size_t nameLength = equalSign - macro;
@@ -74,12 +76,20 @@ bool avdShaderShaderCCompile(
             }
         }
     }
+    shaderc_compile_options_add_macro_definition(options, "AVD_COMPILER_SHADERC", strlen("AVD_COMPILER_SHADERC"), NULL, 0);
+#ifdef AVD_DEBUG
+    shaderc_compile_options_add_macro_definition(options, "AVD_APP_DEBUG", strlen("AVD_APP_DEBUG"), NULL, 0);
+#else
+    shaderc_compile_options_add_macro_definition(options, "AVD_APP_RELEASE", strlen("AVD_APP_RELEASE"), NULL, 0);
+#endif
+
     shaderc_compile_options_set_target_env(options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
     shaderc_compile_options_set_target_spirv(options, shaderc_spirv_version_1_4);
 
     if (inOptions->debugSymbols) {
         AVD_LOG("Compiling shader: %s with debug info enabled\n", inputShaderName);
         shaderc_compile_options_set_generate_debug_info(options);
+        shaderc_compile_options_add_macro_definition(options, "AVD_SHADER_DEBUG", strlen("AVD_SHADER_DEBUG"), NULL, 0);
     }
 
     shaderc_shader_kind kind = shaderc_glsl_infer_from_source;
@@ -96,7 +106,6 @@ bool avdShaderShaderCCompile(
         default:
             AVD_CHECK_MSG(false, "Unsupported shader stage for %s, are you sure this is a valid shader asset?", inputShaderName);
     }
-
 
     shaderc_compilation_result_t result = shaderc_compile_into_spv(
         compiler,
@@ -140,8 +149,7 @@ bool avdShaderShaderCCompile(
         .compiledCode = compiledCode,
         .size         = size / sizeof(uint32_t),
         .stage        = avdAssetShaderStage(inputShaderName),
-        .language     = avdAssetShaderLanguage(inputShaderName)
-    };
+        .language     = avdAssetShaderLanguage(inputShaderName)};
 
     return true;
 }
