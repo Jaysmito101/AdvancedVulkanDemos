@@ -54,6 +54,7 @@ bool avdShaderShaderCCompile(
         case AVD_SHADER_LANGUAGE_HLSL:
             shaderc_compile_options_set_source_language(options, shaderc_source_language_hlsl);
             shaderc_compile_options_add_macro_definition(options, "AVD_HLSL", strlen("AVD_HLSL"), NULL, 0);
+            shaderc_compile_options_set_hlsl_16bit_types(options, true);
             break;
         default:
             AVD_CHECK_MSG(false, "Unsupported shader language for %s, are you sure you are using the correct compiler context?", inputShaderName);
