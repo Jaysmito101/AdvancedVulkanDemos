@@ -116,7 +116,16 @@ bool avdShaderShaderCCompile(
         "main",
         options);
     if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+        size_t numDependencies = 0;
+        const char** dependencies = avdAssetShaderGetDependencies(inputShaderName, &numDependencies);
+
+        AVD_LOG("----------------------- SHADER COMPILATION ERROR -----------------------\n");
         avdPrintShaderWithLineNumbers(avdAssetShader(inputShaderName), inputShaderName);
+        for (size_t i = 0; i < numDependencies; ++i) {
+            AVD_LOG("------------------------ DEPENDENCY %zu -----------------------\n", i);
+            AVD_LOG("Dependency %zu: %s\n", i, dependencies[i]);
+            avdPrintShaderWithLineNumbers(avdAssetShader(dependencies[i]), dependencies[i]);
+        }
         AVD_LOG("Shader compilation failed: %s\n", shaderc_result_get_error_message(result));
         return false;
     }
