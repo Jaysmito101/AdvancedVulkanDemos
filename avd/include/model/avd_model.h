@@ -32,5 +32,6 @@ bool avdModelAddOctaSphere(
     AVD_Int32 id,
     AVD_Float radius,
     AVD_UInt32 subdivisions);
+bool avdModelAddUnitCube(AVD_Model *model, AVD_ModelResources *resources, const char *name, AVD_Int32 id);
 
 #endif // AVD_MODEL_H
