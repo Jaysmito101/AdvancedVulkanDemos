@@ -1,6 +1,15 @@
 #include "scenes/eyeballs/avd_scenes_eyeballs.h"
 #include "avd_application.h"
 
+typedef struct {
+    AVD_Matrix4x4 viewModelMatrix;
+    AVD_Matrix4x4 projectionMatrix;
+
+    int32_t indexOffset;
+    int32_t indexCount;
+    int32_t pad0;
+    int32_t pad1;
+} AVD_EyeballPushConstants;
 
 static AVD_SceneEyeballs *__avdSceneGetTypePtr(union AVD_Scene *scene)
 {
@@ -44,7 +53,6 @@ bool avdSceneEyeballsInit(struct AVD_AppState *appState, union AVD_Scene *scene)
     AVD_ASSERT(scene != NULL);
 
     AVD_SceneEyeballs *eyeballs = __avdSceneGetTypePtr(scene);
-    eyeballs->type              = AVD_SCENE_TYPE_EYEBALLS;
 
     // Initialize title and info text
     AVD_CHECK(avdRenderableTextCreate(
@@ -61,12 +69,31 @@ bool avdSceneEyeballsInit(struct AVD_AppState *appState, union AVD_Scene *scene)
         "RobotoCondensedRegular",
         "This scene demonstrates the rendering of eyeballs with subsurface scattering.",
         24.0f));
-
     AVD_CHECK(avdEyeballCreate(
         &eyeballs->eyeballs[0],
-        &appState->vulkan,
+        &appState->vulkan));
+    AVD_VulkanPipelineCreationInfo pipelineCreationInfo = {0};
+    avdPipelineUtilsPipelineCreationInfoInit(&pipelineCreationInfo);
+    pipelineCreationInfo.enableDepthTest = true;
+    pipelineCreationInfo.enableBlend     = false;
+    pipelineCreationInfo.cullMode        = VK_CULL_MODE_NONE;
+    pipelineCreationInfo.frontFace       = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
+        &eyeballs->pipelineLayout,
+        &eyeballs->pipeline,
+        appState->vulkan.device,
+        &eyeballs->eyeballs[0].descriptorSetLayout,
+        1,
+        sizeof(AVD_EyeballPushConstants),
         appState->renderer.sceneFramebuffer.renderPass,
-        (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count));
+        (AVD_UInt32)appState->renderer.sceneFramebuffer.colorAttachments.count,
+        "EyeballsSceneVert",
+        "EyeballsSceneFrag",
+        NULL,
+        &pipelineCreationInfo));
+
+    eyeballs->sceneWidth  = (float)appState->renderer.sceneFramebuffer.width;
+    eyeballs->sceneHeight = (float)appState->renderer.sceneFramebuffer.height;
 
     return true;
 }
@@ -77,6 +104,9 @@ void avdSceneEyeballsDestroy(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_ASSERT(scene != NULL);
 
     AVD_SceneEyeballs *eyeballs = __avdSceneGetTypePtr(scene);
+
+    vkDestroyPipeline(appState->vulkan.device, eyeballs->pipeline, NULL);
+    vkDestroyPipelineLayout(appState->vulkan.device, eyeballs->pipelineLayout, NULL);
 
     // Destroy the eyeball
     avdEyeballDestroy(&eyeballs->eyeballs[0], &appState->vulkan);
@@ -111,13 +141,38 @@ void avdSceneEyeballsInputEvent(struct AVD_AppState *appState, union AVD_Scene *
     }
 }
 
+static bool __avdSceneUpdateCamera(AVD_SceneEyeballs *eyeballs, AVD_Float timer)
+{
+    AVD_ASSERT(eyeballs != NULL);
+
+    timer = timer * 0.1f;
+    AVD_Float rad = 8.0f;
+
+    eyeballs->viewModelMatrix = avdMatLookAt(
+        avdVec3(rad * sinf(timer), 4.0f, rad * cosf(timer)), // Camera position
+        // avdVec3(1.0, 2.0f, 0.0), // Camera position
+        avdVec3(0.0f, 0.0f, 0.0f),                             // Look at the origin
+        avdVec3(0.0f, 1.0f, 0.0f)                              // Up vector
+    );
+
+    eyeballs->projectionMatrix = avdMatPerspective(
+        avdDeg2Rad(67.0f),
+        eyeballs->sceneWidth / eyeballs->sceneHeight,
+        0.1f,
+        100.0f);
+
+    return true;
+}
+
 bool avdSceneEyeballsUpdate(struct AVD_AppState *appState, union AVD_Scene *scene)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    // Eyeballs scene does not require any specific update logic
-    // for now, so we can return true directly.
+    AVD_SceneEyeballs *eyeballs = __avdSceneGetTypePtr(scene);
+
+    AVD_CHECK(__avdSceneUpdateCamera(eyeballs, (float)appState->framerate.currentTime));
+
     return true;
 }
 
@@ -136,15 +191,16 @@ bool avdSceneEyeballsRender(struct AVD_AppState *appState, union AVD_Scene *scen
     avdRenderableTextGetSize(&eyeballs->title, &titleWidth, &titleHeight);
     avdRenderableTextGetSize(&eyeballs->info, &infoWidth, &infoHeight);
 
-    AVD_CHECK(avdEyeballRender(
-        commandBuffer,
-        &eyeballs->eyeballs[0],
-        &appState->vulkan,
-        1.0f,
-        eyeballs->cameraPosition,
-        eyeballs->cameraDirection,
-        avdVec3(0.0f, 0.0f, 0.0f),   // Eye position
-        avdVec3(0.0f, 0.0f, 0.0f))); // Eye Rotation
+    AVD_EyeballPushConstants pushConstants = {
+        .viewModelMatrix  = eyeballs->viewModelMatrix,
+        .projectionMatrix = eyeballs->projectionMatrix,
+        .indexOffset      = eyeballs->eyeballs[0].scleraMesh.indexOffset,
+        .indexCount       = eyeballs->eyeballs[0].scleraMesh.triangleCount * 3,
+    };
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, eyeballs->pipeline);
+    vkCmdPushConstants(commandBuffer, eyeballs->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, eyeballs->pipelineLayout, 0, 1, &eyeballs->eyeballs[0].descriptorSet, 0, NULL);
+    vkCmdDraw(commandBuffer, eyeballs->eyeballs[0].scleraMesh.triangleCount * 3, 1, 0, 0);
 
     avdRenderText(
         &appState->vulkan,

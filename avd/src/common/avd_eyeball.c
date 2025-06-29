@@ -73,14 +73,14 @@ bool __avdEyeballSetupMesh(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
         "Eyeball/Sclera",
         0,
         1.0f,
-        2));
+        5));
     AVD_CHECK(avdModelAddOctaSphere(
         &model,
         &eyeballScene.modelResources,
         "Eyeball/Lens",
         1,
         0.8f,
-        2));
+        5));
     model.id = 0;
     snprintf(model.name, sizeof(model.name), "Eyeball");
     AVD_CHECK(avd3DSceneAddModel(&eyeballScene, &model));

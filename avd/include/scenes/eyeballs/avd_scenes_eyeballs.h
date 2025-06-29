@@ -15,15 +15,16 @@
 typedef struct AVD_SceneEyeballs {
     AVD_SceneType type;
 
-    AVD_Vector3 lights[AVD_SCENE_EYEBALLS_MAX_LIGHTS];
-    AVD_Vector3 lightColors[AVD_SCENE_EYEBALLS_MAX_LIGHTS];
-    AVD_UInt32 lightCount;
-
-    AVD_Vector3 cameraPosition;
-    AVD_Vector3 cameraDirection;
+    AVD_Float sceneWidth;
+    AVD_Float sceneHeight;
+    AVD_Matrix4x4 viewModelMatrix;
+    AVD_Matrix4x4 projectionMatrix;
 
     AVD_RenderableText title;
     AVD_RenderableText info;
+
+    VkPipelineLayout pipelineLayout;
+    VkPipeline pipeline;
 
     AVD_Eyeball eyeballs[AVD_SCENE_EYEBALLS_MAX_EYEBALLS];    
 } AVD_SceneEyeballs;
