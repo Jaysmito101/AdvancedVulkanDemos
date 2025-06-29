@@ -34,5 +34,10 @@ float4x4 perspectiveMatrix(float fov, float aspect, float near, float far)
         0.0, 0.0, -(2.0 * far * near) / (far - near), 0.0);
 }
 
+float3 hashToColor(uint seed) {
+    float3 color = float3(0.5 + 0.5 * sin(float3(seed, seed * 1.6180339887, seed * 2.7182818284) + float3(0, 2, 4)));
+    return color; 
+}
+
 
 #endif 
