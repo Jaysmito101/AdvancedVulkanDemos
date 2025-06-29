@@ -10,7 +10,7 @@ void avdModelVertexInit(AVD_ModelVertex *vertex)
     vertex->bitangent = avdVec3Zero();
 }
 
-bool avdModelVertexPack(AVD_ModelVertex *vertex, AVD_ModelVertexPacked *packed)
+bool avdModelVertexPack(const AVD_ModelVertex *vertex, AVD_ModelVertexPacked *packed)
 {
     AVD_ASSERT(vertex != NULL);
     AVD_ASSERT(packed != NULL);

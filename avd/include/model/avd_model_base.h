@@ -25,7 +25,7 @@ typedef struct {
 } AVD_ModelResources;
 
 void avdModelVertexInit(AVD_ModelVertex *vertex);
-bool avdModelVertexPack(AVD_ModelVertex *vertex, AVD_ModelVertexPacked *packed);
+bool avdModelVertexPack(const AVD_ModelVertex *vertex, AVD_ModelVertexPacked *packed);
 bool avdModelResourcesCreate(AVD_ModelResources *resources);
 void avdModelResourcesDestroy(AVD_ModelResources *resources);
 
