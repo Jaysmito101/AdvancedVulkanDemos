@@ -24,7 +24,7 @@ pushConstants;
 vec4 samplePosition(uint index)
 {
     return vec4(vertices[index].vx, vertices[index].vy, vertices[index].vz, 1.0);
-} 
+}
 
 vec2 sampleTextureCoords(uint index)
 {
@@ -32,17 +32,16 @@ vec2 sampleTextureCoords(uint index)
 }
 
 void main()
-{ 
+{
     outUV = vec2(0.0, 0.0); // Initialize outUV to avoid warnings
 
     int vertexIndex = gl_VertexIndex + pushConstants.data.vertexOffset;
 
-    mat4 viewModelMatrix = pushConstants.data.viewModelMatrix;
+    mat4 viewModelMatrix  = pushConstants.data.viewModelMatrix;
     mat4 projectionMatrix = pushConstants.data.projectionMatrix;
-
     mat3 normalMatrix     = transpose(inverse(mat3(pushConstants.data.viewModelMatrix)));
+    vec4 vertexPosition   = vec4(0.0);
 
-    vec4 vertexPosition = vec4(0.0);
     if (pushConstants.data.renderingLight == 1) {
         bool isLightA            = gl_VertexIndex / pushConstants.data.vertexCount == 0;
         vertexIndex              = gl_VertexIndex % pushConstants.data.vertexCount + pushConstants.data.vertexOffset;
@@ -60,16 +59,16 @@ void main()
     }
 
     vec4 viewPosition = viewModelMatrix * vec4(vertexPosition.xyz, 1.0);
-    vec4 position      = projectionMatrix * viewPosition;
+    vec4 position     = projectionMatrix * viewPosition;
 
     vec3 normal;
     vec4 tangent;
     unpackTBN(vertices[vertexIndex].np, uint(vertices[vertexIndex].tp), normal, tangent);
 
     // Set the output variables
-    outUV        = sampleTextureCoords(vertexIndex);
-    outPosition  = viewPosition;
-    outNormal    = normalMatrix * normal;
+    outUV       = sampleTextureCoords(vertexIndex);
+    outPosition = viewPosition;
+    outNormal   = normalMatrix * normal;
 
     gl_Position = position;
 }
