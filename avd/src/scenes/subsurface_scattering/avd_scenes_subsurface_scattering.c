@@ -184,7 +184,7 @@ static bool __avdSetupBindlessDescriptors(AVD_SceneSubsurfaceScattering *subsurf
     return true;
 }
 
-bool __avdSceneCreateFramebuffers(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
+static bool __avdSceneCreateFramebuffers(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(appState != NULL);
@@ -240,7 +240,7 @@ bool __avdSceneCreateFramebuffers(AVD_SceneSubsurfaceScattering *subsurfaceScatt
     return true;
 }
 
-bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
+static bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(appState != NULL);
@@ -329,7 +329,7 @@ bool __avdSceneCreatePipelines(AVD_SceneSubsurfaceScattering *subsurfaceScatteri
     return true;
 }
 
-bool __avdSceneFillModelInfos(AVD_SceneSubsurfaceScattering *subsurfaceScattering)
+static bool __avdSceneFillModelInfos(AVD_SceneSubsurfaceScattering *subsurfaceScattering)
 {
     AVD_ASSERT(subsurfaceScattering != NULL);
 
@@ -372,7 +372,7 @@ bool __avdSceneFillModelInfos(AVD_SceneSubsurfaceScattering *subsurfaceScatterin
     return true;
 }
 
-bool __avdSceneInitializeParams(AVD_SceneSubsurfaceScattering *subsurfaceScattering)
+static bool __avdSceneInitializeParams(AVD_SceneSubsurfaceScattering *subsurfaceScattering)
 {
     AVD_ASSERT(subsurfaceScattering != NULL);
 
@@ -742,7 +742,7 @@ void avdSceneSubsurfaceScatteringInputEvent(struct AVD_AppState *appState, union
     }
 }
 
-bool __avdSceneUpdateCamera(AVD_SceneSubsurfaceScattering *subsurfaceScattering)
+static bool __avdSceneUpdateCamera(AVD_SceneSubsurfaceScattering *subsurfaceScattering)
 {
     subsurfaceScattering->cameraTarget     = subsurfaceScattering->modelsInfo[subsurfaceScattering->currentFocusModelIndex].position;
     subsurfaceScattering->cameraPosition.x = subsurfaceScattering->cameraTarget.x + subsurfaceScattering->cameraRadius * sinf(subsurfaceScattering->cameraPhi) * cosf(subsurfaceScattering->cameraTheta);
@@ -767,7 +767,7 @@ bool __avdSceneUpdateCamera(AVD_SceneSubsurfaceScattering *subsurfaceScattering)
     return true;
 }
 
-bool __avdSceneUpdateLightingForModel(uint32_t sceneModelIndex, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_Float time)
+static bool __avdSceneUpdateLightingForModel(uint32_t sceneModelIndex, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_Float time)
 {
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(sceneModelIndex < 3);
@@ -809,7 +809,7 @@ bool __avdSceneUpdateLightingForModel(uint32_t sceneModelIndex, AVD_SceneSubsurf
     return true;
 }
 
-bool __avdSceneUpdateLighting(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_Float time)
+static bool __avdSceneUpdateLighting(AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_Float time)
 {
     AVD_ASSERT(subsurfaceScattering != NULL);
 
@@ -997,7 +997,7 @@ static bool __avdSceneRenderFirstMesh(
     return true;
 }
 
-bool __avdSceneRenderModels(
+static bool __avdSceneRenderModels(
     VkCommandBuffer commandBuffer,
     AVD_SceneSubsurfaceScattering *subsurfaceScattering,
     VkPipelineLayout pipelineLayout,
@@ -1010,7 +1010,7 @@ bool __avdSceneRenderModels(
     return true;
 }
 
-bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
+static bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -1037,7 +1037,7 @@ bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     return true;
 }
 
-bool __avdSceneRenderGBufferPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
+static bool __avdSceneRenderGBufferPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -1068,7 +1068,7 @@ bool __avdSceneRenderGBufferPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurf
     return true;
 }
 
-bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
+static bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -1099,7 +1099,7 @@ bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceSc
     return true;
 }
 
-bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
+static bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -1141,7 +1141,7 @@ bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_SceneSubsur
     return true;
 }
 
-bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
+static bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
@@ -1184,7 +1184,7 @@ bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffer, AVD_
     return true;
 }
 
-bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
+static bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_SceneSubsurfaceScattering *subsurfaceScattering, AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
