@@ -4,10 +4,10 @@
 #include "ShaderAdapter"
 
 struct ModelVertex {
-    float16_t vx, vy, vz;
-    uint16_t tp; // packed tangent: 8-8 octahedral
+    min16float vx, vy, vz;
+    min16int tp; // packed tangent: 8-8 octahedral
     uint np;     // packed normal: 10-10-10-2 vector + bitangent sign
-    float16_t tu, tv;
+    min16float tu, tv;
 };
 
 // Source: https://github.com/zeux/niagara/blob/master/src/shaders/math.h

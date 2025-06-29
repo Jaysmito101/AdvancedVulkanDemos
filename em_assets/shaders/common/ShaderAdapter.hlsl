@@ -14,6 +14,11 @@
     #define mat3 float3x3
     #define mat4 float4x4
 
+    #define float16_t min16float
+    #define int16_t min16int
+    #define uint16_t min16uint
+
+
     #define SAMPLER2D(name, reg) Texture2D name : register(t##reg); SamplerState name##_sampler : register(s##reg)
 
 #elif defined(AVD_GLSL)
@@ -26,6 +31,10 @@
     #define float2x2 mat2
     #define float3x3 mat3
     #define float4x4 mat4
+
+    #define min16float float16_t
+    #define min16int int16_t
+    #define min16uint uint16_t
     
     #define SAMPLER2D(name, binding_loc) layout(binding = binding_loc) uniform sampler2D name
 #else
