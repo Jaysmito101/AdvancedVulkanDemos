@@ -270,7 +270,6 @@ bool avdModelAddUnitCube(AVD_Model *model, AVD_ModelResources *resources, const 
     };
 
     // Indices to form 12 triangles (2 per face) from the 24 vertices.
-    // Each quad (0,1,2,3) is triangulated as (0,1,2) and (0,2,3).
     static const uint32_t CUBE_INDICES[36] = {
         0, 1, 2, 0, 2, 3,       // Front
         4, 5, 6, 4, 6, 7,       // Back
