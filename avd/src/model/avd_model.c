@@ -15,3 +15,19 @@ void avdModelDestroy(AVD_Model *model)
     model->id = -1;
     avdListDestroy(&model->meshes);
 }
+
+bool avdMeshInit(AVD_Mesh *mesh)
+{
+    *mesh = (AVD_Mesh){0};
+    return true;
+}
+
+bool avdMeshInitWithNameId(AVD_Mesh *mesh, const char *name, AVD_Int32 id)
+{
+    AVD_ASSERT(mesh != NULL);
+    AVD_CHECK(avdMeshInit(mesh));
+    snprintf(mesh->name, sizeof(mesh->name), "%s", name);
+    mesh->id = id;
+
+    return true;
+}

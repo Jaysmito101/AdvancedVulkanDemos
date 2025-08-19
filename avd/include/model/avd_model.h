@@ -3,11 +3,21 @@
 
 #include "model/avd_model_base.h"
 
+typedef struct AVD_MorphTarget {
+    char name[256];
+    AVD_Int32 id;
+    AVD_Int32 indexOffset;
+    AVD_Int32 vertexCount;
+} AVD_MorphTarget;
+
 typedef struct {
     char name[256];
     AVD_Int32 id;
     AVD_Int32 indexOffset;
     AVD_Int32 triangleCount;
+
+    AVD_MorphTarget morphTargets[AVD_MAX_MORPH_TARGETS_PER_MESH];
+    AVD_Int32 morphTargetCount;
 } AVD_Mesh;
 
 typedef struct {
@@ -24,6 +34,10 @@ typedef enum {
 
 bool avdModelCreate(AVD_Model *model, AVD_Int32 id);
 void avdModelDestroy(AVD_Model *model);
+
+bool avdMeshInit(AVD_Mesh *mesh);
+bool avdMeshInitWithNameId(AVD_Mesh *mesh, const char *name, AVD_Int32 id);
+
 bool avdModelLoadObj(const char *filename, AVD_Model *model, AVD_ModelResources *resources, AVD_ObjLoadFlags flags);
 bool avdModelAddOctaSphere(
     AVD_Model *model,

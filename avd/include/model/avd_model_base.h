@@ -4,6 +4,10 @@
 #include "core/avd_core.h"
 #include "math/avd_math.h"
 
+#ifndef AVD_MAX_MORPH_TARGETS_PER_MESH
+#define AVD_MAX_MORPH_TARGETS_PER_MESH 1024
+#endif
+
 typedef struct {
     AVD_Vector3 position;
     AVD_Vector3 normal;

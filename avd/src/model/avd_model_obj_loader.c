@@ -160,6 +160,7 @@ bool avdModelLoadObj(const char *filename, AVD_Model *model, AVD_ModelResources 
     if (flags & AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS) {
         // Load all shapes as a single mesh
         AVD_Mesh mesh = {0};
+        AVD_CHECK(avdMeshInit(&mesh));
         snprintf(mesh.name, sizeof(mesh.name), "%s/Mesh", model->name);
         mesh.id = avdHashString(mesh.name);
         AVD_CHECK(__avdMeshLoadFaces(&attrib, resources, &mesh, 0, attrib.num_face_num_verts));
@@ -169,6 +170,7 @@ bool avdModelLoadObj(const char *filename, AVD_Model *model, AVD_ModelResources 
         for (size_t i = 0; i < shapeCount; i++) {
             tinyobj_shape_t *shape = &shapes[i];
             AVD_Mesh mesh          = {0};
+            AVD_CHECK(avdMeshInit(&mesh));
             snprintf(mesh.name, sizeof(mesh.name), "%s/%s", model->name, shape->name);
             mesh.id = avdHashString(mesh.name);
             AVD_CHECK(__avdMeshLoadFaces(&attrib, resources, &mesh, shape->face_offset, shape->length));
