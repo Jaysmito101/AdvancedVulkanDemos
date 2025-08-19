@@ -5,10 +5,8 @@
 int main()
 {
     AVD_AppState* appState = (AVD_AppState*)malloc(sizeof(AVD_AppState));
-    if (appState == NULL) {
-        AVD_LOG("Failed to allocate memory for application state\n");
-        return -1;
-    }
+    AVD_CHECK_MSG(appState != NULL, "Failed to allocate memory for application state\n");
+    memset(appState, 0, sizeof(AVD_AppState));
 
 #ifdef AVD_DEBUG
     // Run tests only in debug mode for now

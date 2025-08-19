@@ -31,12 +31,16 @@ static bool __avdCheckAllSceneApis(AVD_SceneManager *sceneManager)
 static bool __avdRegisterSceneApis(AVD_SceneManager *sceneManager)
 {
     AVD_ASSERT(sceneManager != NULL);
+    
+    memset(sceneManager->api, 0, sizeof(sceneManager->api));
+
     avdSceneMainMenuRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_MAIN_MENU]);
     avdSceneBloomRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_BLOOM]);
     avdScene2DRadianceCascadesRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_2D_RADIANCE_CASCADES]);
     avdSceneDeccerCubesRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_DECCER_CUBES]);
     avdSceneSubsurfaceScatteringRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_SUBSURFACE_SCATTERING]);
     avdSceneEyeballsRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_EYEBALLS]);
+    avdSceneRealisticHeadRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_REALISTIC_HEAD]);
     return true;
 }
 
@@ -151,6 +155,14 @@ const char *avdSceneTypeToString(AVD_SceneType type)
             return "Bloom";
         case AVD_SCENE_TYPE_2D_RADIANCE_CASCADES:
             return "2D_Radiance_Cascades";
+        case AVD_SCENE_TYPE_EYEBALLS:
+            return "Eyeballs";
+        case AVD_SCENE_TYPE_DECCER_CUBES:
+            return "Deccer_Cubes";
+        case AVD_SCENE_TYPE_SUBSURFACE_SCATTERING:
+            return "Subsurface_Scattering";
+        case AVD_SCENE_TYPE_REALISTIC_HEAD:
+            return "Realistic_Head";
         default:
             return "Unknown_Scene_Type";
     }
