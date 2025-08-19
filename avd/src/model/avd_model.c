@@ -13,5 +13,5 @@ void avdModelDestroy(AVD_Model *model)
     AVD_ASSERT(model != NULL);
 
     model->id = -1;
-    avdListClear(&model->meshes);
+    avdListDestroy(&model->meshes);
 }
