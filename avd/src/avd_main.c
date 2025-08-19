@@ -4,7 +4,11 @@
 
 int main()
 {
-    AVD_AppState g_appState = {0};
+    AVD_AppState* appState = (AVD_AppState*)malloc(sizeof(AVD_AppState));
+    if (appState == NULL) {
+        AVD_LOG("Failed to allocate memory for application state\n");
+        return -1;
+    }
 
 #ifdef AVD_DEBUG
     // Run tests only in debug mode for now
@@ -12,16 +16,16 @@ int main()
     AVD_CHECK(avdListTestsRun());
 #endif
 
-    if (!avdApplicationInit(&g_appState)) {
+    if (!avdApplicationInit(appState)) {
         AVD_LOG("Failed to initialize application\n");
         return -1;
     }
 
-    while (avdApplicationIsRunning(&g_appState)) {
-        avdApplicationUpdate(&g_appState);
+    while (avdApplicationIsRunning(appState)) {
+        avdApplicationUpdate(appState);
     }
 
-    avdApplicationShutdown(&g_appState);
+    avdApplicationShutdown(appState);
 
     AVD_LOG("Application shutdown successfully\n");
 
