@@ -42,6 +42,7 @@ add_executable(avd
     ./src/math/avd_math_tests.c
 
     ./src/geom/avd_3d_matrices.c
+    ./src/geom/avd_transform.c
 
     ./src/model/avd_model_base.c
     ./src/model/avd_model.c
