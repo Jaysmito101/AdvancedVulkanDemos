@@ -6,8 +6,10 @@
 
 typedef struct AVD_SceneDeccerCubes {
     AVD_SceneType type;
+    AVD_3DScene scene;
 
     AVD_RenderableText title;
+    AVD_RenderableText info;
 } AVD_SceneDeccerCubes;
 
 bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *scene);

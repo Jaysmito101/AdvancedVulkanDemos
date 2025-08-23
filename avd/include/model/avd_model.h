@@ -31,8 +31,8 @@ typedef struct {
 typedef struct AVD_ModelNode {
     char name[256];
     AVD_Int32 id;
-    AVD_Matrix4x4 transform;
-    
+    AVD_Transform transform;
+
     AVD_Mesh* mesh;
     struct AVD_ModelNode* children[AVD_MODEL_NODE_MAX_CHILDREN];
     struct AVD_ModelNode* parent;

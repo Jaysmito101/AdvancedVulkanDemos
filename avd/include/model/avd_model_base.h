@@ -3,6 +3,7 @@
 
 #include "core/avd_core.h"
 #include "math/avd_math.h"
+#include "geom/avd_geom.h"
 
 #ifndef AVD_MAX_MORPH_TARGETS_PER_MESH
 #define AVD_MAX_MORPH_TARGETS_PER_MESH 1024

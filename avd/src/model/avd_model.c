@@ -9,6 +9,7 @@ bool avdModelNodePrepare(AVD_ModelNode* node, AVD_ModelNode* parent, const char*
     snprintf(node->name, sizeof(node->name), "%s", name);
     node->id = id;
     node->parent = parent;
+    node->transform = avdTransformIdentity();
 
     if (parent != NULL) {
         bool couldPut = false;

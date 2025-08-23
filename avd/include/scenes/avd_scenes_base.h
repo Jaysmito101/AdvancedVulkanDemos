@@ -6,6 +6,7 @@
 #include "shader/avd_shader.h"
 #include "geom/avd_geom.h"
 #include "vulkan/avd_vulkan.h"
+#include "model/avd_3d_scene.h"
 
 typedef enum AVD_SceneType {
     AVD_SCENE_TYPE_MAIN_MENU,

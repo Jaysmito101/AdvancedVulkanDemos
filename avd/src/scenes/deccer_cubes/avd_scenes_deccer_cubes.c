@@ -1,5 +1,6 @@
 #include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
 #include "scenes/avd_scenes.h"
+#include "avd_application.h"
 
 static AVD_SceneDeccerCubes *__avdSceneGetTypePtr(AVD_Scene *scene)
 {
@@ -8,60 +9,6 @@ static AVD_SceneDeccerCubes *__avdSceneGetTypePtr(AVD_Scene *scene)
     return &scene->deccerCubes;
 }
 
-bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *scene)
-{
-    AVD_ASSERT(appState != NULL);
-    AVD_ASSERT(scene != NULL);
-
-    return true;
-}
-
-bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *scene)
-{
-    AVD_ASSERT(appState != NULL);
-    AVD_ASSERT(scene != NULL);
-
-    AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
-
-    return true;
-}
-
-bool avdSceneDeccerCubesUpdate(struct AVD_AppState *appState, union AVD_Scene *scene)
-{
-    AVD_ASSERT(appState != NULL);
-    AVD_ASSERT(scene != NULL);
-
-    // Update logic for the Deccer Cubes scene
-    // Currently, no specific update logic is implemented.
-    return true;
-}
-
-void avdSceneDeccerCubesDestroy(struct AVD_AppState *appState, union AVD_Scene *scene)
-{
-    AVD_ASSERT(appState != NULL);
-    AVD_ASSERT(scene != NULL);
-}
-
-bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char **statusMessage, float *progress)
-{
-    AVD_ASSERT(statusMessage != NULL);
-    AVD_ASSERT(progress != NULL);
-    *statusMessage = NULL;
-    *progress      = 1.0f;
-
-    // The Deccer Cubes scene does not have any external dependencies
-    // and is always considered to be in a valid state.
-    return true;
-}
-
-void avdSceneDeccerCubesInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
-{
-    AVD_ASSERT(appState != NULL);
-    AVD_ASSERT(scene != NULL);
-
-    // Handle input events for the Deccer Cubes scene
-    // Currently, no specific input handling is implemented.
-}
 
 bool avdSceneDeccerCubesCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage)
 {
@@ -104,5 +51,126 @@ bool avdSceneDeccerCubesRegisterApi(AVD_SceneAPI *api)
     api->displayName = "Deccer Cubes";
     api->id          = "DDGIPlaceholder";
 
+    return true;
+}
+
+
+bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *scene)
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(scene != NULL);
+
+    AVD_SceneDeccerCubes* deccerCubes = __avdSceneGetTypePtr(scene);
+
+    avd3DSceneCreate(&deccerCubes->scene);
+
+    AVD_CHECK(avdRenderableTextCreate(
+        &deccerCubes->title,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        "ShantellSansBold",
+        "Deccer Cubes Demo",
+        48.0f));
+    AVD_CHECK(avdRenderableTextCreate(
+        &deccerCubes->info,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        "RobotoCondensedRegular",
+        "A simple GLTF scene with some weird transforms to test the transform calculation edge cases",
+        18.0f));
+
+    return true;
+}
+
+void avdSceneDeccerCubesDestroy(struct AVD_AppState *appState, union AVD_Scene *scene)
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(scene != NULL);
+
+    AVD_SceneDeccerCubes* deccerCubes = __avdSceneGetTypePtr(scene);
+
+    avd3DSceneDestroy(&deccerCubes->scene);
+    avdRenderableTextDestroy(&deccerCubes->title, &appState->vulkan);
+    avdRenderableTextDestroy(&deccerCubes->info, &appState->vulkan);
+}
+
+bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char **statusMessage, float *progress)
+{
+    AVD_ASSERT(statusMessage != NULL);
+    AVD_ASSERT(progress != NULL);
+    *statusMessage = NULL;
+    *progress      = 1.0f;
+
+    // The Deccer Cubes scene does not have any external dependencies
+    // and is always considered to be in a valid state.
+    return true;
+}
+
+void avdSceneDeccerCubesInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(scene != NULL);
+
+    if (event->type == AVD_INPUT_EVENT_KEY) {
+        if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS) {
+            avdSceneManagerSwitchToScene(
+                &appState->sceneManager,
+                AVD_SCENE_TYPE_MAIN_MENU,
+                appState);
+        }
+    }
+}
+
+bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *scene)
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(scene != NULL);
+
+    AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
+
+    VkCommandBuffer commandBuffer = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
+    
+    AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
+
+    float titleWidth, titleHeight;
+    float infoWidth, infoHeight;
+    avdRenderableTextGetSize(&deccerCubes->title, &titleWidth, &titleHeight);
+    avdRenderableTextGetSize(&deccerCubes->info, &infoWidth, &infoHeight);
+
+    
+    avdRenderText(
+        &appState->vulkan,
+        &appState->fontRenderer,
+        &deccerCubes->title,
+        commandBuffer,
+        ((float)appState->renderer.sceneFramebuffer.width - titleWidth) / 2.0f,
+        titleHeight + 10.0f,
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+        appState->renderer.sceneFramebuffer.width,
+        appState->renderer.sceneFramebuffer.height);
+    avdRenderText(
+        &appState->vulkan,
+        &appState->fontRenderer,
+        &deccerCubes->info,
+        commandBuffer,
+        10.0f, 10.0f + infoHeight,
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+        appState->renderer.sceneFramebuffer.width,
+        appState->renderer.sceneFramebuffer.height);
+
+    AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
+
+
+
+    return true;
+}
+
+bool avdSceneDeccerCubesUpdate(struct AVD_AppState *appState, union AVD_Scene *scene)
+{
+    AVD_ASSERT(appState != NULL);
+    AVD_ASSERT(scene != NULL);
+
+    // Update logic for the Deccer Cubes scene
+    // Currently, no specific update logic is implemented.
     return true;
 }
