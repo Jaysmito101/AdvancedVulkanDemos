@@ -10,6 +10,5 @@
 #error "AVD_MATH_USE_SIMD is not supported in this version."
 #endif
 
-#include "math/avd_3d_matrices.h"
 
 #endif // AVD_MATH_H

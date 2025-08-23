@@ -38,8 +38,9 @@ add_executable(avd
     ./src/ui/avd_ui.c
 
     ./src/math/avd_matrix_non_simd.c
-    ./src/math/avd_3d_matrices.c
     ./src/math/avd_math_tests.c
+
+    ./src/geom/avd_3d_matrices.c
 
     ./src/model/avd_model_base.c
     ./src/model/avd_model.c

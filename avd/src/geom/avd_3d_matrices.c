@@ -1,4 +1,4 @@
-#include "math/avd_3d_matrices.h"
+#include "geom/avd_3d_matrices.h"
 
 AVD_Matrix4x4 avdMatLookAt(const AVD_Vector3 eye, const AVD_Vector3 center, const AVD_Vector3 up)
 {

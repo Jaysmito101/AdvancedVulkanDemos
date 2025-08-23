@@ -4,6 +4,7 @@
 #include "core/avd_core.h"
 #include "font/avd_font_renderer.h"
 #include "shader/avd_shader.h"
+#include "geom/avd_geom.h"
 #include "vulkan/avd_vulkan.h"
 
 typedef enum AVD_SceneType {
