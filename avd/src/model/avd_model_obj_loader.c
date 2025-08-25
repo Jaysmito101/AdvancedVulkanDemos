@@ -87,15 +87,11 @@ static bool __avdMeshLoadFaces(
                 vertex.normal.x = attrib->normals[3 * index.vn_idx + 0];
                 vertex.normal.y = attrib->normals[3 * index.vn_idx + 1];
                 vertex.normal.z = attrib->normals[3 * index.vn_idx + 2];
-            } else {
-                vertex.normal = avdVec3Zero();
             }
 
             if (attrib->num_texcoords > 0) {
                 vertex.texCoord.x = attrib->texcoords[2 * index.vt_idx + 0];
                 vertex.texCoord.y = attrib->texcoords[2 * index.vt_idx + 1];
-            } else {
-                vertex.texCoord = avdVec2Zero();
             }
 
             AVD_CHECK(avdModelVertexPack(&vertex, &packedVertex));
