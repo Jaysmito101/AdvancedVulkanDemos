@@ -166,17 +166,23 @@ static bool __avdModelLoadGltfLoadPrimAttributes(AVD_ModelResources *resources, 
 
     
     mesh->triangleCount = 0;
-    mesh->indexOffset = (AVD_UInt32)resources->indicesList.count;
+    mesh->indexOffset = (AVD_Int32)resources->indicesList.count;
+    AVD_UInt32 vertexOffset = (AVD_UInt32)resources->verticesList.count;
 
     AVD_UInt32 indexCount = 0;
+    AVD_UInt32 index = 0;
     if (prim->indices) {
         indexCount = (AVD_UInt32)prim->indices->count;
         AVD_UInt32* indices = avdListAddEmptyN(&resources->indicesList, (AVD_Size)indexCount);
         cgltf_accessor_unpack_indices(prim->indices, indices, 4, indexCount);
+        for (AVD_UInt32 i = 0; i < indexCount; i++) {
+            indices[i] += vertexOffset;
+        }
     } else {
         indexCount = (AVD_UInt32)prim->attributes[0].data->count;
         for (AVD_UInt32 i = 0; i < indexCount; i++) {
-            avdListPushBack(&resources->indicesList, &i);
+            index = vertexOffset + i;
+            avdListPushBack(&resources->indicesList, &index);
         }
     }
     AVD_CHECK_MSG(indexCount % 3 == 0, "Only triangle primitives are supported. Found a primitive with %d indices which is not a multiple of 3.\n", indexCount);
