@@ -8,6 +8,34 @@ static void __avdModelDestructor(void *item, void *context)
     avdModelDestroy(model);
 }
 
+static void __avd3DScenePrintNodeHierarchy(const AVD_ModelNode *node, int indent, const AVD_ModelNode *mainScene)
+{
+    if (node == NULL) return;
+    
+    for (int i = 0; i < indent; ++i) {
+        AVD_LOG(" ");
+    }
+    
+    const char *marker = "";
+    if (node == mainScene) {
+        marker = " [MAIN SCENE]";
+    } else if (node->parent == NULL) {
+        marker = " [ROOT]";
+    }
+    
+    AVD_LOG("Node: '%s' (ID=%d)%s", node->name, node->id, marker);
+    if (node->hasMesh) {
+        AVD_LOG(" -> Mesh: '%s'", node->mesh.name);
+    }
+    AVD_LOG("\n");
+    
+    for (int i = 0; i < AVD_MODEL_NODE_MAX_CHILDREN; ++i) {
+        if (node->children[i] != NULL) {
+            __avd3DScenePrintNodeHierarchy(node->children[i], indent + 2, mainScene);
+        }
+    }
+}
+
 bool avd3DSceneCreate(AVD_3DScene *scene)
 {
     AVD_ASSERT(scene != NULL);
@@ -54,8 +82,29 @@ void avd3DSceneDebugLog(const AVD_3DScene *scene, const char *name)
         for (size_t j = 0; j < model->meshes.count; ++j) {
             AVD_Mesh *mesh = (AVD_Mesh *)avdListGet(&model->meshes, j);
             AVD_ASSERT(mesh != NULL);
-            AVD_LOG("      Mesh[%zu]: Name='%s', ID=%d, TriangleCount=%d, IndexOffset=%d\n",
-                    j, mesh->name, mesh->id, mesh->triangleCount, mesh->indexOffset);
+            
+            const char *morphInfo = "";
+            char morphBuffer[64] = {0};
+            if (mesh->morphTargets != NULL && mesh->morphTargets->count > 0) {
+                snprintf(morphBuffer, sizeof(morphBuffer), ", MorphTargets=%d", mesh->morphTargets->count);
+                morphInfo = morphBuffer;
+            }
+            
+            AVD_LOG("      Mesh[%zu]: Name='%s', ID=%d, TriangleCount=%d, IndexOffset=%d%s\n",
+                    j, mesh->name, mesh->id, mesh->triangleCount, mesh->indexOffset, morphInfo);
+        }
+
+        AVD_LOG("    Node Count: %d\n", model->nodeCount);
+        if (model->rootNode != NULL) {
+            AVD_LOG("    Root Node: '%s' (ID=%d)\n", model->rootNode->name, model->rootNode->id);
+        }
+        if (model->mainScene != NULL) {
+            AVD_LOG("    Main Scene Node: '%s' (ID=%d)\n", model->mainScene->name, model->mainScene->id);
+        }
+        
+        if (model->rootNode != NULL) {
+            AVD_LOG("    Node Hierarchy:\n");
+            __avd3DScenePrintNodeHierarchy(model->rootNode, 6, model->mainScene);
         }
     }
 }
