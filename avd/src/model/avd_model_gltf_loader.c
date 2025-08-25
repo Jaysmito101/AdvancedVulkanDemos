@@ -117,7 +117,7 @@ static bool __avdModelLoadGltfAttrs(AVD_ModelResources *resources, cgltf_attribu
     AVD_ModelVertexPacked packedVertex = {0};
     for (AVD_UInt32 i = 0; i < attrCount ; i++) {
         if (defaultVertex) {
-            // TODO...
+            avdModelVertexUnpack(&defaultVertex[i], &vertex);
         } else {
             avdModelVertexInit(&vertex);
         }
@@ -182,7 +182,9 @@ static bool __avdModelLoadGltfLoadPrimAttributes(AVD_ModelResources *resources, 
     AVD_CHECK_MSG(indexCount % 3 == 0, "Only triangle primitives are supported. Found a primitive with %d indices which is not a multiple of 3.\n", indexCount);
     mesh->triangleCount = indexCount / 3;
 
-    AVD_ModelVertexPacked* baseVertex = (AVD_ModelVertexPacked*)avdListGet(&resources->verticesList, resources->verticesList.count - 1) + 1;
+    AVD_UInt32 attrCount = (AVD_UInt32)prim->attributes[0].data->count;
+    avdListEnsureCapacity(&resources->verticesList, resources->verticesList.count + attrCount * (1 + prim->targets_count));
+    AVD_ModelVertexPacked *baseVertex = (AVD_ModelVertexPacked *)avdListGet(&resources->verticesList, resources->verticesList.count - attrCount * (1 + prim->targets_count));
     AVD_CHECK(__avdModelLoadGltfAttrs(resources, prim->attributes, prim->attributes_count, 0, NULL));
 
     for (AVD_UInt32 i = 0; i < prim->targets_count; i++) {

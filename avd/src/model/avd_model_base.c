@@ -37,6 +37,43 @@ bool avdModelVertexPack(const AVD_ModelVertex *vertex, AVD_ModelVertexPacked *pa
     return true;
 }
 
+bool avdModelVertexUnpack(const AVD_ModelVertexPacked* packed, AVD_ModelVertex* vertex) 
+{
+    AVD_ASSERT(packed != NULL);
+    AVD_ASSERT(vertex != NULL);
+
+    vertex->position.x = avdDequantizeHalf(packed->vx);
+    vertex->position.y = avdDequantizeHalf(packed->vy);
+    vertex->position.z = avdDequantizeHalf(packed->vz);
+
+    vertex->normal.x = ((int)(packed->np & 1023) - 511) / 511.0f;
+    vertex->normal.y = ((int)((packed->np >> 10) & 1023) - 511) / 511.0f;
+    vertex->normal.z = ((int)((packed->np >> 20) & 1023) - 511) / 511.0f;
+
+    float tu = ((int)(packed->tp & 255) - 127) / 127.0f;
+    float tv = ((int)((packed->tp >> 8) & 255) - 127) / 127.0f;
+
+    AVD_Vector3 octVec = avdVec3(tu, tv, 1.0f - fabsf(tu) - fabsf(tv));
+    float t = fmaxf(-octVec.z, 0.0f);
+    octVec.x += octVec.x >= 0 ? -t : t;
+    octVec.y += octVec.y >= 0 ? -t : t;
+    
+    float len = avdVec3Length(octVec);
+    vertex->tangent.x = octVec.x / len;
+    vertex->tangent.y = octVec.y / len;
+    vertex->tangent.z = octVec.z / len;
+    vertex->tangent.w = (packed->np & (1u << 30)) ? -1.0f : 1.0f;
+
+    vertex->texCoord.x = avdDequantizeHalf(packed->tu);
+    vertex->texCoord.y = avdDequantizeHalf(packed->tv);
+
+    AVD_Vector3 tangentVec3 = avdVec3(vertex->tangent.x, vertex->tangent.y, vertex->tangent.z);
+    AVD_Vector3 bitangent = avdVec3Cross(vertex->normal, tangentVec3);
+    vertex->bitangent = avdVec3Scale(bitangent, vertex->tangent.w);
+
+    return true;
+}
+
 bool avdModelResourcesCreate(AVD_ModelResources *resources)
 {
     AVD_ASSERT(resources != NULL);
