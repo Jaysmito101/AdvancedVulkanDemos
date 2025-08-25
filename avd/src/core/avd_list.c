@@ -65,6 +65,33 @@ void avdListEnsureCapacity(AVD_List *list, size_t newCapacity)
     list->capacity = capacity;
 }
 
+void* avdListAddEmpty(AVD_List *list)
+{
+    assert(list != NULL);
+
+    avdListEnsureCapacity(list, list->count + 1);
+
+    void *dest = (char *)list->items + (list->count * list->itemSize);
+    memset(dest, 0, list->itemSize);
+    list->count++;
+
+    return dest;
+}
+
+void* avdListAddEmptyN(AVD_List *list, size_t n) // adds N empty elements and returns pointer to first
+{
+    assert(list != NULL);
+    assert(n > 0);
+
+    avdListEnsureCapacity(list, list->count + n);
+
+    void *dest = (char *)list->items + (list->count * list->itemSize);
+    memset(dest, 0, n * list->itemSize);
+    list->count += n;
+
+    return dest;
+}
+
 void *avdListPushBack(AVD_List *list, const void *item)
 {
     assert(list != NULL);
