@@ -9,6 +9,14 @@
 #define AVD_MAX_MORPH_TARGETS_PER_MESH 1024
 #endif
 
+#ifndef AVD_MODEL_NODE_MAX_CHILDREN
+#define AVD_MODEL_NODE_MAX_CHILDREN 1024
+#endif
+
+#ifndef AVD_MODEL_MAX_NODES
+#define AVD_MODEL_MAX_NODES 1024 * 16
+#endif
+
 typedef struct {
     AVD_Vector3 position;
     AVD_Vector3 normal;

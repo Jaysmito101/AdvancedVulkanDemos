@@ -3,20 +3,15 @@
 
 #include "model/avd_model_base.h"
 
-#ifndef AVD_MODEL_NODE_MAX_CHILDREN
-#define AVD_MODEL_NODE_MAX_CHILDREN 128
-#endif
-
-#ifndef AVD_MODEL_MAX_NODES
-#define AVD_MODEL_MAX_NODES 1024
-#endif
-
-typedef struct AVD_MorphTarget {
+typedef struct {
     char name[256];
-    AVD_Int32 id;
-    AVD_Int32 indexOffset;
-    AVD_Int32 vertexCount;
+    float weight;
 } AVD_MorphTarget;
+
+typedef struct {
+    AVD_MorphTarget targets[AVD_MAX_MORPH_TARGETS_PER_MESH];
+    AVD_Int32 count;
+} AVD_MorphTargets;
 
 typedef struct {
     char name[256];
@@ -24,8 +19,7 @@ typedef struct {
     AVD_Int32 indexOffset;
     AVD_Int32 triangleCount;
 
-    AVD_MorphTarget morphTargets[AVD_MAX_MORPH_TARGETS_PER_MESH];
-    AVD_Int32 morphTargetCount;
+    AVD_MorphTargets* morphTargets;
 } AVD_Mesh;
 
 typedef struct AVD_ModelNode {
@@ -33,7 +27,9 @@ typedef struct AVD_ModelNode {
     AVD_Int32 id;
     AVD_Transform transform;
 
-    AVD_Mesh* mesh;
+    bool hasMesh;
+    AVD_Mesh mesh;
+
     struct AVD_ModelNode* children[AVD_MODEL_NODE_MAX_CHILDREN];
     struct AVD_ModelNode* parent;
 } AVD_ModelNode;
@@ -45,6 +41,11 @@ typedef struct {
     
     AVD_ModelNode* nodes;
     AVD_Int32 nodeCount;
+
+    AVD_List morphTargets;
+
+    AVD_ModelNode *mainScene;
+    AVD_ModelNode *rootNode;
 } AVD_Model;
 
 typedef enum {

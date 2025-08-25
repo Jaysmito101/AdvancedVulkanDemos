@@ -7,6 +7,7 @@ bool avdModelNodePrepare(AVD_ModelNode* node, AVD_ModelNode* parent, const char*
 
     memset(node, 0, sizeof(AVD_ModelNode));
     snprintf(node->name, sizeof(node->name), "%s", name);
+    node->hasMesh = false;
     node->id = id;
     node->parent = parent;
     node->transform = avdTransformIdentity();
@@ -43,10 +44,12 @@ bool avdModelCreate(AVD_Model *model, AVD_Int32 id)
     AVD_CHECK_MSG(model->nodes != NULL, "Failed to allocate memory for model nodes\n");
     memset(model->nodes, 0, sizeof(AVD_ModelNode) * AVD_MODEL_MAX_NODES);
 
+    avdListCreate(&model->morphTargets, sizeof(AVD_MorphTargets));
+
+
     // prepare the root node
-    AVD_ModelNode* rootNode = NULL;
-    AVD_CHECK(avdModelAllocNode(model, &rootNode));
-    avdModelNodePrepare(rootNode, NULL, "__Root", 0);
+    AVD_CHECK(avdModelAllocNode(model, &model->rootNode));
+    avdModelNodePrepare(model->rootNode, NULL, "__Root", 0);
 
     return true;
 }
@@ -57,6 +60,7 @@ void avdModelDestroy(AVD_Model *model)
 
     model->id = -1;
     avdListDestroy(&model->meshes);
+    avdListDestroy(&model->morphTargets);
     free(model->nodes);
 }
 
