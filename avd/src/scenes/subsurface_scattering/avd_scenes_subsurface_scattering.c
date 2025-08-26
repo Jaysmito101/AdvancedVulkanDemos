@@ -543,25 +543,25 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             *statusMessage = "Nothing Really Happening, this exists so that the loading bar can be shown before the heavy loading starts...";
             break;
         case 1:
-            *statusMessage = "Creating Framebuffers";
+            *statusMessage = "Created Framebuffers";
             AVD_CHECK(__avdSceneCreatePipelines(subsurfaceScattering, appState));
             break;
         case 2:
-            *statusMessage = "Loading Alien Model";
+            *statusMessage = "Loaded Alien Model";
             AVD_CHECK(avd3DSceneLoadObj(
                 "assets/scene_subsurface_scattering/alien.obj",
                 &subsurfaceScattering->models,
                 AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
         case 3:
-            *statusMessage = "Loading Buddha Model";
+            *statusMessage = "Loaded Buddha Model";
             AVD_CHECK(avd3DSceneLoadObj(
                 "assets/scene_subsurface_scattering/buddha.obj",
                 &subsurfaceScattering->models,
                 AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
         case 4:
-            *statusMessage = "Loading Standford Dragon Model";
+            *statusMessage = "Loaded Standford Dragon Model";
             AVD_CHECK(avd3DSceneLoadObj(
                 "assets/scene_subsurface_scattering/standford_dragon.obj",
                 &subsurfaceScattering->models,
@@ -572,56 +572,56 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             // geometry on the fly but for now we will just load a sphere model
             // as I am out of time.
             // TODO: Revisit this and generate the sphere geometry on the fly.
-            *statusMessage = "Loading Sphere Model";
+            *statusMessage = "Loaded Sphere Model";
             AVD_CHECK(avd3DSceneLoadObj(
                 "assets/scene_subsurface_scattering/sphere.obj",
                 &subsurfaceScattering->models,
                 AVD_OBJ_LOAD_FLAG_IGNORE_OBJECTS));
             break;
         case 6:
-            *statusMessage = "Loading Alien Thickness Map";
+            *statusMessage = "Loaded Alien Thickness Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/alien_thickness_map.png",
                 &subsurfaceScattering->alienThicknessMap));
             break;
         case 7:
-            *statusMessage = "Loading Buddha Thickness Map";
+            *statusMessage = "Loaded Buddha Thickness Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_thickness_map.png",
                 &subsurfaceScattering->buddhaThicknessMap));
             break;
         case 8:
-            *statusMessage = "Loading Standford Dragon Thickness Map";
+            *statusMessage = "Loaded Standford Dragon Thickness Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/standford_dragon_thickness_map.png",
                 &subsurfaceScattering->standfordDragonThicknessMap));
             break;
         case 9:
-            *statusMessage = "Loading Buddha ORM Map";
+            *statusMessage = "Loaded Buddha ORM Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_orm_map.png",
                 &subsurfaceScattering->buddhaORMMap));
             break;
         case 10:
-            *statusMessage = "Loading Buddha Albedo Map";
+            *statusMessage = "Loaded Buddha Albedo Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_albedo_map.png",
                 &subsurfaceScattering->buddhaAlbedoMap));
             break;
         case 11:
-            *statusMessage = "Loading Buddha Normal Map";
+            *statusMessage = "Loaded Buddha Normal Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_normal_map.png",
                 &subsurfaceScattering->buddhaNormalMap));
             break;
         case 12:
-            *statusMessage = "Generating Noise Texture for AO";
+            *statusMessage = "Generated Noise Texture for AO";
             AVD_CHECK(avdVulkanImageCreate(
                 &appState->vulkan,
                 &subsurfaceScattering->noiseTexture,
@@ -642,7 +642,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 noiseTextureData));
             break;
         case 13:
-            *statusMessage    = "Setting Up GPU buffers";
+            *statusMessage    = "Set Up GPU buffers";
             size_t bufferSize = subsurfaceScattering->models.modelResources.verticesList.count * subsurfaceScattering->models.modelResources.verticesList.itemSize;
             AVD_CHECK(avdVulkanBufferCreate(
                 &appState->vulkan,
@@ -668,7 +668,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             vkUpdateDescriptorSets(appState->vulkan.device, 1, &descriptorSetWrite, 0, NULL);
             break;
         case 14:
-            *statusMessage = "Setting Up Bindless Descriptors";
+            *statusMessage = "Set Up Bindless Descriptors";
             AVD_CHECK(__avdSetupBindlessDescriptors(subsurfaceScattering, &appState->vulkan));
             break;
         case 15:
