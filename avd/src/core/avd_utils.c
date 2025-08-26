@@ -26,12 +26,37 @@ uint32_t avdHashString(const char *str)
 
 const char *avdGetTempDirPath(void)
 {
-    static char tempDirPath[1024];
+    static char tempDirPath[2048];
 #ifdef _WIN32
-    GetTempPathA(1024, tempDirPath);
-#else
-    snprintf(tempDirPath, sizeof(tempDirPath), "/tmp/");
+    char baseTemp[1024];
+    GetTempPathA((DWORD)sizeof(baseTemp), baseTemp);
 
+    snprintf(tempDirPath, sizeof(tempDirPath), "%savd\\", baseTemp);
+
+    DWORD attrs = GetFileAttributesA(tempDirPath);
+    if (attrs == INVALID_FILE_ATTRIBUTES) {
+        char dirNoSlash[2048];
+        strncpy(dirNoSlash, tempDirPath, sizeof(dirNoSlash));
+        dirNoSlash[sizeof(dirNoSlash) - 1] = '\0';
+        size_t l = strlen(dirNoSlash);
+        if (l > 0 && (dirNoSlash[l - 1] == '\\' || dirNoSlash[l - 1] == '/')) {
+            dirNoSlash[l - 1] = '\0';
+        }
+        CreateDirectoryA(dirNoSlash, NULL);
+    }
+#else
+    const char *base = getenv("TMPDIR");
+    if (base == NULL || base[0] == '\0') base = "/tmp";
+
+    char dirPath[1024];
+    snprintf(dirPath, sizeof(dirPath), "%s/avd", base);
+
+    struct stat st;
+    if (stat(dirPath, &st) != 0) {
+        mkdir(dirPath, 0700);
+    }
+
+    snprintf(tempDirPath, sizeof(tempDirPath), "%s/", dirPath);
 #endif
     return tempDirPath;
 }
@@ -132,6 +157,32 @@ bool avdReadBinaryFile(const char *filename, void **data, size_t *size)
     fread(*data, 1, *size, file);
     fclose(file);
     return true;
+}
+
+const char* avdDumpToTmpFile(const void* data, size_t size, const char* extension, const char* prefix) 
+{
+    static char tmpFilePath[4096];
+    const char* tempDir = avdGetTempDirPath();
+    uint32_t hash = avdHashBuffer(data, size);
+    snprintf(tmpFilePath, sizeof(tmpFilePath), "%savd_%s.DUMP.%d.%s", tempDir, prefix ? prefix : "Generic", hash, extension ? extension : "bin");
+
+    FILE* file = fopen(tmpFilePath, "wb");
+    if (!file) {
+        AVD_LOG("Failed to open temp file for writing: %s\n", tmpFilePath);
+        return NULL;
+    }
+
+    size_t written = fwrite(data, 1, size, file);
+    fclose(file);
+
+    AVD_LOG("Dumped data to temp file: %s\n", tmpFilePath);
+
+    if (written != size) {
+        AVD_LOG("Failed to write all data to temp file: %s\n", tmpFilePath);
+        return NULL;
+    }
+
+    return tmpFilePath;
 }
 
 // NOTE: These implementations are taken from the meshoptimizer library.

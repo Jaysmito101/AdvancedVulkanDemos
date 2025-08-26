@@ -11,6 +11,8 @@ bool avdPathExists(const char *path);
 void avdSleep(uint32_t milliseconds);
 void avdMessageBox(const char *title, const char *message);
 bool avdReadBinaryFile(const char *filename, void **data, size_t *size);
+const char* avdDumpToTmpFile(const void* data, size_t size, const char* extension, const char* prefix);
+
 
 uint16_t avdQuantizeHalf(float value);
 float avdDequantizeHalf(uint16_t value);
