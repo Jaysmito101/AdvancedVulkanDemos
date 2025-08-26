@@ -418,13 +418,21 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
 
     AVD_CHECK(__avdSceneInitializeParams(subsurfaceScattering));
     AVD_CHECK(__avdSceneFillModelInfos(subsurfaceScattering));
-    AVD_CHECK(avd3DSceneCreate(&subsurfaceScattering->models));
     AVD_CHECK(__avdSceneCreateFramebuffers(subsurfaceScattering, appState));
+
+    AVD_CHECK(avd3DSceneCreate(&subsurfaceScattering->models));
+
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &subsurfaceScattering->set0Layout,
         appState->vulkan.device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT));
+    AVD_CHECK(avdAllocateDescriptorSet(
+                appState->vulkan.device,
+                appState->vulkan.descriptorPool,
+                subsurfaceScattering->set0Layout,
+                &subsurfaceScattering->set0));
+
     AVD_CHECK(avdBloomCreate(
         &subsurfaceScattering->bloom,
         &appState->vulkan,
@@ -543,7 +551,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             *statusMessage = "Nothing Really Happening, this exists so that the loading bar can be shown before the heavy loading starts...";
             break;
         case 1:
-            *statusMessage = "Created Framebuffers";
+            *statusMessage = "Created Pipelines";
             AVD_CHECK(__avdSceneCreatePipelines(subsurfaceScattering, appState));
             break;
         case 2:
@@ -655,11 +663,6 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &subsurfaceScattering->vertexBuffer,
                 subsurfaceScattering->models.modelResources.verticesList.items,
                 bufferSize));
-            AVD_CHECK(avdAllocateDescriptorSet(
-                appState->vulkan.device,
-                appState->vulkan.descriptorPool,
-                subsurfaceScattering->set0Layout,
-                &subsurfaceScattering->set0));
             VkWriteDescriptorSet descriptorSetWrite = {0};
             AVD_CHECK(avdWriteBufferDescriptorSet(&descriptorSetWrite,
                                                   subsurfaceScattering->set0,
