@@ -637,7 +637,8 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 64,
                 64));
-            uint8_t noiseTextureData[64 * 64 * 4] = {0};
+            uint8_t *noiseTextureData = (uint8_t *)malloc(64 * 64 * 4);
+            AVD_CHECK_MSG(noiseTextureData != NULL, "Failed to allocate noise texture data");
             for (uint32_t i = 0; i < 64 * 64; i++) {
                 noiseTextureData[i * 4 + 0] = (uint8_t)(rand() % 256);
                 noiseTextureData[i * 4 + 1] = (uint8_t)(rand() % 256);
@@ -648,6 +649,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &appState->vulkan,
                 &subsurfaceScattering->noiseTexture,
                 noiseTextureData));
+            free(noiseTextureData);
             break;
         case 13:
             *statusMessage    = "Set Up GPU buffers";
