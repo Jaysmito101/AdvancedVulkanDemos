@@ -115,7 +115,7 @@ bool avdSceneDeccerCubesRegisterApi(AVD_SceneAPI *api)
     api->inputEvent     = avdSceneDeccerCubesInputEvent;
 
     api->displayName = "Deccer Cubes";
-    api->id          = "DDGIPlaceholder";
+    api->id          = "DeccerCubes";
 
     return true;
 }
