@@ -13,6 +13,6 @@ struct UberPushConstantData {
 
     int vertexOffset;
     int vertexCount;
-    int pad0;
+    int textureIndex;
     int pad1;
 };

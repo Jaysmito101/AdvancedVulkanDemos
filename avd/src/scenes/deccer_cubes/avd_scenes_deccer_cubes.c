@@ -2,14 +2,13 @@
 #include "avd_application.h"
 #include "scenes/avd_scenes.h"
 
-
 typedef struct {
     AVD_Matrix4x4 viewModelMatrix;
     AVD_Matrix4x4 projectionMatrix;
 
     int32_t vertexOffset;
     int32_t vertexCount;
-    int32_t pad0;
+    int32_t textureIndex;
     int32_t pad1;
 } AVD_DeccerCubeUberPushConstants;
 
@@ -40,6 +39,19 @@ static bool __avdSetupBuffer(
     return true;
 }
 
+static int32_t __avdFindTextureIndexFromHash(AVD_SceneDeccerCubes *deccerCubes, uint32_t hash)
+{
+    AVD_ASSERT(deccerCubes != NULL);
+
+    for (int32_t i = 0; i < (int32_t)deccerCubes->imagesCount; i++) {
+        if (deccerCubes->imagesHashes[i] == hash) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 static bool __avdRenderModelNode(VkCommandBuffer commandBuffer, AVD_SceneDeccerCubes *deccerCubes, AVD_ModelNode *node, AVD_Matrix4x4 parentTransform)
 {
     AVD_ASSERT(deccerCubes != NULL);
@@ -55,6 +67,7 @@ static bool __avdRenderModelNode(VkCommandBuffer commandBuffer, AVD_SceneDeccerC
             .viewModelMatrix  = globalTransform,
             .vertexCount      = node->mesh.triangleCount * 3,
             .vertexOffset     = node->mesh.indexOffset,
+            .textureIndex     = __avdFindTextureIndexFromHash(deccerCubes, node->mesh.material.albedoTexture.id),
         };
         vkCmdPushConstants(commandBuffer, deccerCubes->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
         vkCmdDraw(commandBuffer, node->mesh.triangleCount * 3, 1, 0, 0);
@@ -115,6 +128,7 @@ bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
 
     deccerCubes->loadStage        = 0;
+    deccerCubes->imagesCount      = 0;
     deccerCubes->projectionMatrix = avdMatPerspective(avdDeg2Rad(45.0f), 16.0f / 9.0f, 0.01f, 100.0f);
     deccerCubes->viewMatrix       = avdMatLookAt(avdVec3(12.0f, 12.0f, 12.0f), avdVec3(0.0f, 0.0f, 0.0f), avdVec3(0.0f, 1.0f, 0.0f));
 
@@ -164,6 +178,10 @@ void avdSceneDeccerCubesDestroy(struct AVD_AppState *appState, union AVD_Scene *
     avd3DSceneDestroy(&deccerCubes->scene);
     avdRenderableTextDestroy(&deccerCubes->title, &appState->vulkan);
     avdRenderableTextDestroy(&deccerCubes->info, &appState->vulkan);
+
+    for (AVD_UInt32 i = 0; i < deccerCubes->imagesCount; i++) {
+        avdVulkanImageDestroy(&appState->vulkan, &deccerCubes->images[i]);
+    }
 
     vkDestroyPipelineLayout(appState->vulkan.device, deccerCubes->pipelineLayout, NULL);
     vkDestroyPipeline(appState->vulkan.device, deccerCubes->pipeline, NULL);
@@ -216,8 +234,9 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 appState->vulkan.device,
                 (VkDescriptorSetLayout[]){
                     deccerCubes->set0Layout,
+                    appState->vulkan.bindlessDescriptorSetLayout,
                 },
-                1,
+                2,
                 sizeof(AVD_DeccerCubeUberPushConstants),
                 appState->renderer.sceneFramebuffer.renderPass,
                 (AVD_UInt32)appState->renderer.sceneFramebuffer.colorAttachments.count,
@@ -227,6 +246,34 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 &pipelineCreationInfo));
             break;
         case 4:
+            *statusMessage   = "Loaded images...";
+            VkWriteDescriptorSet descriptorSetWrites[AVD_ARRAY_COUNT(deccerCubes->images)] = {0};
+            AVD_Model *model = (AVD_Model *)avdListGet(&deccerCubes->scene.modelsList, 0);
+            for (AVD_UInt32 i = 0; i < model->meshes.count && deccerCubes->imagesCount < AVD_ARRAY_COUNT(deccerCubes->images); i++) {
+                AVD_Mesh *mesh = (AVD_Mesh *)avdListGet(&model->meshes, i);
+                if (!mesh->material.albedoTexture.hasTexture)
+                    continue;
+                deccerCubes->imagesHashes[deccerCubes->imagesCount] = mesh->material.albedoTexture.id;
+                AVD_LOG("Loading image: %s (hash: %u)\n", mesh->material.albedoTexture.path, mesh->material.albedoTexture.id);
+                AVD_CHECK(avdVulkanImageLoadFromFile(
+                    &appState->vulkan,
+                    mesh->material.albedoTexture.path,
+                    &deccerCubes->images[deccerCubes->imagesCount]));
+                    
+                VkWriteDescriptorSet* write = &descriptorSetWrites[deccerCubes->imagesCount];
+                write->sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write->dstSet          = appState->vulkan.bindlessDescriptorSet;
+                write->descriptorCount = 1;
+                write->dstBinding      = (uint32_t)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                write->descriptorType  = avdVulkanToVkDescriptorType(AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                write->dstArrayElement = deccerCubes->imagesCount;
+                write->pImageInfo      = &deccerCubes->images[deccerCubes->imagesCount].descriptorImageInfo;
+
+                deccerCubes->imagesCount += 1;
+            }
+            vkUpdateDescriptorSets(appState->vulkan.device, deccerCubes->imagesCount, descriptorSetWrites, 0, NULL);
+            AVD_LOG("Loaded all %d textures\n", deccerCubes->imagesCount);
+        case 5:
             *statusMessage = "Done loading...";
             avd3DSceneDebugLog(&deccerCubes->scene, "Deccer Cubes");
             break;
@@ -236,7 +283,7 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
     }
 
     deccerCubes->loadStage++;
-    *progress = (float)deccerCubes->loadStage / 4.0f;
+    *progress = (float)deccerCubes->loadStage / 5.0f;
 
     return *progress > 1.0f;
 }
@@ -286,10 +333,11 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipeline);
     VkDescriptorSet descriptorSets[] = {
         deccerCubes->set0,
-        appState->vulkan.bindlessDescriptorSet};
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipelineLayout, 0, 1, descriptorSets, 0, NULL);
+        appState->vulkan.bindlessDescriptorSet,
+    };
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipelineLayout, 0, 2, descriptorSets, 0, NULL);
 
-    AVD_Model* model = (AVD_Model*)avdListGet(&deccerCubes->scene.modelsList, 0);
+    AVD_Model *model = (AVD_Model *)avdListGet(&deccerCubes->scene.modelsList, 0);
     AVD_CHECK(__avdRenderModelNode(commandBuffer, deccerCubes, model->mainScene, deccerCubes->viewMatrix));
 
     float titleWidth, titleHeight;

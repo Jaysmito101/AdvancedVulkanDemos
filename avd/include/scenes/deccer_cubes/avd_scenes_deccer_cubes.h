@@ -23,6 +23,10 @@ typedef struct AVD_SceneDeccerCubes {
 
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
+
+    AVD_UInt32 imagesHashes[16];
+    AVD_VulkanImage images[16];
+    AVD_UInt32 imagesCount;
 } AVD_SceneDeccerCubes;
 
 bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *scene);

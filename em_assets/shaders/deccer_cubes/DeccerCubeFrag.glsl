@@ -17,6 +17,7 @@ pushConstants;
 
 layout(location = 0) out vec4 outFragColor;
 
+layout(set = 1, binding = 1) uniform sampler2D textures[];
 
 void main()
 {
@@ -26,7 +27,10 @@ void main()
     vec3 L = normalize(lightPosition - inPosition.xyz);
     
     vec3 albedo = vec3(0.8, 0.3, 0.2);
-    
+    if (pushConstants.data.textureIndex >= 0) {
+        albedo = texture(textures[pushConstants.data.textureIndex], inUV).rgb;
+    }
+
     vec3 ambient = 0.05 * albedo;
     vec3 diffuse = max(dot(N, L), 0.0) * albedo;
 
