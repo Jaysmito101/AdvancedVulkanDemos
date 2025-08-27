@@ -197,6 +197,58 @@ static bool __avdModelLoadGltfLoadPrimAttributes(AVD_ModelResources *resources, 
         AVD_CHECK(__avdModelLoadGltfAttrs(resources, prim->targets[i].attributes, prim->targets[i].attributes_count, 0, baseVertex));
     }
 
+    return true;
+}
+
+
+static bool __avdModelLoadGltfTexture(cgltf_texture* texture, AVD_ModelTexture* avdTexture) {
+    AVD_ASSERT(texture != NULL);
+    AVD_ASSERT(avdTexture != NULL);
+
+    const char* uri = texture->image ? texture->image->uri : NULL;
+    const cgltf_buffer_view* bufferView = texture->image ? texture->image->buffer_view : NULL;
+    if (uri) {
+        snprintf(avdTexture->path, sizeof(avdTexture->path), "%s", uri);
+        avdTexture->hasTexture = true;
+    } else if (bufferView) {
+        const char* bufferData = avdDumpToTmpFile(cgltf_buffer_view_data(bufferView), bufferView->size, NULL, NULL);
+        AVD_CHECK_MSG(bufferData != NULL, "Failed to dump embedded texture to a temporary file.\n");
+        snprintf(avdTexture->path, sizeof(avdTexture->path), "%s", bufferData);
+        avdTexture->hasTexture = true;
+    } else {
+        avdTexture->hasTexture = false;
+    }
+    
+    if (avdTexture->hasTexture) {
+        avdTexture->id = avdHashString(avdTexture->path);
+    }
+
+    return true;
+}
+
+static bool __avdModelLoadGltfTextureView(cgltf_texture_view* textureView, AVD_ModelTexture* avdTexture) {
+    AVD_ASSERT(textureView != NULL);
+    AVD_ASSERT(avdTexture != NULL);
+
+    avdTexture->texcoordNum = (AVD_Int32)textureView->texcoord;
+    avdTexture->scale = textureView->scale;
+    if (textureView->has_transform) {
+        avdTexture->tOffset[0] = textureView->transform.offset[0];
+        avdTexture->tOffset[1] = textureView->transform.offset[1];
+        avdTexture->tScale[0]  = textureView->transform.scale[0];
+        avdTexture->tScale[1]  = textureView->transform.scale[1];
+        avdTexture->tRotation  = textureView->transform.rotation;
+    } else {
+        avdTexture->tOffset[0] = 0.0f;
+        avdTexture->tOffset[1] = 0.0f;
+        avdTexture->tScale[0]  = 1.0f;
+        avdTexture->tScale[1]  = 1.0f;
+        avdTexture->tRotation  = 0.0f;
+    }
+
+    if (textureView->texture) {
+        AVD_CHECK(__avdModelLoadGltfTexture(textureView->texture, avdTexture));
+    }
 
     return true;
 }
@@ -211,8 +263,31 @@ static bool __avdModelLoadGltfNodeMeshPrim(AVD_ModelResources *resources, AVD_Me
     AVD_CHECK_MSG(prim->type == cgltf_primitive_type_triangles, "Unsupported primitive type %d, Only triangles are supported!\n", prim->type);
 
     if (prim->material) {
-        // TODO: Implement Material Loading...
-        AVD_LOG("Material loading not implemented yet, skipping material for primitive\n");
+        snprintf(mesh->material.name, sizeof(mesh->material.name), "%s", prim->material->name ? prim->material->name : "__UnnamedMaterial");
+        mesh->material.hasMaterial = true;
+
+        if (prim->material->has_pbr_specular_glossiness) {
+            AVD_CHECK(__avdModelLoadGltfTextureView(&prim->material->pbr_specular_glossiness.diffuse_texture, &mesh->material.albedoTexture));
+            AVD_CHECK(__avdModelLoadGltfTextureView(&prim->material->pbr_specular_glossiness.specular_glossiness_texture, &mesh->material.specularTexture));
+        } else if (prim->material->has_pbr_metallic_roughness) {
+            AVD_CHECK(__avdModelLoadGltfTextureView(&prim->material->pbr_metallic_roughness.base_color_texture, &mesh->material.albedoTexture));
+            AVD_CHECK(__avdModelLoadGltfTextureView(&prim->material->pbr_metallic_roughness.metallic_roughness_texture, &mesh->material.specularTexture));
+        }
+
+        if (prim->material->normal_texture.texture) {
+            AVD_CHECK(__avdModelLoadGltfTextureView(&prim->material->normal_texture, &mesh->material.normalTexture));
+        }
+
+        if (prim->material->emissive_texture.texture) {
+            AVD_CHECK(__avdModelLoadGltfTextureView(&prim->material->emissive_texture, &mesh->material.emissiveTexture));
+        }
+
+        if (prim->material->occlusion_texture.texture) {
+            AVD_CHECK(__avdModelLoadGltfTextureView(&prim->material->occlusion_texture, &mesh->material.occlusionTexture));
+        }
+
+        mesh->material.ior = prim->material->ior.ior;
+        mesh->material.unlit = prim->material->unlit;
     }
     
     AVD_CHECK(__avdModelLoadGltfLoadPrimAttributes(resources, mesh, prim, flags));

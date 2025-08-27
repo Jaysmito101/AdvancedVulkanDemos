@@ -14,12 +14,43 @@ typedef struct {
 } AVD_MorphTargets;
 
 typedef struct {
+    char path[1024];
+    AVD_UInt32 id;
+
+    bool hasTexture;
+
+    AVD_Int32 texcoordNum;
+    AVD_Float scale;
+
+    AVD_Float tOffset[2];
+    AVD_Float tScale[2];
+    AVD_Float tRotation;
+} AVD_ModelTexture;
+
+typedef struct {
+    char name[256];
+
+    bool hasMaterial;
+
+    AVD_ModelTexture albedoTexture;
+    AVD_ModelTexture specularTexture;
+    AVD_ModelTexture normalTexture;
+    AVD_ModelTexture emissiveTexture;
+    AVD_ModelTexture occlusionTexture;
+
+    // TODO: Add more properties as needed...
+    AVD_Float ior;
+    bool unlit;
+} AVD_ModelMaterial;
+
+typedef struct {
     char name[256];
     AVD_Int32 id;
     AVD_Int32 indexOffset;
     AVD_Int32 triangleCount;
 
     AVD_MorphTargets* morphTargets;
+    AVD_ModelMaterial material;
 } AVD_Mesh;
 
 typedef struct AVD_ModelNode {
@@ -29,6 +60,7 @@ typedef struct AVD_ModelNode {
 
     bool hasMesh;
     AVD_Mesh mesh;
+    
 
     struct AVD_ModelNode* children[AVD_MODEL_NODE_MAX_CHILDREN];
     struct AVD_ModelNode* parent;
