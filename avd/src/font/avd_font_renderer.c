@@ -402,7 +402,7 @@ bool avdFontRendererCreate(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, A
     AVD_ASSERT(fontManager != NULL);
 
     fontRenderer->fontManager = fontManager;
-    
+
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &fontRenderer->fontDescriptorSetLayout,
         vulkan->device,
@@ -420,7 +420,7 @@ bool avdFontRendererCreate(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, A
     return true;
 }
 
-void avdFontRendererDestroy(AVD_FontRenderer *fontRenderer, AVD_Vulkan* vulkan)
+void avdFontRendererDestroy(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(fontRenderer != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -429,7 +429,6 @@ void avdFontRendererDestroy(AVD_FontRenderer *fontRenderer, AVD_Vulkan* vulkan)
     vkDestroyPipelineLayout(vulkan->device, fontRenderer->pipelineLayout, NULL);
     vkDestroyDescriptorSetLayout(vulkan->device, fontRenderer->fontDescriptorSetLayout, NULL);
 }
-
 
 // ------------------------------- AVD_FontManager -------------------------------
 
@@ -457,7 +456,7 @@ void avdFontManagerShutdown(AVD_FontManager *fontManager)
 bool avdFontManagerAddFontFromAsset(AVD_FontManager *fontManager, const char *asset)
 {
     AVD_ASSERT(fontManager != NULL);
-    AVD_ASSERT(asset != NULL);  
+    AVD_ASSERT(asset != NULL);
 
     AVD_FontData fontData = {0};
     snprintf(fontData.name, sizeof(fontData.name), "%s", asset);

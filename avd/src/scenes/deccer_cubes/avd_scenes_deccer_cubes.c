@@ -246,9 +246,9 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 &pipelineCreationInfo));
             break;
         case 4:
-            *statusMessage   = "Loaded images...";
+            *statusMessage                                                                 = "Loaded images...";
             VkWriteDescriptorSet descriptorSetWrites[AVD_ARRAY_COUNT(deccerCubes->images)] = {0};
-            AVD_Model *model = (AVD_Model *)avdListGet(&deccerCubes->scene.modelsList, 0);
+            AVD_Model *model                                                               = (AVD_Model *)avdListGet(&deccerCubes->scene.modelsList, 0);
             for (AVD_UInt32 i = 0; i < model->meshes.count && deccerCubes->imagesCount < AVD_ARRAY_COUNT(deccerCubes->images); i++) {
                 AVD_Mesh *mesh = (AVD_Mesh *)avdListGet(&model->meshes, i);
                 if (!mesh->material.albedoTexture.hasTexture)
@@ -259,15 +259,15 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                     &appState->vulkan,
                     mesh->material.albedoTexture.path,
                     &deccerCubes->images[deccerCubes->imagesCount]));
-                    
-                VkWriteDescriptorSet* write = &descriptorSetWrites[deccerCubes->imagesCount];
-                write->sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-                write->dstSet          = appState->vulkan.bindlessDescriptorSet;
-                write->descriptorCount = 1;
-                write->dstBinding      = (uint32_t)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                write->descriptorType  = avdVulkanToVkDescriptorType(AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                write->dstArrayElement = deccerCubes->imagesCount;
-                write->pImageInfo      = &deccerCubes->images[deccerCubes->imagesCount].descriptorImageInfo;
+
+                VkWriteDescriptorSet *write = &descriptorSetWrites[deccerCubes->imagesCount];
+                write->sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                write->dstSet               = appState->vulkan.bindlessDescriptorSet;
+                write->descriptorCount      = 1;
+                write->dstBinding           = (uint32_t)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                write->descriptorType       = avdVulkanToVkDescriptorType(AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                write->dstArrayElement      = deccerCubes->imagesCount;
+                write->pImageInfo           = &deccerCubes->images[deccerCubes->imagesCount].descriptorImageInfo;
 
                 deccerCubes->imagesCount += 1;
             }

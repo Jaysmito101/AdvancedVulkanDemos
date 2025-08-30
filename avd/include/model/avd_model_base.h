@@ -2,8 +2,8 @@
 #define AVD_MODEL_BASE_H
 
 #include "core/avd_core.h"
-#include "math/avd_math.h"
 #include "geom/avd_geom.h"
+#include "math/avd_math.h"
 
 #ifndef AVD_MAX_MORPH_TARGETS_PER_MESH
 #define AVD_MAX_MORPH_TARGETS_PER_MESH 1024
@@ -39,7 +39,7 @@ typedef struct {
 
 void avdModelVertexInit(AVD_ModelVertex *vertex);
 bool avdModelVertexPack(const AVD_ModelVertex *vertex, AVD_ModelVertexPacked *packed);
-bool avdModelVertexUnpack(const AVD_ModelVertexPacked* packed, AVD_ModelVertex* vertex);
+bool avdModelVertexUnpack(const AVD_ModelVertexPacked *packed, AVD_ModelVertex *vertex);
 bool avdModelResourcesCreate(AVD_ModelResources *resources);
 void avdModelResourcesDestroy(AVD_ModelResources *resources);
 

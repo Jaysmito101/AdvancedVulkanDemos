@@ -1,30 +1,30 @@
 #include "shader/avd_shader_base.h"
 
-bool avdShaderCompilationOptionsDefault(AVD_ShaderCompilationOptions* options)
+bool avdShaderCompilationOptionsDefault(AVD_ShaderCompilationOptions *options)
 {
     AVD_ASSERT(options != NULL);
 
-    options->macros = NULL;
-    options->macroCount = 0;
+    options->macros           = NULL;
+    options->macroCount       = 0;
     options->warningsAsErrors = true;
-    options->optimize = 2; // Default to performance optimization
-    
-    #ifdef AVD_DEBUG
+    options->optimize         = 2; // Default to performance optimization
+
+#ifdef AVD_DEBUG
     options->debugSymbols = true;
-#else 
+#else
     options->debugSymbols = false;
 #endif
 
     return true;
 }
 
-uint32_t avdShaderCompilationOptionsHash(const AVD_ShaderCompilationOptions* options)
+uint32_t avdShaderCompilationOptionsHash(const AVD_ShaderCompilationOptions *options)
 {
     AVD_ASSERT(options != NULL);
 
     uint32_t hash = 5381; // Starting with a prime number
     for (size_t i = 0; i < options->macroCount; ++i) {
-        const char* macro = options->macros[i];
+        const char *macro = options->macros[i];
         while (*macro) {
             hash = ((hash << 5) + hash) + *macro++; // hash * 33 + c
         }
@@ -36,7 +36,7 @@ uint32_t avdShaderCompilationOptionsHash(const AVD_ShaderCompilationOptions* opt
     return hash;
 }
 
-const char* avdShaderStageToString(AVD_ShaderStage stage)
+const char *avdShaderStageToString(AVD_ShaderStage stage)
 {
     switch (stage) {
         case AVD_SHADER_STAGE_VERTEX:
@@ -52,7 +52,7 @@ const char* avdShaderStageToString(AVD_ShaderStage stage)
     }
 }
 
-const char* avdShaderLanguageToString(AVD_ShaderLanguage language)
+const char *avdShaderLanguageToString(AVD_ShaderLanguage language)
 {
     switch (language) {
         case AVD_SHADER_LANGUAGE_GLSL:
@@ -64,7 +64,7 @@ const char* avdShaderLanguageToString(AVD_ShaderLanguage language)
     }
 }
 
-void avdShaderCompilationResultDestroy(AVD_ShaderCompilationResult* result)
+void avdShaderCompilationResultDestroy(AVD_ShaderCompilationResult *result)
 {
     if (result) {
         free(result->compiledCode);

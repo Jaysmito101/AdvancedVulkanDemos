@@ -3,8 +3,8 @@
 
 #include "core/avd_core.h"
 #include "math/avd_math.h"
-#include "vulkan/avd_vulkan.h"
 #include "model/avd_3d_scene.h"
+#include "vulkan/avd_vulkan.h"
 
 #ifndef AVD_EYEBALL_MAX_LIGHTS
 #define AVD_EYEBALL_MAX_LIGHTS 16
@@ -19,7 +19,7 @@ typedef struct AVD_Eyeball {
 
     AVD_Mesh scleraMesh;
     AVD_Mesh lensMesh;
-    
+
     AVD_VulkanBuffer vertexBuffer;
     AVD_VulkanBuffer indexBuffer;
     AVD_VulkanBuffer configBuffer;

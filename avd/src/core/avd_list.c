@@ -65,7 +65,7 @@ void avdListEnsureCapacity(AVD_List *list, size_t newCapacity)
     list->capacity = capacity;
 }
 
-void* avdListAddEmpty(AVD_List *list)
+void *avdListAddEmpty(AVD_List *list)
 {
     assert(list != NULL);
 
@@ -78,7 +78,7 @@ void* avdListAddEmpty(AVD_List *list)
     return dest;
 }
 
-void* avdListAddEmptyN(AVD_List *list, size_t n) // adds N empty elements and returns pointer to first
+void *avdListAddEmptyN(AVD_List *list, size_t n) // adds N empty elements and returns pointer to first
 {
     assert(list != NULL);
     assert(n > 0);

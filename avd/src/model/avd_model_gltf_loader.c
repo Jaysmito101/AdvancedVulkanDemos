@@ -12,7 +12,8 @@ static AVD_Matrix4x4 __avdModelGltfMatrixToAvdMatrix(const cgltf_float *matrix)
         matrix[12], matrix[13], matrix[14], matrix[15]);
 }
 
-static bool __avdModelLoadGltfTransform(AVD_Transform* transform, cgltf_node* node) {
+static bool __avdModelLoadGltfTransform(AVD_Transform *transform, cgltf_node *node)
+{
     AVD_ASSERT(transform != NULL);
     AVD_ASSERT(node != NULL);
 
@@ -20,7 +21,7 @@ static bool __avdModelLoadGltfTransform(AVD_Transform* transform, cgltf_node* no
 
     if (node->has_matrix) {
         AVD_Matrix4x4 matrix = __avdModelGltfMatrixToAvdMatrix(node->matrix);
-        *transform = avdTransformFromMatrix(&matrix);
+        *transform           = avdTransformFromMatrix(&matrix);
     }
 
     if (node->has_translation) {
@@ -48,7 +49,7 @@ static bool __avdModelLoadGltfTransform(AVD_Transform* transform, cgltf_node* no
     return true;
 }
 
-static cgltf_attribute* __avdModelGltfFindAttribute(cgltf_attribute* attributes, cgltf_size count, cgltf_attribute_type type, AVD_UInt32 index, void* scratchBuffer)
+static cgltf_attribute *__avdModelGltfFindAttribute(cgltf_attribute *attributes, cgltf_size count, cgltf_attribute_type type, AVD_UInt32 index, void *scratchBuffer)
 {
     AVD_Size size = attributes[0].data->count;
     for (cgltf_size i = 0; i < count; i++) {
@@ -93,29 +94,29 @@ static cgltf_attribute* __avdModelGltfFindAttribute(cgltf_attribute* attributes,
     return NULL;
 }
 
-static bool __avdModelLoadGltfAttrs(AVD_ModelResources *resources, cgltf_attribute* attributes, cgltf_size attributeCount, AVD_GltfLoadFlags flags, AVD_ModelVertexPacked* defaultVertex)
+static bool __avdModelLoadGltfAttrs(AVD_ModelResources *resources, cgltf_attribute *attributes, cgltf_size attributeCount, AVD_GltfLoadFlags flags, AVD_ModelVertexPacked *defaultVertex)
 {
     AVD_ASSERT(resources != NULL);
     AVD_ASSERT(attributes != NULL);
     AVD_ASSERT(attributeCount > 0);
 
-    AVD_UInt32 attrCount = (AVD_UInt32)attributes[0].data->count;
-    AVD_Float* scratchBuffer = (AVD_Float*)calloc(attrCount * 4 * 4, sizeof(AVD_Float));
-    AVD_Size indBuffSize = attrCount * 4;
+    AVD_UInt32 attrCount     = (AVD_UInt32)attributes[0].data->count;
+    AVD_Float *scratchBuffer = (AVD_Float *)calloc(attrCount * 4 * 4, sizeof(AVD_Float));
+    AVD_Size indBuffSize     = attrCount * 4;
 
-    const AVD_Float* positionAttr = (const AVD_Float*)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_position, 0, scratchBuffer + indBuffSize * 0);
-    const AVD_Float* normalAttr = (const AVD_Float*)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_normal, 0, scratchBuffer + indBuffSize * 1);
-    const AVD_Float* tangentAttr = (const AVD_Float*)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_tangent, 0, scratchBuffer + indBuffSize * 2);
-    const AVD_Float* texcoordAttr = (const AVD_Float*)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_texcoord, 0, scratchBuffer + indBuffSize * 3);
+    const AVD_Float *positionAttr = (const AVD_Float *)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_position, 0, scratchBuffer + indBuffSize * 0);
+    const AVD_Float *normalAttr   = (const AVD_Float *)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_normal, 0, scratchBuffer + indBuffSize * 1);
+    const AVD_Float *tangentAttr  = (const AVD_Float *)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_tangent, 0, scratchBuffer + indBuffSize * 2);
+    const AVD_Float *texcoordAttr = (const AVD_Float *)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_texcoord, 0, scratchBuffer + indBuffSize * 3);
 
     // const AVD_UInt32* jointsAttr = (const AVD_UInt32*)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_joints, 0, scratchBuffer + indBuffSize * 4);
     // const AVD_Float* weightsAttr = (const AVD_Float*)__avdModelGltfFindAttribute(attributes, attributeCount, cgltf_attribute_type_weights, 0, scratchBuffer + indBuffSize * 5);
 
     AVD_CHECK_MSG(positionAttr != NULL, "A primitive is missing POSITION attribute which is required.\n");
 
-    AVD_ModelVertex vertex = {0};
+    AVD_ModelVertex vertex             = {0};
     AVD_ModelVertexPacked packedVertex = {0};
-    for (AVD_UInt32 i = 0; i < attrCount ; i++) {
+    for (AVD_UInt32 i = 0; i < attrCount; i++) {
         if (defaultVertex) {
             avdModelVertexUnpack(&defaultVertex[i], &vertex);
         } else {
@@ -158,22 +159,21 @@ static bool __avdModelLoadGltfAttrs(AVD_ModelResources *resources, cgltf_attribu
     return true;
 }
 
-static bool __avdModelLoadGltfLoadPrimAttributes(AVD_ModelResources *resources, AVD_Mesh* mesh, cgltf_primitive *prim, AVD_GltfLoadFlags flags)
+static bool __avdModelLoadGltfLoadPrimAttributes(AVD_ModelResources *resources, AVD_Mesh *mesh, cgltf_primitive *prim, AVD_GltfLoadFlags flags)
 {
     AVD_ASSERT(resources != NULL);
     AVD_ASSERT(mesh != NULL);
     AVD_ASSERT(prim != NULL);
 
-    
-    mesh->triangleCount = 0;
-    mesh->indexOffset = (AVD_Int32)resources->indicesList.count;
+    mesh->triangleCount     = 0;
+    mesh->indexOffset       = (AVD_Int32)resources->indicesList.count;
     AVD_UInt32 vertexOffset = (AVD_UInt32)resources->verticesList.count;
 
     AVD_UInt32 indexCount = 0;
-    AVD_UInt32 index = 0;
+    AVD_UInt32 index      = 0;
     if (prim->indices) {
-        indexCount = (AVD_UInt32)prim->indices->count;
-        AVD_UInt32* indices = avdListAddEmptyN(&resources->indicesList, (AVD_Size)indexCount);
+        indexCount          = (AVD_UInt32)prim->indices->count;
+        AVD_UInt32 *indices = avdListAddEmptyN(&resources->indicesList, (AVD_Size)indexCount);
         cgltf_accessor_unpack_indices(prim->indices, indices, 4, indexCount);
         for (AVD_UInt32 i = 0; i < indexCount; i++) {
             indices[i] += vertexOffset;
@@ -200,25 +200,25 @@ static bool __avdModelLoadGltfLoadPrimAttributes(AVD_ModelResources *resources, 
     return true;
 }
 
-
-static bool __avdModelLoadGltfTexture(cgltf_texture* texture, AVD_ModelTexture* avdTexture) {
+static bool __avdModelLoadGltfTexture(cgltf_texture *texture, AVD_ModelTexture *avdTexture)
+{
     AVD_ASSERT(texture != NULL);
     AVD_ASSERT(avdTexture != NULL);
 
-    const char* uri = texture->image ? texture->image->uri : NULL;
-    const cgltf_buffer_view* bufferView = texture->image ? texture->image->buffer_view : NULL;
+    const char *uri                     = texture->image ? texture->image->uri : NULL;
+    const cgltf_buffer_view *bufferView = texture->image ? texture->image->buffer_view : NULL;
     if (uri) {
         snprintf(avdTexture->path, sizeof(avdTexture->path), "%s", uri);
         avdTexture->hasTexture = true;
     } else if (bufferView) {
-        const char* bufferData = avdDumpToTmpFile(cgltf_buffer_view_data(bufferView), bufferView->size, NULL, NULL);
+        const char *bufferData = avdDumpToTmpFile(cgltf_buffer_view_data(bufferView), bufferView->size, NULL, NULL);
         AVD_CHECK_MSG(bufferData != NULL, "Failed to dump embedded texture to a temporary file.\n");
         snprintf(avdTexture->path, sizeof(avdTexture->path), "%s", bufferData);
         avdTexture->hasTexture = true;
     } else {
         avdTexture->hasTexture = false;
     }
-    
+
     if (avdTexture->hasTexture) {
         avdTexture->id = avdHashString(avdTexture->path);
     }
@@ -226,12 +226,13 @@ static bool __avdModelLoadGltfTexture(cgltf_texture* texture, AVD_ModelTexture* 
     return true;
 }
 
-static bool __avdModelLoadGltfTextureView(cgltf_texture_view* textureView, AVD_ModelTexture* avdTexture) {
+static bool __avdModelLoadGltfTextureView(cgltf_texture_view *textureView, AVD_ModelTexture *avdTexture)
+{
     AVD_ASSERT(textureView != NULL);
     AVD_ASSERT(avdTexture != NULL);
 
     avdTexture->texcoordNum = (AVD_Int32)textureView->texcoord;
-    avdTexture->scale = textureView->scale;
+    avdTexture->scale       = textureView->scale;
     if (textureView->has_transform) {
         avdTexture->tOffset[0] = textureView->transform.offset[0];
         avdTexture->tOffset[1] = textureView->transform.offset[1];
@@ -253,7 +254,7 @@ static bool __avdModelLoadGltfTextureView(cgltf_texture_view* textureView, AVD_M
     return true;
 }
 
-static bool __avdModelLoadGltfNodeMeshPrim(AVD_ModelResources *resources, AVD_Mesh* mesh, cgltf_primitive *prim, AVD_GltfLoadFlags flags)
+static bool __avdModelLoadGltfNodeMeshPrim(AVD_ModelResources *resources, AVD_Mesh *mesh, cgltf_primitive *prim, AVD_GltfLoadFlags flags)
 {
     AVD_ASSERT(resources != NULL);
     AVD_ASSERT(mesh != NULL);
@@ -286,13 +287,13 @@ static bool __avdModelLoadGltfNodeMeshPrim(AVD_ModelResources *resources, AVD_Me
             AVD_CHECK(__avdModelLoadGltfTextureView(&prim->material->occlusion_texture, &mesh->material.occlusionTexture));
         }
 
-        mesh->material.ior = prim->material->ior.ior;
+        mesh->material.ior   = prim->material->ior.ior;
         mesh->material.unlit = prim->material->unlit;
     }
-    
+
     AVD_CHECK(__avdModelLoadGltfLoadPrimAttributes(resources, mesh, prim, flags));
 
-    return true;    
+    return true;
 }
 
 static bool __avdModelLoadGltfNodeMesh(AVD_Model *model, AVD_ModelResources *resources, AVD_ModelNode *node, cgltf_mesh *mesh, cgltf_skin *skin, AVD_GltfLoadFlags flags)
@@ -307,14 +308,13 @@ static bool __avdModelLoadGltfNodeMesh(AVD_Model *model, AVD_ModelResources *res
         AVD_LOG("Warning: Skins are not supported yet. Ignoring skin for mesh '%s'\n", mesh->name ? mesh->name : "__UnnamedMesh");
     }
 
-    AVD_Mesh avdMesh = { 0 };
+    AVD_Mesh avdMesh = {0};
     AVD_CHECK(avdMeshInit(&avdMesh));
 
-  
     if (mesh->target_names_count > 0) {
         AVD_CHECK_MSG(mesh->target_names_count == mesh->weights_count, "Mismatched target names and weights count");
 
-        avdMesh.morphTargets = (AVD_MorphTargets*)avdListAddEmpty(&model->morphTargets);
+        avdMesh.morphTargets        = (AVD_MorphTargets *)avdListAddEmpty(&model->morphTargets);
         avdMesh.morphTargets->count = (AVD_Int32)mesh->target_names_count;
         for (int i = 0; i < mesh->target_names_count; i++) {
             snprintf(avdMesh.morphTargets->targets[i].name, sizeof(avdMesh.morphTargets->targets[i].name), "%s", mesh->target_names[i]);
@@ -327,8 +327,8 @@ static bool __avdModelLoadGltfNodeMesh(AVD_Model *model, AVD_ModelResources *res
         sprintf(avdMesh.name, "%s", meshRawName);
         AVD_CHECK(__avdModelLoadGltfNodeMeshPrim(resources, &avdMesh, &mesh->primitives[0], flags));
 
-        avdMesh.id = avdHashString(avdMesh.name);
-        node->mesh = avdMesh;
+        avdMesh.id    = avdHashString(avdMesh.name);
+        node->mesh    = avdMesh;
         node->hasMesh = true;
         avdListPushBack(&model->meshes, &avdMesh);
     } else {
@@ -338,15 +338,15 @@ static bool __avdModelLoadGltfNodeMesh(AVD_Model *model, AVD_ModelResources *res
             static char nodeName[64];
             snprintf(nodeName, sizeof(nodeName), "MeshPrim/%s/%d", meshRawName, i);
             AVD_CHECK(avdModelNodePrepare(sceneNode, node, nodeName, avdHashString(nodeName)));
-            
+
             AVD_Mesh localMesh = {0};
             AVD_CHECK(avdMeshInit(&localMesh));
             snprintf(localMesh.name, sizeof(localMesh.name), "%s/%d", meshRawName, i);
-            localMesh.id = avdHashString(nodeName);
+            localMesh.id           = avdHashString(nodeName);
             localMesh.morphTargets = avdMesh.morphTargets;
             AVD_CHECK(__avdModelLoadGltfNodeMeshPrim(resources, &localMesh, &mesh->primitives[i], flags));
 
-            sceneNode->mesh = localMesh;
+            sceneNode->mesh    = localMesh;
             sceneNode->hasMesh = true;
 
             avdListPushBack(&model->meshes, &localMesh);
@@ -375,14 +375,13 @@ static bool __avdModelLoadGltfNode(AVD_Model *model, AVD_ModelResources *resourc
     return true;
 }
 
-
-static bool __avdModelLoadGltfScene(AVD_Model *model, AVD_ModelResources* resources, cgltf_scene *scene, AVD_GltfLoadFlags flags, bool mainScene)
+static bool __avdModelLoadGltfScene(AVD_Model *model, AVD_ModelResources *resources, cgltf_scene *scene, AVD_GltfLoadFlags flags, bool mainScene)
 {
     AVD_ModelNode *sceneNode = NULL;
     AVD_CHECK(avdModelAllocNode(model, &sceneNode));
     const char *sceneName = scene->name ? scene->name : "__UnnamedScene";
     AVD_CHECK(avdModelNodePrepare(sceneNode, model->rootNode, sceneName, avdHashString(sceneName)));
-    
+
     for (int i = 0; i < scene->nodes_count; i++) {
         AVD_CHECK(__avdModelLoadGltfNode(model, resources, sceneNode, scene->nodes[i], flags));
     }
@@ -390,7 +389,7 @@ static bool __avdModelLoadGltfScene(AVD_Model *model, AVD_ModelResources* resour
     if (mainScene) {
         model->mainScene = sceneNode;
     }
-    
+
     return true;
 }
 
@@ -414,14 +413,14 @@ bool avdModelLoadGltf(const char *filename, AVD_Model *model, AVD_ModelResources
     AVD_CHECK_MSG(avdPathExists(filename), "The specified GLTF file does not exist: %s", filename);
 
     cgltf_options options = {0};
-    cgltf_data* data = NULL;
+    cgltf_data *data      = NULL;
     AVD_CHECK_MSG(cgltf_parse_file(&options, filename, &data) == cgltf_result_success, "Failed to parse GLTF file: %s", filename);
     AVD_CHECK_MSG(cgltf_load_buffers(&options, data, filename) == cgltf_result_success, "Failed to parse GLTF file: %s", filename);
     AVD_CHECK_MSG(cgltf_validate(data) == cgltf_result_success, "Failed to validate GLTF file: %s", filename);
 
     snprintf(model->name, sizeof(model->name), "%s", filename);
     model->id = avdHashString(model->name);
-    
+
     for (int i = 0; i < data->scenes_count; i++) {
         AVD_CHECK(__avdModelLoadGltfScene(model, resources, &data->scenes[i], flags, &data->scenes[i] == data->scene));
     }

@@ -18,15 +18,15 @@ typedef enum {
 } AVD_ShaderLanguage;
 
 typedef struct {
-    const char** macros;
+    const char **macros;
     size_t macroCount;
-    bool warningsAsErrors; 
+    bool warningsAsErrors;
     bool debugSymbols;
     uint8_t optimize; // 0 = no optimization, 1 = size optimization, 2 = performance optimization
 } AVD_ShaderCompilationOptions;
 
 typedef struct {
-    uint32_t* compiledCode;
+    uint32_t *compiledCode;
     size_t size;
     AVD_ShaderStage stage;
     AVD_ShaderLanguage language;
@@ -40,11 +40,10 @@ typedef struct {
     AVD_ShaderSlangContext *slangContext;
 } AVD_ShaderManager;
 
-
-bool avdShaderCompilationOptionsDefault(AVD_ShaderCompilationOptions* options);
-uint32_t avdShaderCompilationOptionsHash(const AVD_ShaderCompilationOptions* options);
-const char* avdShaderStageToString(AVD_ShaderStage stage);
-const char* avdShaderLanguageToString(AVD_ShaderLanguage language);
-void avdShaderCompilationResultDestroy(AVD_ShaderCompilationResult* result);
+bool avdShaderCompilationOptionsDefault(AVD_ShaderCompilationOptions *options);
+uint32_t avdShaderCompilationOptionsHash(const AVD_ShaderCompilationOptions *options);
+const char *avdShaderStageToString(AVD_ShaderStage stage);
+const char *avdShaderLanguageToString(AVD_ShaderLanguage language);
+void avdShaderCompilationResultDestroy(AVD_ShaderCompilationResult *result);
 
 #endif

@@ -116,8 +116,7 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, presentation->pipelineLayout, 0, AVD_ARRAY_COUNT(descriptorSetsToBind), descriptorSetsToBind, 0, NULL);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
-    if (!sceneManager->isSceneLoaded)
-    {
+    if (!sceneManager->isSceneLoaded) {
         AVD_FontRenderer *fontRenderer = &presentation->presentationFontRenderer;
         static char loadingText[256];
         snprintf(loadingText, sizeof(loadingText), "Loading... [%.2f%%]", sceneManager->sceneLoadingProgress * 100.0f);
@@ -141,8 +140,7 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
             1.0f, 1.0f, 1.0f, 1.0f,
             swapchain->extent.width, swapchain->extent.height);
 
-        if (sceneManager->sceneLoadingStatusMessage != NULL)
-        {
+        if (sceneManager->sceneLoadingStatusMessage != NULL) {
             AVD_CHECK(avdRenderableTextUpdate(
                 &presentation->loadingStatusText,
                 fontRenderer,

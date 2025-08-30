@@ -31,7 +31,7 @@ static bool __avdCheckAllSceneApis(AVD_SceneManager *sceneManager)
 static bool __avdRegisterSceneApis(AVD_SceneManager *sceneManager)
 {
     AVD_ASSERT(sceneManager != NULL);
-    
+
     memset(sceneManager->api, 0, sizeof(sceneManager->api));
 
     avdSceneMainMenuRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_MAIN_MENU]);

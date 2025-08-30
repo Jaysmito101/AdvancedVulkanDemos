@@ -38,7 +38,7 @@ const char *avdGetTempDirPath(void)
         char dirNoSlash[2048];
         strncpy(dirNoSlash, tempDirPath, sizeof(dirNoSlash));
         dirNoSlash[sizeof(dirNoSlash) - 1] = '\0';
-        size_t l = strlen(dirNoSlash);
+        size_t l                           = strlen(dirNoSlash);
         if (l > 0 && (dirNoSlash[l - 1] == '\\' || dirNoSlash[l - 1] == '/')) {
             dirNoSlash[l - 1] = '\0';
         }
@@ -46,7 +46,8 @@ const char *avdGetTempDirPath(void)
     }
 #else
     const char *base = getenv("TMPDIR");
-    if (base == NULL || base[0] == '\0') base = "/tmp";
+    if (base == NULL || base[0] == '\0')
+        base = "/tmp";
 
     char dirPath[1024];
     snprintf(dirPath, sizeof(dirPath), "%s/avd", base);
@@ -159,14 +160,14 @@ bool avdReadBinaryFile(const char *filename, void **data, size_t *size)
     return true;
 }
 
-const char* avdDumpToTmpFile(const void* data, size_t size, const char* extension, const char* prefix) 
+const char *avdDumpToTmpFile(const void *data, size_t size, const char *extension, const char *prefix)
 {
     static char tmpFilePath[4096];
-    const char* tempDir = avdGetTempDirPath();
-    uint32_t hash = avdHashBuffer(data, size);
+    const char *tempDir = avdGetTempDirPath();
+    uint32_t hash       = avdHashBuffer(data, size);
     snprintf(tmpFilePath, sizeof(tmpFilePath), "%savd_%s.DUMP.%d.%s", tempDir, prefix ? prefix : "Generic", hash, extension ? extension : "bin");
 
-    FILE* file = fopen(tmpFilePath, "wb");
+    FILE *file = fopen(tmpFilePath, "wb");
     if (!file) {
         AVD_LOG("Failed to open temp file for writing: %s\n", tmpFilePath);
         return NULL;

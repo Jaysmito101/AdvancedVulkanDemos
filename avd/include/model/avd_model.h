@@ -49,7 +49,7 @@ typedef struct {
     AVD_Int32 indexOffset;
     AVD_Int32 triangleCount;
 
-    AVD_MorphTargets* morphTargets;
+    AVD_MorphTargets *morphTargets;
     AVD_ModelMaterial material;
 } AVD_Mesh;
 
@@ -60,18 +60,17 @@ typedef struct AVD_ModelNode {
 
     bool hasMesh;
     AVD_Mesh mesh;
-    
 
-    struct AVD_ModelNode* children[AVD_MODEL_NODE_MAX_CHILDREN];
-    struct AVD_ModelNode* parent;
+    struct AVD_ModelNode *children[AVD_MODEL_NODE_MAX_CHILDREN];
+    struct AVD_ModelNode *parent;
 } AVD_ModelNode;
 
 typedef struct {
     char name[256];
     AVD_Int32 id;
     AVD_List meshes;
-    
-    AVD_ModelNode* nodes;
+
+    AVD_ModelNode *nodes;
     AVD_Int32 nodeCount;
 
     AVD_List morphTargets;
@@ -86,15 +85,14 @@ typedef enum {
 } AVD_ObjLoadFlags;
 
 typedef enum {
-    AVD_GLT_LOAD_FLAG_NONE           = 0,
+    AVD_GLT_LOAD_FLAG_NONE = 0,
 } AVD_GltfLoadFlags;
-
 
 bool avdModelCreate(AVD_Model *model, AVD_Int32 id);
 void avdModelDestroy(AVD_Model *model);
 
-bool avdModelNodePrepare(AVD_ModelNode* node, AVD_ModelNode* parent, const char* name, AVD_Int32 id);
-bool avdModelAllocNode(AVD_Model *model, AVD_ModelNode** outNode);
+bool avdModelNodePrepare(AVD_ModelNode *node, AVD_ModelNode *parent, const char *name, AVD_Int32 id);
+bool avdModelAllocNode(AVD_Model *model, AVD_ModelNode **outNode);
 bool avdMeshInit(AVD_Mesh *mesh);
 bool avdMeshInitWithNameId(AVD_Mesh *mesh, const char *name, AVD_Int32 id);
 

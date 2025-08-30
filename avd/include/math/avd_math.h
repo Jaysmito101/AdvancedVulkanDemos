@@ -5,11 +5,10 @@
 
 #ifndef AVD_MATH_USE_SIMD
 #include "math/avd_matrix_non_simd.h"
-#include "math/avd_vector_non_simd.h"
 #include "math/avd_qaternion_non_simd.h"
+#include "math/avd_vector_non_simd.h"
 #else
 #error "AVD_MATH_USE_SIMD is not supported in this version."
 #endif
-
 
 #endif // AVD_MATH_H

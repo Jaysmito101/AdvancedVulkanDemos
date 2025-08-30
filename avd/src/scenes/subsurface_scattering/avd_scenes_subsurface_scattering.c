@@ -428,10 +428,10 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_STORAGE_BUFFER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT));
     AVD_CHECK(avdAllocateDescriptorSet(
-                appState->vulkan.device,
-                appState->vulkan.descriptorPool,
-                subsurfaceScattering->set0Layout,
-                &subsurfaceScattering->set0));
+        appState->vulkan.device,
+        appState->vulkan.descriptorPool,
+        subsurfaceScattering->set0Layout,
+        &subsurfaceScattering->set0));
 
     AVD_CHECK(avdBloomCreate(
         &subsurfaceScattering->bloom,

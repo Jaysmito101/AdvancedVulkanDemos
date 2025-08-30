@@ -1,8 +1,8 @@
 #ifndef AVD_QUATERNION_NON_SIMD_H
 #define AVD_QUATERNION_NON_SIMD_H
 
-#include "math/avd_vector_non_simd.h"
 #include "math/avd_matrix_non_simd.h"
+#include "math/avd_vector_non_simd.h"
 
 typedef union {
     AVD_Float q[4];
@@ -29,19 +29,19 @@ typedef union {
 #define avdQuatZero()                     avdQuat(0.0f, 0.0f, 0.0f, 0.0f)
 #define avdQuatAdd(a, b)                  avdQuat((a).x + (b).x, (a).y + (b).y, (a).z + (b).z, (a).w + (b).w)
 #define avdQuatSubtract(a, b)             avdQuat((a).x - (b).x, (a).y - (b).y, (a).z - (b).z, (a).w - (b).w)
-#define avdQuatScale(q, scalar)           avdQuat((q).x * (scalar), (q).y * (scalar), (q).z * (scalar), (q).w * (scalar))
+#define avdQuatScale(q, scalar)           avdQuat((q).x *(scalar), (q).y *(scalar), (q).z *(scalar), (q).w *(scalar))
 #define avdQuatLengthSq(q)                ((q).x * (q).x + (q).y * (q).y + (q).z * (q).z + (q).w * (q).w)
 #define avdQuatLength(q)                  (avdSqrt(avdQuatLengthSq(q)))
 #define avdQuatInvLength(q)               (avdSqrt(avdQuatLengthSq(q)) > 0.0f ? 1.0f / avdSqrt(avdQuatLengthSq(q)) : 0.0f)
 #define avdQuatDot(q1, q2)                ((q1).x * (q2).x + (q1).y * (q2).y + (q1).z * (q2).z + (q1).w * (q2).w)
 #define avdQuatConjugate(q)               avdQuat(-(q).x, -(q).y, -(q).z, (q).w)
 #define avdQuatFromAxisAngle(axis, angle) avdQuat( \
-    (axis).x * avdSin((angle) * 0.5f),            \
-    (axis).y * avdSin((angle) * 0.5f),            \
-    (axis).z * avdSin((angle) * 0.5f),            \
+    (axis).x *avdSin((angle) * 0.5f),              \
+    (axis).y *avdSin((angle) * 0.5f),              \
+    (axis).z *avdSin((angle) * 0.5f),              \
     avdCos((angle) * 0.5f))
 #define avdQuatFromEuler(pitch, yaw, roll) avdQuatFromEulerAngles((pitch), (yaw), (roll))
-#define avdQuatLog(q)                     AVD_LOG("Quat[x: %.2f, y: %.2f, z: %.2f, w: %.2f]", (q).x, (q).y, (q).z, (q).w)
+#define avdQuatLog(q)                      AVD_LOG("Quat[x: %.2f, y: %.2f, z: %.2f, w: %.2f]", (q).x, (q).y, (q).z, (q).w)
 
 AVD_Quaternion avdQuatNormalize(const AVD_Quaternion q);
 AVD_Quaternion avdQuatMultiply(const AVD_Quaternion a, const AVD_Quaternion b);

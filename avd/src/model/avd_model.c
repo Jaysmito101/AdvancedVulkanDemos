@@ -1,15 +1,15 @@
 #include "model/avd_model.h"
 
-bool avdModelNodePrepare(AVD_ModelNode* node, AVD_ModelNode* parent, const char* name, AVD_Int32 id)
+bool avdModelNodePrepare(AVD_ModelNode *node, AVD_ModelNode *parent, const char *name, AVD_Int32 id)
 {
     AVD_ASSERT(node != NULL);
     AVD_ASSERT(name != NULL);
 
     memset(node, 0, sizeof(AVD_ModelNode));
     snprintf(node->name, sizeof(node->name), "%s", name);
-    node->hasMesh = false;
-    node->id = id;
-    node->parent = parent;
+    node->hasMesh   = false;
+    node->id        = id;
+    node->parent    = parent;
     node->transform = avdTransformIdentity();
 
     if (parent != NULL) {
@@ -17,7 +17,7 @@ bool avdModelNodePrepare(AVD_ModelNode* node, AVD_ModelNode* parent, const char*
         for (size_t i = 0; i < AVD_MODEL_NODE_MAX_CHILDREN; i++) {
             if (parent->children[i] == NULL) {
                 parent->children[i] = node;
-                couldPut = true;
+                couldPut            = true;
                 break;
             }
         }
@@ -27,7 +27,8 @@ bool avdModelNodePrepare(AVD_ModelNode* node, AVD_ModelNode* parent, const char*
     return true;
 }
 
-bool avdModelAllocNode(AVD_Model *model, AVD_ModelNode** outNode) {
+bool avdModelAllocNode(AVD_Model *model, AVD_ModelNode **outNode)
+{
     AVD_ASSERT(model != NULL);
     AVD_ASSERT(outNode != NULL);
     *outNode = &model->nodes[model->nodeCount++];
@@ -45,7 +46,6 @@ bool avdModelCreate(AVD_Model *model, AVD_Int32 id)
     memset(model->nodes, 0, sizeof(AVD_ModelNode) * AVD_MODEL_MAX_NODES);
 
     avdListCreate(&model->morphTargets, sizeof(AVD_MorphTargets));
-
 
     // prepare the root node
     AVD_CHECK(avdModelAllocNode(model, &model->rootNode));

@@ -120,14 +120,14 @@ static bool __avdSceneUpdateCamera(AVD_SceneRealisticHead *realisticHead, AVD_Fl
 {
     AVD_ASSERT(realisticHead != NULL);
 
-    timer = timer * 0.1f;
+    timer         = timer * 0.1f;
     AVD_Float rad = 8.0f;
 
     realisticHead->viewModelMatrix = avdMatLookAt(
         avdVec3(rad * sinf(timer), 4.0f, rad * cosf(timer)), // Camera position
         // avdVec3(1.0, 2.0f, 0.0), // Camera position
-        avdVec3(0.0f, 0.0f, 0.0f),                             // Look at the origin
-        avdVec3(0.0f, 1.0f, 0.0f)                              // Up vector
+        avdVec3(0.0f, 0.0f, 0.0f), // Look at the origin
+        avdVec3(0.0f, 1.0f, 0.0f)  // Up vector
     );
 
     realisticHead->projectionMatrix = avdMatPerspective(
@@ -156,8 +156,8 @@ bool avdSceneRealisticHeadRender(struct AVD_AppState *appState, union AVD_Scene 
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    VkCommandBuffer commandBuffer = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
-    AVD_SceneRealisticHead *realisticHead   = __avdSceneGetTypePtr(scene);
+    VkCommandBuffer commandBuffer         = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
+    AVD_SceneRealisticHead *realisticHead = __avdSceneGetTypePtr(scene);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
 
@@ -165,7 +165,6 @@ bool avdSceneRealisticHeadRender(struct AVD_AppState *appState, union AVD_Scene 
     float infoWidth, infoHeight;
     avdRenderableTextGetSize(&realisticHead->title, &titleWidth, &titleHeight);
     avdRenderableTextGetSize(&realisticHead->info, &infoWidth, &infoHeight);
-
 
     avdRenderText(
         &appState->vulkan,

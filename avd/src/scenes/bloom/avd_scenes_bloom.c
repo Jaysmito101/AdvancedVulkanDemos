@@ -206,18 +206,17 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
     uint32_t currentFrameIndex    = renderer->currentFrameIndex;
     VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
 
-    
     float frameWidth  = (float)renderer->sceneFramebuffer.width;
     float frameHeight = (float)renderer->sceneFramebuffer.height;
-    
+
     float titleWidth, titleHeight;
     float uiInfoTextWidth, uiInfoTextHeight;
-    
+
     avdRenderableTextGetSize(&bloom->title, &titleWidth, &titleHeight);
     avdRenderableTextGetSize(&bloom->uiInfoText, &uiInfoTextWidth, &uiInfoTextHeight);
-    
+
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-    
+
     avdRenderText(
         vulkan,
         &appState->fontRenderer,
@@ -237,7 +236,6 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
         1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
-
 
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
 

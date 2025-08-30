@@ -4,7 +4,7 @@
 #include "shader/avd_shader_base.h"
 
 struct AVD_ShaderSlangContext {
-    void* userData;
+    void *userData;
 };
 
 bool avdShaderSlangContextInit(AVD_ShaderSlangContext *context);
@@ -13,8 +13,6 @@ bool avdShaderSlangCompile(
     AVD_ShaderSlangContext *context,
     const char *inputShaderName,
     AVD_ShaderCompilationOptions *options,
-    AVD_ShaderCompilationResult *outResult
-);
-
+    AVD_ShaderCompilationResult *outResult);
 
 #endif // AVD_SHADER_SLANG_H

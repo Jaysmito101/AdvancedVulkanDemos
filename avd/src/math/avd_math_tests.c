@@ -628,14 +628,14 @@ static bool __avdCheckQuaternion()
     }
 
     // Test array access
-    if (!avdIsFEqual(q1.q[0], 0.0f) || !avdIsFEqual(q1.q[1], 0.0f) || 
+    if (!avdIsFEqual(q1.q[0], 0.0f) || !avdIsFEqual(q1.q[1], 0.0f) ||
         !avdIsFEqual(q1.q[2], 0.0f) || !avdIsFEqual(q1.q[3], 1.0f)) {
         AVD_LOG("    FAILED: Quaternion array access\n");
         return false;
     }
 
     // Test alternative access (ijkr)
-    if (!avdIsFEqual(q1.i, 0.0f) || !avdIsFEqual(q1.j, 0.0f) || 
+    if (!avdIsFEqual(q1.i, 0.0f) || !avdIsFEqual(q1.j, 0.0f) ||
         !avdIsFEqual(q1.k, 0.0f) || !avdIsFEqual(q1.r, 1.0f)) {
         AVD_LOG("    FAILED: Quaternion ijkr access\n");
         return false;
@@ -643,7 +643,7 @@ static bool __avdCheckQuaternion()
 
     // Test identity and zero quaternions
     AVD_Quaternion identity = avdQuatIdentity();
-    AVD_Quaternion zero = avdQuatZero();
+    AVD_Quaternion zero     = avdQuatZero();
     if (!avdIsFEqual(identity.w, 1.0f) || !avdIsFEqual(identity.x, 0.0f) ||
         !avdIsFEqual(zero.x, 0.0f) || !avdIsFEqual(zero.w, 0.0f)) {
         AVD_LOG("    FAILED: Quaternion identity/zero\n");
@@ -676,8 +676,8 @@ static bool __avdCheckQuaternion()
 
     // Test quaternion length and length squared
     AVD_Quaternion testQuat = avdQuat(1.0f, 2.0f, 2.0f, 0.0f);
-    AVD_Float lengthSq = avdQuatLengthSq(testQuat);
-    AVD_Float length = avdQuatLength(testQuat);
+    AVD_Float lengthSq      = avdQuatLengthSq(testQuat);
+    AVD_Float length        = avdQuatLength(testQuat);
     if (!avdIsFEqual(lengthSq, 9.0f) || !avdIsFEqual(length, 3.0f)) {
         AVD_LOG("    FAILED: Quaternion length calculations\n");
         return false;
@@ -699,7 +699,7 @@ static bool __avdCheckQuaternion()
     }
 
     // Test quaternion normalization
-    AVD_Quaternion normalized = avdQuatNormalize(testQuat);
+    AVD_Quaternion normalized  = avdQuatNormalize(testQuat);
     AVD_Float normalizedLength = avdQuatLength(normalized);
     if (!avdIsFEqual(normalizedLength, 1.0f)) {
         AVD_LOG("    FAILED: Quaternion normalization\n");
@@ -731,8 +731,8 @@ static bool __avdCheckQuaternion()
     }
 
     // Test axis-angle conversion
-    AVD_Vector3 axis = avdVec3(0.0f, 0.0f, 1.0f);
-    AVD_Float angle = AVD_PI / 2.0f;
+    AVD_Vector3 axis             = avdVec3(0.0f, 0.0f, 1.0f);
+    AVD_Float angle              = AVD_PI / 2.0f;
     AVD_Quaternion fromAxisAngle = avdQuatFromAxisAngle(axis, angle);
     if (!avdIsFEqual(fromAxisAngle.z, avdSin(angle * 0.5f)) || !avdIsFEqual(fromAxisAngle.w, avdCos(angle * 0.5f))) {
         AVD_LOG("    FAILED: Quaternion from axis-angle\n");
@@ -740,7 +740,7 @@ static bool __avdCheckQuaternion()
     }
 
     // Test vector rotation
-    AVD_Vector3 vec = avdVec3(1.0f, 0.0f, 0.0f);
+    AVD_Vector3 vec     = avdVec3(1.0f, 0.0f, 0.0f);
     AVD_Vector3 rotated = avdQuatRotateVec3(fromAxisAngle, vec);
     // Should rotate (1,0,0) by 90 degrees around Z to get (0,1,0)
     if (!avdIsFEqual(rotated.x, 0.0f) || !avdIsFEqual(rotated.y, 1.0f) || !avdIsFEqual(rotated.z, 0.0f)) {
@@ -750,14 +750,14 @@ static bool __avdCheckQuaternion()
 
     // Test Euler angle conversion
     AVD_Quaternion fromEuler = avdQuatFromEulerAngles(0.0f, 0.0f, AVD_PI / 2.0f);
-    AVD_Vector3 backToEuler = avdQuatToEulerAngles(fromEuler);
+    AVD_Vector3 backToEuler  = avdQuatToEulerAngles(fromEuler);
     if (!avdIsFEqual(backToEuler.x, 0.0f) || !avdIsFEqual(backToEuler.y, 0.0f) || !avdIsFEqual(backToEuler.z, AVD_PI / 2.0f)) {
         AVD_LOG("    FAILED: Quaternion Euler angle round-trip\n");
         return false;
     }
 
     // Test matrix conversion
-    AVD_Matrix4x4 mat4 = avdQuatToMatrix4x4(identity);
+    AVD_Matrix4x4 mat4         = avdQuatToMatrix4x4(identity);
     AVD_Matrix4x4 expectedMat4 = avdMat4x4Identity();
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {

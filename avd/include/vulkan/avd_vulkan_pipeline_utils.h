@@ -1,8 +1,8 @@
 #ifndef AVD_PIPELINE_UTILS_H
 #define AVD_PIPELINE_UTILS_H
 
-#include "vulkan/avd_vulkan_base.h"
 #include "shader/avd_shader.h"
+#include "vulkan/avd_vulkan_base.h"
 
 #ifndef AVD_MAX_DESCRIPTOR_SET_BINDINGS
 #define AVD_MAX_DESCRIPTOR_SET_BINDINGS 32
@@ -74,7 +74,6 @@ bool avdAllocateDescriptorSet(
     VkDescriptorPool descriptorPool,
     VkDescriptorSetLayout descriptorSetLayout,
     VkDescriptorSet *descriptorSet);
-
 
 bool avdWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorImageInfo *imageInfo);
 bool avdWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDescriptorSet descriptorSet, uint32_t binding, VkDescriptorBufferInfo *bufferInfo);

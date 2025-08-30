@@ -117,8 +117,8 @@ bool avdShaderShaderCCompile(
         "main",
         options);
     if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
-        size_t numDependencies = 0;
-        const char** dependencies = avdAssetShaderGetDependencies(inputShaderName, &numDependencies);
+        size_t numDependencies    = 0;
+        const char **dependencies = avdAssetShaderGetDependencies(inputShaderName, &numDependencies);
 
         AVD_LOG("----------------------- SHADER COMPILATION ERROR -----------------------\n");
         avdPrintShaderWithLineNumbers(avdAssetShader(inputShaderName), inputShaderName);

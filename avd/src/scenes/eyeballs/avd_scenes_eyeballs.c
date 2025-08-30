@@ -145,14 +145,14 @@ static bool __avdSceneUpdateCamera(AVD_SceneEyeballs *eyeballs, AVD_Float timer)
 {
     AVD_ASSERT(eyeballs != NULL);
 
-    timer = timer * 0.1f;
+    timer         = timer * 0.1f;
     AVD_Float rad = 8.0f;
 
     eyeballs->viewModelMatrix = avdMatLookAt(
         avdVec3(rad * sinf(timer), 4.0f, rad * cosf(timer)), // Camera position
         // avdVec3(1.0, 2.0f, 0.0), // Camera position
-        avdVec3(0.0f, 0.0f, 0.0f),                             // Look at the origin
-        avdVec3(0.0f, 1.0f, 0.0f)                              // Up vector
+        avdVec3(0.0f, 0.0f, 0.0f), // Look at the origin
+        avdVec3(0.0f, 1.0f, 0.0f)  // Up vector
     );
 
     eyeballs->projectionMatrix = avdMatPerspective(

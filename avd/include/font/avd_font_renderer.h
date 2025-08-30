@@ -3,10 +3,10 @@
 
 #include "core/avd_core.h"
 #include "font/avd_font.h"
+#include "shader/avd_shader.h"
 #include "vulkan/avd_vulkan_buffer.h"
 #include "vulkan/avd_vulkan_image.h"
 #include "vulkan/avd_vulkan_renderer.h"
-#include "shader/avd_shader.h"
 
 struct AVD_FontRendererVertex;
 
@@ -45,11 +45,11 @@ typedef struct {
 } AVD_FontManager;
 
 typedef struct {
-    AVD_FontManager* fontManager;
+    AVD_FontManager *fontManager;
 
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
-    VkDescriptorSetLayout fontDescriptorSetLayout;    
+    VkDescriptorSetLayout fontDescriptorSetLayout;
 } AVD_FontRenderer;
 
 bool avdFontCreate(AVD_FontData fontData, AVD_Vulkan *vulkan, AVD_Font *font);
@@ -69,7 +69,7 @@ bool avdFontManagerHasFont(AVD_FontManager *fontManager, const char *fontName);
 bool avdFontManagerGetFont(AVD_FontManager *fontManager, const char *fontName, AVD_Font **font);
 
 bool avdFontRendererCreate(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, AVD_FontManager *fontManager, VkRenderPass renderPass);
-void avdFontRendererDestroy(AVD_FontRenderer *fontRenderer, AVD_Vulkan* vulkan);
+void avdFontRendererDestroy(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan);
 
 void avdRenderText(AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, AVD_RenderableText *renderableText, VkCommandBuffer cmd, float x, float y, float scale, float r, float g, float b, float a, uint32_t framebufferWidth, uint32_t framebufferHeight);
 

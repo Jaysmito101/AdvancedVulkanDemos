@@ -9,9 +9,9 @@
 #include "scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.h"
 #include "scenes/bloom/avd_scenes_bloom.h"
 #include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
-#include "scenes/subsurface_scattering/avd_scenes_subsurface_scattering.h"
 #include "scenes/eyeballs/avd_scenes_eyeballs.h"
 #include "scenes/realistic_head/avd_scenes_realistic_head.h"
+#include "scenes/subsurface_scattering/avd_scenes_subsurface_scattering.h"
 
 #ifndef AVD_SCENE_MAX_SCENE_LOAD_POLL_COUNT
 #define AVD_SCENE_MAX_SCENE_LOAD_POLL_COUNT 100

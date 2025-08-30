@@ -4,7 +4,6 @@
 #include "geom/avd_3d_matrices.h"
 #include "math/avd_math.h"
 
-
 typedef struct {
     AVD_Vector3 position;
     AVD_Vector3 scale;
@@ -13,21 +12,19 @@ typedef struct {
 
 // Transform creation and initialization
 #define avdTransformIdentity() ((AVD_Transform){ \
-    .position = avdVec3Zero(), \
-    .scale = avdVec3One(), \
-    .rotation = avdQuatIdentity() \
-})
+    .position = avdVec3Zero(),                   \
+    .scale    = avdVec3One(),                    \
+    .rotation = avdQuatIdentity()})
 
 #define avdTransform(pos, rot, scl) ((AVD_Transform){ \
-    .position = (pos), \
-    .rotation = (rot), \
-    .scale = (scl) \
-})
+    .position = (pos),                                \
+    .rotation = (rot),                                \
+    .scale    = (scl)})
 
 #define avdTransformLog(transform) AVD_LOG("Transform[pos: (%.2f, %.2f, %.2f), rot: (%.2f, %.2f, %.2f, %.2f), scale: (%.2f, %.2f, %.2f)]", \
-    (transform).position.x, (transform).position.y, (transform).position.z, \
-    (transform).rotation.x, (transform).rotation.y, (transform).rotation.z, (transform).rotation.w, \
-    (transform).scale.x, (transform).scale.y, (transform).scale.z)
+                                           (transform).position.x, (transform).position.y, (transform).position.z,                         \
+                                           (transform).rotation.x, (transform).rotation.y, (transform).rotation.z, (transform).rotation.w, \
+                                           (transform).scale.x, (transform).scale.y, (transform).scale.z)
 
 // Transform operations
 AVD_Matrix4x4 avdTransformToMatrix(const AVD_Transform *transform);

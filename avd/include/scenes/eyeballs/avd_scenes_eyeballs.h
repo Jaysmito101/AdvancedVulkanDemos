@@ -1,8 +1,8 @@
 #ifndef AVD_SCENES_EYEBALLS_H
 #define AVD_SCENES_EYEBALLS_H
 
-#include "scenes/avd_scenes_base.h"
 #include "common/avd_eyeball.h"
+#include "scenes/avd_scenes_base.h"
 
 #ifndef AVD_SCENE_EYEBALLS_MAX_EYEBALLS
 #define AVD_SCENE_EYEBALLS_MAX_EYEBALLS 64
@@ -26,7 +26,7 @@ typedef struct AVD_SceneEyeballs {
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
 
-    AVD_Eyeball eyeballs[AVD_SCENE_EYEBALLS_MAX_EYEBALLS];    
+    AVD_Eyeball eyeballs[AVD_SCENE_EYEBALLS_MAX_EYEBALLS];
 } AVD_SceneEyeballs;
 
 bool avdSceneEyeballsInit(struct AVD_AppState *appState, union AVD_Scene *scene);

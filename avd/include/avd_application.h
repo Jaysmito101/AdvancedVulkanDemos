@@ -4,9 +4,9 @@
 #include "core/avd_core.h"
 #include "font/avd_font_renderer.h"
 #include "scenes/avd_scenes.h"
+#include "shader/avd_shader.h"
 #include "ui/avd_ui.h"
 #include "vulkan/avd_vulkan.h"
-#include "shader/avd_shader.h"
 
 typedef struct AVD_Frametime {
     double lastTime;

@@ -27,8 +27,8 @@ void avdListSetDestructor(AVD_List *list, AVD_ListDestructor *destructor, void *
 void avdListDestroy(AVD_List *list);
 void *avdListPushBack(AVD_List *list, const void *item);
 void *avdListPushFront(AVD_List *list, const void *item);
-void* avdListAddEmpty(AVD_List *list);
-void* avdListAddEmptyN(AVD_List *list, size_t n); // adds N empty elements and returns pointer to first
+void *avdListAddEmpty(AVD_List *list);
+void *avdListAddEmptyN(AVD_List *list, size_t n); // adds N empty elements and returns pointer to first
 // NOTE: Pop functions dont call the destructor,
 // the transfer of ownership is assumed (though the data
 // maybe overwritten). It is advised to use the destructor
