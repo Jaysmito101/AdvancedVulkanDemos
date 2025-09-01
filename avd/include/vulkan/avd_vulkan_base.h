@@ -1,13 +1,17 @@
 #ifndef AVD_VULKAN_CORE_H
 #define AVD_VULKAN_CORE_H
 
+#define API_VERSION VK_API_VERSION_1_4
+#include "volk.h"
+
 #include "core/avd_core.h"
 
-// third party includes
-#include "glfw/glfw3.h"
 
-#define API_VERSION VK_API_VERSION_1_2
-#include "volk.h"
+// third party includes
+//
+#define GLFW_INCLUDE_VULKAN
+#include "GLFW/glfw3.h"
+
 
 #ifndef AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE
 #define AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE 1024
