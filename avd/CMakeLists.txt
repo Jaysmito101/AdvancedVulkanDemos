@@ -2,6 +2,9 @@ file(GLOB_RECURSE avd_headers
     ./*.h
 )
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+
 add_executable(avd
     ${avd_headers}
     ./src/core/avd_utils.c
@@ -15,9 +18,9 @@ add_executable(avd
     ./src/avd_application.c
 
     ./src/deps/avd_third_party_impls.c
-    
+
     ./src/font/avd_font_renderer.c
-    
+
     ./src/common/avd_bloom.c
     ./src/common/avd_eyeball.c
 
@@ -34,7 +37,7 @@ add_executable(avd
     ./src/vulkan/avd_vulkan_framebuffer.c
     ./src/vulkan/avd_vulkan_image.c
     ./src/vulkan/avd_vulkan_buffer.c
-    
+
     ./src/ui/avd_ui.c
 
     ./src/math/avd_matrix_non_simd.c
@@ -74,17 +77,28 @@ include_directories(avd
     ${Vulkan_INCLUDE_DIRS}
 )
 
+# Ensure the Vulkan SDK path is set properly
+if(DEFINED ENV{VULKAN_SDK})
+    set(VULKAN_SDK_PATH $ENV{VULKAN_SDK})
+else()
+    message(FATAL_ERROR "VULKAN_SDK environment variable is not set")
+endif()
+
+
+string(REPLACE "\\" "/" VULKAN_SDK_PATH ${VULKAN_SDK_PATH})
+message(STATUS "Vulkan SDK Path: ${VULKAN_SDK_PATH}")
+
 
 target_link_libraries(avd
     avd_assets
     glfw
     volk
-    debug $ENV{VULKAN_SDK}/Lib/shaderc_combinedd.lib
-    optimized $ENV{VULKAN_SDK}/Lib/shaderc_combined.lib
+    debug ${VULKAN_SDK_PATH}/Lib/shaderc_combinedd.lib
+    optimized ${VULKAN_SDK_PATH}/Lib/shaderc_combined.lib
 )
 
 
-if (WIN32)
+if (MSVC)
     target_compile_definitions(avd PRIVATE _CRT_SECURE_NO_WARNINGS)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
 endif()

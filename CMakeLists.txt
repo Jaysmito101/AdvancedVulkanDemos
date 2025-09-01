@@ -77,6 +77,7 @@ add_custom_command(
 
 add_custom_target(generate_assets ALL DEPENDS ${ASSETS_TIMESTAMP_FILE})
 
+
 if (WIN32)
     set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
 elseif (APPLE)
@@ -96,7 +97,7 @@ if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.12.25835)
 endif()
 
 if( MSVC )
-    if(${CMAKE_VERSION} VERSION_LESS "3.6.0") 
+    if(${CMAKE_VERSION} VERSION_LESS "3.6.0")
         message( "\n\t[ WARNING ]\n\n\tCMake version lower than 3.6.\n\n\t - Please update CMake and rerun; OR\n\t - Manually set 'GLFW-CMake-starter' as StartUp Project in Visual Studio.\n" )
     else()
         set_property( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT avd )
