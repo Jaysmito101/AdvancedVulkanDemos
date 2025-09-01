@@ -58,7 +58,8 @@ find_package(Python COMPONENTS Interpreter REQUIRED)
 set(ASSETS_TIMESTAMP_FILE ${CMAKE_SOURCE_DIR}/avd_assets/generated/.asset_timestamp)
 
 file(GLOB_RECURSE ASSET_SOURCE_FILES
-    ${CMAKE_SOURCE_DIR}/avd_assets/*
+    ${CMAKE_SOURCE_DIR}/avd_assets/*.h
+    ${CMAKE_SOURCE_DIR}/avd_assets/*.c
     ${CMAKE_SOURCE_DIR}/assets/*
 )
 
