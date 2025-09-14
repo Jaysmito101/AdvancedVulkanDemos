@@ -12,6 +12,7 @@ int main()
     // Run tests only in debug mode for now
     AVD_CHECK(avdMathTestsRun());
     AVD_CHECK(avdListTestsRun());
+    AVD_CHECK(avdHashTableTestsRun());
 #endif
 
     if (!avdApplicationInit(appState)) {
