@@ -137,9 +137,9 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
 
     VkApplicationInfo appInfo  = {0};
     appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName   = "Pastel Shadows";
+    appInfo.pApplicationName   = "AVD";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName        = "Pastel Shadows";
+    appInfo.pEngineName        = "AVD";
     appInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
     appInfo.apiVersion         = VK_API_VERSION_1_1;
 

@@ -16,7 +16,7 @@ bool avdWindowInit(AVD_Window *window, AVD_AppState *appState)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    window->window = glfwCreateWindow(1280, 720, "Pastel Shadows", NULL, NULL);
+    window->window = glfwCreateWindow(1280, 720, "Advanced Vulkan Demos", NULL, NULL);
     if (!window->window) {
         AVD_LOG("Failed to create GLFW window\n");
         glfwTerminate(); // Terminate GLFW if window creation fails
