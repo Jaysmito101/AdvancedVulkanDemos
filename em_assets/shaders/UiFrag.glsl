@@ -88,6 +88,7 @@ void uiRect() {
 
         if (finalUV.x >= 0.0 && finalUV.x <= 1.0 && finalUV.y >= 0.0 && finalUV.y <= 1.0) {
             vec4 texColor = texture(customTexture, finalUV);
+            texColor.rgb = pow(texColor.rgb, vec3(2.2));
             outColor = mix(boxColor, texColor, texColor.a);
         } else {
             outColor = boxColor;
