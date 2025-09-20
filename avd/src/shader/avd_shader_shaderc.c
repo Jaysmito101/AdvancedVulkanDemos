@@ -59,6 +59,19 @@ bool avdShaderShaderCCompile(
         default:
             AVD_CHECK_MSG(false, "Unsupported shader language for %s, are you sure you are using the correct compiler context?", inputShaderName);
     }
+    switch (avdAssetShaderStage(inputShaderName)) {
+        case AVD_SHADER_STAGE_VERTEX:
+            shaderc_compile_options_add_macro_definition(options, "AVD_SHADER_VERTEX", strlen("AVD_SHADER_VERTEX"), NULL, 0);
+            break;
+        case AVD_SHADER_STAGE_FRAGMENT:
+            shaderc_compile_options_add_macro_definition(options, "AVD_SHADER_FRAGMENT", strlen("AVD_SHADER_FRAGMENT"), NULL, 0);
+            break;
+        case AVD_SHADER_STAGE_COMPUTE:
+            shaderc_compile_options_add_macro_definition(options, "AVD_SHADER_COMPUTE", strlen("AVD_SHADER_COMPUTE"), NULL, 0);
+            break;
+        default:
+            AVD_CHECK_MSG(false, "Unsupported shader stage for %s, are you sure this is a valid shader asset?\n", inputShaderName);
+    }
     shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_zero + inOptions->optimize);
     if (inOptions->warningsAsErrors) {
         AVD_LOG("Compiling shader: %s with warnings as errors enabled\n", inputShaderName);
