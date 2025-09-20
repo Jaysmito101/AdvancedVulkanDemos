@@ -3,6 +3,7 @@
 
 #define API_VERSION VK_API_VERSION_1_4
 #include "volk.h"
+#include "vulkan/vk_enum_string_helper.h"
 
 #include "core/avd_core.h"
 
