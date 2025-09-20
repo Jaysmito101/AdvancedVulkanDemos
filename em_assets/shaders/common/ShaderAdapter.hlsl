@@ -20,6 +20,7 @@
 
 
     #define SAMPLER2D(name, reg) Texture2D name : register(t##reg); SamplerState name##_sampler : register(s##reg)
+    #define SAMPLER2D_TAB(name, reg) Texture2D name[] : register(t##reg); SamplerState name##_sampler[] : register(s##reg)
 
 #elif defined(AVD_GLSL)
     #define float2 vec2
@@ -37,6 +38,7 @@
     #define min16uint uint16_t
     
     #define SAMPLER2D(name, binding_loc) layout(binding = binding_loc) uniform sampler2D name
+    #define SAMPLER2D_TAB(name, binding_loc) layout(binding = binding_loc) uniform sampler2D name[];
 #else
     #error "Shader language not defined. Please define either AVD_HLSL or AVD_GLSL"
 #endif
@@ -48,12 +50,33 @@
     #define fract frac
 
     #define SAMPLE_TEXTURE(tex, uv) tex.Sample(tex##_sampler, uv)
-
+    #define SAMPLE_TEXTURE_TAB(tex, uv, index) tex[index].Sample(tex##_sampler[index], uv)
 #else 
     #define saturate(x) clamp(x, 0.0, 1.0)
 
     #define SAMPLE_TEXTURE(tex, uv) texture(tex, uv)
+    #define SAMPLE_TEXTURE_TAB(tex, uv, index) texture(tex[index], uv)
 #endif
 
+
+#ifdef AVD_HLSL
+
+float3x3 inverse(float3x3 m) {
+    float3x3 adj;
+    adj[0][0] = m[1][1] * m[2][2] - m[1][2] * m[2][1];
+    adj[0][1] = m[0][2] * m[2][1] - m[0][1] * m[2][2];
+    adj[0][2] = m[0][1] * m[1][2] - m[0][2] * m[1][1];
+    adj[1][0] = m[1][2] * m[2][0] - m[1][0] * m[2][2];
+    adj[1][1] = m[0][0] * m[2][2] - m[0][2] * m[2][0];
+    adj[1][2] = m[0][2] * m[1][0] - m[0][0] * m[1][2];
+    adj[2][0] = m[1][0] * m[2][1] - m[1][1] * m[2][0];
+    adj[2][1] = m[0][1] * m[2][0] - m[0][0] * m[2][1];
+    adj[2][2] = m[0][0] * m[1][1] - m[0][1] * m[1][0];
+
+    float det = dot(m[0], float3(adj[0][0], adj[1][0], adj[2][0]));
+    return adj / det;
+}
+
+#endif
 
 #endif 
