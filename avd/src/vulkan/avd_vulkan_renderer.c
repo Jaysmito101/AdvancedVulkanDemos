@@ -211,7 +211,7 @@ bool avdVulkanRendererBegin(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AV
     beginInfo.pInheritanceInfo         = NULL;
     result                             = vkBeginCommandBuffer(commandBuffer, &beginInfo);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to begin command buffer: %d\n", result);
+        AVD_LOG("Failed to begin command buffer: %s\n", string_VkResult(result));
         vkResetFences(vulkan->device, 1, &renderer->resources[currentFrameIndex].renderFence);
         __avdVulkanRendererNextInflightFrame(renderer);
         return false; // do not render this frame
@@ -231,7 +231,7 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
 
     VkResult result = vkEndCommandBuffer(commandBuffer);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to end command buffer: %d\n", result);
+        AVD_LOG("Failed to end command buffer: %s\n", string_VkResult(result));
         vkResetFences(vulkan->device, 1, &renderer->resources[currentFrameIndex].renderFence);
         __avdVulkanRendererNextInflightFrame(renderer);
         return false; // do not render this frame
@@ -251,7 +251,7 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
 
     result = vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, renderer->resources[currentFrameIndex].renderFence);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to submit command buffer: %d\n", result);
+        AVD_LOG("Failed to submit command buffer: %s\n", string_VkResult(result));
         vkResetFences(vulkan->device, 1, &renderer->resources[currentFrameIndex].renderFence);
         __avdVulkanRendererNextInflightFrame(renderer);
         return false; // do not render this frame
