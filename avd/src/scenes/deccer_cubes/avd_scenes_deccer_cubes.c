@@ -6,10 +6,10 @@ typedef struct {
     AVD_Matrix4x4 viewModelMatrix;
     AVD_Matrix4x4 projectionMatrix;
 
-    int32_t vertexOffset;
-    int32_t vertexCount;
-    int32_t textureIndex;
-    int32_t pad1;
+    uint32_t vertexOffset;
+    uint32_t vertexCount;
+    uint32_t textureIndex;
+    uint32_t pad1;
 } AVD_DeccerCubeUberPushConstants;
 
 static AVD_SceneDeccerCubes *__avdSceneGetTypePtr(AVD_Scene *scene)
@@ -39,17 +39,17 @@ static bool __avdSetupBuffer(
     return true;
 }
 
-static int32_t __avdFindTextureIndexFromHash(AVD_SceneDeccerCubes *deccerCubes, uint32_t hash)
+static uint32_t __avdFindTextureIndexFromHash(AVD_SceneDeccerCubes *deccerCubes, uint32_t hash)
 {
     AVD_ASSERT(deccerCubes != NULL);
 
-    for (int32_t i = 0; i < (int32_t)deccerCubes->imagesCount; i++) {
+    for (uint32_t i = 0; i < deccerCubes->imagesCount; i++) {
         if (deccerCubes->imagesHashes[i] == hash) {
             return i;
         }
     }
 
-    return -1;
+    return 0; // as a fallback return the first texture
 }
 
 static bool __avdRenderModelNode(VkCommandBuffer commandBuffer, AVD_SceneDeccerCubes *deccerCubes, AVD_ModelNode *node, AVD_Matrix4x4 parentTransform)
@@ -67,7 +67,7 @@ static bool __avdRenderModelNode(VkCommandBuffer commandBuffer, AVD_SceneDeccerC
             .viewModelMatrix  = globalTransform,
             .vertexCount      = node->mesh.triangleCount * 3,
             .vertexOffset     = node->mesh.indexOffset,
-            .textureIndex     = __avdFindTextureIndexFromHash(deccerCubes, node->mesh.material.albedoTexture.id),
+            .textureIndex     = __avdFindTextureIndexFromHash(deccerCubes, node->mesh.material.albedoTexture.id) + 1,
         };
         vkCmdPushConstants(commandBuffer, deccerCubes->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
         vkCmdDraw(commandBuffer, node->mesh.triangleCount * 3, 1, 0, 0);
@@ -266,7 +266,7 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 write->descriptorCount      = 1;
                 write->dstBinding           = (uint32_t)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 write->descriptorType       = avdVulkanToVkDescriptorType(AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                write->dstArrayElement      = deccerCubes->imagesCount;
+                write->dstArrayElement      = deccerCubes->imagesCount + 1;
                 write->pImageInfo           = &deccerCubes->images[deccerCubes->imagesCount].descriptorImageInfo;
 
                 deccerCubes->imagesCount += 1;
