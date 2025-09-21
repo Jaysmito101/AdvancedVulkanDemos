@@ -28,7 +28,7 @@ static void __avdReadFile(
         return;
     }
 
-    if (!avdReadBinaryFile(filename, data, len)) {
+    if (!avdReadBinaryFile(filename, (void **)data, len)) {
         AVD_LOG("Failed to read file: %s\n", filename);
         *data = NULL;
         *len  = 0;
