@@ -40,10 +40,12 @@ VertexShaderOutput main(uint vertexIndex : SV_VertexID)
 {
     VertexShaderOutput output;
 
-    float4x4 viewModelMatrix  = data.viewModelMatrix;
+    float4x4 modelMatrix      = data.modelMatrix;
+    float4x4 viewMatrix       = data.viewMatrix;
+    float4x4 viewModelMatrix  = mul(viewMatrix, modelMatrix);
     float4x4 projectionMatrix = data.projectionMatrix;
-    float3x3 normalMatrix     = transpose(inverse(mat3(data.viewModelMatrix)));
-    float4 vertexPosition   = float4(0.0);
+    float3x3 normalMatrix     = transpose(inverse(mat3(data.modelMatrix)));
+    float4 vertexPosition     = float4(0.0);
 
     vertexPosition = samplePosition(vertexIndex);
 

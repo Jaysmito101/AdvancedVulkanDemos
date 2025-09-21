@@ -3,8 +3,9 @@
 #include "PBRUtils"
 
 struct UberPushConstantData {
-    float4x4 viewModelMatrix;
+    float4x4 modelMatrix;
     float4x4 projectionMatrix;
+    float4x4 viewMatrix;
 
     uint vertexOffset;
     uint vertexCount;

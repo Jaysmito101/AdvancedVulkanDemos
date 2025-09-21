@@ -1,10 +1,12 @@
 #include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
 #include "avd_application.h"
+#include "math/avd_matrix_non_simd.h"
 #include "scenes/avd_scenes.h"
 
 typedef struct {
-    AVD_Matrix4x4 viewModelMatrix;
+    AVD_Matrix4x4 modelMatrix;
     AVD_Matrix4x4 projectionMatrix;
+    AVD_Matrix4x4 viewMatrix;
 
     uint32_t vertexOffset;
     uint32_t vertexCount;
@@ -64,7 +66,8 @@ static bool __avdRenderModelNode(VkCommandBuffer commandBuffer, AVD_SceneDeccerC
     if (node->hasMesh) {
         AVD_DeccerCubeUberPushConstants pushConstants = {
             .projectionMatrix = deccerCubes->projectionMatrix,
-            .viewModelMatrix  = globalTransform,
+            .modelMatrix      = globalTransform,
+            .viewMatrix       = deccerCubes->viewMatrix,
             .vertexCount      = node->mesh.triangleCount * 3,
             .vertexOffset     = node->mesh.indexOffset,
             .textureIndex     = __avdFindTextureIndexFromHash(deccerCubes, node->mesh.material.albedoTexture.id) + 1,
@@ -338,7 +341,7 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipelineLayout, 0, 2, descriptorSets, 0, NULL);
 
     AVD_Model *model = (AVD_Model *)avdListGet(&deccerCubes->scene.modelsList, 0);
-    AVD_CHECK(__avdRenderModelNode(commandBuffer, deccerCubes, model->mainScene, deccerCubes->viewMatrix));
+    AVD_CHECK(__avdRenderModelNode(commandBuffer, deccerCubes, model->mainScene, avdMat4x4Identity()));
 
     float titleWidth, titleHeight;
     float infoWidth, infoHeight;
