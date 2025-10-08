@@ -2,9 +2,6 @@
 #include "avd_application.h"
 
 typedef struct {
-    AVD_Matrix4x4 viewModelMatrix;
-    AVD_Matrix4x4 projectionMatrix;
-
     int32_t indexOffset;
     int32_t indexCount;
     int32_t pad0;
@@ -71,6 +68,28 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
     hlsPlayer->sceneWidth  = (float)appState->renderer.sceneFramebuffer.width;
     hlsPlayer->sceneHeight = (float)appState->renderer.sceneFramebuffer.height;
 
+    if (!hlsPlayer->isSupported) {
+        return true;
+    }
+
+    AVD_VulkanPipelineCreationInfo pipelineCreationInfo = {0};
+    avdPipelineUtilsPipelineCreationInfoInit(&pipelineCreationInfo);
+    pipelineCreationInfo.enableDepthTest = true;
+    AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
+        &hlsPlayer->pipelineLayout,
+        &hlsPlayer->pipeline,
+        appState->vulkan.device,
+        &appState->vulkan.bindlessDescriptorSetLayout,
+        1,
+        sizeof(AVD_HLSPlayerPushConstants),
+        appState->renderer.sceneFramebuffer.renderPass,
+        (AVD_UInt32)appState->renderer.sceneFramebuffer.colorAttachments.count,
+        "HLSPlayerVert",
+        "HLSPlayerFrag",
+        NULL,
+        &pipelineCreationInfo));
+
+
     return true;
 }
 
@@ -81,11 +100,16 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
 
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
 
-    vkDestroyPipeline(appState->vulkan.device, hlsPlayer->pipeline, NULL);
-    vkDestroyPipelineLayout(appState->vulkan.device, hlsPlayer->pipelineLayout, NULL);
-
+    
     avdRenderableTextDestroy(&hlsPlayer->title, &appState->vulkan);
     avdRenderableTextDestroy(&hlsPlayer->info, &appState->vulkan);
+
+    if (!hlsPlayer->isSupported) {
+        return;
+    }
+
+    vkDestroyPipeline(appState->vulkan.device, hlsPlayer->pipeline, NULL);
+    vkDestroyPipelineLayout(appState->vulkan.device, hlsPlayer->pipelineLayout, NULL);
 }
 
 bool avdSceneHLSPlayerLoad(struct AVD_AppState *appState, union AVD_Scene *scene, const char **statusMessage, float *progress)
@@ -116,28 +140,6 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
     }
 }
 
-static bool __avdSceneUpdateCamera(AVD_SceneHLSPlayer *hlsPlayer, AVD_Float timer)
-{
-    AVD_ASSERT(hlsPlayer != NULL);
-
-    timer         = timer * 0.1f;
-    AVD_Float rad = 8.0f;
-
-    hlsPlayer->viewModelMatrix = avdMatLookAt(
-        avdVec3(rad * sinf(timer), 4.0f, rad * cosf(timer)),
-        avdVec3(0.0f, 0.0f, 0.0f),
-        avdVec3(0.0f, 1.0f, 0.0f)
-    );
-
-    hlsPlayer->projectionMatrix = avdMatPerspective(
-        avdDeg2Rad(67.0f),
-        hlsPlayer->sceneWidth / hlsPlayer->sceneHeight,
-        0.1f,
-        100.0f);
-
-    return true;
-}
-
 bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *scene)
 {
     AVD_ASSERT(appState != NULL);
@@ -145,7 +147,9 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
 
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
 
-    AVD_CHECK(__avdSceneUpdateCamera(hlsPlayer, (float)appState->framerate.currentTime));
+    if (!hlsPlayer->isSupported) {
+        return true;
+    }
 
     return true;
 }
@@ -164,6 +168,14 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
     float infoWidth, infoHeight;
     avdRenderableTextGetSize(&hlsPlayer->title, &titleWidth, &titleHeight);
     avdRenderableTextGetSize(&hlsPlayer->info, &infoWidth, &infoHeight);
+
+    if (hlsPlayer->isSupported) {
+        AVD_HLSPlayerPushConstants pushConstants = {0};
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipeline);
+        vkCmdPushConstants(commandBuffer, hlsPlayer->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
+        vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+    }
 
     avdRenderText(
         &appState->vulkan,
