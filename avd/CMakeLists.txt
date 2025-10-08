@@ -64,6 +64,7 @@ add_executable(avd
     ./src/scenes/subsurface_scattering/avd_scenes_subsurface_scattering.c
     ./src/scenes/eyeballs/avd_scenes_eyeballs.c
     ./src/scenes/realistic_head/avd_scenes_realistic_head.c
+    ./src/scenes/hls_player/avd_scenes_hls_player.c
 )
 
 include_directories(avd
