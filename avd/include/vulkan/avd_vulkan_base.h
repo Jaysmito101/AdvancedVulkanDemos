@@ -29,22 +29,36 @@ typedef enum {
     AVD_VULKAN_DESCRIPTOR_TYPE_COUNT
 } AVD_VulkanDescriptorType;
 
+
+typedef struct AVD_VulkanFeatures {
+    bool rayTracing;
+    bool videoDecode;
+} AVD_VulkanFeatures;
+
 typedef struct AVD_Vulkan {
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
     VkDevice device;
+    
     VkQueue graphicsQueue;
     VkQueue computeQueue;
+    VkQueue videoDecodeQueue;
+
     VkCommandPool graphicsCommandPool;
     VkCommandPool computeCommandPool;
+    VkCommandPool videoDecodeCommandPool;
+    
+    
     VkDescriptorPool descriptorPool;
     VkDescriptorPool bindlessDescriptorPool;
-
-    VkDescriptorSetLayout bindlessDescriptorSetLayout;
     VkDescriptorSet bindlessDescriptorSet;
+    VkDescriptorSetLayout bindlessDescriptorSetLayout;
 
     int32_t graphicsQueueFamilyIndex;
     int32_t computeQueueFamilyIndex;
+    int32_t videoDecodeQueueFamilyIndex;
+
+    AVD_VulkanFeatures supportedFeatures;
 
 #ifdef AVD_DEBUG
     VkDebugUtilsMessengerEXT debugMessenger;

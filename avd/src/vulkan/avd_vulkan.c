@@ -14,6 +14,22 @@ static const char *__avd_RequiredVulkanExtensions[] = {
     VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,
     VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME};
 
+static const char *__avd_VulkanVideoExtensions[] = {
+    VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
+    VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME,
+    VK_KHR_VIDEO_DECODE_H264_EXTENSION_NAME,
+    VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+    // VK_KHR_VIDEO_DECODE_H265_EXTENSION_NAME, // we only deal with h264 for now!
+};
+
+static AVD_VulkanFeatures *__avdVulkanFeaturesInit(AVD_VulkanFeatures *features)
+{
+    AVD_ASSERT(features != NULL);
+    features->rayTracing  = false;
+    features->videoDecode = false;
+    return features;
+}
+
 static bool __avdVulkanLayersSupported(const char **layers, uint32_t layerCount)
 {
     static VkLayerProperties availableLayers[128] = {0};
@@ -53,6 +69,30 @@ static bool __avdAddGlfwExtenstions(uint32_t *extensionCount, const char **exten
     }
     *extensionCount += count;
     return true;
+}
+
+static const char** __avdGetVulkanDeviceExtensions(AVD_Vulkan* vulkan, uint32_t* extensionCount)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(extensionCount != NULL);
+
+    static const char* deviceExtensions[128] = {0};
+
+    uint32_t count = 0;
+    for (uint32_t i = 0; i < AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions); ++i) {
+        deviceExtensions[count] = __avd_RequiredVulkanExtensions[i];
+        count++;
+    }   
+
+    if (vulkan->supportedFeatures.videoDecode) {
+        for (uint32_t i = 0; i < AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions); ++i) {
+            deviceExtensions[count] = __avd_VulkanVideoExtensions[i];
+            count++;
+        }
+    }
+
+    *extensionCount = count;
+    return deviceExtensions;
 }
 
 #ifdef AVD_DEBUG
@@ -192,7 +232,7 @@ static bool __avdVulkanCreateSurface(AVD_Vulkan *vulkan, GLFWwindow *window, VkS
     return true;
 }
 
-static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device)
+static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AVD_VulkanFeatures *outFeatures)
 {
     uint32_t extensionCount                      = 0;
     static VkExtensionProperties extensions[256] = {0};
@@ -215,10 +255,29 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device)
             return false;
         }
     }
+
+    outFeatures->rayTracing = true; // for now raytracing is a part of the required extensions
+
+    outFeatures->videoDecode = true;
+    for (uint32_t i = 0; i < AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions); ++i) {
+        bool found = false;
+        for (uint32_t j = 0; j < extensionCount; ++j) {
+            if (strcmp(__avd_VulkanVideoExtensions[i], extensions[j].extensionName) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            outFeatures->videoDecode = false;
+            AVD_LOG("Video extension %s not supported\n", __avd_VulkanVideoExtensions[i]);
+            break;
+        }
+    }
+
     return true;
 }
 
-static bool __avdVulkanPhysicalDeviceCheckFeatures(VkPhysicalDevice device)
+static bool __avdVulkanPhysicalDeviceCheckFeatures(VkPhysicalDevice device, AVD_VulkanFeatures *outFeatures)
 {
     VkPhysicalDeviceFeatures features = {0};
     vkGetPhysicalDeviceFeatures(device, &features);
@@ -245,32 +304,31 @@ static bool __avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
     VkPhysicalDevice devices[64] = {0};
     vkEnumeratePhysicalDevices(vulkan->instance, &deviceCount, devices);
 
-    bool foundDiscreteGPU = false;
+    AVD_VulkanFeatures supportedFeatures = {0};
+    bool foundDiscreteGPU                = false;
     for (uint32_t i = 0; i < deviceCount; ++i) {
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(devices[i], &deviceProperties);
 
-        if (!__avdVulkanPhysicalDeviceCheckExtensions(devices[i])) {
+        if (!__avdVulkanPhysicalDeviceCheckExtensions(devices[i], __avdVulkanFeaturesInit(&supportedFeatures))) {
             AVD_LOG("Physical device %s does not support required extensions\n", deviceProperties.deviceName);
             continue;
         }
 
-        if (!__avdVulkanPhysicalDeviceCheckFeatures(devices[i])) {
+        if (!__avdVulkanPhysicalDeviceCheckFeatures(devices[i], &supportedFeatures)) {
             AVD_LOG("Physical device %s does not support required features\n", deviceProperties.deviceName);
             continue;
         }
 
         if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-            vulkan->physicalDevice = devices[i];
-            foundDiscreteGPU       = true;
+            vulkan->physicalDevice    = devices[i];
+            vulkan->supportedFeatures = supportedFeatures;
+            foundDiscreteGPU          = true;
             break;
         }
     }
 
-    if (!foundDiscreteGPU) {
-        AVD_LOG("No discrete GPU found, using first available device\n");
-        vulkan->physicalDevice = devices[0];
-    }
+    AVD_CHECK_MSG(foundDiscreteGPU, "No suitable physical device found\n");
 
     VkPhysicalDeviceProperties deviceProperties = {0};
     vkGetPhysicalDeviceProperties(vulkan->physicalDevice, &deviceProperties);
@@ -326,21 +384,38 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     int32_t computeQueueFamilyIndex = __avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_NULL_HANDLE, graphicsQueueFamilyIndex);
     AVD_CHECK_MSG(computeQueueFamilyIndex >= 0, "Failed to find compute queue family index\n");
 
+    int32_t videoDecodeQueueFamilyIndex = __avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT, VK_NULL_HANDLE, -1);
+    if (vulkan->supportedFeatures.videoDecode) {
+        AVD_CHECK_MSG(videoDecodeQueueFamilyIndex >= 0, "Failed to find video decode queue family index\n");
+    }
+
     // We only need one graphics queue and one compute queue for now
-    VkDeviceQueueCreateInfo queueCreateInfos[2] = {0};
+    VkDeviceQueueCreateInfo queueCreateInfos[3] = {0};
+    AVD_Size queueCreateInfoCount               = 0;
     float queuePriority                         = 1.0f;
 
     //  first the graphics queue
-    queueCreateInfos[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfos[0].queueFamilyIndex = graphicsQueueFamilyIndex;
-    queueCreateInfos[0].queueCount       = 1;
-    queueCreateInfos[0].pQueuePriorities = &queuePriority;
+    queueCreateInfos[queueCreateInfoCount].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfos[queueCreateInfoCount].queueFamilyIndex = graphicsQueueFamilyIndex;
+    queueCreateInfos[queueCreateInfoCount].queueCount       = 1;
+    queueCreateInfos[queueCreateInfoCount].pQueuePriorities = &queuePriority;
+    queueCreateInfoCount++;
 
     // then the compute queue
-    queueCreateInfos[1].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfos[1].queueFamilyIndex = computeQueueFamilyIndex;
-    queueCreateInfos[1].queueCount       = 1;
-    queueCreateInfos[1].pQueuePriorities = &queuePriority;
+    queueCreateInfos[queueCreateInfoCount].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfos[queueCreateInfoCount].queueFamilyIndex = computeQueueFamilyIndex;
+    queueCreateInfos[queueCreateInfoCount].queueCount       = 1;
+    queueCreateInfos[queueCreateInfoCount].pQueuePriorities = &queuePriority;
+    queueCreateInfoCount++;
+
+    if (vulkan->supportedFeatures.videoDecode) {
+        // finally the video decode queue
+        queueCreateInfos[queueCreateInfoCount].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfos[queueCreateInfoCount].queueFamilyIndex = videoDecodeQueueFamilyIndex;
+        queueCreateInfos[queueCreateInfoCount].queueCount       = 1;
+        queueCreateInfos[queueCreateInfoCount].pQueuePriorities = &queuePriority;
+        queueCreateInfoCount++;
+    }
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {0};
     rayTracingPipelineFeatures.sType                                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
@@ -395,10 +470,9 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
 
     VkDeviceCreateInfo createInfo      = {0};
     createInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.queueCreateInfoCount    = 2;
+    createInfo.queueCreateInfoCount    = (AVD_UInt32)queueCreateInfoCount;
     createInfo.pQueueCreateInfos       = queueCreateInfos;
-    createInfo.enabledExtensionCount   = AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions);
-    createInfo.ppEnabledExtensionNames = __avd_RequiredVulkanExtensions;
+    createInfo.ppEnabledExtensionNames = __avdGetVulkanDeviceExtensions(vulkan, &createInfo.enabledExtensionCount);
     createInfo.enabledLayerCount       = 0;
     createInfo.pNext                   = &deviceFeatures2;
 
@@ -420,8 +494,9 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     //                       And thus this optimizes the vulkan calls.
     volkLoadDevice(vulkan->device);
 
-    vulkan->graphicsQueueFamilyIndex = graphicsQueueFamilyIndex;
-    vulkan->computeQueueFamilyIndex  = computeQueueFamilyIndex;
+    vulkan->graphicsQueueFamilyIndex    = graphicsQueueFamilyIndex;
+    vulkan->computeQueueFamilyIndex     = computeQueueFamilyIndex;
+    vulkan->videoDecodeQueueFamilyIndex = videoDecodeQueueFamilyIndex;
 
     return true;
 }
@@ -431,6 +506,11 @@ static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
     vkGetDeviceQueue(vulkan->device, vulkan->graphicsQueueFamilyIndex, 0, &vulkan->graphicsQueue);
     vkGetDeviceQueue(vulkan->device, vulkan->computeQueueFamilyIndex, 0, &vulkan->computeQueue);
     AVD_CHECK(vulkan->graphicsQueue != VK_NULL_HANDLE && vulkan->computeQueue != VK_NULL_HANDLE);
+
+    if (vulkan->supportedFeatures.videoDecode) {
+        vkGetDeviceQueue(vulkan->device, vulkan->videoDecodeQueueFamilyIndex, 0, &vulkan->videoDecodeQueue);
+        AVD_CHECK(vulkan->videoDecodeQueue != VK_NULL_HANDLE);
+    }
     return true;
 }
 
@@ -439,14 +519,20 @@ static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
     VkCommandPoolCreateInfo poolInfo = {0};
     poolInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags                   = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    
     poolInfo.queueFamilyIndex        = vulkan->graphicsQueueFamilyIndex;
-
     VkResult result = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->graphicsCommandPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create graphics command pool\n");
 
     poolInfo.queueFamilyIndex = vulkan->computeQueueFamilyIndex;
     result                    = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->computeCommandPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create compute command pool\n");
+
+    if (vulkan->supportedFeatures.videoDecode) {
+        poolInfo.queueFamilyIndex = vulkan->videoDecodeQueueFamilyIndex;
+        result                    = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->videoDecodeCommandPool);
+        AVD_CHECK_VK_RESULT(result, "Failed to create video decode command pool\n");
+    }
 
     return true;
 }
@@ -554,6 +640,9 @@ void avdVulkanShutdown(AVD_Vulkan *vulkan)
 
     vkDestroyCommandPool(vulkan->device, vulkan->graphicsCommandPool, NULL);
     vkDestroyCommandPool(vulkan->device, vulkan->computeCommandPool, NULL);
+    if (vulkan->supportedFeatures.videoDecode) {
+        vkDestroyCommandPool(vulkan->device, vulkan->videoDecodeCommandPool, NULL);
+    }
 
     vkDestroyDescriptorPool(vulkan->device, vulkan->descriptorPool, NULL);
     vkDestroyDescriptorPool(vulkan->device, vulkan->bindlessDescriptorPool, NULL);
