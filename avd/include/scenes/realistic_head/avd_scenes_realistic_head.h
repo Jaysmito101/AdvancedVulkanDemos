@@ -11,8 +11,18 @@ typedef struct AVD_SceneRealisticHead {
     AVD_Matrix4x4 viewModelMatrix;
     AVD_Matrix4x4 projectionMatrix;
 
+    AVD_VulkanBuffer indexBuffer;
+    AVD_VulkanBuffer vertexBuffer;
+
     AVD_RenderableText title;
     AVD_RenderableText info;
+
+    AVD_3DScene models;
+
+    VkDescriptorSetLayout set0Layout;
+    VkDescriptorSet set0;
+
+    uint32_t loadStage;
 
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
