@@ -4,4 +4,4 @@
 * Vulkan Video Decoding [Wicked Engine]: https://wickedengine.net/2023/05/vulkan-video-decoding/
 * Vulkan Video Decode: First Frames: https://poniesandlight.co.uk/reflect/island_video_decoder/
 * An Introduction to Vulkan Video: https://www.khronos.org/blog/an-introduction-to-vulkan-video
-* Debug Tool:**** https://media-analyzer.pro/app
+* Debug Tool: https://media-analyzer.pro/app
