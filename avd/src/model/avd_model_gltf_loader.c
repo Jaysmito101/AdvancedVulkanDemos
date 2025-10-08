@@ -1,6 +1,9 @@
 #include "model/avd_3d_scene.h"
 
 #include "cgltf.h"
+#include "model/avd_model.h"
+#include "model/avd_model_base.h"
+#include <basetsd.h>
 
 static AVD_Matrix4x4 __avdModelGltfMatrixToAvdMatrix(const cgltf_float *matrix)
 {
@@ -321,6 +324,7 @@ static bool __avdModelLoadGltfNodeMesh(AVD_Model *model, AVD_ModelResources *res
             avdMesh.morphTargets->targets[i].weight = 0.0;
         }
     }
+    node->isMeshParent = true;
 
     const char *meshRawName = mesh->name ? mesh->name : "__UnnamedMesh";
     if (mesh->primitives_count == 1) {
@@ -375,7 +379,7 @@ static bool __avdModelLoadGltfNode(AVD_Model *model, AVD_ModelResources *resourc
     return true;
 }
 
-static bool __avdModelLoadGltfScene(AVD_Model *model, AVD_ModelResources *resources, cgltf_scene *scene, AVD_GltfLoadFlags flags, bool mainScene)
+static bool __avdModelLoadGltfScene(AVD_Model *model, AVD_ModelResources *resources, cgltf_scene *scene, AVD_GltfLoadFlags flags, bool mainScene, void **nodeMapping, AVD_Size *nodeMappingCount)
 {
     AVD_ModelNode *sceneNode = NULL;
     AVD_CHECK(avdModelAllocNode(model, &sceneNode));
@@ -383,6 +387,7 @@ static bool __avdModelLoadGltfScene(AVD_Model *model, AVD_ModelResources *resour
     AVD_CHECK(avdModelNodePrepare(sceneNode, model->rootNode, sceneName, avdHashString(sceneName)));
 
     for (int i = 0; i < scene->nodes_count; i++) {
+        memcpy(nodeMapping[*nodeMappingCount++], (void *[]){scene->nodes[i], sceneNode}, sizeof(void *) * 2);
         AVD_CHECK(__avdModelLoadGltfNode(model, resources, sceneNode, scene->nodes[i], flags));
     }
 
@@ -404,6 +409,33 @@ bool avd3DSceneLoadGltf(const char *filename, AVD_3DScene *scene, AVD_GltfLoadFl
     return true;
 }
 
+static AVD_ModelNode *__avdModelFindNodeByGltfNode(void **nodeMapping, AVD_Size nodeMappingCount, cgltf_node *gltfNode)
+{
+    for (AVD_Size i = 0; i < nodeMappingCount; i++) {
+        if (nodeMapping[i * 2 + 0] == gltfNode) {
+            return (AVD_ModelNode *)nodeMapping[i * 2 + 1];
+        }
+    }
+    return NULL;
+}
+
+static bool __avdModelLoadGltfAnimation(AVD_Model *model, AVD_ModelResources *resources, cgltf_animation *anim, AVD_GltfLoadFlags flags, void **nodeMapping, AVD_Size *nodeMappingCount)
+{
+    AVD_Animation animaion = {0};
+    snprintf(animaion.name, sizeof(animaion.name), "%s", anim->name ? anim->name : "__UnnamedAnimation");
+    animaion.channelCount = 0;
+
+    for (AVD_Size i = 0; i < anim->channels_count; i++) {
+        if (anim->channels[i].target_path == cgltf_animation_path_type_weights) {
+            AVD_CHECK(__avdModelLoadGltfAnimationChannel(&animaion.channels[animaion.channelCount++], resources, anim->channels[i], flags));
+        } else {
+            AVD_LOG("Model [%s] has some animation channel types which arent loaded/supported.")
+        }
+    }
+
+    return true;
+}
+
 bool avdModelLoadGltf(const char *filename, AVD_Model *model, AVD_ModelResources *resources, AVD_GltfLoadFlags flags)
 {
     AVD_ASSERT(model != NULL);
@@ -418,11 +450,18 @@ bool avdModelLoadGltf(const char *filename, AVD_Model *model, AVD_ModelResources
     AVD_CHECK_MSG(cgltf_load_buffers(&options, data, filename) == cgltf_result_success, "Failed to parse GLTF file: %s", filename);
     AVD_CHECK_MSG(cgltf_validate(data) == cgltf_result_success, "Failed to validate GLTF file: %s", filename);
 
+    static void *nodeMapping[AVD_MODEL_MAX_NODES * 2] = {0};
+    AVD_Size nodeMappingCount                         = 0;
+
     snprintf(model->name, sizeof(model->name), "%s", filename);
     model->id = avdHashString(model->name);
 
     for (int i = 0; i < data->scenes_count; i++) {
-        AVD_CHECK(__avdModelLoadGltfScene(model, resources, &data->scenes[i], flags, &data->scenes[i] == data->scene));
+        AVD_CHECK(__avdModelLoadGltfScene(model, resources, &data->scenes[i], flags, &data->scenes[i] == data->scene, nodeMapping, &nodeMappingCount));
+    }
+
+    for (int i = 0; i < data->animations_count i++) {
+        AVD_CHECK(__avdModelLoadGltfAnimation(model, resources, &data->animations[i], flags, nodeMapping, &nodeMappingCount));
     }
 
     cgltf_free(data);

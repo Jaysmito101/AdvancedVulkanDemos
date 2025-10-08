@@ -7,10 +7,11 @@ bool avdModelNodePrepare(AVD_ModelNode *node, AVD_ModelNode *parent, const char 
 
     memset(node, 0, sizeof(AVD_ModelNode));
     snprintf(node->name, sizeof(node->name), "%s", name);
-    node->hasMesh   = false;
-    node->id        = id;
-    node->parent    = parent;
-    node->transform = avdTransformIdentity();
+    node->hasMesh      = false;
+    node->id           = id;
+    node->parent       = parent;
+    node->transform    = avdTransformIdentity();
+    node->isMeshParent = false;
 
     if (parent != NULL) {
         bool couldPut = false;
@@ -46,6 +47,7 @@ bool avdModelCreate(AVD_Model *model, AVD_Int32 id)
     memset(model->nodes, 0, sizeof(AVD_ModelNode) * AVD_MODEL_MAX_NODES);
 
     avdListCreate(&model->morphTargets, sizeof(AVD_MorphTargets));
+    avdListCreate(&model->animations, sizeof(AVD_Animation));
 
     // prepare the root node
     AVD_CHECK(avdModelAllocNode(model, &model->rootNode));
@@ -61,6 +63,7 @@ void avdModelDestroy(AVD_Model *model)
     model->id = -1;
     avdListDestroy(&model->meshes);
     avdListDestroy(&model->morphTargets);
+    avdListDestroy(&model->animations);
     free(model->nodes);
 }
 
