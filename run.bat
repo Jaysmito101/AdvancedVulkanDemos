@@ -21,13 +21,19 @@ if "%1"=="--release" (
 )
 if "%1"=="--mingw" (
     set TOOLCHAIN=mingw
-    set BUILD_DIR=build.mingw
+    set BUILD_DIR=build
     shift
     goto parse_args
 )
 if "%1"=="--vs" (
     set TOOLCHAIN=vs
     set BUILD_DIR=build.vs
+    shift
+    goto parse_args
+)
+if "%1"=="--ninja" (
+    set TOOLCHAIN=ninja
+    set BUILD_DIR=build.ninja
     shift
     goto parse_args
 )
@@ -43,6 +49,8 @@ if not exist %BUILD_DIR%\CMakeCache.txt (
     echo CMakeCache.txt not found in %BUILD_DIR%. Running cmake to generate build files...
     if "%TOOLCHAIN%"=="mingw" (
         cmake -S . -B %BUILD_DIR% -G "MinGW Makefiles"
+    ) else if "%TOOLCHAIN%"=="ninja" (
+        cmake -S . -B %BUILD_DIR% -G "Ninja"
     ) else (
         cmake -S . -B %BUILD_DIR%
     )
@@ -70,7 +78,7 @@ if %errorlevel% neq 0 (
 
 @REM run the program (debug or release)
 echo Running the program...
-if "%TOOLCHAIN%"=="mingw" (
+if "%TOOLCHAIN%"=="mingw" OR "%TOOLCHAIN%"=="ninja" (
     if "%BUILD_TYPE%"=="Release" (
         .\%BUILD_DIR%\avd\avd.exe
     ) else (
