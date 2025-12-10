@@ -36,7 +36,7 @@
         a              = b;    \
         b              = temp; \
     }
-#define AVD_OFFSET_OF(type, member) ((size_t) & (((type *)0)->member))
+#define AVD_OFFSET_OF(type, member) ((size_t)&(((type *)0)->member))
 #define AVD_ASSERT(condition)       assert(condition)
 #define AVD_LOG(msg, ...)           printf(msg, ##__VA_ARGS__)
 
@@ -46,16 +46,16 @@
         return false;                         \
     }
 
-#define AVD_CHECK_VK_RESULT(result, log, ...)                                     \
-    {                                                                             \
-        VkResult localResult = result;                                            \
-        if (localResult != VK_SUCCESS) {                                          \
-            AVD_LOG("------------------------------------\n");                    \
+#define AVD_CHECK_VK_RESULT(result, log, ...)                                                                        \
+    {                                                                                                                \
+        VkResult localResult = result;                                                                               \
+        if (localResult != VK_SUCCESS) {                                                                             \
+            AVD_LOG("------------------------------------\n");                                                       \
             AVD_LOG("Check [%s] [%s] failed in %s:%d\n", #result, string_VkResult(localResult), __FILE__, __LINE__); \
-            AVD_LOG(log, ##__VA_ARGS__);                                          \
-            AVD_LOG("------------------------------------\n");                    \
-            return false;                                                         \
-        }                                                                        \
+            AVD_LOG(log, ##__VA_ARGS__);                                                                             \
+            AVD_LOG("------------------------------------\n");                                                       \
+            return false;                                                                                            \
+        }                                                                                                            \
     }
 
 #define AVD_CHECK_MSG(result, log, ...)                                       \

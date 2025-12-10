@@ -7,12 +7,10 @@
 
 #include "core/avd_core.h"
 
-
 // third party includes
 //
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
-
 
 #ifndef AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE
 #define AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE 1024
@@ -29,7 +27,6 @@ typedef enum {
     AVD_VULKAN_DESCRIPTOR_TYPE_COUNT
 } AVD_VulkanDescriptorType;
 
-
 typedef struct AVD_VulkanFeatures {
     bool rayTracing;
     bool videoDecode;
@@ -39,7 +36,7 @@ typedef struct AVD_Vulkan {
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
     VkDevice device;
-    
+
     VkQueue graphicsQueue;
     VkQueue computeQueue;
     VkQueue videoDecodeQueue;
@@ -47,8 +44,7 @@ typedef struct AVD_Vulkan {
     VkCommandPool graphicsCommandPool;
     VkCommandPool computeCommandPool;
     VkCommandPool videoDecodeCommandPool;
-    
-    
+
     VkDescriptorPool descriptorPool;
     VkDescriptorPool bindlessDescriptorPool;
     VkDescriptorSet bindlessDescriptorSet;

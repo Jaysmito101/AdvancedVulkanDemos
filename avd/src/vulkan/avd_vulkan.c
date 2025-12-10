@@ -71,18 +71,18 @@ static bool __avdAddGlfwExtenstions(uint32_t *extensionCount, const char **exten
     return true;
 }
 
-static const char** __avdGetVulkanDeviceExtensions(AVD_Vulkan* vulkan, uint32_t* extensionCount)
+static const char **__avdGetVulkanDeviceExtensions(AVD_Vulkan *vulkan, uint32_t *extensionCount)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(extensionCount != NULL);
 
-    static const char* deviceExtensions[128] = {0};
+    static const char *deviceExtensions[128] = {0};
 
     uint32_t count = 0;
     for (uint32_t i = 0; i < AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions); ++i) {
         deviceExtensions[count] = __avd_RequiredVulkanExtensions[i];
         count++;
-    }   
+    }
 
     if (vulkan->supportedFeatures.videoDecode) {
         for (uint32_t i = 0; i < AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions); ++i) {
@@ -519,9 +519,9 @@ static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
     VkCommandPoolCreateInfo poolInfo = {0};
     poolInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags                   = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    
-    poolInfo.queueFamilyIndex        = vulkan->graphicsQueueFamilyIndex;
-    VkResult result = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->graphicsCommandPool);
+
+    poolInfo.queueFamilyIndex = vulkan->graphicsQueueFamilyIndex;
+    VkResult result           = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->graphicsCommandPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create graphics command pool\n");
 
     poolInfo.queueFamilyIndex = vulkan->computeQueueFamilyIndex;
