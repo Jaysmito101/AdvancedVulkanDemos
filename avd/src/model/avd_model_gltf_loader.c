@@ -85,6 +85,10 @@ static cgltf_attribute *__avdModelGltfFindAttribute(cgltf_attribute *attributes,
                         break;
                     }
                 }
+                default: {
+                    AVD_LOG("Warning: Unsupported attribute type %d requested. This is unexpected, skipping.\n", type);
+                    continue;
+                }
             }
 
             cgltf_accessor_unpack_floats(attributes[i].data, scratchBuffer, size);
