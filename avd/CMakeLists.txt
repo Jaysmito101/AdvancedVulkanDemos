@@ -112,3 +112,11 @@ target_compile_definitions(avd PRIVATE
     $<$<CONFIG:Debug>:AVD_DEBUG>          # Define AVD_DEBUG for Debug builds
     $<$<NOT:$<CONFIG:Debug>>:AVD_RELEASE> # Define AVD_RELEASE for non-Debug builds
 )
+
+
+if (MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_link_options(avd PRIVATE /IGNORE:4099)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND WIN32)
+    # Clang must pass MSVC-style flags via -Xlinker
+    target_link_options(avd PRIVATE -Xlinker /IGNORE:4099)
+endif()
