@@ -8,6 +8,6 @@ cbuffer PushConstants {
 [[vk::binding(1, 1)]]
 SAMPLER2D_TAB(textures, 1);
 
-float4 main(float4 position: SV_Position) : SV_Target {
+float4 main(VertexShaderOutput input) : SV_Target {
     return float4(1.0, 0.0, 1.0, 1.0);
 }
