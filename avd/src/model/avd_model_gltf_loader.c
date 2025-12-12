@@ -49,7 +49,7 @@ static bool __avdModelLoadGltfTransform(AVD_Transform *transform, cgltf_node *no
     return true;
 }
 
-static cgltf_attribute *__avdModelGltfFindAttribute(cgltf_attribute *attributes, cgltf_size count, cgltf_attribute_type type, AVD_UInt32 index, void *scratchBuffer)
+static void *__avdModelGltfFindAttribute(cgltf_attribute *attributes, cgltf_size count, cgltf_attribute_type type, AVD_UInt32 index, void *scratchBuffer)
 {
     AVD_Size size = attributes[0].data->count;
     for (cgltf_size i = 0; i < count; i++) {
