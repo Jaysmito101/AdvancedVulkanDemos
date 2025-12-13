@@ -9,4 +9,7 @@
 	url = https://github.com/zeux/volk.git
 [submodule "dep/tinyobjloader-c"]
 	path = dep/tinyobjloader-c
-	url = https://github.com/syoyo/tinyobjloader-c
+	url = https://github.com/syoyo/tinyobjloader-c.git
+[submodule "dep/stb"]
+	path = dep/stb
+	url = https://github.com/nothings/stb.git
