@@ -1,5 +1,6 @@
 #include "avd_application.h"
 #include "scenes/avd_scenes.h"
+#include "vulkan/vulkan_core.h"
 
 static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
 {
@@ -203,9 +204,8 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
     AVD_Vulkan *vulkan           = &appState->vulkan;
     AVD_VulkanRenderer *renderer = &appState->renderer;
 
-    uint32_t currentFrameIndex    = renderer->currentFrameIndex;
-    VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
-
+    VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
+    
     float frameWidth  = (float)renderer->sceneFramebuffer.width;
     float frameHeight = (float)renderer->sceneFramebuffer.height;
 

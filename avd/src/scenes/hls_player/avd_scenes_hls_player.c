@@ -157,7 +157,7 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    VkCommandBuffer commandBuffer = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
+    VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
