@@ -1,4 +1,5 @@
 #include "vulkan/avd_vulkan_renderer.h"
+#include "core/avd_base.h"
 
 static bool __avdVulkanCreateSemaphore(VkDevice device, VkSemaphore *semaphore)
 {
@@ -278,4 +279,12 @@ bool avdVulkanRendererCancelFrame(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulk
     __avdVulkanRendererNextInflightFrame(renderer);
 
     return true;
+}
+
+VkCommandBuffer avdVulkanRendererGetCurrentCmdBuffer(AVD_VulkanRenderer* renderer)
+{
+    AVD_ASSERT(renderer != NULL);
+
+    uint32_t currentFrameIndex = renderer->currentFrameIndex;
+    return renderer->resources[currentFrameIndex].commandBuffer;
 }
