@@ -61,6 +61,18 @@ if not exist %BUILD_DIR%\CMakeCache.txt (
 ) else (
     echo CMakeCache.txt found in %BUILD_DIR%. Skipping cmake configuration.
 )
+rem If `compile_commands.json` exists in the build directory, copy it to ./build
+if exist "%BUILD_DIR%\compile_commands.json" (
+    if not exist build (
+        mkdir build
+    )
+    copy /Y "%BUILD_DIR%\compile_commands.json" "build\compile_commands.json" >nul 2>nul
+    if %errorlevel% equ 0 (
+        echo Copied compile_commands.json to build\compile_commands.json
+    ) else (
+        echo Failed to copy compile_commands.json
+    )
+)
 
 echo Generating assets...
 python tools/assets.py
