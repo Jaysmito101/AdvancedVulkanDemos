@@ -49,9 +49,6 @@
 #define AVD_LOG_WARN(msg, ...)      PICO_WARN(msg, ##__VA_ARGS__)
 #define AVD_LOG_ERROR(msg, ...)     PICO_ERROR(msg, ##__VA_ARGS__)
 
-// falback
-#define AVD_LOG(msg, ...) AVD_LOG_INFO(msg, ##__VA_ARGS__)
-
 #define AVD_CHECK_VK_HANDLE(result, log, ...) \
     if (result == VK_NULL_HANDLE) {           \
         AVD_LOG_ERROR(log, ##__VA_ARGS__);    \
