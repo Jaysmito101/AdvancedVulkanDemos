@@ -37,6 +37,6 @@ bool avdVulkanRendererRecreateResources(AVD_VulkanRenderer *renderer, AVD_Vulkan
 bool avdVulkanRendererBegin(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain);
 bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain);
 bool avdVulkanRendererCancelFrame(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan);
-VkCommandBuffer avdVulkanRendererGetCurrentCmdBuffer(AVD_VulkanRenderer* renderer);
+VkCommandBuffer avdVulkanRendererGetCurrentCmdBuffer(AVD_VulkanRenderer *renderer);
 
 #endif // AVD_VULKAN_RENDERER_H

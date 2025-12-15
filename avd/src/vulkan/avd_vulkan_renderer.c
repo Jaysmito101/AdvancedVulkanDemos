@@ -281,7 +281,7 @@ bool avdVulkanRendererCancelFrame(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulk
     return true;
 }
 
-VkCommandBuffer avdVulkanRendererGetCurrentCmdBuffer(AVD_VulkanRenderer* renderer)
+VkCommandBuffer avdVulkanRendererGetCurrentCmdBuffer(AVD_VulkanRenderer *renderer)
 {
     AVD_ASSERT(renderer != NULL);
 

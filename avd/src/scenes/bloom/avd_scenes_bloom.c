@@ -205,7 +205,7 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
     AVD_VulkanRenderer *renderer = &appState->renderer;
 
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
-    
+
     float frameWidth  = (float)renderer->sceneFramebuffer.width;
     float frameHeight = (float)renderer->sceneFramebuffer.height;
 
