@@ -10,3 +10,6 @@
 [submodule "dep/tinyobjloader-c"]
 	path = dep/tinyobjloader-c
 	url = https://github.com/syoyo/tinyobjloader-c
+[submodule "dep/libpico"]
+	path = dep/libpico
+	url = https://github.com/Jaysmito101/libpico
