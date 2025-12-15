@@ -84,7 +84,7 @@ bool __avdEyeballSetupMesh(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
     model.id = 0;
     snprintf(model.name, sizeof(model.name), "Eyeball");
     AVD_CHECK(avd3DSceneAddModel(&eyeballScene, &model));
-    AVD_LOG("Eyeball model:");
+    AVD_LOG_INFO("Eyeball model:");
     avd3DSceneDebugLog(&eyeballScene, "Eyeball");
 
     memcpy(&eyeball->scleraMesh, avdListGet(&model.meshes, 0), sizeof(AVD_Mesh));
