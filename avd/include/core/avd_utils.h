@@ -17,4 +17,6 @@ uint16_t avdQuantizeHalf(float value);
 float avdDequantizeHalf(uint16_t value);
 int avdQuantizeSnorm(float v, int N);
 
+bool avdIsStringAURL(const char *str);
+
 #endif // AVD_UTILS_H

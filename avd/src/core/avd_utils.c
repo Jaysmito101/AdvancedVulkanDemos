@@ -149,13 +149,14 @@ bool avdReadBinaryFile(const char *filename, void **data, size_t *size)
     *size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    *data = malloc(*size);
+    *data = malloc(*size + 1);
     if (*data == NULL) {
         fclose(file);
         return false;
     }
-
+    memset(*data, 0, *size + 1);
     fread(*data, 1, *size, file);
+    ((char *)*data)[*size] = '\0';
     fclose(file);
     return true;
 }
@@ -248,4 +249,31 @@ int avdQuantizeSnorm(float v, int N)
     v = (v <= +1) ? v : +1;
 
     return (int)(v * scale + round);
+}
+
+bool avdIsStringAURL(const char *str)
+{
+    if (str == NULL) {
+        return false;
+    }
+
+    const char *schemes[] = {
+        "http://",
+        "https://",
+        "ftp://",
+        "ftps://",
+        "file://",
+        "ws://",
+        "wss://"
+    };
+
+    size_t schemeCount = sizeof(schemes) / sizeof(schemes[0]);
+    for (size_t i = 0; i < schemeCount; i++) {
+        size_t len = strlen(schemes[i]);
+        if (strncmp(str, schemes[i], len) == 0) {
+            return true;
+        }
+    }
+
+    return false;
 }
