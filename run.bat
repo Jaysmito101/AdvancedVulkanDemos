@@ -44,6 +44,33 @@ goto parse_args
 echo Using %TOOLCHAIN% toolchain with %BUILD_TYPE% configuration
 echo Build directory: %BUILD_DIR%
 
+echo Generating assets...
+python tools/assets.py
+
+@REM Check if assets changed and invalidate cache
+if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+set "ASSET_HASH_FILE=avd_assets\generated\.assetshash"
+set "BUILD_ASSET_HASH_FILE=%BUILD_DIR%\.assetshash"
+set "INVALIDATE_CACHE=0"
+
+if exist "%ASSET_HASH_FILE%" (
+    if exist "%BUILD_ASSET_HASH_FILE%" (
+        fc /b "%ASSET_HASH_FILE%" "%BUILD_ASSET_HASH_FILE%" >nul
+        if errorlevel 1 (
+            echo Assets have changed. Invalidating CMake cache...
+            set "INVALIDATE_CACHE=1"
+        )
+    ) else (
+        echo Asset hash missing in build directory. Invalidating CMake cache...
+        set "INVALIDATE_CACHE=1"
+    )
+)
+
+if "%INVALIDATE_CACHE%"=="1" (
+    if exist "%BUILD_DIR%\CMakeCache.txt" del "%BUILD_DIR%\CMakeCache.txt"
+    copy /y "%ASSET_HASH_FILE%" "%BUILD_ASSET_HASH_FILE%" >nul
+)
+
 @REM check if build directory and CMakeCache.txt exists, if not run cmake
 if not exist %BUILD_DIR%\CMakeCache.txt (
     echo CMakeCache.txt not found in %BUILD_DIR%. Running cmake to generate build files...
@@ -73,9 +100,6 @@ if exist "%BUILD_DIR%\compile_commands.json" (
         echo Failed to copy compile_commands.json
     )
 )
-
-echo Generating assets...
-python tools/assets.py
 
 echo Building the project...
 if "%BUILD_TYPE%"=="Release" (
