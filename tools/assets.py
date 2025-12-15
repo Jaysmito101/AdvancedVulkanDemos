@@ -7,6 +7,7 @@ import zipfile
 import urllib.request
 import json
 import subprocess
+import datetime
 
 AVD_FONT_MAX_GLYPHS_PY = 4096
 
@@ -717,6 +718,7 @@ def calculate_shader_dependency_hash(output_dir, shader_name, shader_names):
 def create_shader_assets_common_header(output_dir):
     all_shader_headers = os.listdir(output_dir + "/include")
     all_shader_headers = [f for f in all_shader_headers if f.endswith(".h") and f.startswith("avd_asset_shader_")]
+    all_shader_headers.sort()
     all_shader_names = [f.split("_")[3] for f in all_shader_headers]
 
     common_header_source = [
@@ -753,6 +755,7 @@ def create_shader_assets_common_header(output_dir):
         
     def shader_dependency_lambda(shader_name):
         dependencies = calculate_shader_dependency_list(output_dir, shader_name, all_shader_names)
+        dependencies = sorted(list(set(dependencies)))
         if not dependencies:
             return f"    if (strcmp(name, \"{shader_name}\") == 0) {{\n" \
                    f"        *count = 0;\n" \
