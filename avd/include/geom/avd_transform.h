@@ -22,9 +22,9 @@ typedef struct {
     .scale    = (scl)})
 
 #define avdTransformLog(transform) AVD_LOG_INFO("Transform[pos: (%.2f, %.2f, %.2f), rot: (%.2f, %.2f, %.2f, %.2f), scale: (%.2f, %.2f, %.2f)]", \
-                                           (transform).position.x, (transform).position.y, (transform).position.z,                         \
-                                           (transform).rotation.x, (transform).rotation.y, (transform).rotation.z, (transform).rotation.w, \
-                                           (transform).scale.x, (transform).scale.y, (transform).scale.z)
+                                                (transform).position.x, (transform).position.y, (transform).position.z,                         \
+                                                (transform).rotation.x, (transform).rotation.y, (transform).rotation.z, (transform).rotation.w, \
+                                                (transform).scale.x, (transform).scale.y, (transform).scale.z)
 
 // Transform operations
 AVD_Matrix4x4 avdTransformToMatrix(const AVD_Transform *transform);

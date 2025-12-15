@@ -92,7 +92,7 @@ static VkBool32 __avdDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlag
             severity = "VERBOSE";
             AVD_LOG_DEBUG("%s: %s", severity, pCallbackData->pMessage);
             break;
-            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
             severity = "INFO";
             AVD_LOG_INFO("%s: %s", severity, pCallbackData->pMessage);
             break;
@@ -100,11 +100,11 @@ static VkBool32 __avdDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlag
             severity = "WARNING";
             AVD_LOG_WARN("%s: %s", severity, pCallbackData->pMessage);
             break;
-            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             severity = "ERROR";
             AVD_LOG_ERROR("%s: %s", severity, pCallbackData->pMessage);
             break;
-            default:
+        default:
             severity = "UNKNOWN";
             AVD_LOG_VERBOSE("%s: %s", severity, pCallbackData->pMessage);
             break;

@@ -92,7 +92,7 @@ void avd3DSceneDebugLog(const AVD_3DScene *scene, const char *name)
             }
 
             AVD_LOG_INFO("      Mesh[%zu]: Name='%s', ID=%d, TriangleCount=%d, IndexOffset=%d%s\n",
-                    j, mesh->name, mesh->id, mesh->triangleCount, mesh->indexOffset, morphInfo);
+                         j, mesh->name, mesh->id, mesh->triangleCount, mesh->indexOffset, morphInfo);
         }
 
         AVD_LOG_INFO("    Node Count: %d\n", model->nodeCount);

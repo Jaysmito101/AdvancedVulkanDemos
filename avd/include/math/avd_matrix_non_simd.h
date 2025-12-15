@@ -79,15 +79,15 @@ typedef union {
     (mat).col2.x, (mat).col2.y, (mat).col2.z, (mat).col2.w, \
     (mat).col3.x, (mat).col3.y, (mat).col3.z, (mat).col3.w)
 #define avdMat4x4Log(mat) AVD_LOG_INFO("Matrix4x4[ \n"                                         \
-                                  "  %.2f, %.2f, %.2f, %.2f,\n"                           \
-                                  "  %.2f, %.2f, %.2f, %.2f,\n"                           \
-                                  "  %.2f, %.2f, %.2f, %.2f,\n"                           \
-                                  "  %.2f, %.2f, %.2f, %.2f\n"                            \
-                                  "]",                                                    \
-                                  (mat).col0.x, (mat).col1.x, (mat).col2.x, (mat).col3.x, \
-                                  (mat).col0.y, (mat).col1.y, (mat).col2.y, (mat).col3.y, \
-                                  (mat).col0.z, (mat).col1.z, (mat).col2.z, (mat).col3.z, \
-                                  (mat).col0.w, (mat).col1.w, (mat).col2.w, (mat).col3.w)
+                                       "  %.2f, %.2f, %.2f, %.2f,\n"                           \
+                                       "  %.2f, %.2f, %.2f, %.2f,\n"                           \
+                                       "  %.2f, %.2f, %.2f, %.2f,\n"                           \
+                                       "  %.2f, %.2f, %.2f, %.2f\n"                            \
+                                       "]",                                                    \
+                                       (mat).col0.x, (mat).col1.x, (mat).col2.x, (mat).col3.x, \
+                                       (mat).col0.y, (mat).col1.y, (mat).col2.y, (mat).col3.y, \
+                                       (mat).col0.z, (mat).col1.z, (mat).col2.z, (mat).col3.z, \
+                                       (mat).col0.w, (mat).col1.w, (mat).col2.w, (mat).col3.w)
 
 #define avdMat3x3(                      \
     r0c0, r0c1, r0c2,                   \
@@ -126,13 +126,13 @@ typedef union {
     (mat).col0.y, (mat).col1.y, (mat).col2.y, \
     (mat).col0.z, (mat).col1.z, (mat).col2.z)
 #define avdMat3x3Log(mat) AVD_LOG_INFO("Matrix3x3[ \n"                           \
-                                  "  %.2f, %.2f, %.2f,\n"                   \
-                                  "  %.2f, %.2f, %.2f,\n"                   \
-                                  "  %.2f, %.2f, %.2f\n"                    \
-                                  "]",                                      \
-                                  (mat).col0.x, (mat).col1.x, (mat).col2.x, \
-                                  (mat).col0.y, (mat).col1.y, (mat).col2.y, \
-                                  (mat).col0.z, (mat).col1.z, (mat).col2.z)
+                                       "  %.2f, %.2f, %.2f,\n"                   \
+                                       "  %.2f, %.2f, %.2f,\n"                   \
+                                       "  %.2f, %.2f, %.2f\n"                    \
+                                       "]",                                      \
+                                       (mat).col0.x, (mat).col1.x, (mat).col2.x, \
+                                       (mat).col0.y, (mat).col1.y, (mat).col2.y, \
+                                       (mat).col0.z, (mat).col1.z, (mat).col2.z)
 
 void avdMat4x4AddInplace(AVD_Matrix4x4 *out, const AVD_Matrix4x4 *b);
 AVD_Matrix4x4 avdMat4x4Add(const AVD_Matrix4x4 a, const AVD_Matrix4x4 b);

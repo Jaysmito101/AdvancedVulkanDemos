@@ -59,8 +59,8 @@ static cgltf_attribute *__avdModelGltfFindAttribute(cgltf_attribute *attributes,
                 case cgltf_attribute_type_normal: {
                     if (cgltf_num_components(attributes[i].data->type) != 3) {
                         AVD_LOG_WARN("%s attribute is not vec3, found type %d. This is unexpected, skipping.",
-                                type == cgltf_attribute_type_position ? "POSITION" : "NORMAL",
-                                attributes[i].data->type);
+                                     type == cgltf_attribute_type_position ? "POSITION" : "NORMAL",
+                                     attributes[i].data->type);
                         continue;
                     } else {
                         size *= 3;
