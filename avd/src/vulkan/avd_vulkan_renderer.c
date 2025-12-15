@@ -250,7 +250,7 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores    = &renderer->resources[currentFrameIndex].renderFinishedSemaphore;
 
-    result = vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, renderer->resources[currentFrameIndex].renderFence);
+    result = vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     if (result != VK_SUCCESS) {
         AVD_LOG_ERROR("Failed to submit command buffer: %s", string_VkResult(result));
         vkResetFences(vulkan->device, 1, &renderer->resources[currentFrameIndex].renderFence);
@@ -258,7 +258,7 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
         return false; // do not render this frame
     }
 
-    result = avdVulkanSwapchainPresent(swapchain, vulkan, renderer->currentImageIndex, renderer->resources[currentFrameIndex].renderFinishedSemaphore);
+    result = avdVulkanSwapchainPresent(swapchain, vulkan, renderer->currentImageIndex, renderer->resources[currentFrameIndex].renderFinishedSemaphore, renderer->resources[currentFrameIndex].renderFence);
     if (!__avdVulkanRendererHandleSwapchainResult(renderer, swapchain, result)) {
         AVD_LOG_ERROR("Failed to present swapchain image");
         return false; // do not render this frame

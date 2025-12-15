@@ -359,10 +359,16 @@ VkResult avdVulkanSwapchainAcquireNextImage(AVD_VulkanSwapchain *swapchain, AVD_
     return VK_SUCCESS;
 }
 
-VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t imageIndex, VkSemaphore waitSemaphore)
+VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t imageIndex, VkSemaphore waitSemaphore, VkFence fence)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(swapchain != NULL);
+
+    VkSwapchainPresentFenceInfoEXT presentFenceInfo = {0};
+    presentFenceInfo.sType                          = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT;
+    presentFenceInfo.pNext                          = NULL;
+    presentFenceInfo.swapchainCount                 = 1;
+    presentFenceInfo.pFences                        = &fence;
 
     VkPresentInfoKHR presentInfo   = {0};
     presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -371,8 +377,10 @@ VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *v
     presentInfo.swapchainCount     = 1;
     presentInfo.pSwapchains        = &swapchain->swapchain;
     presentInfo.pImageIndices      = &imageIndex;
+    presentInfo.pNext              = &presentFenceInfo;
 
     VkResult result = vkQueuePresentKHR(vulkan->graphicsQueue, &presentInfo);
+
     if (result != VK_SUCCESS) {
         AVD_LOG_ERROR("Failed to present image to swapchain");
         return result;
