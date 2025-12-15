@@ -231,7 +231,10 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
             // Image will be read in a shader (sampler, input attachment)
             // Make sure any writes to the image have been finished
             if (barrier.srcAccessMask == 0) {
-                barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+                if (srcStageMask != VK_PIPELINE_STAGE_ALL_COMMANDS_BIT) {
+                    barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+                }
+                barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             }
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
             break;
