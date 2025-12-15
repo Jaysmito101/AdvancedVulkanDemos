@@ -12,7 +12,12 @@ static const char *__avd_RequiredVulkanExtensions[] = {
     VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
     VK_KHR_SPIRV_1_4_EXTENSION_NAME,
     VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME,
-    VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME};
+    VK_KHR_IMAGELESS_FRAMEBUFFER_EXTENSION_NAME,
+    // TODO: We can just use VK_KHR_SURFACE_MAINTENANCE_1_EXTENSION_NAME and
+    // VK_KHR_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME instead but we are using the
+    // EXT versions for better compatibility with older drivers. In the future
+    // we can switch to the KHR versions when they are more widely supported.
+    VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME};
 
 static const char *__avd_VulkanVideoExtensions[] = {
     VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
@@ -93,6 +98,13 @@ static const char **__avdGetVulkanDeviceExtensions(AVD_Vulkan *vulkan, uint32_t 
 
     *extensionCount = count;
     return deviceExtensions;
+}
+
+static bool __avdAddSurfaceExtensions(uint32_t *extensionCount, const char **extensions)
+{
+    extensions[*extensionCount] = VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME;
+    (*extensionCount)++;
+    return true;
 }
 
 #ifdef AVD_DEBUG
@@ -191,6 +203,7 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
     static const char *extensions[64] = {0};
 
     AVD_CHECK(__avdAddGlfwExtenstions(&extensionCount, extensions));
+    AVD_CHECK(__avdAddSurfaceExtensions(&extensionCount, extensions));
 
 #ifdef AVD_DEBUG
     AVD_CHECK(__avdAddDebugUtilsExtenstions(&extensionCount, extensions));
@@ -463,6 +476,11 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     deviceVulkan11Features.storageBuffer16BitAccess           = VK_TRUE;
     deviceVulkan11Features.pNext                              = &deviceVulkan12Features;
 
+    VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1Features = {0};
+    swapchainMaintenance1Features.sType                                            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
+    swapchainMaintenance1Features.swapchainMaintenance1                            = VK_TRUE;
+    swapchainMaintenance1Features.pNext                                            = &deviceVulkan11Features;
+
     VkPhysicalDeviceFeatures2 deviceFeatures2        = {0};
     deviceFeatures2.sType                            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     deviceFeatures2.features.multiDrawIndirect       = VK_TRUE;
@@ -470,7 +488,7 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     deviceFeatures2.features.samplerAnisotropy       = VK_TRUE;
     deviceFeatures2.features.shaderInt64             = VK_TRUE;
     deviceFeatures2.features.shaderInt16             = VK_TRUE;
-    deviceFeatures2.pNext                            = &deviceVulkan11Features;
+    deviceFeatures2.pNext                            = &swapchainMaintenance1Features;
 
     VkDeviceCreateInfo createInfo      = {0};
     createInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
