@@ -13,3 +13,6 @@
 [submodule "dep/stb"]
 	path = dep/stb
 	url = https://github.com/nothings/stb.git
+[submodule "dep/libpico"]
+	path = dep/libpico
+	url = https://github.com/Jaysmito101/libpico

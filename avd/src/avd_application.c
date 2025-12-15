@@ -105,25 +105,25 @@ void avdApplicationRender(AVD_AppState *appState)
 
     if (avdVulkanSwapchainRecreateIfNeeded(&appState->swapchain, &appState->vulkan, &appState->window)) {
         if (!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain))
-            AVD_LOG("Failed to recreate Vulkan renderer resources\n");
+            AVD_LOG_ERROR("Failed to recreate Vulkan renderer resources");
         return; // skip this frame
     }
 
     if (!avdVulkanRendererBegin(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
-        AVD_LOG("Failed to begin Vulkan renderer\n");
+        AVD_LOG_ERROR("Failed to begin Vulkan renderer");
         return; // do not render this frame
     }
 
     if (!avdSceneManagerRender(&appState->sceneManager, appState)) {
-        AVD_LOG("Failed to render scene\n");
+        AVD_LOG_ERROR("Failed to render scene");
         if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
-            AVD_LOG("Failed to cancel Vulkan renderer frame\n");
+            AVD_LOG_ERROR("Failed to cancel Vulkan renderer frame");
         return; // do not render this frame
     }
 
     if (!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, &appState->sceneManager, appState->renderer.currentImageIndex)) {
         if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
-            AVD_LOG("Failed to cancel Vulkan renderer frame\n");
+            AVD_LOG_ERROR("Failed to cancel Vulkan renderer frame");
         return; // do not render this frame
     }
 

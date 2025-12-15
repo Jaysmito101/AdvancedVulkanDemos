@@ -71,6 +71,7 @@ include_directories(avd
     ./
     ./include
     ../dep/glfw/include
+    ../dep/libpico/include
     ../dep/stb
     ../dep/cgltf
     ../dep/cute_headers

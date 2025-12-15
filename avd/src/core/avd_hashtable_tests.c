@@ -4,20 +4,20 @@
 
 static bool __avdTestHashTableInit()
 {
-    AVD_LOG("  Testing HashTable initialization...\n");
+    AVD_LOG_INFO("  Testing HashTable initialization...");
 
     AVD_HashTable table;
 
     // Test basic initialization
     bool result = avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
     if (!result) {
-        AVD_LOG("    ERROR: Failed to create hash table\n");
+        AVD_LOG_ERROR("    ERROR: Failed to create hash table");
         return false;
     }
 
     if (table.keySize != sizeof(int) || table.itemSize != sizeof(int) ||
         table.stringKey != false || table.count != 0) {
-        AVD_LOG("    ERROR: Hash table not initialized correctly\n");
+        AVD_LOG_ERROR("    ERROR: Hash table not initialized correctly");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -26,7 +26,7 @@ static bool __avdTestHashTableInit()
     avdHashTableDestroy(&table);
     result = avdHashTableCreate(&table, sizeof(int), sizeof(float), 100, false);
     if (!result || table.bankCount == 0) {
-        AVD_LOG("    ERROR: Failed to create hash table with initial capacity\n");
+        AVD_LOG_ERROR("    ERROR: Failed to create hash table with initial capacity");
         return false;
     }
 
@@ -34,18 +34,18 @@ static bool __avdTestHashTableInit()
     avdHashTableDestroy(&table);
     result = avdHashTableCreate(&table, 0, sizeof(int), 0, true);
     if (!result || !table.stringKey) {
-        AVD_LOG("    ERROR: Failed to create string key hash table\n");
+        AVD_LOG_ERROR("    ERROR: Failed to create string key hash table");
         return false;
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable initialization PASSED\n");
+    AVD_LOG_INFO("    HashTable initialization PASSED");
     return true;
 }
 
 static bool __avdTestHashTableSetGet()
 {
-    AVD_LOG("  Testing HashTable set/get operations...\n");
+    AVD_LOG_INFO("  Testing HashTable set/get operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -55,7 +55,7 @@ static bool __avdTestHashTableSetGet()
     int value1  = 100;
     bool result = avdHashTableSet(&table, &key1, &value1);
     if (!result) {
-        AVD_LOG("    ERROR: Failed to set value in hash table\n");
+        AVD_LOG_ERROR("    ERROR: Failed to set value in hash table");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -63,7 +63,7 @@ static bool __avdTestHashTableSetGet()
     int retrievedValue;
     result = avdHashTableGet(&table, &key1, &retrievedValue);
     if (!result || retrievedValue != value1) {
-        AVD_LOG("    ERROR: Failed to get value from hash table\n");
+        AVD_LOG_ERROR("    ERROR: Failed to get value from hash table");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -72,14 +72,14 @@ static bool __avdTestHashTableSetGet()
     int newValue = 200;
     result       = avdHashTableSet(&table, &key1, &newValue);
     if (!result) {
-        AVD_LOG("    ERROR: Failed to update existing key\n");
+        AVD_LOG_ERROR("    ERROR: Failed to update existing key");
         avdHashTableDestroy(&table);
         return false;
     }
 
     result = avdHashTableGet(&table, &key1, &retrievedValue);
     if (!result || retrievedValue != newValue) {
-        AVD_LOG("    ERROR: Updated value not retrieved correctly\n");
+        AVD_LOG_ERROR("    ERROR: Updated value not retrieved correctly");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -90,7 +90,7 @@ static bool __avdTestHashTableSetGet()
         int value = i * 10;
         result    = avdHashTableSet(&table, &key, &value);
         if (!result) {
-            AVD_LOG("    ERROR: Failed to set multiple values\n");
+            AVD_LOG_ERROR("    ERROR: Failed to set multiple values");
             avdHashTableDestroy(&table);
             return false;
         }
@@ -102,20 +102,20 @@ static bool __avdTestHashTableSetGet()
         int value;
         result = avdHashTableGet(&table, &key, &value);
         if (!result || value != i * 10) {
-            AVD_LOG("    ERROR: Failed to retrieve multiple values correctly\n");
+            AVD_LOG_ERROR("    ERROR: Failed to retrieve multiple values correctly");
             avdHashTableDestroy(&table);
             return false;
         }
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable set/get operations PASSED\n");
+    AVD_LOG_INFO("    HashTable set/get operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableStringKeys()
 {
-    AVD_LOG("  Testing HashTable with string keys...\n");
+    AVD_LOG_INFO("  Testing HashTable with string keys...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, 0, sizeof(int), 0, true);
@@ -134,7 +134,7 @@ static bool __avdTestHashTableStringKeys()
     result &= avdHashTableSet(&table, key3, &value3);
 
     if (!result) {
-        AVD_LOG("    ERROR: Failed to set string key values\n");
+        AVD_LOG_ERROR("    ERROR: Failed to set string key values");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -142,14 +142,14 @@ static bool __avdTestHashTableStringKeys()
     int retrievedValue;
     result = avdHashTableGet(&table, key1, &retrievedValue);
     if (!result || retrievedValue != value1) {
-        AVD_LOG("    ERROR: Failed to get string key value\n");
+        AVD_LOG_ERROR("    ERROR: Failed to get string key value");
         avdHashTableDestroy(&table);
         return false;
     }
 
     result = avdHashTableGet(&table, key2, &retrievedValue);
     if (!result || retrievedValue != value2) {
-        AVD_LOG("    ERROR: Failed to get second string key value\n");
+        AVD_LOG_ERROR("    ERROR: Failed to get second string key value");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -164,26 +164,26 @@ static bool __avdTestHashTableStringKeys()
     int longValue = 999;
     result        = avdHashTableSet(&table, longKey, &longValue);
     if (!result) {
-        AVD_LOG("    ERROR: Failed to set long string key\n");
+        AVD_LOG_ERROR("    ERROR: Failed to set long string key");
         avdHashTableDestroy(&table);
         return false;
     }
 
     result = avdHashTableGet(&table, longKey, &retrievedValue);
     if (!result || retrievedValue != longValue) {
-        AVD_LOG("    ERROR: Failed to get long string key value\n");
+        AVD_LOG_ERROR("    ERROR: Failed to get long string key value");
         avdHashTableDestroy(&table);
         return false;
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable string keys PASSED\n");
+    AVD_LOG_INFO("    HashTable string keys PASSED");
     return true;
 }
 
 static bool __avdTestHashTableContains()
 {
-    AVD_LOG("  Testing HashTable contains operations...\n");
+    AVD_LOG_INFO("  Testing HashTable contains operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -194,7 +194,7 @@ static bool __avdTestHashTableContains()
     // Test contains on empty table
     bool contains = avdHashTableContains(&table, &key1);
     if (contains) {
-        AVD_LOG("    ERROR: Empty table reports containing key\n");
+        AVD_LOG_ERROR("    ERROR: Empty table reports containing key");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -203,7 +203,7 @@ static bool __avdTestHashTableContains()
     avdHashTableSet(&table, &key1, &value1);
     contains = avdHashTableContains(&table, &key1);
     if (!contains) {
-        AVD_LOG("    ERROR: Table doesn't report containing existing key\n");
+        AVD_LOG_ERROR("    ERROR: Table doesn't report containing existing key");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -212,19 +212,19 @@ static bool __avdTestHashTableContains()
     int key2 = 99;
     contains = avdHashTableContains(&table, &key2);
     if (contains) {
-        AVD_LOG("    ERROR: Table reports containing non-existing key\n");
+        AVD_LOG_ERROR("    ERROR: Table reports containing non-existing key");
         avdHashTableDestroy(&table);
         return false;
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable contains operations PASSED\n");
+    AVD_LOG_INFO("    HashTable contains operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableRemove()
 {
-    AVD_LOG("  Testing HashTable remove operations...\n");
+    AVD_LOG_INFO("  Testing HashTable remove operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -233,7 +233,7 @@ static bool __avdTestHashTableRemove()
     int key1    = 42;
     bool result = avdHashTableRemove(&table, &key1);
     if (result) {
-        AVD_LOG("    ERROR: Remove from empty table reported success\n");
+        AVD_LOG_ERROR("    ERROR: Remove from empty table reported success");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -248,7 +248,7 @@ static bool __avdTestHashTableRemove()
     size_t count;
     avdHashTableCount(&table, &count);
     if (count != 10) {
-        AVD_LOG("    ERROR: Incorrect count after adding elements\n");
+        AVD_LOG_ERROR("    ERROR: Incorrect count after adding elements");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -257,7 +257,7 @@ static bool __avdTestHashTableRemove()
     int keyToRemove = 5;
     result          = avdHashTableRemove(&table, &keyToRemove);
     if (!result) {
-        AVD_LOG("    ERROR: Failed to remove existing key\n");
+        AVD_LOG_ERROR("    ERROR: Failed to remove existing key");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -265,7 +265,7 @@ static bool __avdTestHashTableRemove()
     // Verify it's removed
     bool contains = avdHashTableContains(&table, &keyToRemove);
     if (contains) {
-        AVD_LOG("    ERROR: Removed key still exists\n");
+        AVD_LOG_ERROR("    ERROR: Removed key still exists");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -273,7 +273,7 @@ static bool __avdTestHashTableRemove()
     // Verify count decreased
     avdHashTableCount(&table, &count);
     if (count != 9) {
-        AVD_LOG("    ERROR: Count not decreased after removal\n");
+        AVD_LOG_ERROR("    ERROR: Count not decreased after removal");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -287,7 +287,7 @@ static bool __avdTestHashTableRemove()
         int value;
         result = avdHashTableGet(&table, &key, &value);
         if (!result || value != i * 10) {
-            AVD_LOG("    ERROR: Other elements affected by removal\n");
+            AVD_LOG_ERROR("    ERROR: Other elements affected by removal");
             avdHashTableDestroy(&table);
             return false;
         }
@@ -297,19 +297,19 @@ static bool __avdTestHashTableRemove()
     int nonExistingKey = 99;
     result             = avdHashTableRemove(&table, &nonExistingKey);
     if (result) {
-        AVD_LOG("    ERROR: Remove of non-existing key reported success\n");
+        AVD_LOG_ERROR("    ERROR: Remove of non-existing key reported success");
         avdHashTableDestroy(&table);
         return false;
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable remove operations PASSED\n");
+    AVD_LOG_INFO("    HashTable remove operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableClear()
 {
-    AVD_LOG("  Testing HashTable clear operations...\n");
+    AVD_LOG_INFO("  Testing HashTable clear operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -317,7 +317,7 @@ static bool __avdTestHashTableClear()
     // Test clear on empty table
     bool result = avdHashTableClear(&table);
     if (!result) {
-        AVD_LOG("    ERROR: Clear on empty table failed\n");
+        AVD_LOG_ERROR("    ERROR: Clear on empty table failed");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -332,7 +332,7 @@ static bool __avdTestHashTableClear()
     size_t count;
     avdHashTableCount(&table, &count);
     if (count != 20) {
-        AVD_LOG("    ERROR: Incorrect count before clear\n");
+        AVD_LOG_ERROR("    ERROR: Incorrect count before clear");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -340,7 +340,7 @@ static bool __avdTestHashTableClear()
     // Clear table
     result = avdHashTableClear(&table);
     if (!result) {
-        AVD_LOG("    ERROR: Clear operation failed\n");
+        AVD_LOG_ERROR("    ERROR: Clear operation failed");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -348,7 +348,7 @@ static bool __avdTestHashTableClear()
     // Verify table is empty
     avdHashTableCount(&table, &count);
     if (count != 0) {
-        AVD_LOG("    ERROR: Count not zero after clear\n");
+        AVD_LOG_ERROR("    ERROR: Count not zero after clear");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -358,7 +358,7 @@ static bool __avdTestHashTableClear()
         int key       = i;
         bool contains = avdHashTableContains(&table, &key);
         if (contains) {
-            AVD_LOG("    ERROR: Elements still exist after clear\n");
+            AVD_LOG_ERROR("    ERROR: Elements still exist after clear");
             avdHashTableDestroy(&table);
             return false;
         }
@@ -369,19 +369,19 @@ static bool __avdTestHashTableClear()
     int newValue = 200;
     result       = avdHashTableSet(&table, &newKey, &newValue);
     if (!result) {
-        AVD_LOG("    ERROR: Cannot use table after clear\n");
+        AVD_LOG_ERROR("    ERROR: Cannot use table after clear");
         avdHashTableDestroy(&table);
         return false;
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable clear operations PASSED\n");
+    AVD_LOG_INFO("    HashTable clear operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableMemoryReuse()
 {
-    AVD_LOG("  Testing HashTable memory reuse after removal...\n");
+    AVD_LOG_INFO("  Testing HashTable memory reuse after removal...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -404,7 +404,7 @@ static bool __avdTestHashTableMemoryReuse()
     size_t count;
     avdHashTableCount(&table, &count);
     if (count != 100) {
-        AVD_LOG("    ERROR: Incorrect count after removal\n");
+        AVD_LOG_ERROR("    ERROR: Incorrect count after removal");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -418,7 +418,7 @@ static bool __avdTestHashTableMemoryReuse()
 
     // Bank count should not have increased significantly due to reuse
     if (table.bankCount > initialBankCount + 1) {
-        AVD_LOG("    ERROR: Too many new banks created, memory reuse not working\n");
+        AVD_LOG_ERROR("    ERROR: Too many new banks created, memory reuse not working");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -429,7 +429,7 @@ static bool __avdTestHashTableMemoryReuse()
         int value;
         bool result = avdHashTableGet(&table, &key, &value);
         if (!result || value != i * 2) {
-            AVD_LOG("    ERROR: Remaining element not found correctly\n");
+            AVD_LOG_ERROR("    ERROR: Remaining element not found correctly");
             avdHashTableDestroy(&table);
             return false;
         }
@@ -440,20 +440,20 @@ static bool __avdTestHashTableMemoryReuse()
         int value;
         bool result = avdHashTableGet(&table, &key, &value);
         if (!result || value != i * 3) {
-            AVD_LOG("    ERROR: New element not found correctly\n");
+            AVD_LOG_ERROR("    ERROR: New element not found correctly");
             avdHashTableDestroy(&table);
             return false;
         }
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable memory reuse PASSED\n");
+    AVD_LOG_INFO("    HashTable memory reuse PASSED");
     return true;
 }
 
 static bool __avdTestHashTableGetKeys()
 {
-    AVD_LOG("  Testing HashTable get keys operations...\n");
+    AVD_LOG_INFO("  Testing HashTable get keys operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -463,7 +463,7 @@ static bool __avdTestHashTableGetKeys()
     size_t keyCount;
     bool result = avdHashTableGetKeys(&table, keys, &keyCount, 100);
     if (!result || keyCount != 0) {
-        AVD_LOG("    ERROR: Get keys on empty table failed\n");
+        AVD_LOG_ERROR("    ERROR: Get keys on empty table failed");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -479,7 +479,7 @@ static bool __avdTestHashTableGetKeys()
     // Get keys
     result = avdHashTableGetKeys(&table, keys, &keyCount, 100);
     if (!result || keyCount != 5) {
-        AVD_LOG("    ERROR: Get keys returned wrong count\n");
+        AVD_LOG_ERROR("    ERROR: Get keys returned wrong count");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -498,7 +498,7 @@ static bool __avdTestHashTableGetKeys()
 
     for (int i = 0; i < 5; i++) {
         if (!foundKeys[i]) {
-            AVD_LOG("    ERROR: Not all keys found in get keys result\n");
+            AVD_LOG_ERROR("    ERROR: Not all keys found in get keys result");
             avdHashTableDestroy(&table);
             return false;
         }
@@ -507,19 +507,19 @@ static bool __avdTestHashTableGetKeys()
     // Test with limited buffer
     result = avdHashTableGetKeys(&table, keys, &keyCount, 3);
     if (!result || keyCount > 3) {
-        AVD_LOG("    ERROR: Get keys didn't respect max keys limit\n");
+        AVD_LOG_ERROR("    ERROR: Get keys didn't respect max keys limit");
         avdHashTableDestroy(&table);
         return false;
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable get keys operations PASSED\n");
+    AVD_LOG_INFO("    HashTable get keys operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableCollisions()
 {
-    AVD_LOG("  Testing HashTable collision handling...\n");
+    AVD_LOG_INFO("  Testing HashTable collision handling...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -533,7 +533,7 @@ static bool __avdTestHashTableCollisions()
 
         bool result = avdHashTableSet(&table, &key, &value);
         if (!result) {
-            AVD_LOG("    ERROR: Failed to set collision key\n");
+            AVD_LOG_ERROR("    ERROR: Failed to set collision key");
             avdHashTableDestroy(&table);
             return false;
         }
@@ -546,7 +546,7 @@ static bool __avdTestHashTableCollisions()
 
         bool result = avdHashTableGet(&table, &key, &value);
         if (!result || value != i + 1000) {
-            AVD_LOG("    ERROR: Failed to retrieve collision key\n");
+            AVD_LOG_ERROR("    ERROR: Failed to retrieve collision key");
             avdHashTableDestroy(&table);
             return false;
         }
@@ -557,7 +557,7 @@ static bool __avdTestHashTableCollisions()
         int key     = i * AVD_HASHTABLE_SIZE + 42;
         bool result = avdHashTableRemove(&table, &key);
         if (!result) {
-            AVD_LOG("    ERROR: Failed to remove collision key\n");
+            AVD_LOG_ERROR("    ERROR: Failed to remove collision key");
             avdHashTableDestroy(&table);
             return false;
         }
@@ -570,25 +570,25 @@ static bool __avdTestHashTableCollisions()
 
         bool result = avdHashTableGet(&table, &key, &value);
         if (!result || value != i + 1000) {
-            AVD_LOG("    ERROR: Remaining collision key not found\n");
+            AVD_LOG_ERROR("    ERROR: Remaining collision key not found");
             avdHashTableDestroy(&table);
             return false;
         }
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable collision handling PASSED\n");
+    AVD_LOG_INFO("    HashTable collision handling PASSED");
     return true;
 }
 
 static bool __avdTestHashTableEdgeCases()
 {
-    AVD_LOG("  Testing HashTable edge cases...\n");
+    AVD_LOG_INFO("  Testing HashTable edge cases...");
 
     // Test NULL pointer handling
     bool result = avdHashTableCreate(NULL, sizeof(int), sizeof(int), 0, false);
     if (result) {
-        AVD_LOG("    ERROR: Create with NULL table succeeded\n");
+        AVD_LOG_ERROR("    ERROR: Create with NULL table succeeded");
         return false;
     }
 
@@ -601,21 +601,21 @@ static bool __avdTestHashTableEdgeCases()
     // Test NULL key/value handling
     result = avdHashTableSet(&table, NULL, &value);
     if (result) {
-        AVD_LOG("    ERROR: Set with NULL key succeeded\n");
+        AVD_LOG_ERROR("    ERROR: Set with NULL key succeeded");
         avdHashTableDestroy(&table);
         return false;
     }
 
     result = avdHashTableSet(&table, &key, NULL);
     if (result) {
-        AVD_LOG("    ERROR: Set with NULL value succeeded\n");
+        AVD_LOG_ERROR("    ERROR: Set with NULL value succeeded");
         avdHashTableDestroy(&table);
         return false;
     }
 
     result = avdHashTableGet(&table, NULL, &value);
     if (result) {
-        AVD_LOG("    ERROR: Get with NULL key succeeded\n");
+        AVD_LOG_ERROR("    ERROR: Get with NULL key succeeded");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -624,30 +624,30 @@ static bool __avdTestHashTableEdgeCases()
     avdHashTableDestroy(&table);
     result = avdHashTableCreate(&table, 0, sizeof(int), 0, false);
     if (result) {
-        AVD_LOG("    ERROR: Create with zero key size for non-string succeeded\n");
+        AVD_LOG_ERROR("    ERROR: Create with zero key size for non-string succeeded");
         return false;
     }
 
     result = avdHashTableCreate(&table, sizeof(int), 0, 0, false);
     if (result) {
-        AVD_LOG("    ERROR: Create with zero item size succeeded\n");
+        AVD_LOG_ERROR("    ERROR: Create with zero item size succeeded");
         return false;
     }
 
     // Test very large initial capacity
     result = avdHashTableCreate(&table, sizeof(int), sizeof(int), SIZE_MAX / 2, false);
     if (result) {
-        AVD_LOG("    ERROR: Create with huge initial capacity succeeded\n");
+        AVD_LOG_ERROR("    ERROR: Create with huge initial capacity succeeded");
         return false;
     }
 
-    AVD_LOG("    HashTable edge cases PASSED\n");
+    AVD_LOG_INFO("    HashTable edge cases PASSED");
     return true;
 }
 
 static bool __avdTestHashTableLargeDataTypes()
 {
-    AVD_LOG("  Testing HashTable with large data types...\n");
+    AVD_LOG_INFO("  Testing HashTable with large data types...");
 
     typedef struct {
         char name[64];
@@ -671,7 +671,7 @@ static bool __avdTestHashTableLargeDataTypes()
 
     bool result = avdHashTableSet(&table, &key, &largeValue);
     if (!result) {
-        AVD_LOG("    ERROR: Failed to set large struct value\n");
+        AVD_LOG_ERROR("    ERROR: Failed to set large struct value");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -679,7 +679,7 @@ static bool __avdTestHashTableLargeDataTypes()
     LargeStruct retrievedValue;
     result = avdHashTableGet(&table, &key, &retrievedValue);
     if (!result) {
-        AVD_LOG("    ERROR: Failed to get large struct value\n");
+        AVD_LOG_ERROR("    ERROR: Failed to get large struct value");
         avdHashTableDestroy(&table);
         return false;
     }
@@ -688,27 +688,27 @@ static bool __avdTestHashTableLargeDataTypes()
     if (strcmp(retrievedValue.name, "Test Structure") != 0 ||
         retrievedValue.id != 12345 ||
         retrievedValue.timestamp != 1234567890.123) {
-        AVD_LOG("    ERROR: Large struct contents not preserved\n");
+        AVD_LOG_ERROR("    ERROR: Large struct contents not preserved");
         avdHashTableDestroy(&table);
         return false;
     }
 
     for (int i = 0; i < 16; i++) {
         if (retrievedValue.data[i] != i * 1.5f) {
-            AVD_LOG("    ERROR: Large struct array data not preserved\n");
+            AVD_LOG_ERROR("    ERROR: Large struct array data not preserved");
             avdHashTableDestroy(&table);
             return false;
         }
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG("    HashTable large data types PASSED\n");
+    AVD_LOG_INFO("    HashTable large data types PASSED");
     return true;
 }
 
 bool avdHashTableTestsRun(void)
 {
-    AVD_LOG("Running HashTable tests...\n");
+    AVD_LOG_INFO("Running HashTable tests...");
 
     bool allPassed = true;
 
@@ -725,9 +725,9 @@ bool avdHashTableTestsRun(void)
     allPassed &= __avdTestHashTableLargeDataTypes();
 
     if (allPassed) {
-        AVD_LOG("All HashTable tests PASSED!\n");
+        AVD_LOG_INFO("All HashTable tests PASSED!");
     } else {
-        AVD_LOG("Some HashTable tests FAILED!\n");
+        AVD_LOG_INFO("Some HashTable tests FAILED!");
     }
 
     return allPassed;

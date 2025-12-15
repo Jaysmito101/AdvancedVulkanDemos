@@ -677,11 +677,11 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             AVD_CHECK(__avdSetupBindlessDescriptors(subsurfaceScattering, &appState->vulkan));
             break;
         case 15:
-            AVD_LOG("Subsurface Scattering scene loaded successfully.\n");
+            AVD_LOG_INFO("Subsurface Scattering scene loaded successfully.");
             avd3DSceneDebugLog(&subsurfaceScattering->models, "SubsurfaceScattering/Models");
             break;
         default:
-            AVD_LOG("Subsurface Scattering scene load stage is invalid: %d\n", subsurfaceScattering->loadStage);
+            AVD_LOG_ERROR("Subsurface Scattering scene load stage is invalid: %d", subsurfaceScattering->loadStage);
             return false;
     }
 

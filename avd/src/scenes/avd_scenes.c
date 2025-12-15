@@ -13,7 +13,7 @@ static bool __avdCheckSceneApiValidity(AVD_SceneAPI *api)
 
     AVD_CHECK(api->id != NULL);
     if (api->displayName == NULL) {
-        AVD_LOG("Scene API '%s' does not have a display name set, using id as display name.\n", api->id);
+        AVD_LOG_WARN("Scene API '%s' does not have a display name set, using id as display name.", api->id);
         api->displayName = api->id;
     }
     return true;
@@ -81,8 +81,8 @@ bool avdSceneManagerUpdate(AVD_SceneManager *sceneManager, AVD_AppState *appStat
             sceneManager->isSceneLoaded = sceneManager->api[sceneManager->currentSceneType].load(appState, &sceneManager->scene, &sceneManager->sceneLoadingStatusMessage, &sceneManager->sceneLoadingProgress);
             sceneManager->sceneLoadPollCount++;
             if (sceneManager->sceneLoadPollCount >= AVD_SCENE_MAX_SCENE_LOAD_POLL_COUNT && !sceneManager->isSceneLoaded) {
-                AVD_LOG("Scene loading timed out after %zu polls. Status: %s\n", sceneManager->sceneLoadPollCount, sceneManager->sceneLoadingStatusMessage ? sceneManager->sceneLoadingStatusMessage : "No status message");
-                AVD_LOG("Falling back to main menu scene.\n");
+                AVD_LOG_ERROR("Scene loading timed out after %zu polls. Status: %s", sceneManager->sceneLoadPollCount, sceneManager->sceneLoadingStatusMessage ? sceneManager->sceneLoadingStatusMessage : "No status message");
+                AVD_LOG_INFO("Falling back to main menu scene.");
                 AVD_CHECK(avdSceneManagerSwitchToScene(sceneManager, AVD_SCENE_TYPE_MAIN_MENU, appState));
             }
         }
@@ -118,7 +118,7 @@ bool avdSceneManagerSwitchToScene(AVD_SceneManager *sceneManager, AVD_SceneType 
 {
     if (!sceneManager->api[type].checkIntegrity(appState, &sceneManager->sceneIntegrityStatusMessage)) {
         sceneManager->sceneIntegrityCheckPassed = false;
-        AVD_LOG("Scene integrity check failed: %s [Switch Cancelled]\n", sceneManager->sceneIntegrityStatusMessage);
+        AVD_LOG_ERROR("Scene integrity check failed: %s [Switch Cancelled]", sceneManager->sceneIntegrityStatusMessage);
         avdMessageBox(
             "Scene Integrity Check Failed",
             sceneManager->sceneIntegrityStatusMessage ? sceneManager->sceneIntegrityStatusMessage : "No specific message provided.");

@@ -22,6 +22,7 @@ target_include_directories(avd_assets
     PRIVATE ./generated/include
     PRIVATE ../avd/include
     PRIVATE ../dep/glfw/include
+    PRIVATE ../dep/libpico/include
 )
 
 target_compile_definitions(avd_assets PRIVATE

@@ -77,11 +77,11 @@ bool avdPathExists(const char *path)
 void avdPrintShaderWithLineNumbers(const char *shaderCode, const char *shaderName)
 {
     if (shaderCode == NULL) {
-        AVD_LOG("Shader code is NULL\n");
+        AVD_LOG_ERROR("Shader code is NULL");
         return;
     }
 
-    AVD_LOG("Shader: %s\n", shaderName);
+    AVD_LOG_INFO("Shader: %s", shaderName);
     const char *lineStart = shaderCode;
     int lineNumber        = 1;
     while (*lineStart) {
@@ -93,19 +93,19 @@ void avdPrintShaderWithLineNumbers(const char *shaderCode, const char *shaderNam
         size_t lineLength = lineEnd - lineStart;
         char *lineBuffer  = (char *)malloc(lineLength + 1);
         if (lineBuffer == NULL) {
-            AVD_LOG("Failed to allocate memory for shader line\n");
+            AVD_LOG_ERROR("Failed to allocate memory for shader line");
             return;
         }
 
         strncpy(lineBuffer, lineStart, lineLength);
         lineBuffer[lineLength] = '\0';
 
-        AVD_LOG("%d: %s\n", lineNumber++, lineBuffer);
+        AVD_LOG_INFO("%d: %s", lineNumber++, lineBuffer);
 
         free(lineBuffer);
         lineStart = (*lineEnd == '\0') ? lineEnd : lineEnd + 1;
     }
-    AVD_LOG("\n");
+    AVD_LOG_INFO("");
 }
 
 void avdSleep(uint32_t milliseconds)
@@ -169,17 +169,17 @@ const char *avdDumpToTmpFile(const void *data, size_t size, const char *extensio
 
     FILE *file = fopen(tmpFilePath, "wb");
     if (!file) {
-        AVD_LOG("Failed to open temp file for writing: %s\n", tmpFilePath);
+        AVD_LOG_ERROR("Failed to open temp file for writing: %s", tmpFilePath);
         return NULL;
     }
 
     size_t written = fwrite(data, 1, size, file);
     fclose(file);
 
-    AVD_LOG("Dumped data to temp file: %s\n", tmpFilePath);
+    AVD_LOG_INFO("Dumped data to temp file: %s", tmpFilePath);
 
     if (written != size) {
-        AVD_LOG("Failed to write all data to temp file: %s\n", tmpFilePath);
+        AVD_LOG_ERROR("Failed to write all data to temp file: %s", tmpFilePath);
         return NULL;
     }
 

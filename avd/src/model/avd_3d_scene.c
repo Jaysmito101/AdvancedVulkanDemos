@@ -14,7 +14,7 @@ static void __avd3DScenePrintNodeHierarchy(const AVD_ModelNode *node, int indent
         return;
 
     for (int i = 0; i < indent; ++i) {
-        AVD_LOG(" ");
+        AVD_LOG_INFO(" ");
     }
 
     const char *marker = "";
@@ -24,11 +24,11 @@ static void __avd3DScenePrintNodeHierarchy(const AVD_ModelNode *node, int indent
         marker = " [ROOT]";
     }
 
-    AVD_LOG("Node: '%s' (ID=%d)%s", node->name, node->id, marker);
+    AVD_LOG_INFO("Node: '%s' (ID=%d)%s", node->name, node->id, marker);
     if (node->hasMesh) {
-        AVD_LOG(" -> Mesh: '%s'", node->mesh.name);
+        AVD_LOG_INFO(" -> Mesh: '%s'", node->mesh.name);
     }
-    AVD_LOG("\n");
+    AVD_LOG_INFO("");
 
     for (int i = 0; i < AVD_MODEL_NODE_MAX_CHILDREN; ++i) {
         if (node->children[i] != NULL) {
@@ -68,17 +68,17 @@ void avd3DSceneDebugLog(const AVD_3DScene *scene, const char *name)
 {
     AVD_ASSERT(scene != NULL);
 
-    AVD_LOG("3D Scene[%s]:\n", name);
-    AVD_LOG("  Model Resources:\n");
-    AVD_LOG("    Vertices Count: %zu\n", scene->modelResources.verticesList.count);
-    AVD_LOG("    Indices Count: %zu\n", scene->modelResources.indicesList.count);
-    AVD_LOG("  Models Count: %zu\n", scene->modelsList.count);
-    AVD_LOG("  Models Info:\n");
+    AVD_LOG_INFO("3D Scene[%s]:\n", name);
+    AVD_LOG_INFO("  Model Resources:");
+    AVD_LOG_INFO("    Vertices Count: %zu\n", scene->modelResources.verticesList.count);
+    AVD_LOG_INFO("    Indices Count: %zu\n", scene->modelResources.indicesList.count);
+    AVD_LOG_INFO("  Models Count: %zu\n", scene->modelsList.count);
+    AVD_LOG_INFO("  Models Info:");
 
     for (size_t i = 0; i < scene->modelsList.count; ++i) {
         AVD_Model *model = (AVD_Model *)avdListGet(&scene->modelsList, i);
         AVD_ASSERT(model != NULL);
-        AVD_LOG("    Model[%zu]: Name='%s', ID=%d, MeshCount=%zu\n", i, model->name, model->id, model->meshes.count);
+        AVD_LOG_INFO("    Model[%zu]: Name='%s', ID=%d, MeshCount=%zu\n", i, model->name, model->id, model->meshes.count);
 
         for (size_t j = 0; j < model->meshes.count; ++j) {
             AVD_Mesh *mesh = (AVD_Mesh *)avdListGet(&model->meshes, j);
@@ -91,20 +91,20 @@ void avd3DSceneDebugLog(const AVD_3DScene *scene, const char *name)
                 morphInfo = morphBuffer;
             }
 
-            AVD_LOG("      Mesh[%zu]: Name='%s', ID=%d, TriangleCount=%d, IndexOffset=%d%s\n",
-                    j, mesh->name, mesh->id, mesh->triangleCount, mesh->indexOffset, morphInfo);
+            AVD_LOG_INFO("      Mesh[%zu]: Name='%s', ID=%d, TriangleCount=%d, IndexOffset=%d%s\n",
+                         j, mesh->name, mesh->id, mesh->triangleCount, mesh->indexOffset, morphInfo);
         }
 
-        AVD_LOG("    Node Count: %d\n", model->nodeCount);
+        AVD_LOG_INFO("    Node Count: %d\n", model->nodeCount);
         if (model->rootNode != NULL) {
-            AVD_LOG("    Root Node: '%s' (ID=%d)\n", model->rootNode->name, model->rootNode->id);
+            AVD_LOG_INFO("    Root Node: '%s' (ID=%d)\n", model->rootNode->name, model->rootNode->id);
         }
         if (model->mainScene != NULL) {
-            AVD_LOG("    Main Scene Node: '%s' (ID=%d)\n", model->mainScene->name, model->mainScene->id);
+            AVD_LOG_INFO("    Main Scene Node: '%s' (ID=%d)\n", model->mainScene->name, model->mainScene->id);
         }
 
         if (model->rootNode != NULL) {
-            AVD_LOG("    Node Hierarchy:\n");
+            AVD_LOG_INFO("    Node Hierarchy:");
             __avd3DScenePrintNodeHierarchy(model->rootNode, 6, model->mainScene);
         }
     }

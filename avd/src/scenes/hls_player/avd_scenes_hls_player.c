@@ -133,7 +133,7 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
                 AVD_SCENE_TYPE_MAIN_MENU,
                 appState);
         } else if (event->key.key == GLFW_KEY_P && event->key.action == GLFW_PRESS) {
-            AVD_LOG("P pressed - would start playing HLS stream if implemented %s.\n", glfwGetClipboardString(appState->window.window));
+            AVD_LOG_INFO("P pressed - would start playing HLS stream if implemented %s.", glfwGetClipboardString(appState->window.window));
         }
     }
 }

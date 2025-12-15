@@ -257,7 +257,7 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 if (!mesh->material.albedoTexture.hasTexture)
                     continue;
                 deccerCubes->imagesHashes[deccerCubes->imagesCount] = mesh->material.albedoTexture.id;
-                AVD_LOG("Loading image: %s (hash: %u)\n", mesh->material.albedoTexture.path, mesh->material.albedoTexture.id);
+                AVD_LOG_INFO("Loading image: %s (hash: %u)", mesh->material.albedoTexture.path, mesh->material.albedoTexture.id);
                 AVD_CHECK(avdVulkanImageLoadFromFile(
                     &appState->vulkan,
                     mesh->material.albedoTexture.path,
@@ -275,13 +275,13 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 deccerCubes->imagesCount += 1;
             }
             vkUpdateDescriptorSets(appState->vulkan.device, deccerCubes->imagesCount, descriptorSetWrites, 0, NULL);
-            AVD_LOG("Loaded all %d textures\n", deccerCubes->imagesCount);
+            AVD_LOG_INFO("Loaded all %d textures", deccerCubes->imagesCount);
         case 5:
             *statusMessage = "Done loading...";
             avd3DSceneDebugLog(&deccerCubes->scene, "Deccer Cubes");
             break;
         default:
-            AVD_LOG("Deccer Cubes scene invalid load stage");
+            AVD_LOG_ERROR("Deccer Cubes scene invalid load stage");
             return false;
     }
 

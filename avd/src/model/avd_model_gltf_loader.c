@@ -58,9 +58,9 @@ static void *__avdModelGltfFindAttribute(cgltf_attribute *attributes, cgltf_size
                 case cgltf_attribute_type_position:
                 case cgltf_attribute_type_normal: {
                     if (cgltf_num_components(attributes[i].data->type) != 3) {
-                        AVD_LOG("Warning: %s attribute is not vec3, found type %d. This is unexpected, skipping.\n",
-                                type == cgltf_attribute_type_position ? "POSITION" : "NORMAL",
-                                attributes[i].data->type);
+                        AVD_LOG_WARN("%s attribute is not vec3, found type %d. This is unexpected, skipping.",
+                                     type == cgltf_attribute_type_position ? "POSITION" : "NORMAL",
+                                     attributes[i].data->type);
                         continue;
                     } else {
                         size *= 3;
@@ -69,7 +69,7 @@ static void *__avdModelGltfFindAttribute(cgltf_attribute *attributes, cgltf_size
                 }
                 case cgltf_attribute_type_tangent: {
                     if (cgltf_num_components(attributes[i].data->type) != 4) {
-                        AVD_LOG("Warning: TANGENT attribute is not vec4, found type %d. This is unexpected, skipping.\n", attributes[i].data->type);
+                        AVD_LOG_WARN("TANGENT attribute is not vec4, found type %d. This is unexpected, skipping.", attributes[i].data->type);
                         continue;
                     } else {
                         size *= 4;
@@ -78,7 +78,7 @@ static void *__avdModelGltfFindAttribute(cgltf_attribute *attributes, cgltf_size
                 }
                 case cgltf_attribute_type_texcoord: {
                     if (cgltf_num_components(attributes[i].data->type) != 2) {
-                        AVD_LOG("Warning: TEXCOORD attribute is not vec2, found type %d. This is unexpected, skipping.\n", attributes[i].data->type);
+                        AVD_LOG_WARN("TEXCOORD attribute is not vec2, found type %d. This is unexpected, skipping.", attributes[i].data->type);
                         continue;
                     } else {
                         size *= 2;
@@ -309,7 +309,7 @@ static bool __avdModelLoadGltfNodeMesh(AVD_Model *model, AVD_ModelResources *res
 
     if (skin) {
         // TODO: Implement Skin Loading...
-        AVD_LOG("Warning: Skins are not supported yet. Ignoring skin for mesh '%s'\n", mesh->name ? mesh->name : "__UnnamedMesh");
+        AVD_LOG_WARN("Skins are not supported yet. Ignoring skin for mesh '%s'", mesh->name ? mesh->name : "__UnnamedMesh");
     }
 
     AVD_Mesh avdMesh = {0};

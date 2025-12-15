@@ -209,7 +209,7 @@ static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderab
         }
 
         if (c >= AVD_FONT_MAX_GLYPHS) {
-            AVD_LOG("Font character out of range: %c [skipping]\n", c);
+            AVD_LOG_WARN("Font character out of range: %c [skipping]", c);
             continue;
         }
 
