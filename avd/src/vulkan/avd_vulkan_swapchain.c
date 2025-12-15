@@ -18,7 +18,7 @@ static bool __avdVulkanSwapchainChooseSurfaceformat(AVD_VulkanSwapchain *swapcha
         }
     }
 
-    AVD_LOG("Preferred surface format not found, using the first available format\n");
+    AVD_LOG_WARN("Preferred surface format not found, using the first available format");
     swapchain->surfaceFormat = surfaceFormats[0];
 
     return true;
@@ -43,7 +43,7 @@ static bool __avdVulkanSwapchainChoosePresentMode(AVD_VulkanSwapchain *swapchain
         }
     }
 
-    AVD_LOG("Preferred present mode not found, using FIFO mode\n");
+    AVD_LOG_WARN("Preferred present mode not found, using FIFO mode");
     swapchain->presentMode = VK_PRESENT_MODE_FIFO_KHR;
 
     return true;
@@ -219,7 +219,7 @@ static bool __avdVulkanSwapchainKHRCreate(AVD_VulkanSwapchain *swapchain, AVD_Vu
     if (oldSwapchain != VK_NULL_HANDLE) {
         vkDestroySwapchainKHR(vulkan->device, oldSwapchain, NULL);
     }
-    AVD_LOG("Swapchain created successfully\n");
+    AVD_LOG_INFO("Swapchain created successfully");
 
     return true;
 }
@@ -352,7 +352,7 @@ VkResult avdVulkanSwapchainAcquireNextImage(AVD_VulkanSwapchain *swapchain, AVD_
 
     VkResult result = vkAcquireNextImageKHR(vulkan->device, swapchain->swapchain, UINT64_MAX, semaphore, fence, imageIndex);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to acquire next image from swapchain\n");
+        AVD_LOG_ERROR("Failed to acquire next image from swapchain");
         return result;
     }
 
@@ -374,7 +374,7 @@ VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *v
 
     VkResult result = vkQueuePresentKHR(vulkan->graphicsQueue, &presentInfo);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to present image to swapchain\n");
+        AVD_LOG_ERROR("Failed to present image to swapchain");
         return result;
     }
 
@@ -386,7 +386,7 @@ bool avdVulkanSwapchainRecreateIfNeeded(AVD_VulkanSwapchain *swapchain, AVD_Vulk
     AVD_ASSERT(swapchain != NULL);
 
     if (swapchain->swapchainRecreateRequired) {
-        AVD_LOG("Swapchain recreate required\n");
+        AVD_LOG_INFO("Swapchain recreate required");
         avdVulkanSwapchainRecreate(swapchain, vulkan, window);
         return true;
     }

@@ -20,7 +20,7 @@ static bool __avdVulkanLayersSupported(const char **layers, uint32_t layerCount)
     uint32_t availableLayerCount                  = 0;
     vkEnumerateInstanceLayerProperties(&availableLayerCount, NULL);
     if (availableLayerCount > AVD_ARRAY_COUNT(availableLayers)) {
-        AVD_LOG("Too many available layers\n");
+        AVD_LOG_WARN("Too many available layers");
         return false;
     }
     vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers);
@@ -33,7 +33,7 @@ static bool __avdVulkanLayersSupported(const char **layers, uint32_t layerCount)
             }
         }
         if (!found) {
-            AVD_LOG("Layer %s not supported\n", layers[i]);
+            AVD_LOG_WARN("Layer %s not supported", layers[i]);
             return false;
         }
     }
@@ -45,7 +45,7 @@ static bool __avdAddGlfwExtenstions(uint32_t *extensionCount, const char **exten
     uint32_t count              = 0;
     const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
     if (glfwExtensions == NULL) {
-        AVD_LOG("Failed to get GLFW extensions\n");
+        AVD_LOG_ERROR("Failed to get GLFW extensions");
         return false;
     }
     for (uint32_t i = 0; i < count; ++i) {
@@ -76,7 +76,7 @@ static bool __avdAddDebugLayers(uint32_t *layerCount, const char **layers, bool 
         *layerCount += AVD_ARRAY_COUNT(debugLayers);
         *debugLayersEnabled = true;
     } else {
-        AVD_LOG("Debug layers not supported\n");
+        AVD_LOG_WARN("Debug layers not supported");
     }
     return true;
 }
@@ -90,21 +90,25 @@ static VkBool32 __avdDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlag
     switch (messageSeverity) {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
             severity = "VERBOSE";
+            AVD_LOG_DEBUG("%s: %s", severity, pCallbackData->pMessage);
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
             severity = "INFO";
+            AVD_LOG_INFO("%s: %s", severity, pCallbackData->pMessage);
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
             severity = "WARNING";
+            AVD_LOG_WARN("%s: %s", severity, pCallbackData->pMessage);
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
             severity = "ERROR";
+            AVD_LOG_ERROR("%s: %s", severity, pCallbackData->pMessage);
             break;
         default:
             severity = "UNKNOWN";
+            AVD_LOG_VERBOSE("%s: %s", severity, pCallbackData->pMessage);
             break;
     }
-    AVD_LOG("Debug: %s: %s\n", severity, pCallbackData->pMessage);
     return VK_FALSE; // Don't abort on debug messages
 }
 
@@ -198,7 +202,7 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device)
     static VkExtensionProperties extensions[256] = {0};
     vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, NULL);
     if (extensionCount == 0) {
-        AVD_LOG("No Vulkan-compatible extensions found\n");
+        AVD_LOG_ERROR("No Vulkan-compatible extensions found");
         return false;
     }
     vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, extensions);
@@ -224,7 +228,7 @@ static bool __avdVulkanPhysicalDeviceCheckFeatures(VkPhysicalDevice device)
     vkGetPhysicalDeviceFeatures(device, &features);
 
     if (!features.samplerAnisotropy) {
-        AVD_LOG("Sampler anisotropy not supported\n");
+        AVD_LOG_WARN("Sampler anisotropy not supported");
         return false;
     }
 
@@ -251,12 +255,12 @@ static bool __avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
         vkGetPhysicalDeviceProperties(devices[i], &deviceProperties);
 
         if (!__avdVulkanPhysicalDeviceCheckExtensions(devices[i])) {
-            AVD_LOG("Physical device %s does not support required extensions\n", deviceProperties.deviceName);
+            AVD_LOG_WARN("Physical device %s does not support required extensions", deviceProperties.deviceName);
             continue;
         }
 
         if (!__avdVulkanPhysicalDeviceCheckFeatures(devices[i])) {
-            AVD_LOG("Physical device %s does not support required features\n", deviceProperties.deviceName);
+            AVD_LOG_WARN("Physical device %s does not support required features", deviceProperties.deviceName);
             continue;
         }
 
@@ -268,13 +272,13 @@ static bool __avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
     }
 
     if (!foundDiscreteGPU) {
-        AVD_LOG("No discrete GPU found, using first available device\n");
+        AVD_LOG_WARN("No discrete GPU found, using first available device");
         vulkan->physicalDevice = devices[0];
     }
 
     VkPhysicalDeviceProperties deviceProperties = {0};
     vkGetPhysicalDeviceProperties(vulkan->physicalDevice, &deviceProperties);
-    AVD_LOG("Selected physical device: %s\n", deviceProperties.deviceName);
+    AVD_LOG_INFO("Selected physical device: %s", deviceProperties.deviceName);
 
     return true;
 }
@@ -286,12 +290,12 @@ static int32_t __avdVulkanFindQueueFamilyIndex(VkPhysicalDevice device, VkQueueF
 
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
     if (queueFamilyCount == 0) {
-        AVD_LOG("No Vulkan-compatible queue families found\n");
+        AVD_LOG_ERROR("No Vulkan-compatible queue families found");
         return -1;
     }
 
     if (queueFamilyCount > AVD_ARRAY_COUNT(queueFamilies)) {
-        AVD_LOG("Too many Vulkan-compatible queue families found\n");
+        AVD_LOG_WARN("Too many Vulkan-compatible queue families found");
         return -1;
     }
 
@@ -581,7 +585,7 @@ uint32_t avdVulkanFindMemoryType(AVD_Vulkan *vulkan, uint32_t typeFilter, VkMemo
         }
     }
 
-    AVD_LOG("Failed to find suitable memory type\n");
+    AVD_LOG_ERROR("Failed to find suitable memory type");
     return UINT32_MAX;
 }
 

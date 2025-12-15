@@ -151,7 +151,7 @@ bool avdApplicationInit(AVD_AppState *appState)
 
     if (!avdWindowInit(&appState->window, appState))
     {
-        AVD_LOG("Failed to initialize window\n");
+        AVD_LOG_ERROR("Failed to initialize window");
         return false;
     }
 
@@ -233,9 +233,9 @@ Use consistent error handling patterns:
 // Check macros for validation
 #define AVD_CHECK(result) \
     if (!(result)) { \
-        AVD_LOG("------------------------------------\n"); \
-        AVD_LOG("Check [%s] failed in %s:%d\n", #result, __FILE__, __LINE__); \
-        AVD_LOG("------------------------------------\n"); \
+        AVD_LOG_VERBOSE("------------------------------------"); \
+        AVD_LOG_ERROR("Check [%s] failed in %s:%d", #result, __FILE__, __LINE__); \
+        AVD_LOG_VERBOSE("------------------------------------"); \
         return false; \
     }
 
@@ -464,7 +464,7 @@ static bool testVectorOperations(void) {
     
     // Test specific operations
     if (!avdIsFEqual(avdVec3Dot(v1, v2), expectedValue)) {
-        AVD_LOG("FAILED: Vector dot product test\n");
+        AVD_LOG_ERROR("FAILED: Vector dot product test");
         return false;
     }
     

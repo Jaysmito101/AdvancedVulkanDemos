@@ -25,6 +25,8 @@
 #include <windows.h>
 #endif
 
+#include "pico/picoLog.h"
+
 // common macros
 #define AVD_ARRAY_COUNT(arr)       (sizeof(arr) / sizeof((arr)[0]))
 #define AVD_MIN(a, b)              ((a) < (b) ? (a) : (b))
@@ -36,43 +38,50 @@
         a              = b;    \
         b              = temp; \
     }
-#define AVD_OFFSET_OF(type, member) ((size_t) & (((type *)0)->member))
+#define AVD_OFFSET_OF(type, member) ((size_t)&(((type *)0)->member))
 #define AVD_ASSERT(condition)       assert(condition)
-#define AVD_LOG(msg, ...)           printf(msg, ##__VA_ARGS__)
+
+#define AVD_LOG_INIT()              PICO_LOG_INIT()
+#define AVD_LOG_SHUTDOWN()          PICO_LOG_SHUTDOWN()
+#define AVD_LOG_DEBUG(msg, ...)     PICO_DEBUG(msg, ##__VA_ARGS__)
+#define AVD_LOG_VERBOSE(msg, ...)   PICO_VERBOSE(msg, ##__VA_ARGS__)
+#define AVD_LOG_INFO(msg, ...)      PICO_INFO(msg, ##__VA_ARGS__)
+#define AVD_LOG_WARN(msg, ...)      PICO_WARN(msg, ##__VA_ARGS__)
+#define AVD_LOG_ERROR(msg, ...)     PICO_ERROR(msg, ##__VA_ARGS__)
 
 #define AVD_CHECK_VK_HANDLE(result, log, ...) \
     if (result == VK_NULL_HANDLE) {           \
-        AVD_LOG(log, ##__VA_ARGS__);          \
+        AVD_LOG_ERROR(log, ##__VA_ARGS__);    \
         return false;                         \
     }
 
-#define AVD_CHECK_VK_RESULT(result, log, ...)                                     \
-    {                                                                             \
-        VkResult localResult = result;                                            \
-        if (localResult != VK_SUCCESS) {                                          \
-            AVD_LOG("------------------------------------\n");                    \
-            AVD_LOG("Check [%s] [%s] failed in %s:%d\n", #result, string_VkResult(localResult), __FILE__, __LINE__); \
-            AVD_LOG(log, ##__VA_ARGS__);                                          \
-            AVD_LOG("------------------------------------\n");                    \
-            return false;                                                         \
-        }                                                                        \
+#define AVD_CHECK_VK_RESULT(result, log, ...)                                                                            \
+    {                                                                                                                    \
+        VkResult localResult = result;                                                                                   \
+        if (localResult != VK_SUCCESS) {                                                                                 \
+            AVD_LOG_VERBOSE("------------------------------------");                                                     \
+            AVD_LOG_ERROR("Check [%s] [%s] failed in %s:%d", #result, string_VkResult(localResult), __FILE__, __LINE__); \
+            AVD_LOG_ERROR(log, ##__VA_ARGS__);                                                                           \
+            AVD_LOG_VERBOSE("------------------------------------");                                                     \
+            return false;                                                                                                \
+        }                                                                                                                \
     }
 
-#define AVD_CHECK_MSG(result, log, ...)                                       \
-    if (!(result)) {                                                          \
-        AVD_LOG("------------------------------------\n");                    \
-        AVD_LOG("Check [%s] failed in %s:%d\n", #result, __FILE__, __LINE__); \
-        AVD_LOG(log, ##__VA_ARGS__);                                          \
-        AVD_LOG("------------------------------------\n");                    \
-        return false;                                                         \
+#define AVD_CHECK_MSG(result, log, ...)                                           \
+    if (!(result)) {                                                              \
+        AVD_LOG_VERBOSE("------------------------------------");                  \
+        AVD_LOG_ERROR("Check [%s] failed in %s:%d", #result, __FILE__, __LINE__); \
+        AVD_LOG_ERROR(log, ##__VA_ARGS__);                                        \
+        AVD_LOG_VERBOSE("------------------------------------");                  \
+        return false;                                                             \
     }
 
-#define AVD_CHECK(result)                                                     \
-    if (!(result)) {                                                          \
-        AVD_LOG("------------------------------------\n");                    \
-        AVD_LOG("Check [%s] failed in %s:%d\n", #result, __FILE__, __LINE__); \
-        AVD_LOG("------------------------------------\n");                    \
-        return false;                                                         \
+#define AVD_CHECK(result)                                                           \
+    if (!(result)) {                                                                \
+        AVD_LOG_VERBOSE("------------------------------------");                    \
+        AVD_LOG_ERROR("Check [%s] failed in %s:%d\n", #result, __FILE__, __LINE__); \
+        AVD_LOG_VERBOSE("------------------------------------");                    \
+        return false;                                                               \
     }
 
 #define GAME_WIDTH  1920

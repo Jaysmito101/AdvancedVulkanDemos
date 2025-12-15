@@ -196,7 +196,7 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
             break;
         default:
             // Other source layouts aren't handled (yet)
-            // AVD_LOG("Unhandled old layout transition: %d\n", oldLayout);
+            // AVD_LOG_WARN("Unhandled old layout transition: %d", oldLayout);
             break;
     }
 
@@ -237,7 +237,7 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
             break;
         default:
             // Other source layouts aren't handled (yet)
-            // AVD_LOG("Unhandled new layout transition: %d\n", newLayout);
+            // AVD_LOG_WARN("Unhandled new layout transition: %d", newLayout);
             break;
     }
 
@@ -319,7 +319,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
             bpp = 3;
             break;
         default:
-            AVD_LOG("Unsupported image format for upload: %d\n", image->format);
+            AVD_LOG_ERROR("Unsupported image format for upload: %d", image->format);
             return false;
     }
     VkDeviceSize imageSize = (VkDeviceSize)image->width * image->height * bpp;

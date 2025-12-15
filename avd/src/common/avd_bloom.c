@@ -26,7 +26,7 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
     for (uint32_t i = 0; i < bloom->passCount - 1; ++i) {
         uint32_t framebufferWidth  = width >> (i + 1);
         uint32_t framebufferHeight = height >> (i + 1);
-        // AVD_LOG("Down Pass %d: %dx%d\n", i, framebufferWidth, framebufferHeight);
+        // AVD_LOG_DEBUG("Down Pass %d: %dx%d", i, framebufferWidth, framebufferHeight);
         AVD_VulkanFramebuffer *framebuffer = &bloom->bloomPasses[i];
         AVD_CHECK(avdVulkanFramebufferCreate(
             vulkan,
@@ -43,7 +43,7 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
     for (uint32_t i = bloom->passCount - 1; i < bloom->passCount * 2 - 2; ++i) {
         uint32_t framebufferWidth  = width >> (2 * bloom->passCount - 3 - i);
         uint32_t framebufferHeight = height >> (2 * bloom->passCount - 3 - i);
-        // AVD_LOG("Up Pass %d: %dx%d\n", i, framebufferWidth, framebufferHeight);
+        // AVD_LOG_DEBUG("Up Pass %d: %dx%d", i, framebufferWidth, framebufferHeight);
         AVD_VulkanFramebuffer *framebuffer = &bloom->bloomPasses[i];
         AVD_CHECK(avdVulkanFramebufferCreate(
             vulkan,
@@ -59,7 +59,7 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
     // // print the width and height of all the framebuffers
     // for (uint32_t i = 0; i < bloom->passCount * 2 - 2; ++i) {
     //     AVD_VulkanFramebuffer *framebuffer = &bloom->bloomPasses[i];
-    //     AVD_LOG("Framebuffer %d: %dx%d\n", i, framebuffer->width, framebuffer->height);
+    //     AVD_LOG_DEBUG("Framebuffer %d: %dx%d", i, framebuffer->width, framebuffer->height);
     // }
 
     return true;
@@ -240,7 +240,7 @@ bool avdBloomApplyInplace(
         params));
 
     for (uint32_t i = 0; i < bloom->passCount - 2; ++i) {
-        // AVD_LOG("Downsampling pass %d -> %d\n", i, i + 1);
+        // AVD_LOG_DEBUG("Downsampling pass %d -> %d", i, i + 1);
         AVD_CHECK(__avdBloomPass(
             commandBuffer,
             AVD_BLOOM_PASS_TYPE_DOWNSAMPLE,
@@ -252,7 +252,7 @@ bool avdBloomApplyInplace(
     }
 
     for (uint32_t i = bloom->passCount - 2; i < bloom->passCount * 2 - 4; i++) {
-        // AVD_LOG("Upsampling pass %d -> %d\n", i, i + 1);
+        // AVD_LOG_DEBUG("Upsampling pass %d -> %d", i, i + 1);
         AVD_CHECK(__avdBloomPass(
             commandBuffer,
             AVD_BLOOM_PASS_TYPE_UPSAMPLE,

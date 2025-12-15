@@ -7,7 +7,7 @@ static bool __avdVulkanCreateSemaphore(VkDevice device, VkSemaphore *semaphore)
 
     VkResult result = vkCreateSemaphore(device, &semaphoreInfo, NULL, semaphore);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to create semaphore\n");
+        AVD_LOG_ERROR("Failed to create semaphore");
         return false;
     }
 
@@ -22,7 +22,7 @@ static bool __avdVulkanCreateFence(VkDevice device, VkFence *fence)
 
     VkResult result = vkCreateFence(device, &fenceInfo, NULL, fence);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to create fence\n");
+        AVD_LOG_ERROR("Failed to create fence");
         return false;
     }
 
@@ -127,17 +127,17 @@ static bool __avdVulkanRendererHandleSwapchainResult(AVD_VulkanRenderer *rendere
         case VK_SUCCESS:
             return true;
         case VK_SUBOPTIMAL_KHR:
-            AVD_LOG("Swapchain is suboptimal\n");
+            AVD_LOG_WARN("Swapchain is suboptimal");
             swapchain->swapchainRecreateRequired = true;
             __avdVulkanRendererNextInflightFrame(renderer);
             return false;
         case VK_ERROR_OUT_OF_DATE_KHR:
-            AVD_LOG("Swapchain is out of date\n");
+            AVD_LOG_WARN("Swapchain is out of date");
             swapchain->swapchainRecreateRequired = true;
             __avdVulkanRendererNextInflightFrame(renderer);
             return false;
         default:
-            AVD_LOG("Failed to acquire next image from swapchain: %d\n", result);
+            AVD_LOG_ERROR("Failed to acquire next image from swapchain: %d", result);
             exit(1);
     }
 
@@ -179,7 +179,7 @@ bool avdVulkanRendererRecreateResources(AVD_VulkanRenderer *renderer, AVD_Vulkan
 
     __avdVulkanRendererDestroyRenderResources(renderer, vulkan);
     if (!__avdVulkanRendererCreateRenderResources(renderer, vulkan, swapchain->imageCount)) {
-        AVD_LOG("Failed to create render resources\n");
+        AVD_LOG_ERROR("Failed to create render resources");
         return false;
     }
 
@@ -198,7 +198,7 @@ bool avdVulkanRendererBegin(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AV
 
     VkResult result = avdVulkanSwapchainAcquireNextImage(swapchain, vulkan, &renderer->currentImageIndex, renderer->resources[currentFrameIndex].imageAvailableSemaphore, VK_NULL_HANDLE);
     if (!__avdVulkanRendererHandleSwapchainResult(renderer, swapchain, result)) {
-        AVD_LOG("Failed to acquire next image from swapchain\n");
+        AVD_LOG_ERROR("Failed to acquire next image from swapchain");
         return false;
     }
 
@@ -211,7 +211,7 @@ bool avdVulkanRendererBegin(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AV
     beginInfo.pInheritanceInfo         = NULL;
     result                             = vkBeginCommandBuffer(commandBuffer, &beginInfo);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to begin command buffer: %s\n", string_VkResult(result));
+        AVD_LOG_ERROR("Failed to begin command buffer: %s", string_VkResult(result));
         vkResetFences(vulkan->device, 1, &renderer->resources[currentFrameIndex].renderFence);
         __avdVulkanRendererNextInflightFrame(renderer);
         return false; // do not render this frame
@@ -231,7 +231,7 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
 
     VkResult result = vkEndCommandBuffer(commandBuffer);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to end command buffer: %s\n", string_VkResult(result));
+        AVD_LOG_ERROR("Failed to end command buffer: %s", string_VkResult(result));
         vkResetFences(vulkan->device, 1, &renderer->resources[currentFrameIndex].renderFence);
         __avdVulkanRendererNextInflightFrame(renderer);
         return false; // do not render this frame
@@ -251,7 +251,7 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
 
     result = vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, renderer->resources[currentFrameIndex].renderFence);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to submit command buffer: %s\n", string_VkResult(result));
+        AVD_LOG_ERROR("Failed to submit command buffer: %s", string_VkResult(result));
         vkResetFences(vulkan->device, 1, &renderer->resources[currentFrameIndex].renderFence);
         __avdVulkanRendererNextInflightFrame(renderer);
         return false; // do not render this frame
@@ -259,7 +259,7 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
 
     result = avdVulkanSwapchainPresent(swapchain, vulkan, renderer->currentImageIndex, renderer->resources[currentFrameIndex].renderFinishedSemaphore);
     if (!__avdVulkanRendererHandleSwapchainResult(renderer, swapchain, result)) {
-        AVD_LOG("Failed to present swapchain image\n");
+        AVD_LOG_ERROR("Failed to present swapchain image");
         return false; // do not render this frame
     }
 

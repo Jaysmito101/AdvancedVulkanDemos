@@ -126,7 +126,7 @@ bool __avdShaderLoadCached(
     AVD_ASSERT(inputShaderName != NULL);
     AVD_ASSERT(outResult != NULL);
 
-    AVD_LOG("Using cached shader: %s\n", cachedShaderPath);
+    AVD_LOG_INFO("Using cached shader: %s", cachedShaderPath);
     FILE *file = fopen(cachedShaderPath, "rb");
     AVD_CHECK_MSG(file != NULL, "Failed to open cached shader file: %s", cachedShaderPath);
 
@@ -161,14 +161,14 @@ bool __avdShaderSaveCached(
 
     FILE *file = fopen(cachedShaderPath, "wb");
     if (file == NULL) {
-        AVD_LOG("Failed to open cached shader file for writing: %s\n", cachedShaderPath);
+        AVD_LOG_ERROR("Failed to open cached shader file for writing: %s", cachedShaderPath);
         return false;
     }
 
     fwrite(outResult->compiledCode, sizeof(uint32_t), outResult->size, file);
     fclose(file);
 
-    AVD_LOG("Cached shader saved: %s\n", cachedShaderPath);
+    AVD_LOG_INFO("Cached shader saved: %s", cachedShaderPath);
     return true;
 }
 

@@ -60,7 +60,7 @@ bool avdSceneBloomRegisterApi(AVD_SceneAPI *api)
 bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
-    AVD_LOG("Initializing main menu scene\n");
+    AVD_LOG_INFO("Initializing main menu scene");
     bloom->isBloomEnabled = true;
 
     // Some values that look good for the demo
@@ -103,7 +103,7 @@ void avdSceneBloomDestroy(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
 
-    AVD_LOG("Destroying bloom scene\n");
+    AVD_LOG_INFO("Destroying bloom scene");
     avdRenderableTextDestroy(&bloom->title, &appState->vulkan);
     avdRenderableTextDestroy(&bloom->uiInfoText, &appState->vulkan);
     avdBloomDestroy(&bloom->bloom, &appState->vulkan);

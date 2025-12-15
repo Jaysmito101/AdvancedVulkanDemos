@@ -130,7 +130,7 @@ bool avdSceneMainMenuRegisterApi(AVD_SceneAPI *api)
 bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
-    AVD_LOG("Initializing main menu scene\n");
+    AVD_LOG_INFO("Initializing main menu scene");
     mainMenu->loadingCount = 0;
     mainMenu->currentPage  = 0;
     mainMenu->hoveredCard  = -1;
@@ -174,7 +174,7 @@ void avdSceneMainMenuDestroy(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
 
-    AVD_LOG("Destroying main menu scene\n");
+    AVD_LOG_INFO("Destroying main menu scene");
     avdRenderableTextDestroy(&mainMenu->title, &appState->vulkan);
     avdRenderableTextDestroy(&mainMenu->creditsText, &appState->vulkan);
     avdRenderableTextDestroy(&mainMenu->githubLinkText, &appState->vulkan);
@@ -190,13 +190,13 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
     AVD_ASSERT(progress != NULL);
 
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
-    AVD_LOG("Loading main menu scene\n");
+    AVD_LOG_INFO("Loading main menu scene");
     // nothing to load really here but some busy waiting
     if (mainMenu->loadingCount < 4) {
         mainMenu->loadingCount++;
         static char buffer[256];
         snprintf(buffer, sizeof(buffer), "Loading main menu scene: %d%%", mainMenu->loadingCount * 100 / 4);
-        AVD_LOG("%s\n", buffer);
+        AVD_LOG_INFO("%s", buffer);
         *statusMessage = buffer;
         *progress      = (float)mainMenu->loadingCount / 4.0f;
         avdSleep(100);
@@ -215,7 +215,7 @@ void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *
 
     if (event->type == AVD_INPUT_EVENT_KEY) {
         if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS) {
-            AVD_LOG("Exiting main menu scene\n");
+            AVD_LOG_INFO("Exiting main menu scene");
             appState->running = false;
         } else if (event->key.key == GLFW_KEY_RIGHT && event->key.action == GLFW_PRESS) {
             mainMenu->currentPage++;
@@ -258,7 +258,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
 
-    // AVD_LOG("Rendering main menu scene\n");
+    // AVD_LOG_VERBOSE("Rendering main menu scene");
 
     float titleWidth, titleHeight;
     float creditsWidth, creditsHeight;

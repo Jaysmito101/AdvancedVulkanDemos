@@ -4,7 +4,7 @@
 
 void __avdGLFWErrorCallback(int error, const char *description)
 {
-    AVD_LOG("GLFW Error: %d - %s\n", error, description);
+    AVD_LOG_ERROR("GLFW Error: %d - %s", error, description);
 }
 
 void __avdGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
