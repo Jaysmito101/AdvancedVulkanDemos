@@ -1024,6 +1024,72 @@ def create_assets(git_root, output_dir, temp_dir, msdf_exe_path):
 
     create_assets_common_header(output_dir)
 
+def calculate_directory_hashes(directory):
+    hashes = {}
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file == "assets_manifest.json" or file == "assets_history.txt" or file == ".assetshash":
+                continue
+            file_path = os.path.join(root, file)
+            rel_path = os.path.relpath(file_path, directory)
+            rel_path = rel_path.replace("\\", "/")
+            
+            with open(file_path, "rb") as f:
+                file_hash = hashlib.sha256(f.read()).hexdigest()
+            hashes[rel_path] = file_hash
+    return hashes
+
+def update_asset_history(output_dir):
+    manifest_path = os.path.join(output_dir, "assets_manifest.json")
+    history_path = os.path.join(output_dir, "assets_history.txt")
+    hash_file_path = os.path.join(output_dir, ".assetshash")
+    
+    current_hashes = calculate_directory_hashes(output_dir)
+    
+    combined_hash_input = ""
+    for file_path in sorted(current_hashes.keys()):
+        combined_hash_input += f"{file_path}:{current_hashes[file_path]};"
+    combined_hash = hashlib.sha256(combined_hash_input.encode('utf-8')).hexdigest()
+    
+    with open(hash_file_path, "w") as f:
+        f.write(combined_hash)
+    
+    previous_hashes = {}
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r") as f:
+                previous_hashes = json.load(f)
+        except:
+            print("Failed to load existing manifest, assuming clean state.")
+            
+    changed_files = []
+    
+    for file_path, file_hash in current_hashes.items():
+        if file_path not in previous_hashes:
+            changed_files.append(f"NEW: {file_path}")
+        elif previous_hashes[file_path] != file_hash:
+            changed_files.append(f"MODIFIED: {file_path}")
+            
+    for file_path in previous_hashes:
+        if file_path not in current_hashes:
+            changed_files.append(f"DELETED: {file_path}")
+            
+    if changed_files:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(history_path, "a") as f:
+            f.write(f"--- Build {timestamp} ---\n")
+            f.write(f"Combined Hash: {combined_hash}\n")
+            for change in changed_files:
+                f.write(f"{change}\n")
+            f.write("\n")
+        print(f"Updated assets history with {len(changed_files)} changes.")
+        
+        # Save new manifest
+        with open(manifest_path, "w") as f:
+            json.dump(current_hashes, f, indent=4, sort_keys=True)
+    else:
+        print(f"No asset changes detected. Combined Hash: {combined_hash}")
+
 def main():
     git_root = find_git_root()
     msdf_exe_path = ensure_msdf_atlas_gen(git_root)
@@ -1042,6 +1108,8 @@ def main():
     create_text_assets(git_root, output_dir)
     create_font_assets(git_root, output_dir, temp_dir, msdf_exe_path)
     create_assets_common_header(output_dir)
+    
+    update_asset_history(output_dir)
 
 if __name__ == "__main__":
     main()
