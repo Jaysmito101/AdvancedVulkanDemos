@@ -21,7 +21,7 @@ typedef struct {
     .rotation = (rot),                                \
     .scale    = (scl)})
 
-#define avdTransformLog(transform) AVD_LOG("Transform[pos: (%.2f, %.2f, %.2f), rot: (%.2f, %.2f, %.2f, %.2f), scale: (%.2f, %.2f, %.2f)]", \
+#define avdTransformLog(transform) AVD_LOG_INFO("Transform[pos: (%.2f, %.2f, %.2f), rot: (%.2f, %.2f, %.2f, %.2f), scale: (%.2f, %.2f, %.2f)]", \
                                            (transform).position.x, (transform).position.y, (transform).position.z,                         \
                                            (transform).rotation.x, (transform).rotation.y, (transform).rotation.z, (transform).rotation.w, \
                                            (transform).scale.x, (transform).scale.y, (transform).scale.z)
