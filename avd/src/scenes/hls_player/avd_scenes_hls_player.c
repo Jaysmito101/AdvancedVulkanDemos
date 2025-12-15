@@ -1,8 +1,12 @@
 #include "scenes/hls_player/avd_scenes_hls_player.h"
 #include "avd_application.h"
+#include "core/avd_base.h"
+#include "font/avd_font.h"
+#include "math/avd_math_base.h"
+#include "core/avd_utils.h"
 
 typedef struct {
-    int32_t indexOffset;
+    uint32_t activeSources; // each source has got 4 bits (4 * 8 = 32)
     int32_t indexCount;
     int32_t pad0;
     int32_t pad1;
@@ -15,10 +19,65 @@ static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
     return &scene->hlsPlayer;
 }
 
+AVD_UInt32 __avdSceneHLSPlayerUpdateActiveSources(AVD_SceneHLSPlayer* scene) {
+    AVD_UInt32 result = 0;
+    for (AVD_Size i = 0 ; i < AVD_SCENE_HLS_PLAYER_MAX_SOURCES ; i++ ) {
+        result |= (AVD_UInt32)(scene->sources[i].active ? 1 : 0) << i * 4;
+    }
+    return result;
+}
+
+bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer* scene, const char* path) {
+    AVD_ASSERT(scene != NULL);
+    AVD_ASSERT(path != NULL);
+
+    // path should have a text file with sources listed line by line
+    char* fileData = NULL;
+    size_t fileSize = 0;
+    if (!avdReadBinaryFile(path, (void**)&fileData, &fileSize)) {
+        AVD_LOG_ERROR("Failed to read HLS sources file: %s", path);
+        return false;
+    }
+
+    const char* lineStart = fileData;;
+    AVD_Size sourceIndex = 0;
+    while (*lineStart && sourceIndex < AVD_SCENE_HLS_PLAYER_MAX_SOURCES) {
+        const char* lineEnd = strchr(lineStart, '\n');
+        if (!lineEnd) lineEnd = strchr(lineStart, '\0');
+
+        size_t lineLength = lineEnd - lineStart;
+        if (lineLength > 0) {
+            if (lineLength >= sizeof(scene->sources[sourceIndex].url)) {
+                AVD_LOG_WARN("HLS source URL too long, truncating: %.*s", (int)lineLength, lineStart);
+                lineLength = sizeof(scene->sources[sourceIndex].url) - 1;
+            }
+            if (!avdIsStringAURL(lineStart)) {
+                AVD_LOG_WARN("Invalid URL format for HLS source, skipping: %.*s", (int)lineLength, lineStart);
+                lineStart = (*lineEnd == '\0') ? lineEnd : lineEnd + 1;
+                continue;
+            }
+            AVD_LOG_INFO("Loaded HLS source: %.*s", (int)lineLength, lineStart);
+            strncpy(scene->sources[sourceIndex].url, lineStart, lineLength);
+            scene->sources[sourceIndex].url[lineLength] = '\0';
+            scene->sources[sourceIndex].active = true;
+            sourceIndex++;
+        }
+
+        lineStart = (*lineEnd == '\0') ? lineEnd : lineEnd + 1;
+    }
+    scene->sourceCount = (AVD_UInt32)sourceIndex;
+
+    AVD_LOG_INFO("Total HLS sources loaded: %d", (int)scene->sourceCount);
+    
+    free(fileData);     
+    return true;
+}
+
 bool avdSceneHLSPlayerCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage)
 {
     AVD_ASSERT(statusMessage != NULL);
     *statusMessage = NULL;
+
 
     return true;
 }
@@ -47,6 +106,8 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
     AVD_ASSERT(scene != NULL);
 
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
+
+    memset(hlsPlayer->sources, 0, sizeof(hlsPlayer->sources));
 
     hlsPlayer->isSupported = appState->vulkan.supportedFeatures.videoDecode;
 
@@ -135,6 +196,11 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
         } else if (event->key.key == GLFW_KEY_P && event->key.action == GLFW_PRESS) {
             AVD_LOG_INFO("P pressed - would start playing HLS stream if implemented %s.", glfwGetClipboardString(appState->window.window));
         }
+    } else if (event->type == AVD_INPUT_EVENT_DRAG_N_DROP) {
+        if (event->dragNDrop.count > 0) {
+            AVD_LOG_INFO("Trying to load sources from: %s",  event->dragNDrop.paths[0]);
+            __avdSceneHLSPlayerLoadSourcesFromPath(__avdSceneGetTypePtr(scene), event->dragNDrop.paths[0]);
+        }
     }
 }
 
@@ -168,7 +234,9 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
     avdRenderableTextGetSize(&hlsPlayer->info, &infoWidth, &infoHeight);
 
     if (hlsPlayer->isSupported) {
-        AVD_HLSPlayerPushConstants pushConstants = {0};
+        AVD_HLSPlayerPushConstants pushConstants = {
+            .activeSources = __avdSceneHLSPlayerUpdateActiveSources(hlsPlayer),
+        };
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipeline);
         vkCmdPushConstants(commandBuffer, hlsPlayer->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);

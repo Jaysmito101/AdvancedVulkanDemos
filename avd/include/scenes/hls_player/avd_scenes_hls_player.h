@@ -1,7 +1,15 @@
 #ifndef AVD_SCENES_HLS_PLAYER_H
 #define AVD_SCENES_HLS_PLAYER_H
 
+#include "math/avd_math_base.h"
 #include "scenes/avd_scenes_base.h"
+
+#define AVD_SCENE_HLS_PLAYER_MAX_SOURCES 8
+
+typedef struct AVD_SceneHLSPlayerSource {
+    char url[1024];
+    bool active;
+} AVD_SceneHLSPlayerSource;
 
 typedef struct AVD_SceneHLSPlayer {
     AVD_SceneType type;
@@ -16,6 +24,9 @@ typedef struct AVD_SceneHLSPlayer {
 
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
+
+    AVD_SceneHLSPlayerSource sources[AVD_SCENE_HLS_PLAYER_MAX_SOURCES];
+    AVD_UInt32 sourceCount;    
 
     bool isSupported;
 
