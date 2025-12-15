@@ -86,7 +86,7 @@ static void *__avdModelGltfFindAttribute(cgltf_attribute *attributes, cgltf_size
                     }
                 }
                 default: {
-                    AVD_LOG("Warning: Unsupported attribute type %d requested. This is unexpected, skipping.\n", type);
+                    AVD_LOG_WARN("Unsupported attribute type %d requested. This is unexpected, skipping.\n", type);
                     continue;
                 }
             }

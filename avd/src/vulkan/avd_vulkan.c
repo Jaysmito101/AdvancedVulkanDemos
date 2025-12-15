@@ -273,7 +273,7 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AV
         }
         if (!found) {
             outFeatures->videoDecode = false;
-            AVD_LOG("Video extension %s not supported\n", __avd_VulkanVideoExtensions[i]);
+            AVD_LOG_WARN("Video extension %s not supported\n", __avd_VulkanVideoExtensions[i]);
             break;
         }
     }
