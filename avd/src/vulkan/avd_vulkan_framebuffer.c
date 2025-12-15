@@ -88,7 +88,7 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
     static VkAttachmentDescription colorAttachmentDescriptions[64] = {0};
     uint32_t attachmentCount                                       = (uint32_t)framebuffer->colorAttachments.count;
     if (attachmentCount > (uint32_t)AVD_ARRAY_COUNT(colorAttachmentDescriptions)) {
-        AVD_LOG("Too many color attachments for framebuffer, max is %zu", AVD_ARRAY_COUNT(colorAttachmentDescriptions));
+        AVD_LOG_ERROR("Too many color attachments for framebuffer, max is %zu", AVD_ARRAY_COUNT(colorAttachmentDescriptions));
         return false;
     }
     for (size_t i = 0; i < framebuffer->colorAttachments.count; ++i) {
@@ -259,7 +259,7 @@ bool avdVulkanFramebufferCreate(
         AVD_VulkanFramebufferAttachment attachment     = {0};
         AVD_VulkanFramebufferAttachment *attachmentPtr = (AVD_VulkanFramebufferAttachment *)avdListPushBack(&framebuffer->colorAttachments, &attachment);
         if (!__avdVulkanFramebufferAttachmentCreate(vulkan, attachmentPtr, colorFormats[i], VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
-            AVD_LOG("Failed to create color attachment for format %d\n", colorFormats[i]);
+            AVD_LOG_ERROR("Failed to create color attachment for format %d", colorFormats[i]);
             return false;
         }
     }
@@ -273,21 +273,21 @@ bool avdVulkanFramebufferCreate(
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT)) {
-            AVD_LOG("Failed to transition color attachment image layout\n");
+            AVD_LOG_ERROR("Failed to transition color attachment image layout");
             return false;
         }
     }
 
     if (hasDepthStencil) {
         if (!__avdVulkanFramebufferAttachmentCreate(vulkan, &framebuffer->depthStencilAttachment, depthStencilFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
-            AVD_LOG("Failed to create depth stencil attachment\n");
+            AVD_LOG_ERROR("Failed to create depth stencil attachment");
             return false;
         }
     }
 
     // Create render pass and framebuffer here (omitted for brevity)
     if (!__avdVulkanFramebufferCreateRenderPassAndFramebuffer(vulkan->device, framebuffer)) {
-        AVD_LOG("Failed to create render pass and framebuffer\n");
+        AVD_LOG_ERROR("Failed to create render pass and framebuffer");
         return false;
     }
 

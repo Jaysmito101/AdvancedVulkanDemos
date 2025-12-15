@@ -22,14 +22,14 @@ static void __avdReadFile(
     AVD_ASSERT(filename != NULL);
 
     if (!avdPathExists(filename)) {
-        AVD_LOG("File does not exist: %s\n", filename);
+        AVD_LOG_ERROR("File does not exist: %s", filename);
         *data = NULL;
         *len  = 0;
         return;
     }
 
     if (!avdReadBinaryFile(filename, (void **)data, len)) {
-        AVD_LOG("Failed to read file: %s\n", filename);
+        AVD_LOG_ERROR("Failed to read file: %s", filename);
         *data = NULL;
         *len  = 0;
         return;
@@ -146,7 +146,7 @@ bool avdModelLoadObj(const char *filename, AVD_Model *model, AVD_ModelResources 
         TINYOBJ_FLAG_TRIANGULATE);
 
     if (err != TINYOBJ_SUCCESS) {
-        AVD_LOG("Error parsing OBJ file: %d\n", err);
+        AVD_LOG_ERROR("Error parsing OBJ file: %d", err);
         return false;
     }
 
