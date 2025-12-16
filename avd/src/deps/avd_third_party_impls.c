@@ -15,3 +15,4 @@
 
 #define PICO_IMPLEMENTATION
 #include "pico/picoLog.h"
+#include "pico/picoM3U8.h"
