@@ -104,6 +104,10 @@ static bool __avdAddSurfaceExtensions(uint32_t *extensionCount, const char **ext
 {
     extensions[*extensionCount] = VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME;
     (*extensionCount)++;
+
+    extensions[*extensionCount] = VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME;
+    (*extensionCount)++;
+
     return true;
 }
 
