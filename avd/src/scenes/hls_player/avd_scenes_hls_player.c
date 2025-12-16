@@ -1,9 +1,12 @@
 #include "scenes/hls_player/avd_scenes_hls_player.h"
 #include "avd_application.h"
 #include "core/avd_base.h"
+#include "core/avd_utils.h"
 #include "font/avd_font.h"
 #include "math/avd_math_base.h"
-#include "core/avd_utils.h"
+#include "pico/picoM3U8.h"
+#include "scenes/avd_scenes.h"
+
 
 typedef struct {
     uint32_t activeSources; // each source has got 4 bits (4 * 8 = 32)
@@ -19,31 +22,35 @@ static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
     return &scene->hlsPlayer;
 }
 
-AVD_UInt32 __avdSceneHLSPlayerUpdateActiveSources(AVD_SceneHLSPlayer* scene) {
+AVD_UInt32 __avdSceneHLSPlayerUpdateActiveSources(AVD_SceneHLSPlayer *scene)
+{
     AVD_UInt32 result = 0;
-    for (AVD_Size i = 0 ; i < AVD_SCENE_HLS_PLAYER_MAX_SOURCES ; i++ ) {
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_SOURCES; i++) {
         result |= (AVD_UInt32)(scene->sources[i].active ? 1 : 0) << i * 4;
     }
     return result;
 }
 
-bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer* scene, const char* path) {
+bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, const char *path)
+{
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(path != NULL);
 
     // path should have a text file with sources listed line by line
-    char* fileData = NULL;
+    char *fileData  = NULL;
     size_t fileSize = 0;
-    if (!avdReadBinaryFile(path, (void**)&fileData, &fileSize)) {
+    if (!avdReadBinaryFile(path, (void **)&fileData, &fileSize)) {
         AVD_LOG_ERROR("Failed to read HLS sources file: %s", path);
         return false;
     }
 
-    const char* lineStart = fileData;;
+    const char *lineStart = fileData;
+    ;
     AVD_Size sourceIndex = 0;
     while (*lineStart && sourceIndex < AVD_SCENE_HLS_PLAYER_MAX_SOURCES) {
-        const char* lineEnd = strchr(lineStart, '\n');
-        if (!lineEnd) lineEnd = strchr(lineStart, '\0');
+        const char *lineEnd = strchr(lineStart, '\n');
+        if (!lineEnd)
+            lineEnd = strchr(lineStart, '\0');
 
         size_t lineLength = lineEnd - lineStart;
         if (lineLength > 0) {
@@ -59,7 +66,7 @@ bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer* scene, const cha
             AVD_LOG_INFO("Loaded HLS source: %.*s", (int)lineLength, lineStart);
             strncpy(scene->sources[sourceIndex].url, lineStart, lineLength);
             scene->sources[sourceIndex].url[lineLength] = '\0';
-            scene->sources[sourceIndex].active = true;
+            scene->sources[sourceIndex].active          = true;
             sourceIndex++;
         }
 
@@ -68,8 +75,52 @@ bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer* scene, const cha
     scene->sourceCount = (AVD_UInt32)sourceIndex;
 
     AVD_LOG_INFO("Total HLS sources loaded: %d", (int)scene->sourceCount);
-    
-    free(fileData);     
+
+    free(fileData);
+    return true;
+}
+
+bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+{
+    (void)appState;
+    for (AVD_Size i = 0; i < scene->sourceCount; i++) {
+        if (scene->sources[i].active) {
+            picoM3U8PlaylistDestroy(scene->sources[i].playlist);
+            scene->sources[i].active = false;
+        }
+    }
+    scene->sourceCount = 0;
+    return true;
+}
+
+bool __avdSceneHLSPlayerFetchSourceIfNeeded(AVD_SceneHLSPlayerSource *source)
+{
+    if (!source->active) {
+        return true;
+    }
+
+    if (source->playlist == NULL) {
+        AVD_LOG_INFO("Fetching HLS playlist for source: %s", source->url);
+        char *data = NULL;
+        AVD_CHECK(avdCurlFetchStringContent(source->url, &data, NULL));
+        AVD_CHECK_MSG(picoM3U8PlaylistParse(data, strlen(data), &source->playlist) == PICO_M3U8_RESULT_SUCCESS, "Failed to parse HLS playlist for source: %s", source->url);
+        AVD_CHECK_MSG(source->playlist->type == PICO_M3U8_PLAYLIST_TYPE_MEDIA, "Master playlists are not supported for yet!");
+        picoM3U8PlaylistDebugPrint(source->playlist);
+
+        free(data);
+    }
+
+    return true;
+}
+
+bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+{
+    for (AVD_Size i = 0; i < scene->sourceCount; i++) {
+        if (scene->sources[i].active) {
+            AVD_CHECK(__avdSceneHLSPlayerFetchSourceIfNeeded(&scene->sources[i]));
+        }
+    }
+
     return true;
 }
 
@@ -78,6 +129,19 @@ bool avdSceneHLSPlayerCheckIntegrity(struct AVD_AppState *appState, const char *
     AVD_ASSERT(statusMessage != NULL);
     *statusMessage = NULL;
 
+    if (!appState->vulkan.supportedFeatures.videoDecode) {
+        *statusMessage = "HLS Player scene is not supported on this GPU (video decode not supported).";
+        return false;
+    }
+
+    if (!avdCurlIsSupported()) {
+        *statusMessage = "HLS Player scene requires curl cli to be installed and available in PATH.";
+        return false;
+    }
+
+    if (!avdPathExists("assets/scene_hls_player/sources.txt")) {
+        AVD_LOG_WARN("HLS Player default sources file not found: assets/scene_hls_player/sources.txt");
+    }
 
     return true;
 }
@@ -150,6 +214,11 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
         NULL,
         &pipelineCreationInfo));
 
+    if (avdPathExists("assets/scene_hls_player/sources.txt")) {
+        AVD_CHECK(__avdSceneHLSPlayerLoadSourcesFromPath(hlsPlayer, "assets/scene_hls_player/sources.txt"));
+        AVD_LOG_INFO("Loaded HLS sources from sources.txt");
+    } 
+
     return true;
 }
 
@@ -198,7 +267,7 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
         }
     } else if (event->type == AVD_INPUT_EVENT_DRAG_N_DROP) {
         if (event->dragNDrop.count > 0) {
-            AVD_LOG_INFO("Trying to load sources from: %s",  event->dragNDrop.paths[0]);
+            AVD_LOG_INFO("Trying to load sources from: %s", event->dragNDrop.paths[0]);
             __avdSceneHLSPlayerLoadSourcesFromPath(__avdSceneGetTypePtr(scene), event->dragNDrop.paths[0]);
         }
     }
@@ -214,6 +283,8 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
     if (!hlsPlayer->isSupported) {
         return true;
     }
+
+    AVD_CHECK(__avdSceneHLSPlayerUpdateSources(appState, hlsPlayer));
 
     return true;
 }

@@ -3,12 +3,14 @@
 
 #include "math/avd_math_base.h"
 #include "scenes/avd_scenes_base.h"
+#include "pico/picoM3U8.h"
 
 #define AVD_SCENE_HLS_PLAYER_MAX_SOURCES 8
 
 typedef struct AVD_SceneHLSPlayerSource {
     char url[1024];
     bool active;
+    picoM3U8Playlist playlist;    
 } AVD_SceneHLSPlayerSource;
 
 typedef struct AVD_SceneHLSPlayer {
