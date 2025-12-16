@@ -9,6 +9,7 @@ add_executable(avd
     ${avd_headers}
     ./src/core/avd_utils.c
     ./src/core/avd_utils_curl.c
+    ./src/core/avd_utils_curl_tests.c
     ./src/core/avd_window.c
     ./src/core/avd_window_cb.c
     ./src/core/avd_list.c
