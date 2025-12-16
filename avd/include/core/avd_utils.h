@@ -18,5 +18,13 @@ float avdDequantizeHalf(uint16_t value);
 int avdQuantizeSnorm(float v, int N);
 
 bool avdIsStringAURL(const char *str);
+// curl utils
+bool avdCurlIsSupported(void);
+bool avdCurlDownloadToFile(const char *url, const char *filename);
+bool avdCurlDownloadToMemory(const char *url, void **data, size_t *size);
+bool avdCurlFetchStringContent(const char *url, char **outString, int *outReturnCode);
+bool avdCurlPostRequest(const char *url, const char *postData, char **outResponse, int *outReturnCode);
+
+bool avdCurlUtilsTestsRun(void);
 
 #endif // AVD_UTILS_H
