@@ -22,7 +22,7 @@ static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
     return &scene->hlsPlayer;
 }
 
-AVD_UInt32 __avdSceneHLSPlayerUpdateActiveSources(AVD_SceneHLSPlayer *scene)
+static AVD_UInt32 __avdSceneHLSPlayerUpdateActiveSources(AVD_SceneHLSPlayer *scene)
 {
     AVD_UInt32 result = 0;
     for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_SOURCES; i++) {
@@ -31,7 +31,7 @@ AVD_UInt32 __avdSceneHLSPlayerUpdateActiveSources(AVD_SceneHLSPlayer *scene)
     return result;
 }
 
-bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, const char *path)
+static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, const char *path)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(path != NULL);
@@ -45,7 +45,7 @@ bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, const cha
     }
 
     const char *lineStart = fileData;
-    ;
+    
     AVD_Size sourceIndex = 0;
     while (*lineStart && sourceIndex < AVD_SCENE_HLS_PLAYER_MAX_SOURCES) {
         const char *lineEnd = strchr(lineStart, '\n');
@@ -80,7 +80,7 @@ bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, const cha
     return true;
 }
 
-bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
     (void)appState;
     for (AVD_Size i = 0; i < scene->sourceCount; i++) {
@@ -93,7 +93,7 @@ bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *
     return true;
 }
 
-bool __avdSceneHLSPlayerFetchSourceIfNeeded(AVD_SceneHLSPlayerSource *source)
+static bool __avdSceneHLSPlayerFetchSourceIfNeeded(AVD_SceneHLSPlayerSource *source)
 {
     if (!source->active) {
         return true;
@@ -113,7 +113,7 @@ bool __avdSceneHLSPlayerFetchSourceIfNeeded(AVD_SceneHLSPlayerSource *source)
     return true;
 }
 
-bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
     for (AVD_Size i = 0; i < scene->sourceCount; i++) {
         if (scene->sources[i].active) {
