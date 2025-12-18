@@ -33,12 +33,21 @@ typedef struct {
 } AVD_SceneHLSPlayerMediaWorkerPayload;
 
 typedef struct {
-
+    char* data;
+    AVD_Size dataSize;
     AVD_UInt32 sourcesHash;
     AVD_UInt32 sourceIndex;
     AVD_UInt32 segmentIndex;
     AVD_Float refreshIntervalMs;
 } AVD_SceneHLSPlayerDemuxWorkerPayload;
+
+typedef struct {
+    // TODO: some thing that holds the demuxed media data
+    AVD_UInt32 sourcesHash;
+    AVD_UInt32 sourceIndex;
+    AVD_UInt32 segmentIndex;
+    AVD_Float refreshIntervalMs;
+} AVD_SceneHLSPlayerMediaSegmentPayload;
 
 typedef struct AVD_SceneHLSPlayer {
     AVD_SceneType type;
