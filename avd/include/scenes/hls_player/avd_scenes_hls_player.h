@@ -2,16 +2,43 @@
 #define AVD_SCENES_HLS_PLAYER_H
 
 #include "math/avd_math_base.h"
-#include "scenes/avd_scenes_base.h"
 #include "pico/picoM3U8.h"
+#include "pico/picoThreads.h"
+#include "scenes/avd_scenes_base.h"
 
-#define AVD_SCENE_HLS_PLAYER_MAX_SOURCES 8
+#define AVD_SCENE_HLS_PLAYER_MAX_SOURCES                8
+#define AVD_SCENE_HLS_PLAYER_NUM_SOURCE_WORKERS         2
+#define AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DOWNLOAD_WORKERS 4
+#define AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DEMUX_WORKERS    2
 
-typedef struct AVD_SceneHLSPlayerSource {
+typedef struct {
     char url[1024];
     bool active;
-    picoM3U8Playlist playlist;    
+    AVD_Float refreshIntervalMs;
+    AVD_Float lastRefreshed;
 } AVD_SceneHLSPlayerSource;
+
+typedef struct {
+    char url[1024];
+    AVD_UInt32 sourcesHash;
+    AVD_UInt32 sourceIndex;
+} AVD_SceneHLSPlayerSourceWorkerPayload;
+
+typedef struct {
+    char segmentUrl[1024];
+    AVD_UInt32 sourcesHash;
+    AVD_UInt32 sourceIndex;
+    AVD_UInt32 segmentIndex;
+    AVD_Float refreshIntervalMs;
+} AVD_SceneHLSPlayerMediaWorkerPayload;
+
+typedef struct {
+
+    AVD_UInt32 sourcesHash;
+    AVD_UInt32 sourceIndex;
+    AVD_UInt32 segmentIndex;
+    AVD_Float refreshIntervalMs;
+} AVD_SceneHLSPlayerDemuxWorkerPayload;
 
 typedef struct AVD_SceneHLSPlayer {
     AVD_SceneType type;
@@ -28,7 +55,22 @@ typedef struct AVD_SceneHLSPlayer {
     VkPipeline pipeline;
 
     AVD_SceneHLSPlayerSource sources[AVD_SCENE_HLS_PLAYER_MAX_SOURCES];
-    AVD_UInt32 sourceCount;    
+    AVD_UInt32 sourceCount;
+    AVD_UInt32 sourcesHash;
+
+    picoThread sourceDownloadWorker[AVD_SCENE_HLS_PLAYER_NUM_SOURCE_WORKERS];
+    bool sourceDownloadWorkerRunning;
+
+    picoThread mediaDownloadWorker[AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DOWNLOAD_WORKERS];
+    bool mediaDownloadWorkerRunning;
+
+    picoThread mediaDemuxWorker[AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DEMUX_WORKERS];
+    bool mediaDemuxWorkerRunning;
+
+    picoThreadChannel sourceDownloadChannel; // main thread -> source download worker
+    picoThreadChannel mediaDownloadChannel;  // source worker -> media download worker
+    picoThreadChannel mediaDemuxChannel;     // medua download worker -> media demux worker
+    picoThreadChannel mediaReadyChannel;     // media demux worker -> main thread
 
     bool isSupported;
 
