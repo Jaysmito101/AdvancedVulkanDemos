@@ -189,6 +189,9 @@ static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, co
             scene->sources[sourceIndex].active            = true;
             scene->sources[sourceIndex].refreshIntervalMs = 10000000.0f; // by default have this very high
             scene->sources[sourceIndex].lastRefreshed     = -1.0 * scene->sources[sourceIndex].refreshIntervalMs;
+            scene->sources[sourceIndex].currentSegmentIndex = 0;
+            scene->sources[sourceIndex].currentSegmentStartTime = 0.0f;
+
             sourceIndex++;
         }
 
@@ -224,18 +227,21 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
             continue;
         }
 
-        if (source->lastRefreshed + source->refreshIntervalMs > time) {
+
+
+        if (source->lastRefreshed + source->refreshIntervalMs < time) {
+            static AVD_SceneHLSPlayerSourceWorkerPayload payload = {0};
+            memcpy(payload.url, source->url, sizeof(payload.url));
+            payload.sourcesHash = scene->sourcesHash;
+            payload.sourceIndex = (AVD_UInt32)i;
+            AVD_CHECK_MSG(picoThreadChannelSend(scene->sourceDownloadChannel, &payload), "Failed to send source download payload to worker thread");
+            source->lastRefreshed = time;
             continue;
         }
+        
 
-        static AVD_SceneHLSPlayerSourceWorkerPayload payload = {0};
-        memcpy(payload.url, source->url, sizeof(payload.url));
-        payload.sourcesHash = scene->sourcesHash;
-        payload.sourceIndex = (AVD_UInt32)i;
-        AVD_CHECK_MSG(picoThreadChannelSend(scene->sourceDownloadChannel, &payload), "Failed to send source download payload to worker thread");
-
-        source->lastRefreshed = time;
-        return true;
+        
+        
     }
 
     return true;

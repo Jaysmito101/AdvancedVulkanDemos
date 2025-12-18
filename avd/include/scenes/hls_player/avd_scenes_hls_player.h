@@ -18,6 +18,8 @@ typedef struct {
     bool active;
     AVD_Float refreshIntervalMs;
     AVD_Float lastRefreshed;
+    AVD_UInt32 currentSegmentIndex;
+    AVD_Float currentSegmentStartTime;
 } AVD_SceneHLSPlayerSource;
 
 typedef struct {
