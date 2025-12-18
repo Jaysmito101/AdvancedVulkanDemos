@@ -5,8 +5,10 @@
 #include "font/avd_font.h"
 #include "math/avd_math_base.h"
 #include "pico/picoM3U8.h"
+#include "pico/picoThreads.h"
 #include "scenes/avd_scenes.h"
-
+#include <objidl.h>
+#include <stdint.h>
 
 typedef struct {
     uint32_t activeSources; // each source has got 4 bits (4 * 8 = 32)
@@ -45,7 +47,7 @@ static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, co
     }
 
     const char *lineStart = fileData;
-    
+
     AVD_Size sourceIndex = 0;
     while (*lineStart && sourceIndex < AVD_SCENE_HLS_PLAYER_MAX_SOURCES) {
         const char *lineEnd = strchr(lineStart, '\n');
@@ -65,16 +67,19 @@ static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, co
             }
             AVD_LOG_INFO("Loaded HLS source: %.*s", (int)lineLength, lineStart);
             strncpy(scene->sources[sourceIndex].url, lineStart, lineLength);
-            scene->sources[sourceIndex].url[lineLength] = '\0';
-            scene->sources[sourceIndex].active          = true;
+            scene->sources[sourceIndex].url[lineLength]   = '\0';
+            scene->sources[sourceIndex].active            = true;
+            scene->sources[sourceIndex].refreshIntervalMs = 10000000.0f; // by default have this very high
+            scene->sources[sourceIndex].lastRefreshed     = -1.0 * scene->sources[sourceIndex].refreshIntervalMs;
             sourceIndex++;
         }
 
         lineStart = (*lineEnd == '\0') ? lineEnd : lineEnd + 1;
     }
     scene->sourceCount = (AVD_UInt32)sourceIndex;
+    scene->sourcesHash = avdHashBuffer(scene->sources, sizeof(AVD_SceneHLSPlayerSource) * scene->sourceCount);
 
-    AVD_LOG_INFO("Total HLS sources loaded: %d", (int)scene->sourceCount);
+    AVD_LOG_INFO("Total HLS sources loaded: %d [hash: 0x%08X]", scene->sourceCount, scene->sourcesHash);
 
     free(fileData);
     return true;
@@ -85,7 +90,6 @@ static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSP
     (void)appState;
     for (AVD_Size i = 0; i < scene->sourceCount; i++) {
         if (scene->sources[i].active) {
-            picoM3U8PlaylistDestroy(scene->sources[i].playlist);
             scene->sources[i].active = false;
         }
     }
@@ -93,38 +97,154 @@ static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSP
     return true;
 }
 
-static bool __avdSceneHLSPlayerFetchSourceIfNeeded(AVD_SceneHLSPlayerSource *source)
+static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
-    if (!source->active) {
+    AVD_Float time = (AVD_Float)appState->framerate.currentTime;
+    for (AVD_Size i = 0; i < scene->sourceCount; i++) {
+        AVD_SceneHLSPlayerSource *source = &scene->sources[i];
+        if (!source->active) {
+            continue;
+        }
+
+        if (source->lastRefreshed + source->refreshIntervalMs > time) {
+            continue;
+        }
+
+        static AVD_SceneHLSPlayerSourceWorkerPayload payload = {0};
+        memcpy(payload.url, source->url, sizeof(payload.url));
+        payload.sourcesHash = scene->sourcesHash;
+        payload.sourceIndex = (AVD_UInt32)i;
+        AVD_CHECK_MSG(picoThreadChannelSend(scene->sourceDownloadChannel, &payload), "Failed to send source download payload to worker thread");
+
+        source->lastRefreshed = time;
         return true;
     }
 
-    if (source->playlist == NULL) {
-        AVD_LOG_INFO("Fetching HLS playlist for source: %s", source->url);
-        char *data = NULL;
-        AVD_CHECK(avdCurlFetchStringContent(source->url, &data, NULL));
-        AVD_CHECK_MSG(picoM3U8PlaylistParse(data, strlen(data), &source->playlist) == PICO_M3U8_RESULT_SUCCESS, "Failed to parse HLS playlist for source: %s", source->url);
-        AVD_CHECK_MSG(source->playlist->type == PICO_M3U8_PLAYLIST_TYPE_MEDIA, "Master playlists are not supported for yet!");
-        picoM3U8PlaylistDebugPrint(source->playlist);
-
-        free(data);
-    }
-
     return true;
 }
 
-static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+static void __avdSceneHLSSourceDownloadWorker(void *arg)
 {
-    for (AVD_Size i = 0; i < scene->sourceCount; i++) {
-        if (scene->sources[i].active) {
-            AVD_CHECK(__avdSceneHLSPlayerFetchSourceIfNeeded(&scene->sources[i]));
+    AVD_SceneHLSPlayer *scene          = (AVD_SceneHLSPlayer *)arg;
+    scene->sourceDownloadWorkerRunning = true;
+    AVD_LOG_INFO("HLS Data Worker thread started with thread ID: %llu.", picoThreadGetCurrentId());
+    AVD_SceneHLSPlayerSourceWorkerPayload payload = {0};
+    picoM3U8Playlist sourcePlaylist               = NULL;
+    while (scene->sourceDownloadWorkerRunning) {
+
+        if (picoThreadChannelReceive(scene->sourceDownloadChannel, &payload, 1000)) {
+            AVD_LOG_VERBOSE("HLS Source Download Worker received payload for source index %u, url: %s", payload.sourceIndex, payload.url);
+
+            char *data = NULL;
+            if (!avdCurlFetchStringContent(payload.url, &data, NULL)) {
+                AVD_LOG_ERROR("Failed to fetch HLS playlist for source: %s", payload.url);
+                continue;
+            }
+            if (picoM3U8PlaylistParse(data, (uint32_t)strlen(data), &sourcePlaylist) != PICO_M3U8_RESULT_SUCCESS) {
+                AVD_LOG_ERROR("Failed to parse HLS playlist for source: %s", payload.url);
+                free(data);
+                continue;
+            }
+
+            if (sourcePlaylist->type != PICO_M3U8_PLAYLIST_TYPE_MEDIA) {
+                AVD_LOG_ERROR("Master playlists are not supported for yet!: %s", payload.url);
+                picoM3U8PlaylistDestroy(sourcePlaylist);
+                free(data);
+            }
+            AVD_LOG_VERBOSE("%s", data);
+            picoM3U8PlaylistDebugPrint(sourcePlaylist);
+
+            free(data);
         }
     }
+    AVD_LOG_INFO("HLS Data Worker thread stopping with thread ID: %llu.", picoThreadGetCurrentId());
+}
+
+static void __avdSceneHLSMediaDownloadWoker(void *args)
+{
+    AVD_SceneHLSPlayer *scene         = (AVD_SceneHLSPlayer *)args;
+    scene->mediaDownloadWorkerRunning = true;
+    AVD_LOG_INFO("HLS Media Download Worker thread started with thread ID: %llu.", picoThreadGetCurrentId());
+    while (scene->mediaDownloadWorkerRunning) {
+        picoThreadSleep(1000); // Sleep for 5 seconds before checking again
+    }
+    AVD_LOG_INFO("HLS Media Download Worker thread stopping with thread ID: %llu.", picoThreadGetCurrentId());
+}
+
+static void __avdSceneHLSMediaDemuxWorker(void *args)
+{
+    AVD_SceneHLSPlayer *scene      = (AVD_SceneHLSPlayer *)args;
+    scene->mediaDemuxWorkerRunning = true;
+    AVD_LOG_INFO("HLS Media Demux Worker thread started with thread ID: %llu.", picoThreadGetCurrentId());
+    while (scene->mediaDemuxWorkerRunning) {
+        picoThreadSleep(1000); // Sleep for 5 seconds before checking again
+    }
+    AVD_LOG_INFO("HLS Media Demux Worker thread stopping with thread ID: %llu.", picoThreadGetCurrentId());
+}
+
+static bool __avdSceneHLSPlayerPrepWorkers(AVD_SceneHLSPlayer *scene)
+{
+    AVD_ASSERT(scene != NULL);
+
+    // Create the thread channels to communicate between threads
+    scene->sourceDownloadChannel = picoThreadChannelCreateUnbounded(128);
+    AVD_CHECK_MSG(scene->sourceDownloadChannel != NULL, "Failed to create HLS source download channel");
+
+    scene->mediaDownloadChannel = picoThreadChannelCreateUnbounded(128);
+    AVD_CHECK_MSG(scene->mediaDownloadChannel != NULL, "Failed to create HLS media download channel");
+
+    scene->mediaDemuxChannel = picoThreadChannelCreateUnbounded(128);
+    AVD_CHECK_MSG(scene->mediaDemuxChannel != NULL, "Failed to create HLS media demux channel");
+
+    scene->mediaReadyChannel = picoThreadChannelCreateUnbounded(128);
+    AVD_CHECK_MSG(scene->mediaReadyChannel != NULL, "Failed to create HLS media ready channel");
+
+    // Spin up the threads
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_NUM_SOURCE_WORKERS; i++) {
+        scene->sourceDownloadWorker[i] = picoThreadCreate(__avdSceneHLSSourceDownloadWorker, scene);
+        AVD_CHECK_MSG(scene->sourceDownloadWorker[i] != NULL, "Failed to create HLS data worker thread");
+    }
+
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DOWNLOAD_WORKERS; i++) {
+        scene->mediaDownloadWorker[i] = picoThreadCreate(__avdSceneHLSMediaDownloadWoker, scene);
+        AVD_CHECK_MSG(scene->mediaDownloadWorker[i] != NULL, "Failed to create HLS data worker thread");
+    }
+
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DEMUX_WORKERS; i++) {
+        scene->mediaDemuxWorker[i] = picoThreadCreate(__avdSceneHLSMediaDemuxWorker, scene);
+        AVD_CHECK_MSG(scene->mediaDemuxWorker[i] != NULL, "Failed to create HLS data worker thread");
+    }
 
     return true;
 }
 
-bool avdSceneHLSPlayerCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage)
+static void __avdSceneHLSPlayerWindDownWorkers(AVD_SceneHLSPlayer *scene)
+{
+    AVD_ASSERT(scene != NULL);
+
+    scene->sourceDownloadWorkerRunning = false;
+    scene->mediaDownloadWorkerRunning  = false;
+    scene->mediaDemuxWorkerRunning     = false;
+
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_NUM_SOURCE_WORKERS; i++) {
+        picoThreadDestroy(scene->sourceDownloadWorker[i]);
+    }
+
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DOWNLOAD_WORKERS; i++) {
+        picoThreadDestroy(scene->mediaDownloadWorker[i]);
+    }
+
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DEMUX_WORKERS; i++) {
+        picoThreadDestroy(scene->mediaDemuxWorker[i]);
+    }
+
+    picoThreadChannelDestroy(scene->sourceDownloadChannel);
+    picoThreadChannelDestroy(scene->mediaDownloadChannel);
+    picoThreadChannelDestroy(scene->mediaDemuxChannel);
+    picoThreadChannelDestroy(scene->mediaReadyChannel);
+}
+
+static bool avdSceneHLSPlayerCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage)
 {
     AVD_ASSERT(statusMessage != NULL);
     *statusMessage = NULL;
@@ -217,7 +337,9 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
     if (avdPathExists("assets/scene_hls_player/sources.txt")) {
         AVD_CHECK(__avdSceneHLSPlayerLoadSourcesFromPath(hlsPlayer, "assets/scene_hls_player/sources.txt"));
         AVD_LOG_INFO("Loaded HLS sources from sources.txt");
-    } 
+    }
+
+    AVD_CHECK(__avdSceneHLSPlayerPrepWorkers(hlsPlayer));
 
     return true;
 }
@@ -228,6 +350,8 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
     AVD_ASSERT(scene != NULL);
 
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
+
+    __avdSceneHLSPlayerWindDownWorkers(hlsPlayer);
 
     avdRenderableTextDestroy(&hlsPlayer->title, &appState->vulkan);
     avdRenderableTextDestroy(&hlsPlayer->info, &appState->vulkan);
