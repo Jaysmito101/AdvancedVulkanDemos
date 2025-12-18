@@ -12,6 +12,7 @@
 #define AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DOWNLOAD_WORKERS 4
 #define AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DEMUX_WORKERS    2
 #define AVD_SCENE_HLS_PLAYER_MEDIA_BUFFER_CACHE_SIZE    16
+#define AVD_SCENE_HLS_PLAYER_MEDIA_SEGMENTS_LOADED      16
 
 typedef struct {
     char url[1024];
@@ -23,38 +24,39 @@ typedef struct {
 } AVD_SceneHLSPlayerSource;
 
 typedef struct {
+    AVD_UInt32 id;
+    AVD_Float duration;
+    AVD_UInt32 sourceIndex;
+    AVD_Float refreshIntervalMs;
+} AVD_SceneHLSPlayerMediaSegment;
+
+typedef struct {
     char url[1024];
     AVD_UInt32 sourcesHash;
-    AVD_UInt32 sourceIndex;
+    AVD_SceneHLSPlayerMediaSegment segment;
 } AVD_SceneHLSPlayerSourceWorkerPayload;
 
 typedef struct {
     char segmentUrl[1024];
     AVD_UInt32 sourcesHash;
-    AVD_UInt32 sourceIndex;
-    AVD_UInt32 segmentIndex;
-    AVD_Float refreshIntervalMs;
+    AVD_SceneHLSPlayerMediaSegment segment;
 } AVD_SceneHLSPlayerMediaWorkerPayload;
 
 typedef struct {
     char *data;
     AVD_Size dataSize;
     AVD_UInt32 sourcesHash;
-    AVD_UInt32 sourceIndex;
-    AVD_UInt32 segmentIndex;
-    AVD_Float refreshIntervalMs;
+    AVD_SceneHLSPlayerMediaSegment segment;
 } AVD_SceneHLSPlayerDemuxWorkerPayload;
 
+
 typedef struct {
-    // TODO: some thing that holds the demuxed media data
+    AVD_SceneHLSPlayerMediaSegment segment;
     AVD_UInt32 sourcesHash;
-    AVD_UInt32 sourceIndex;
-    AVD_UInt32 segmentIndex;
-    AVD_Float refreshIntervalMs;
 } AVD_SceneHLSPlayerMediaSegmentPayload;
 
 typedef struct {
-    char* data;
+    char *data;
     AVD_Size dataSize;
     AVD_UInt32 key;
     AVD_UInt32 timestamp;
@@ -98,6 +100,8 @@ typedef struct AVD_SceneHLSPlayer {
     picoThreadChannel mediaReadyChannel;     // media demux worker -> main thread
 
     AVD_SceneHLSPlayerMediaBufferCache mediaBufferCache;
+    
+    AVD_SceneHLSPlayerMediaSegment loadedSegments[AVD_SCENE_HLS_PLAYER_MAX_SOURCES][AVD_SCENE_HLS_PLAYER_MEDIA_SEGMENTS_LOADED];
 
     bool isSupported;
 

@@ -185,12 +185,14 @@ static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, co
             }
             AVD_LOG_INFO("Loaded HLS source: %.*s", (int)lineLength, lineStart);
             strncpy(scene->sources[sourceIndex].url, lineStart, lineLength);
-            scene->sources[sourceIndex].url[lineLength]   = '\0';
-            scene->sources[sourceIndex].active            = true;
-            scene->sources[sourceIndex].refreshIntervalMs = 10000000.0f; // by default have this very high
-            scene->sources[sourceIndex].lastRefreshed     = -1.0 * scene->sources[sourceIndex].refreshIntervalMs;
-            scene->sources[sourceIndex].currentSegmentIndex = 0;
+            scene->sources[sourceIndex].url[lineLength]         = '\0';
+            scene->sources[sourceIndex].active                  = true;
+            scene->sources[sourceIndex].refreshIntervalMs       = 10000000.0f; // by default have this very high
+            scene->sources[sourceIndex].lastRefreshed           = -1.0 * scene->sources[sourceIndex].refreshIntervalMs;
+            scene->sources[sourceIndex].currentSegmentIndex     = 0;
             scene->sources[sourceIndex].currentSegmentStartTime = 0.0f;
+
+            memset(&scene->loadedSegments[sourceIndex], 0, sizeof(AVD_SceneHLSPlayerMediaSegment) * AVD_SCENE_HLS_PLAYER_MEDIA_SEGMENTS_LOADED);
 
             sourceIndex++;
         }
@@ -227,21 +229,17 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
             continue;
         }
 
-
-
         if (source->lastRefreshed + source->refreshIntervalMs < time) {
             static AVD_SceneHLSPlayerSourceWorkerPayload payload = {0};
             memcpy(payload.url, source->url, sizeof(payload.url));
-            payload.sourcesHash = scene->sourcesHash;
-            payload.sourceIndex = (AVD_UInt32)i;
+            payload.sourcesHash         = scene->sourcesHash;
+            payload.segment.sourceIndex = (AVD_UInt32)i;
             AVD_CHECK_MSG(picoThreadChannelSend(scene->sourceDownloadChannel, &payload), "Failed to send source download payload to worker thread");
             source->lastRefreshed = time;
             continue;
         }
-        
 
-        
-        
+
     }
 
     return true;
@@ -251,14 +249,29 @@ static bool __avdSceneHLSPlayerRecieveReadySegments(AVD_AppState *appState, AVD_
 {
     AVD_SceneHLSPlayerMediaSegmentPayload payload = {0};
     while (picoThreadChannelTryReceive(scene->mediaReadyChannel, &payload)) {
-        AVD_LOG_VERBOSE("HLS Main Thread received ready segment for source index %u, segment index %u", payload.sourceIndex, payload.segmentIndex);
+        AVD_LOG_VERBOSE("HLS Main Thread received ready segment for source index %u, segment index %u", payload.segment.sourceIndex, payload.segment.id);
         if (payload.sourcesHash != scene->sourcesHash) {
             AVD_LOG_WARN("HLS Main Thread received segment for outdated sources hash 0x%08X (current: 0x%08X), discarding", payload.sourcesHash, scene->sourcesHash);
             __avdSceneHLSPlayerFreeMediaSegment(&payload, NULL);
             continue;
         }
 
-        scene->sources[payload.sourceIndex].refreshIntervalMs = payload.refreshIntervalMs;
+        scene->sources[payload.segment.sourceIndex].refreshIntervalMs = payload.segment.refreshIntervalMs;
+
+        // for an empty slot, insert the segment
+        bool segmentInserted = false;
+        for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MEDIA_SEGMENTS_LOADED; i++) {
+            if (scene->loadedSegments[payload.segment.sourceIndex][i].id == 0) {
+                scene->loadedSegments[payload.segment.sourceIndex][i] = payload.segment;
+                segmentInserted                               = true;
+                AVD_LOG_INFO("HLS Main Thread inserted loaded segment %u for source index %u into slot %u", payload.segment.id, payload.segment.sourceIndex, (AVD_UInt32)i);
+                break;
+            }
+        }
+        if (!segmentInserted) {
+            AVD_LOG_WARN("HLS Main Thread could not insert loaded segment %u for source index %u: no empty slots available", payload.segment.id, payload.segment.sourceIndex);
+        }
+        __avdSceneHLSPlayerFreeMediaSegment(&payload, NULL);
     }
 
     return true;
@@ -291,16 +304,15 @@ static void __avdSceneHLSSourceDownloadWorker(void *arg)
                 free(data);
             }
 
-            AVD_LOG_VERBOSE("HLS Source Download Worker parsed playlist for source index %u, url: %s", payload.sourceIndex, payload.url);
-
-            mediaPayload.sourcesHash       = payload.sourcesHash;
-            mediaPayload.sourceIndex       = payload.sourceIndex;
-            mediaPayload.refreshIntervalMs = sourcePlaylist->media.targetDuration;
+            mediaPayload.sourcesHash               = payload.sourcesHash;
+            mediaPayload.segment                   = payload.segment;
+            mediaPayload.segment.refreshIntervalMs = sourcePlaylist->media.targetDuration;
 
             for (AVD_UInt32 segmentIndex = 0; segmentIndex < sourcePlaylist->media.mediaSegmentCount; segmentIndex++) {
                 picoM3U8MediaSegment segment = &sourcePlaylist->media.mediaSegments[segmentIndex];
                 avdResolveRelativeURL(mediaPayload.segmentUrl, sizeof(mediaPayload.segmentUrl), payload.url, segment->uri);
-                mediaPayload.segmentIndex = segmentIndex + sourcePlaylist->media.mediaSequence;
+                mediaPayload.segment.id       = segmentIndex + sourcePlaylist->media.mediaSequence;
+                mediaPayload.segment.duration = segment->duration;
                 if (!picoThreadChannelSend(scene->mediaDownloadChannel, &mediaPayload)) {
                     AVD_LOG_ERROR("Failed to send media download payload to worker thread");
                 }
@@ -323,13 +335,11 @@ static void __avdSceneHLSMediaDownloadWoker(void *args)
     AVD_SceneHLSPlayerMediaWorkerPayload payload      = {0};
     while (scene->mediaDownloadWorkerRunning) {
         if (picoThreadChannelReceive(scene->mediaDownloadChannel, &payload, 1000)) {
-            demuxPayload.segmentIndex      = payload.segmentIndex;
-            demuxPayload.sourceIndex       = payload.sourceIndex;
-            demuxPayload.sourcesHash       = payload.sourcesHash;
-            demuxPayload.refreshIntervalMs = payload.refreshIntervalMs;
+            demuxPayload.segment     = payload.segment;
+            demuxPayload.sourcesHash = payload.sourcesHash;
 
             if (__avdSceneHLSPlayerQueryMediaBufferCache(scene, avdHashString(payload.segmentUrl), &demuxPayload.data, &demuxPayload.dataSize)) {
-                AVD_LOG_INFO("HLS Media Download Worker cache hit for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
+                AVD_LOG_INFO("HLS Media Download Worker cache hit for source index %u, segment index %u, url: %s", payload.segment.sourceIndex, payload.segment.id, payload.segmentUrl);
                 if (!picoThreadChannelSend(scene->mediaDemuxChannel, &demuxPayload)) {
                     AVD_LOG_ERROR("Failed to send media demux payload to worker thread");
                 }
@@ -337,14 +347,14 @@ static void __avdSceneHLSMediaDownloadWoker(void *args)
             }
 
             if (!avdCurlDownloadToMemory(payload.segmentUrl, (void **)&demuxPayload.data, &demuxPayload.dataSize)) {
-                AVD_LOG_ERROR("Failed to download HLS media segment for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
+                AVD_LOG_ERROR("Failed to download media segment from url: %s", payload.segmentUrl);
                 continue;
             }
 
             if (!__avdSceneHLSPlayerInsertMediaBufferCache(scene, avdHashString(payload.segmentUrl), demuxPayload.data, demuxPayload.dataSize)) {
-                AVD_LOG_WARN("Failed to insert downloaded media segment into cache for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
+                AVD_LOG_WARN("Failed to insert downloaded media segment into cache for source index %u, segment index %u, url: %s", payload.segment.sourceIndex, payload.segment.id, payload.segmentUrl);
             } else {
-                AVD_LOG_INFO("HLS Media Download Worker cached segment for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
+                AVD_LOG_INFO("HLS Media Download Worker cached segment for source index %u, segment index %u, url: %s", payload.segment.sourceIndex, payload.segment.id, payload.segmentUrl);
             }
 
             if (!picoThreadChannelSend(scene->mediaDemuxChannel, &demuxPayload)) {
@@ -367,9 +377,7 @@ static void __avdSceneHLSMediaDemuxWorker(void *args)
             free(payload.data); // TODO: actually demux the data here
 
             segmentPayload.sourcesHash       = payload.sourcesHash;
-            segmentPayload.sourceIndex       = payload.sourceIndex;
-            segmentPayload.segmentIndex      = payload.segmentIndex;
-            segmentPayload.refreshIntervalMs = payload.refreshIntervalMs;
+            segmentPayload.segment           = payload.segment;
             if (!picoThreadChannelSend(scene->mediaReadyChannel, &segmentPayload)) {
                 AVD_LOG_ERROR("Failed to send media ready payload to main thread");
             }
