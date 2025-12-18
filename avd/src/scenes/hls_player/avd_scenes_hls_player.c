@@ -9,6 +9,7 @@
 #include "scenes/avd_scenes.h"
 #include <objidl.h>
 #include <stdint.h>
+#include <string.h>
 
 typedef struct {
     uint32_t activeSources; // each source has got 4 bits (4 * 8 = 32)
@@ -24,6 +25,29 @@ static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
     return &scene->hlsPlayer;
 }
 
+static void __avdSceneHLSPlayerFreeMediaSegment(void *segmentRaw, void *context)
+{
+    (void)context;
+
+    AVD_SceneHLSPlayerMediaSegmentPayload *segment = (AVD_SceneHLSPlayerMediaSegmentPayload *)segmentRaw;
+    AVD_ASSERT(segment != NULL);
+    // TODO: To be implemented when we have actual demuxed data
+}
+
+static void __avdSceneHLSPlayerFreeDemuxWorkerPayload(void *segmentRaw, void *context)
+{
+    (void)context;
+
+    AVD_SceneHLSPlayerDemuxWorkerPayload *segment = (AVD_SceneHLSPlayerDemuxWorkerPayload *)segmentRaw;
+    AVD_ASSERT(segment != NULL);
+
+    if (segment->data) {
+        free(segment->data);
+        segment->data     = NULL;
+        segment->dataSize = 0;
+    }
+}
+
 static AVD_UInt32 __avdSceneHLSPlayerUpdateActiveSources(AVD_SceneHLSPlayer *scene)
 {
     AVD_UInt32 result = 0;
@@ -31,6 +55,100 @@ static AVD_UInt32 __avdSceneHLSPlayerUpdateActiveSources(AVD_SceneHLSPlayer *sce
         result |= (AVD_UInt32)(scene->sources[i].active ? 1 : 0) << i * 4;
     }
     return result;
+}
+
+static bool __avdSceneHLSPlayerInitializeMediaBufferCache(AVD_SceneHLSPlayer *scene)
+{
+    AVD_ASSERT(scene != NULL);
+
+    picoThreadMutex mutex = picoThreadMutexCreate();
+    AVD_CHECK_MSG(mutex != NULL, "Failed to create media buffer cache mutex");
+    scene->mediaBufferCache.mutex = mutex;
+    memset(scene->mediaBufferCache.entries, 0, sizeof(AVD_SceneHLSPlayerMediaBufferCacheEntry) * AVD_SCENE_HLS_PLAYER_MEDIA_BUFFER_CACHE_SIZE);
+    return true;
+}
+
+static void __avdSceneHLSPlayerShutdownMediaBufferCache(AVD_SceneHLSPlayer *scene)
+{
+    AVD_ASSERT(scene != NULL);
+
+    picoThreadMutex mutex = scene->mediaBufferCache.mutex;
+    if (mutex) {
+        picoThreadMutexLock(mutex, PICO_THREAD_INFINITE);
+        for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MEDIA_BUFFER_CACHE_SIZE; i++) {
+            AVD_SceneHLSPlayerMediaBufferCacheEntry *entry = &scene->mediaBufferCache.entries[i];
+            if (entry->key && entry->data) {
+                free(entry->data);
+                entry->data     = NULL;
+                entry->dataSize = 0;
+            }
+        }
+        picoThreadMutexUnlock(mutex);
+        picoThreadMutexDestroy(mutex);
+        scene->mediaBufferCache.mutex = NULL;
+    }
+}
+
+static bool __avdSceneHLSPlayerQueryMediaBufferCache(AVD_SceneHLSPlayer *scene, AVD_UInt32 key, char **data, AVD_Size *dataSize)
+{
+    AVD_ASSERT(scene != NULL);
+    AVD_ASSERT(data != NULL);
+    AVD_ASSERT(dataSize != NULL);
+
+    picoThreadMutexLock(scene->mediaBufferCache.mutex, PICO_THREAD_INFINITE);
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MEDIA_BUFFER_CACHE_SIZE; i++) {
+        AVD_SceneHLSPlayerMediaBufferCacheEntry *entry = &scene->mediaBufferCache.entries[i];
+        if (entry->key == key) {
+            *data = malloc(entry->dataSize);
+            AVD_CHECK_MSG(*data != NULL, "Failed to allocate memory for media buffer cache entry data");
+            memcpy(*data, entry->data, entry->dataSize);
+            *dataSize        = entry->dataSize;
+            entry->timestamp = time(NULL);
+            picoThreadMutexUnlock(scene->mediaBufferCache.mutex);
+            return true;
+        }
+    }
+    picoThreadMutexUnlock(scene->mediaBufferCache.mutex);
+    return false;
+}
+
+static bool __avdSceneHLSPlayerInsertMediaBufferCache(AVD_SceneHLSPlayer *scene, AVD_UInt32 key, const char *data, AVD_Size dataSize)
+{
+    AVD_ASSERT(scene != NULL);
+    AVD_ASSERT(data != NULL);
+    AVD_ASSERT(dataSize > 0);
+
+    picoThreadMutexLock(scene->mediaBufferCache.mutex, PICO_THREAD_INFINITE);
+    AVD_Size lruIndex       = 0;
+    AVD_UInt32 lruTimestamp = UINT32_MAX;
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MEDIA_BUFFER_CACHE_SIZE; i++) {
+        AVD_SceneHLSPlayerMediaBufferCacheEntry *entry = &scene->mediaBufferCache.entries[i];
+        if (entry->key == 0) {
+            entry->data = malloc(dataSize);
+            AVD_CHECK_MSG(entry->data != NULL, "Failed to allocate memory for media buffer cache entry data");
+            memcpy(entry->data, data, dataSize);
+            entry->dataSize  = dataSize;
+            entry->key       = key;
+            entry->timestamp = time(NULL);
+            picoThreadMutexUnlock(scene->mediaBufferCache.mutex);
+            return true;
+        }
+        if (entry->timestamp < lruTimestamp) {
+            lruTimestamp = entry->timestamp;
+            lruIndex     = i;
+        }
+    }
+    // no empty slot found, replace the least recently used slot
+    AVD_SceneHLSPlayerMediaBufferCacheEntry *entry = &scene->mediaBufferCache.entries[lruIndex];
+    free(entry->data);
+    entry->data = malloc(dataSize);
+    AVD_CHECK_MSG(entry->data != NULL, "Failed to allocate memory for media buffer cache entry data");
+    memcpy(entry->data, data, dataSize);
+    entry->dataSize  = dataSize;
+    entry->key       = key;
+    entry->timestamp = time(NULL);
+    picoThreadMutexUnlock(scene->mediaBufferCache.mutex);
+    return true;
 }
 
 static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, const char *path)
@@ -130,12 +248,11 @@ static bool __avdSceneHLSPlayerRecieveReadySegments(AVD_AppState *appState, AVD_
         AVD_LOG_VERBOSE("HLS Main Thread received ready segment for source index %u, segment index %u", payload.sourceIndex, payload.segmentIndex);
         if (payload.sourcesHash != scene->sourcesHash) {
             AVD_LOG_WARN("HLS Main Thread received segment for outdated sources hash 0x%08X (current: 0x%08X), discarding", payload.sourcesHash, scene->sourcesHash);
-            // TODO: free demuxed data if any
+            __avdSceneHLSPlayerFreeMediaSegment(&payload, NULL);
             continue;
         }
 
         scene->sources[payload.sourceIndex].refreshIntervalMs = payload.refreshIntervalMs;
-
     }
 
     return true;
@@ -197,18 +314,31 @@ static void __avdSceneHLSMediaDownloadWoker(void *args)
     AVD_LOG_INFO("HLS Media Download Worker thread started with thread ID: %llu.", picoThreadGetCurrentId());
 
     AVD_SceneHLSPlayerDemuxWorkerPayload demuxPayload = {0};
-    AVD_SceneHLSPlayerMediaWorkerPayload payload = {0};
+    AVD_SceneHLSPlayerMediaWorkerPayload payload      = {0};
     while (scene->mediaDownloadWorkerRunning) {
         if (picoThreadChannelReceive(scene->mediaDownloadChannel, &payload, 1000)) {
-            demuxPayload.segmentIndex = payload.segmentIndex;
-            demuxPayload.sourceIndex = payload.sourceIndex;
-            demuxPayload.sourcesHash = payload.sourcesHash;
+            demuxPayload.segmentIndex      = payload.segmentIndex;
+            demuxPayload.sourceIndex       = payload.sourceIndex;
+            demuxPayload.sourcesHash       = payload.sourcesHash;
             demuxPayload.refreshIntervalMs = payload.refreshIntervalMs;
-            
-            // TODO: Ideally we should cache these downloads to avoid re-downloading the same segment multiple times
-            if (!avdCurlDownloadToMemory(payload.segmentUrl, (void**)&demuxPayload.data, &demuxPayload.dataSize)) {
+
+            if (__avdSceneHLSPlayerQueryMediaBufferCache(scene, avdHashString(payload.segmentUrl), &demuxPayload.data, &demuxPayload.dataSize)) {
+                AVD_LOG_INFO("HLS Media Download Worker cache hit for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
+                if (!picoThreadChannelSend(scene->mediaDemuxChannel, &demuxPayload)) {
+                    AVD_LOG_ERROR("Failed to send media demux payload to worker thread");
+                }
+                continue;
+            }
+
+            if (!avdCurlDownloadToMemory(payload.segmentUrl, (void **)&demuxPayload.data, &demuxPayload.dataSize)) {
                 AVD_LOG_ERROR("Failed to download HLS media segment for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
                 continue;
+            }
+
+            if (!__avdSceneHLSPlayerInsertMediaBufferCache(scene, avdHashString(payload.segmentUrl), demuxPayload.data, demuxPayload.dataSize)) {
+                AVD_LOG_WARN("Failed to insert downloaded media segment into cache for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
+            } else {
+                AVD_LOG_INFO("HLS Media Download Worker cached segment for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
             }
 
             if (!picoThreadChannelSend(scene->mediaDemuxChannel, &demuxPayload)) {
@@ -224,7 +354,7 @@ static void __avdSceneHLSMediaDemuxWorker(void *args)
     AVD_SceneHLSPlayer *scene      = (AVD_SceneHLSPlayer *)args;
     scene->mediaDemuxWorkerRunning = true;
     AVD_LOG_INFO("HLS Media Demux Worker thread started with thread ID: %llu.", picoThreadGetCurrentId());
-    AVD_SceneHLSPlayerDemuxWorkerPayload payload = {0};
+    AVD_SceneHLSPlayerDemuxWorkerPayload payload         = {0};
     AVD_SceneHLSPlayerMediaSegmentPayload segmentPayload = {0};
     while (scene->mediaDemuxWorkerRunning) {
         if (picoThreadChannelReceive(scene->mediaDemuxChannel, &payload, 1000)) {
@@ -255,9 +385,11 @@ static bool __avdSceneHLSPlayerPrepWorkers(AVD_SceneHLSPlayer *scene)
 
     scene->mediaDemuxChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_SceneHLSPlayerDemuxWorkerPayload));
     AVD_CHECK_MSG(scene->mediaDemuxChannel != NULL, "Failed to create HLS media demux channel");
+    picoThreadChannelSetItemDestructor(scene->mediaDemuxChannel, __avdSceneHLSPlayerFreeDemuxWorkerPayload, NULL);
 
     scene->mediaReadyChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_SceneHLSPlayerMediaSegmentPayload));
     AVD_CHECK_MSG(scene->mediaReadyChannel != NULL, "Failed to create HLS media ready channel");
+    picoThreadChannelSetItemDestructor(scene->mediaReadyChannel, __avdSceneHLSPlayerFreeMediaSegment, NULL);
 
     // Spin up the threads
     for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_NUM_SOURCE_WORKERS; i++) {
@@ -399,6 +531,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
         AVD_LOG_INFO("Loaded HLS sources from sources.txt");
     }
 
+    AVD_CHECK(__avdSceneHLSPlayerInitializeMediaBufferCache(hlsPlayer));
     AVD_CHECK(__avdSceneHLSPlayerPrepWorkers(hlsPlayer));
 
     return true;
@@ -412,6 +545,8 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
 
     __avdSceneHLSPlayerWindDownWorkers(hlsPlayer);
+    __avdSceneHLSPlayerShutdownMediaBufferCache(hlsPlayer);
+    __avdSceneHLSPlayerFreeSources(appState, hlsPlayer);
 
     avdRenderableTextDestroy(&hlsPlayer->title, &appState->vulkan);
     avdRenderableTextDestroy(&hlsPlayer->info, &appState->vulkan);

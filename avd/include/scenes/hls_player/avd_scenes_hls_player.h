@@ -5,11 +5,13 @@
 #include "pico/picoM3U8.h"
 #include "pico/picoThreads.h"
 #include "scenes/avd_scenes_base.h"
+#include <stdint.h>
 
 #define AVD_SCENE_HLS_PLAYER_MAX_SOURCES                8
 #define AVD_SCENE_HLS_PLAYER_NUM_SOURCE_WORKERS         2
 #define AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DOWNLOAD_WORKERS 4
 #define AVD_SCENE_HLS_PLAYER_NUM_MEDIA_DEMUX_WORKERS    2
+#define AVD_SCENE_HLS_PLAYER_MEDIA_BUFFER_CACHE_SIZE    16
 
 typedef struct {
     char url[1024];
@@ -33,7 +35,7 @@ typedef struct {
 } AVD_SceneHLSPlayerMediaWorkerPayload;
 
 typedef struct {
-    char* data;
+    char *data;
     AVD_Size dataSize;
     AVD_UInt32 sourcesHash;
     AVD_UInt32 sourceIndex;
@@ -48,6 +50,18 @@ typedef struct {
     AVD_UInt32 segmentIndex;
     AVD_Float refreshIntervalMs;
 } AVD_SceneHLSPlayerMediaSegmentPayload;
+
+typedef struct {
+    char* data;
+    AVD_Size dataSize;
+    AVD_UInt32 key;
+    AVD_UInt32 timestamp;
+} AVD_SceneHLSPlayerMediaBufferCacheEntry;
+
+typedef struct {
+    AVD_SceneHLSPlayerMediaBufferCacheEntry entries[AVD_SCENE_HLS_PLAYER_MEDIA_BUFFER_CACHE_SIZE];
+    picoThreadMutex mutex;
+} AVD_SceneHLSPlayerMediaBufferCache;
 
 typedef struct AVD_SceneHLSPlayer {
     AVD_SceneType type;
@@ -80,6 +94,8 @@ typedef struct AVD_SceneHLSPlayer {
     picoThreadChannel mediaDownloadChannel;  // source worker -> media download worker
     picoThreadChannel mediaDemuxChannel;     // medua download worker -> media demux worker
     picoThreadChannel mediaReadyChannel;     // media demux worker -> main thread
+
+    AVD_SceneHLSPlayerMediaBufferCache mediaBufferCache;
 
     bool isSupported;
 
