@@ -128,8 +128,9 @@ static void __avdSceneHLSSourceDownloadWorker(void *arg)
     AVD_SceneHLSPlayer *scene          = (AVD_SceneHLSPlayer *)arg;
     scene->sourceDownloadWorkerRunning = true;
     AVD_LOG_INFO("HLS Data Worker thread started with thread ID: %llu.", picoThreadGetCurrentId());
-    AVD_SceneHLSPlayerSourceWorkerPayload payload = {0};
-    picoM3U8Playlist sourcePlaylist               = NULL;
+    AVD_SceneHLSPlayerSourceWorkerPayload payload     = {0};
+    picoM3U8Playlist sourcePlaylist                   = NULL;
+    AVD_SceneHLSPlayerMediaWorkerPayload mediaPayload = {0};
     while (scene->sourceDownloadWorkerRunning) {
 
         if (picoThreadChannelReceive(scene->sourceDownloadChannel, &payload, 1000)) {
@@ -151,9 +152,23 @@ static void __avdSceneHLSSourceDownloadWorker(void *arg)
                 picoM3U8PlaylistDestroy(sourcePlaylist);
                 free(data);
             }
-            AVD_LOG_VERBOSE("%s", data);
-            picoM3U8PlaylistDebugPrint(sourcePlaylist);
 
+            AVD_LOG_VERBOSE("HLS Source Download Worker parsed playlist for source index %u, url: %s", payload.sourceIndex, payload.url);
+
+            mediaPayload.sourcesHash       = payload.sourcesHash;
+            mediaPayload.sourceIndex       = payload.sourceIndex;
+            mediaPayload.refreshIntervalMs = sourcePlaylist->media.targetDuration;
+
+            for (AVD_UInt32 segmentIndex = 0; segmentIndex < sourcePlaylist->media.mediaSegmentCount; segmentIndex++) {
+                picoM3U8MediaSegment segment = &sourcePlaylist->media.mediaSegments[segmentIndex];
+                avdResolveRelativeURL(mediaPayload.segmentUrl, sizeof(mediaPayload.segmentUrl), payload.url, segment->uri);
+                mediaPayload.segmentIndex = segmentIndex;                
+                if(!picoThreadChannelSend(scene->mediaDownloadChannel, &mediaPayload)) {
+                    AVD_LOG_ERROR("Failed to send media download payload to worker thread");
+                }
+            }
+
+            picoM3U8PlaylistDestroy(sourcePlaylist);
             free(data);
         }
     }
@@ -166,7 +181,17 @@ static void __avdSceneHLSMediaDownloadWoker(void *args)
     scene->mediaDownloadWorkerRunning = true;
     AVD_LOG_INFO("HLS Media Download Worker thread started with thread ID: %llu.", picoThreadGetCurrentId());
     while (scene->mediaDownloadWorkerRunning) {
-        picoThreadSleep(1000); // Sleep for 5 seconds before checking again
+        AVD_SceneHLSPlayerMediaWorkerPayload payload = {0};
+        if (picoThreadChannelReceive(scene->mediaDownloadChannel, &payload, 1000)) {
+            AVD_LOG_VERBOSE("HLS Media Download Worker received payload for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
+
+            // void *data = NULL;
+            // size_t size = 0;
+            // if (!avdCurlDownloadToMemory(payload.segmentUrl, &data, &size)) {
+            //     AVD_LOG_ERROR("Failed to download HLS media segment for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
+            //     continue;
+            // }
+        }
     }
     AVD_LOG_INFO("HLS Media Download Worker thread stopping with thread ID: %llu.", picoThreadGetCurrentId());
 }
