@@ -277,3 +277,52 @@ bool avdIsStringAURL(const char *str)
 
     return false;
 }
+
+void avdResolveRelativeURL(char *buffer, size_t bufferSize, const char *baseURL, const char *segmentURI)
+{
+    AVD_ASSERT(buffer != NULL);
+    AVD_ASSERT(baseURL != NULL);
+    AVD_ASSERT(segmentURI != NULL);
+
+    if (avdIsStringAURL(segmentURI)) {
+        strncpy(buffer, segmentURI, bufferSize);
+        buffer[bufferSize - 1] = '\0';
+        return;
+    }
+
+    const char *lastSlash = strrchr(baseURL, '/');
+    if (!lastSlash) {
+        AVD_LOG_WARN("Base URL does not contain '/', cannot resolve relative segment URI: %s", baseURL);
+        strncpy(buffer, segmentURI, bufferSize);
+        buffer[bufferSize - 1] = '\0';
+        return;
+    }
+
+    size_t basePathLen = lastSlash - baseURL + 1;
+    if (basePathLen >= bufferSize) {
+        basePathLen = bufferSize - 1;
+    }
+    strncpy(buffer, baseURL, basePathLen);
+    buffer[basePathLen] = '\0';
+
+    const char *segment = segmentURI;
+    while (strncmp(segment, "../", 3) == 0) {
+        segment += 3;
+        if (basePathLen > 0) {
+            buffer[basePathLen - 1] = '\0';
+            char *prevSlash = strrchr(buffer, '/');
+            if (prevSlash) {
+                basePathLen = prevSlash - buffer + 1;
+                buffer[basePathLen] = '\0';
+            } else {
+                basePathLen = 0;
+                buffer[0] = '\0';
+            }
+        }
+    }
+
+    size_t remainingSpace = bufferSize - basePathLen - 1;
+    if (remainingSpace > 0) {
+        strncat(buffer, segment, remainingSpace);
+    }
+}
