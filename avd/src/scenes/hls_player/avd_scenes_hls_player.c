@@ -162,8 +162,8 @@ static void __avdSceneHLSSourceDownloadWorker(void *arg)
             for (AVD_UInt32 segmentIndex = 0; segmentIndex < sourcePlaylist->media.mediaSegmentCount; segmentIndex++) {
                 picoM3U8MediaSegment segment = &sourcePlaylist->media.mediaSegments[segmentIndex];
                 avdResolveRelativeURL(mediaPayload.segmentUrl, sizeof(mediaPayload.segmentUrl), payload.url, segment->uri);
-                mediaPayload.segmentIndex = segmentIndex;                
-                if(!picoThreadChannelSend(scene->mediaDownloadChannel, &mediaPayload)) {
+                mediaPayload.segmentIndex = segmentIndex;
+                if (!picoThreadChannelSend(scene->mediaDownloadChannel, &mediaPayload)) {
                     AVD_LOG_ERROR("Failed to send media download payload to worker thread");
                 }
             }
@@ -183,7 +183,9 @@ static void __avdSceneHLSMediaDownloadWoker(void *args)
     while (scene->mediaDownloadWorkerRunning) {
         AVD_SceneHLSPlayerMediaWorkerPayload payload = {0};
         if (picoThreadChannelReceive(scene->mediaDownloadChannel, &payload, 1000)) {
-            AVD_LOG_VERBOSE("HLS Media Download Worker received payload for source index %u, segment index %u, url: %s", payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
+            AVD_LOG_VERBOSE(
+                "HLS Media Download Worker received payload for source index %u, segment index %u, url: %s",
+                payload.sourceIndex, payload.segmentIndex, payload.segmentUrl);
 
             // void *data = NULL;
             // size_t size = 0;
@@ -212,13 +214,13 @@ static bool __avdSceneHLSPlayerPrepWorkers(AVD_SceneHLSPlayer *scene)
     AVD_ASSERT(scene != NULL);
 
     // Create the thread channels to communicate between threads
-    scene->sourceDownloadChannel = picoThreadChannelCreateUnbounded(128);
+    scene->sourceDownloadChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_SceneHLSPlayerSourceWorkerPayload));
     AVD_CHECK_MSG(scene->sourceDownloadChannel != NULL, "Failed to create HLS source download channel");
 
-    scene->mediaDownloadChannel = picoThreadChannelCreateUnbounded(128);
+    scene->mediaDownloadChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_SceneHLSPlayerMediaWorkerPayload));
     AVD_CHECK_MSG(scene->mediaDownloadChannel != NULL, "Failed to create HLS media download channel");
 
-    scene->mediaDemuxChannel = picoThreadChannelCreateUnbounded(128);
+    scene->mediaDemuxChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_SceneHLSPlayerDemuxWorkerPayload));
     AVD_CHECK_MSG(scene->mediaDemuxChannel != NULL, "Failed to create HLS media demux channel");
 
     scene->mediaReadyChannel = picoThreadChannelCreateUnbounded(128);
