@@ -14,40 +14,61 @@ float sdRoundedBox(float2 p, float2 b, float r) {
 }
 
 float4 main(VertexShaderOutput input) : SV_Target {
-    float2 uv = input.uv * 2.0 - 1.0;
-    uv *= 1.1 + 0.5;
-    uv = uv * 0.5 + 0.5;
+    float aspect = 16.0 / 9.0;
+    float2 uv = input.uv;
+    uv.x *= aspect;
 
-    float2 cellCoord = uv  * float2(3.0, 2.0);
-    int2 cellIndex = int2(floor(cellCoord));
-    if (cellIndex.x < 0 || cellIndex.y < 0 || cellIndex.x > 2 || cellIndex.y > 1) {
-        return float4(0.0);
+    float quadHeight = 0.38;
+    float quadWidth = quadHeight * aspect;
+    float gap = 0.2;
+    float cornerRadius = 0.02;
+    float dotAreaHeight = 0.015;
+    float titleOffset = 0.06;
+
+    float2 quadSize = float2(quadWidth, quadHeight);
+    float2 gridSize = float2(2.0 * quadWidth + gap, 2.0 * (quadHeight + dotAreaHeight) + gap);
+    float2 gridCenter = float2(aspect * 0.5, 0.5 + titleOffset);
+    float2 gridStart = gridCenter - gridSize * 0.5;
+
+    float2 cellSize = float2(quadWidth, quadHeight + dotAreaHeight);
+    float2 cellStride = cellSize + float2(gap, gap) * 0.5;
+
+    float2 relPos = uv - gridStart;
+    int2 cellIndex = int2(floor(relPos / cellStride));
+    if (any(cellIndex < 0) || any(cellIndex > 1)) return float4(0.0, 0.0, 0.0, 1.0);
+
+    float2 localPos = relPos - float2(cellIndex) * cellStride;
+    if (localPos.x > cellSize.x || localPos.y > cellSize.y) return float4(0.0, 0.0, 0.0, 1.0);
+
+    int quadIndex = cellIndex.y * 2 + cellIndex.x;
+    bool isSourceActive = (data.activeSources & (1u << (quadIndex * 8))) != 0;
+    float fadeFactor = isSourceActive ? 1.0 : 0.3;
+
+    if (localPos.y < dotAreaHeight) {
+        float dotWidth = dotAreaHeight;
+        float totalDotsWidth = dotWidth * 7.0;
+        float dotsStartX = (cellSize.x - totalDotsWidth) * 0.5;
+        float dotLocalX = localPos.x - dotsStartX;
+        if (dotLocalX < 0.0 || dotLocalX > totalDotsWidth) return float4(0.0, 0.0, 0.0, 1.0);
+        
+        int dotIndex = int(floor(dotLocalX / dotWidth));
+        float2 dotUV = float2(frac(dotLocalX / dotWidth), localPos.y / dotAreaHeight);
+        if (length(dotUV - 0.5) < 0.4) {
+            bool isDotActive = (data.activeSources & (1u << (quadIndex * 8 + dotIndex + 1))) != 0;
+            float3 activeColor = (dotIndex == 0) ? float3(0.0, 0.5, 1.0) : float3(0.0, 1.0, 0.0);
+            float3 dotColor = isDotActive ? activeColor : float3(0.3);
+            return float4(dotColor * fadeFactor, 1.0);
+        }
+        return float4(0.0, 0.0, 0.0, 1.0);
     }
 
-    int quadIndex = cellIndex.y * 3 + cellIndex.x;
-    
-    float2 localUV = frac(cellCoord);
-    float2 centeredUV = localUV * 2.0 - 1.0;
-    
-    float padding = 0.2;
-    float cornerRadius = 0.05;
-    float borderWidth = 0.02;
-    
-    float dist = sdRoundedBox(centeredUV, float2(1.0 - padding, 1.0 - padding), cornerRadius);
-    
-    float3 uvColor = float3(localUV, 0.5);
-    
-    bool isSelected = (quadIndex == int(1));
-    float3 borderColor = isSelected ? float3(1.0, 0.8, 0.0) : float3(0.3, 0.3, 0.3);
-    float actualBorderWidth = isSelected ? borderWidth * 2.0 : borderWidth;
-    
-    float3 finalColor = uvColor; 
-    if (dist > -actualBorderWidth && dist < 0.0) {  
-        finalColor = borderColor;
-    }
-    else if (dist >= 0.0) { 
-        finalColor = float3(0.1, 0.1, 0.1);
-    }
-    
-    return float4(finalColor, 1.0); 
+    float2 quadLocalPos = float2(localPos.x, localPos.y - dotAreaHeight);
+    float2 quadCenterPos = quadSize * 0.5;
+    float2 centeredPos = quadLocalPos - quadCenterPos;
+
+    float dist = sdRoundedBox(centeredPos, quadCenterPos - cornerRadius, cornerRadius);
+    if (dist > 0.0) return float4(0.0, 0.0, 0.0, 1.0);
+
+    float2 quadUV = quadLocalPos / quadSize;
+    return float4(float3(quadUV, 0.5) * fadeFactor, 1.0);
 }
