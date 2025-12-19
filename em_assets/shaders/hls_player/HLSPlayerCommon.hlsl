@@ -1,7 +1,7 @@
 #include "MathUtils"
 
 struct UberPushConstantData {
-    uint vertexOffset;
+    uint activeSources;
     uint vertexCount;
     uint textureIndex;
     uint pad1;
