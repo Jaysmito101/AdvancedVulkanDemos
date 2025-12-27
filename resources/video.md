@@ -5,3 +5,7 @@
 * Vulkan Video Decode: First Frames: https://poniesandlight.co.uk/reflect/island_video_decoder/
 * An Introduction to Vulkan Video: https://www.khronos.org/blog/an-introduction-to-vulkan-video
 * Debug Tool: https://media-analyzer.pro/app
+* MPEG Transport And Multicasting: https://www.youtube.com/watch?v=CW_C9_PGpCM
+* FFMPEG's MPEG Transport Stream Implementation: https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/mpegts.c
+* DVB Spec: https://www.etsi.org/deliver/etsi_en/300400_300499/300468/01.16.01_60/en_300468v011601p.pdf
+* Khronos Vulkan Video Samples: https://github.com/KhronosGroup/Vulkan-Video-Samples
