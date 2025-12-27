@@ -9,3 +9,6 @@
 * FFMPEG's MPEG Transport Stream Implementation: https://github.com/FFmpeg/FFmpeg/blob/master/libavformat/mpegts.c
 * DVB Spec: https://www.etsi.org/deliver/etsi_en/300400_300499/300468/01.16.01_60/en_300468v011601p.pdf
 * Khronos Vulkan Video Samples: https://github.com/KhronosGroup/Vulkan-Video-Samples
+* H.264/AVC Picture Management: https://www.vcodex.com/h264avc-picture-management/
+* H264 Video Data Prep: https://github.com/turanszkij/WickedEngine/blob/master/WickedEngine/wiVideo.cpp
+* Wicket Engine Vulkan Video: https://github.com/turanszkij/WickedEngine/blob/master/WickedEngine/wiGraphicsDevice_Vulkan.cpp
