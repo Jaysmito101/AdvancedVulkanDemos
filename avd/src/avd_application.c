@@ -72,8 +72,6 @@ void avdApplicationUpdate(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
 
-    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
-
     avdInputNewFrame(&appState->input);
     avdWindowPollEvents();
     avdInputCalculateDeltas(&appState->input);
@@ -89,6 +87,7 @@ void avdApplicationUpdate(AVD_AppState *appState)
 void avdApplicationUpdateWithoutPolling(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
+    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
     avdSceneManagerUpdate(&appState->sceneManager, appState);
     avdApplicationRender(appState);
 }
