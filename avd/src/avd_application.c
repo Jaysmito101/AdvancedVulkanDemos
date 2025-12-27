@@ -104,9 +104,9 @@ void avdApplicationRender(AVD_AppState *appState)
     }
 
     if (avdVulkanSwapchainRecreateIfNeeded(&appState->swapchain, &appState->vulkan, &appState->window)) {
-        if (!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain))
+        if (!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
             AVD_LOG_ERROR("Failed to recreate Vulkan renderer resources");
-        return; // skip this frame
+        }
     }
 
     if (!avdVulkanRendererBegin(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
