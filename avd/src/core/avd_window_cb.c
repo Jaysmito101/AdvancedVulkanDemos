@@ -101,7 +101,12 @@ void __avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height)
     event.type                = AVD_INPUT_EVENT_WINDOW_RESIZE;
     event.windowResize.width  = width;
     event.windowResize.height = height;
+
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
+    
+    appState->swapchain.swapchainRecreateRequired = true;
+    avdInputCalculateDeltas(&appState->input);
+    avdApplicationUpdateWithoutPolling(appState);
 }
 
 void __avdGLFWCursorEnterCallback(GLFWwindow *window, int entered)
