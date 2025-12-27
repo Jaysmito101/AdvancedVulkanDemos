@@ -72,8 +72,6 @@ void avdApplicationUpdate(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
 
-    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
-
     avdInputNewFrame(&appState->input);
     avdWindowPollEvents();
     avdInputCalculateDeltas(&appState->input);
@@ -89,6 +87,7 @@ void avdApplicationUpdate(AVD_AppState *appState)
 void avdApplicationUpdateWithoutPolling(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
+    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
     avdSceneManagerUpdate(&appState->sceneManager, appState);
     avdApplicationRender(appState);
 }
@@ -104,9 +103,9 @@ void avdApplicationRender(AVD_AppState *appState)
     }
 
     if (avdVulkanSwapchainRecreateIfNeeded(&appState->swapchain, &appState->vulkan, &appState->window)) {
-        if (!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain))
+        if (!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
             AVD_LOG_ERROR("Failed to recreate Vulkan renderer resources");
-        return; // skip this frame
+        }
     }
 
     if (!avdVulkanRendererBegin(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
