@@ -1,5 +1,6 @@
 #include "vulkan/avd_vulkan_base.h"
 #include "vulkan/avd_vulkan_pipeline_utils.h"
+#include <stdint.h>
 
 static const char *__avd_RequiredVulkanExtensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -253,6 +254,23 @@ static bool __avdVulkanCreateSurface(AVD_Vulkan *vulkan, GLFWwindow *window, VkS
     return true;
 }
 
+static bool __avdVulkanPhysicalDeviceCheckExtensionsSet(VkExtensionProperties *extensions, uint32_t extensionsCount, const char **requiredExtensions, uint32_t requiredExtensionCount)
+{
+    for (uint32_t i = 0; i < requiredExtensionCount; ++i) {
+        bool found = false;
+        for (uint32_t j = 0; j < extensionsCount; ++j) {
+            if (strcmp(requiredExtensions[i], extensions[j].extensionName) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AVD_VulkanFeatures *outFeatures)
 {
     uint32_t extensionCount                      = 0;
@@ -264,36 +282,12 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AV
     }
     vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, extensions);
 
-    for (uint32_t i = 0; i < AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions); ++i) {
-        bool found = false;
-        for (uint32_t j = 0; j < extensionCount; ++j) {
-            if (strcmp(__avd_RequiredVulkanExtensions[i], extensions[j].extensionName) == 0) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            return false;
-        }
+    if (!__avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_RequiredVulkanExtensions, AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions))) {
+        return false;
     }
 
     outFeatures->rayTracing = true; // for now raytracing is a part of the required extensions
-
-    outFeatures->videoDecode = true;
-    for (uint32_t i = 0; i < AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions); ++i) {
-        bool found = false;
-        for (uint32_t j = 0; j < extensionCount; ++j) {
-            if (strcmp(__avd_VulkanVideoExtensions[i], extensions[j].extensionName) == 0) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            outFeatures->videoDecode = false;
-            AVD_LOG_WARN("Video extension %s not supported\n", __avd_VulkanVideoExtensions[i]);
-            break;
-        }
-    }
+    outFeatures->videoDecode = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions));
 
     return true;
 }
