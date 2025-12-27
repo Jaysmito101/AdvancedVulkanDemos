@@ -4,9 +4,6 @@
 
 static const char *__avd_RequiredVulkanExtensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-    // VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, // Disabled for RenderDoc support!
-    VK_KHR_RAY_QUERY_EXTENSION_NAME,
     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
     VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
     VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
@@ -19,6 +16,12 @@ static const char *__avd_RequiredVulkanExtensions[] = {
     // EXT versions for better compatibility with older drivers. In the future
     // we can switch to the KHR versions when they are more widely supported.
     VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME};
+
+static const char *__avd_VulkanRayTraceExtensions[] = {
+    VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+    VK_KHR_RAY_QUERY_EXTENSION_NAME
+    // VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, // disabling this as this messes renderdoc
+};
 
 static const char *__avd_VulkanVideoExtensions[] = {
     VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
@@ -77,6 +80,14 @@ static bool __avdAddGlfwExtenstions(uint32_t *extensionCount, const char **exten
     return true;
 }
 
+static void __avdVulkanAddDeviceExtensionsToList(const char **extensions, uint32_t *extensionCount, const char **deviceExtensions, uint32_t deviceExtensionCount)
+{
+    for (uint32_t i = 0; i < deviceExtensionCount; ++i) {
+        extensions[*extensionCount] = deviceExtensions[i];
+        (*extensionCount)++;
+    }
+}
+
 static const char **__avdGetVulkanDeviceExtensions(AVD_Vulkan *vulkan, uint32_t *extensionCount)
 {
     AVD_ASSERT(vulkan != NULL);
@@ -85,16 +96,12 @@ static const char **__avdGetVulkanDeviceExtensions(AVD_Vulkan *vulkan, uint32_t 
     static const char *deviceExtensions[128] = {0};
 
     uint32_t count = 0;
-    for (uint32_t i = 0; i < AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions); ++i) {
-        deviceExtensions[count] = __avd_RequiredVulkanExtensions[i];
-        count++;
+    __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_RequiredVulkanExtensions, AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions));
+    if (vulkan->supportedFeatures.rayTracing) {
+        __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_VulkanRayTraceExtensions, AVD_ARRAY_COUNT(__avd_VulkanRayTraceExtensions));
     }
-
     if (vulkan->supportedFeatures.videoDecode) {
-        for (uint32_t i = 0; i < AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions); ++i) {
-            deviceExtensions[count] = __avd_VulkanVideoExtensions[i];
-            count++;
-        }
+        __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions));
     }
 
     *extensionCount = count;
@@ -286,7 +293,7 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AV
         return false;
     }
 
-    outFeatures->rayTracing = true; // for now raytracing is a part of the required extensions
+    outFeatures->rayTracing  = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanRayTraceExtensions, AVD_ARRAY_COUNT(__avd_VulkanRayTraceExtensions));
     outFeatures->videoDecode = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions));
 
     return true;
