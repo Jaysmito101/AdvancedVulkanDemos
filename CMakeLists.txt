@@ -57,27 +57,11 @@ ENDIF()
 
 find_package(Python COMPONENTS Interpreter REQUIRED)
 
-set(ASSETS_TIMESTAMP_FILE ${CMAKE_SOURCE_DIR}/avd_assets/generated/.asset_timestamp)
-
 file(GLOB_RECURSE ASSET_SOURCE_FILES
     ${CMAKE_SOURCE_DIR}/avd_assets/*.h
     ${CMAKE_SOURCE_DIR}/avd_assets/*.c
     ${CMAKE_SOURCE_DIR}/assets/*
 )
-
-file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/avd_assets/generated)
-
-add_custom_command(
-    OUTPUT ${ASSETS_TIMESTAMP_FILE}
-    COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/assets.py
-    COMMAND ${CMAKE_COMMAND} -E touch ${ASSETS_TIMESTAMP_FILE}
-    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR} # Regenerate build files
-    DEPENDS ${ASSET_SOURCE_FILES} ${CMAKE_SOURCE_DIR}/tools/assets.py
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "Generating assets and regenerating build files..."
-)
-
-add_custom_target(generate_assets ALL DEPENDS ${ASSETS_TIMESTAMP_FILE})
 
 
 if (WIN32)

@@ -17,6 +17,9 @@ uint16_t avdQuantizeHalf(float value);
 float avdDequantizeHalf(uint16_t value);
 int avdQuantizeSnorm(float v, int N);
 
+bool avdIsStringAURL(const char *str);
+void avdResolveRelativeURL(char *buffer, size_t bufferSize, const char *baseURL, const char *segmentURI);
+
 // curl utils
 bool avdCurlIsSupported(void);
 bool avdCurlDownloadToFile(const char *url, const char *filename);

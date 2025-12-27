@@ -66,6 +66,7 @@ add_executable(avd
     ./src/scenes/subsurface_scattering/avd_scenes_subsurface_scattering.c
     ./src/scenes/eyeballs/avd_scenes_eyeballs.c
     ./src/scenes/realistic_head/avd_scenes_realistic_head.c
+    ./src/scenes/hls_player/avd_scenes_hls_player.c
 )
 
 include_directories(avd
@@ -108,9 +109,15 @@ if (MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
 endif()
 
-add_dependencies(avd generate_assets)
-
 target_compile_definitions(avd PRIVATE
     $<$<CONFIG:Debug>:AVD_DEBUG>          # Define AVD_DEBUG for Debug builds
     $<$<NOT:$<CONFIG:Debug>>:AVD_RELEASE> # Define AVD_RELEASE for non-Debug builds
 )
+
+
+if (MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_link_options(avd PRIVATE /IGNORE:4099)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND WIN32)
+    # Clang must pass MSVC-style flags via -Xlinker
+    target_link_options(avd PRIVATE -Xlinker /IGNORE:4099)
+endif()

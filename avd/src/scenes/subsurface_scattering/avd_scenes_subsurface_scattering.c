@@ -1240,7 +1240,7 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    VkCommandBuffer commandBuffer                       = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
+    VkCommandBuffer commandBuffer                       = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
     AVD_CHECK(__avdSceneRenderGBufferPass(commandBuffer, subsurfaceScattering, appState));
