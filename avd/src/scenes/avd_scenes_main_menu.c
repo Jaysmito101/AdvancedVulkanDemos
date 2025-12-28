@@ -349,7 +349,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
                 x - 15.0f, y - 15.0f,
                 cardWidth + 30.0f, cardHeight + 30.0f,
                 1.0f, 1.0f, 1.0f, 1.0f,
-                card->descriptorSet, image->width, image->height);
+                card->descriptorSet, image->info.width, image->info.height);
         } else {
             avdUiDrawRect(
                 commandBuffer,
@@ -358,7 +358,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
                 x, y,
                 cardWidth, cardHeight,
                 0.3f, 0.3f, 0.3f, 1.0f,
-                card->descriptorSet, image->width, image->height);
+                card->descriptorSet, image->info.width, image->info.height);
         }
 
         float cardTitleWidth, cardTitleHeight;

@@ -50,11 +50,16 @@ static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_Vulka
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(attachment != NULL);
 
-    AVD_CHECK(avdVulkanImageCreate(vulkan, &attachment->image, format, usage, width, height));
+    AVD_CHECK(avdVulkanImageCreate(vulkan, &attachment->image,
+                                   avdVulkanImageGetDefaultCreateInfo(
+                                       width,
+                                       height,
+                                       format,
+                                       usage)));
     AVD_CHECK(__avdVulkanFramebufferAttachmentDescriptorsCreate(vulkan, attachment));
 
     attachment->attachmentDescription.flags          = 0;
-    attachment->attachmentDescription.format         = attachment->image.format;
+    attachment->attachmentDescription.format         = attachment->image.info.format;
     attachment->attachmentDescription.samples        = VK_SAMPLE_COUNT_1_BIT;
     attachment->attachmentDescription.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachment->attachmentDescription.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -74,7 +79,7 @@ static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_Vulka
     attachment->attachmentImageInfo.height          = height;
     attachment->attachmentImageInfo.layerCount      = 1;
     attachment->attachmentImageInfo.viewFormatCount = 1;
-    attachment->attachmentImageInfo.pViewFormats    = &attachment->image.format;
+    attachment->attachmentImageInfo.pViewFormats    = &attachment->image.info.format;
     attachment->attachmentImageInfo.pNext           = NULL;
 
     return true;

@@ -33,38 +33,38 @@ static bool __avdVulkanFramebufferCreateSampler(VkDevice device, AVD_VulkanImage
     return true;
 }
 
-bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
+AVD_VulkanImageCreateInfo avdVulkanImageGetDefaultCreateInfo(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage)
+{
+    AVD_VulkanImageCreateInfo info = {0};
+    info.width                     = width;
+    info.height                    = height;
+    info.format                    = format;
+    info.usage                     = usage;
+
+    info.depth = 1;
+    info.arrayLayers = 1;
+    info.mipLevels = 1;
+
+    return info;
+}
+
+bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_VulkanImageCreateInfo createInfo)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(image != NULL);
 
-    VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_NONE;
-    if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    } else if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-        if (avdVulkanFormatIsDepth(format)) {
-            aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        }
-        if (avdVulkanFormatIsStencil(format)) {
-            aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-    } else {
-        // fallback to color if no specific usage is set
-        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-
     VkImageCreateInfo imageInfo = {0};
     imageInfo.sType             = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType         = VK_IMAGE_TYPE_2D;
-    imageInfo.format            = format;
-    imageInfo.extent.width      = width;
-    imageInfo.extent.height     = height;
-    imageInfo.extent.depth      = 1;
-    imageInfo.mipLevels         = 1;
-    imageInfo.arrayLayers       = 1;
+    imageInfo.format            = createInfo.format;
+    imageInfo.extent.width      = createInfo.width;
+    imageInfo.extent.height     = createInfo.height;
+    imageInfo.extent.depth      = createInfo.depth;
+    imageInfo.mipLevels         = createInfo.mipLevels;
+    imageInfo.arrayLayers       = createInfo.arrayLayers;
     imageInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.usage             = usage;
+    imageInfo.usage             = createInfo.usage;
     imageInfo.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
 
@@ -85,12 +85,29 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkFormat f
     result = vkBindImageMemory(vulkan->device, image->image, image->memory, 0);
     AVD_CHECK_VK_RESULT(result, "Failed to bind image memory\n");
 
+    
+    VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_NONE;
+    if (createInfo.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    } else if (createInfo.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+        if (avdVulkanFormatIsDepth(createInfo.format)) {
+            aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+        if (avdVulkanFormatIsStencil(createInfo.format)) {
+            aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+    } else {
+        // fallback to color if no specific usage is set
+        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+
     VkImageViewCreateInfo viewInfo           = {0};
     viewInfo.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image                           = image->image;
     viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format                          = format;
-    viewInfo.subresourceRange.aspectMask     = avdVulkanFormatIsDepth(image->format) ? VK_IMAGE_ASPECT_DEPTH_BIT : aspectMask;
+    viewInfo.format                          = createInfo.format;
+    viewInfo.subresourceRange.aspectMask     = avdVulkanFormatIsDepth(createInfo.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : aspectMask;
     viewInfo.subresourceRange.baseMipLevel   = 0;
     viewInfo.subresourceRange.levelCount     = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -102,7 +119,6 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkFormat f
     result                                   = vkCreateImageView(vulkan->device, &viewInfo, NULL, &image->imageView);
     AVD_CHECK_VK_RESULT(result, "Failed to create image view\n");
 
-    image->format                          = format;
     image->subresourceRange.aspectMask     = aspectMask;
     image->subresourceRange.baseArrayLayer = 0;
     image->subresourceRange.layerCount     = 1;
@@ -116,8 +132,7 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkFormat f
     image->descriptorImageInfo.sampler     = image->sampler;
 
     // store dimensions for upload
-    image->width  = width;
-    image->height = height;
+    image->info = createInfo;
 
     return true;
 }
@@ -306,7 +321,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
 
     // infer bytes per pixel from format
     uint32_t bpp;
-    switch (image->format) {
+    switch (image->info.format) {
         case VK_FORMAT_R8G8B8A8_UNORM:
         case VK_FORMAT_B8G8R8A8_UNORM:
         case VK_FORMAT_R8G8B8A8_SRGB:
@@ -322,10 +337,10 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
             bpp = 3;
             break;
         default:
-            AVD_LOG_ERROR("Unsupported image format for upload: %d", image->format);
+            AVD_LOG_ERROR("Unsupported image format for upload: %d", image->info.format);
             return false;
     }
-    VkDeviceSize imageSize = (VkDeviceSize)image->width * image->height * bpp;
+    VkDeviceSize imageSize = (VkDeviceSize)image->info.width * image->info.height * bpp;
 
     // create and fill staging buffer
     AVD_VulkanBuffer staging = {0};
@@ -372,11 +387,11 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
     region.imageSubresource.mipLevel       = 0;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount     = 1;
-    region.imageExtent.width               = image->width;
-    region.imageExtent.height              = image->height;
+    region.imageExtent.width               = image->info.width;
+    region.imageExtent.height              = image->info.height;
     region.imageExtent.depth               = 1;
     region.imageOffset                     = (VkOffset3D){0, 0, 0};
-    region.imageExtent                     = (VkExtent3D){image->width, image->height, 1};
+    region.imageExtent                     = (VkExtent3D){image->info.width, image->info.height, 1};
     vkCmdCopyBufferToImage(cmd, staging.buffer, image->image,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
@@ -434,9 +449,11 @@ bool avdVulkanImageLoadFromFile(AVD_Vulkan *vulkan, const char *filename, AVD_Vu
 
     // create Vulkan image
     AVD_CHECK(avdVulkanImageCreate(
-        vulkan, image, format,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        (uint32_t)width, (uint32_t)height));
+        vulkan, image, 
+        avdVulkanImageGetDefaultCreateInfo(
+            (uint32_t)width, (uint32_t)height,
+            format,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)));
 
     // upload pixel data
     AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels));
@@ -470,9 +487,12 @@ bool avdVulkanImageLoadFromMemory(AVD_Vulkan *vulkan, const void *data, size_t d
 
     // create Vulkan image
     AVD_CHECK(avdVulkanImageCreate(
-        vulkan, image, format,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        (uint32_t)width, (uint32_t)height));
+        vulkan, image,
+        avdVulkanImageGetDefaultCreateInfo(
+            (uint32_t)width, (uint32_t)height,
+            format,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)));
+
 
     // upload pixel data
     AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels));

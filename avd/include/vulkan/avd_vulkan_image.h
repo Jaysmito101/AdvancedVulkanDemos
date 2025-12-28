@@ -3,7 +3,18 @@
 
 #include "vulkan/avd_vulkan_base.h"
 
-typedef struct AVD_VulkanImage {
+typedef struct {
+    VkFormat format;
+    VkImageUsageFlags usage;
+
+    uint32_t width;
+    uint32_t height;
+    uint32_t depth;
+    uint32_t arrayLayers;
+    uint32_t mipLevels;
+} AVD_VulkanImageCreateInfo;
+
+typedef struct {
     VkImage image;
     VkImageView imageView;
     VkSampler sampler;
@@ -12,13 +23,13 @@ typedef struct AVD_VulkanImage {
 
     VkImageSubresourceRange subresourceRange;
     VkDescriptorImageInfo descriptorImageInfo;
-    VkFormat format;
-
-    uint32_t width;
-    uint32_t height;
+    
+    AVD_VulkanImageCreateInfo info;
 } AVD_VulkanImage;
 
-bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height);
+
+AVD_VulkanImageCreateInfo avdVulkanImageGetDefaultCreateInfo(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage);
+bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_VulkanImageCreateInfo createInfo);
 bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 void avdVulkanImageDestroy(AVD_Vulkan *vulkan, AVD_VulkanImage *image);

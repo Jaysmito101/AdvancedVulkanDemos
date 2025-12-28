@@ -1,6 +1,7 @@
 #include "scenes/subsurface_scattering/avd_scenes_subsurface_scattering.h"
 #include "avd_application.h"
 #include "scenes/avd_scenes.h"
+#include "vulkan/avd_vulkan_image.h"
 
 #define AVD_SSS_RENDER_MODE_RESULT                             0
 #define AVD_SSS_RENDER_MODE_SCENE_ALBEDO                       1
@@ -633,10 +634,11 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             AVD_CHECK(avdVulkanImageCreate(
                 &appState->vulkan,
                 &subsurfaceScattering->noiseTexture,
-                VK_FORMAT_R8G8B8A8_UNORM,
-                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+                avdVulkanImageGetDefaultCreateInfo(
                 64,
-                64));
+                64,
+                VK_FORMAT_R8G8B8A8_UNORM,
+                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)));
             uint8_t *noiseTextureData = (uint8_t *)malloc(64 * 64 * 4);
             AVD_CHECK_MSG(noiseTextureData != NULL, "Failed to allocate noise texture data");
             for (uint32_t i = 0; i < 64 * 64; i++) {
