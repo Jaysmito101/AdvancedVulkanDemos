@@ -8,6 +8,31 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     bufferInfo.usage              = usage;
     bufferInfo.sharingMode        = VK_SHARING_MODE_EXCLUSIVE; // Assuming exclusive for simplicity
 
+    VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {0};
+    h264DecodeProfileInfo.sType                           = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
+    h264DecodeProfileInfo.stdProfileIdc                   = STD_VIDEO_H264_PROFILE_IDC_HIGH;
+    h264DecodeProfileInfo.pictureLayout                   = VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
+    
+    VkVideoProfileInfoKHR videoProfileInfo = {0};
+    videoProfileInfo.sType                 = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
+    videoProfileInfo.videoCodecOperation   = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
+    videoProfileInfo.lumaBitDepth          = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+    videoProfileInfo.chromaBitDepth        = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+    videoProfileInfo.chromaSubsampling     = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
+    videoProfileInfo.pNext                 = &h264DecodeProfileInfo;
+
+    VkVideoProfileListInfoKHR videoProfileListInfo        = {0};
+    videoProfileListInfo.sType                            = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
+    if (usage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
+        usage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR) {
+        videoProfileListInfo.profileCount = 1;
+        videoProfileListInfo.pProfiles    = &videoProfileInfo;
+        videoProfileListInfo.pNext        = NULL;
+        bufferInfo.pNext                  = &videoProfileListInfo;
+    } else {
+        bufferInfo.pNext = NULL;
+    }
+
     VkResult result = vkCreateBuffer(vulkan->device, &bufferInfo, NULL, &buffer->buffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create buffer!");
 
