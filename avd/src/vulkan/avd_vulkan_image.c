@@ -179,7 +179,7 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
     barrier.srcQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
     barrier.image                = image->image;
-    barrier.subresourceRange     = subresourceRange ? *(&subresourceRange->subresourceRange) : image->defaultSubresource.subresourceRange;
+    barrier.subresourceRange     = subresourceRange ? subresourceRange->subresourceRange : image->defaultSubresource.subresourceRange;
 
     // Source layouts (old)
     // Source access mask controls actions that have to be finished on the old layout
@@ -334,7 +334,7 @@ bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_
 }
 
 // simple 2D image upload via staging buffer
-bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, const void *srcData)
+bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, const void *srcData, AVD_VulkanImageSubresource* subresourceRange)
 {
     AVD_ASSERT(vulkan && image && srcData);
 
@@ -396,22 +396,24 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                              VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                             NULL));
+                                             subresourceRange));
+
+    VkImageSubresourceRange subresource = subresourceRange ? subresourceRange->subresourceRange : image->defaultSubresource.subresourceRange;
 
     // copy buffer to image
     VkBufferImageCopy region               = {0};
     region.bufferOffset                    = 0;
     region.bufferRowLength                 = 0;
     region.bufferImageHeight               = 0;
-    region.imageSubresource.aspectMask     = image->defaultSubresource.subresourceRange.aspectMask;
-    region.imageSubresource.mipLevel       = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount     = 1;
+    region.imageSubresource.aspectMask     = subresource.aspectMask;
+    region.imageSubresource.mipLevel       = subresource.baseMipLevel;
+    region.imageSubresource.baseArrayLayer = subresource.baseArrayLayer;
+    region.imageSubresource.layerCount     = subresource.layerCount;
     region.imageExtent.width               = image->info.width;
     region.imageExtent.height              = image->info.height;
-    region.imageExtent.depth               = 1;
+    region.imageExtent.depth               = image->info.depth;
     region.imageOffset                     = (VkOffset3D){0, 0, 0};
-    region.imageExtent                     = (VkExtent3D){image->info.width, image->info.height, 1};
+    region.imageExtent                     = (VkExtent3D){image->info.width, image->info.height, image->info.depth};
     vkCmdCopyBufferToImage(cmd, staging.buffer, image->image,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
@@ -477,7 +479,7 @@ bool avdVulkanImageLoadFromFile(AVD_Vulkan *vulkan, const char *filename, AVD_Vu
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)));
 
     // upload pixel data
-    AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels));
+    AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels, NULL));
 
     stbi_image_free(pixels);
     return true;
@@ -515,7 +517,7 @@ bool avdVulkanImageLoadFromMemory(AVD_Vulkan *vulkan, const void *data, size_t d
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)));
 
     // upload pixel data
-    AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels));
+    AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels, NULL));
 
     stbi_image_free(pixels);
     return true;

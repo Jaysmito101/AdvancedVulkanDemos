@@ -650,7 +650,8 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             AVD_CHECK(avdVulkanImageUploadSimple(
                 &appState->vulkan,
                 &subsurfaceScattering->noiseTexture,
-                noiseTextureData));
+                noiseTextureData,
+            NULL));
             free(noiseTextureData);
             break;
         case 13:
