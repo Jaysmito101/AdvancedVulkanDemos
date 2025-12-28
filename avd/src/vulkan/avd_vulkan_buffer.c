@@ -12,7 +12,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     h264DecodeProfileInfo.sType                           = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
     h264DecodeProfileInfo.stdProfileIdc                   = STD_VIDEO_H264_PROFILE_IDC_HIGH;
     h264DecodeProfileInfo.pictureLayout                   = VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
-    
+
     VkVideoProfileInfoKHR videoProfileInfo = {0};
     videoProfileInfo.sType                 = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
     videoProfileInfo.videoCodecOperation   = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
@@ -21,8 +21,8 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     videoProfileInfo.chromaSubsampling     = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
     videoProfileInfo.pNext                 = &h264DecodeProfileInfo;
 
-    VkVideoProfileListInfoKHR videoProfileListInfo        = {0};
-    videoProfileListInfo.sType                            = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
+    VkVideoProfileListInfoKHR videoProfileListInfo = {0};
+    videoProfileListInfo.sType                     = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
     if (usage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
         usage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR) {
         videoProfileListInfo.profileCount = 1;
@@ -53,12 +53,14 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     result = vkAllocateMemory(vulkan->device, &allocInfo, NULL, &buffer->memory);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate buffer memory!");
 
-    result = vkBindBufferMemory(vulkan->device, buffer->buffer,A buffer->memory, 0);
+    result = vkBindBufferMemory(vulkan->device, buffer->buffer, buffer->memory, 0);
     AVD_CHECK_VK_RESULT(result, "Failed to bind buffer memory!");
 
     buffer->descriptorBufferInfo.buffer = buffer->buffer;
     buffer->descriptorBufferInfo.offset = 0;
     buffer->descriptorBufferInfo.range  = size;
+    buffer->usage                       = usage;
+    buffer->size                        = size;
 
     return true;
 }
@@ -83,6 +85,20 @@ void avdVulkanBufferUnmap(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer)
 
 bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const void *srcData, VkDeviceSize size)
 {
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(buffer != NULL);
+    AVD_ASSERT(srcData != NULL);
+
+    if (buffer->usage & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT && buffer->usage & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
+        void *mapped = NULL;
+        if (!avdVulkanBufferMap(vulkan, buffer, &mapped)) {
+            return false;
+        }
+        memcpy(mapped, srcData, size);
+        avdVulkanBufferUnmap(vulkan, buffer);
+        return true;
+    }
+
     AVD_VulkanBuffer staging = {0};
     AVD_CHECK(avdVulkanBufferCreate(vulkan, &staging, size,
                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,

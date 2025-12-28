@@ -7,6 +7,8 @@ typedef struct AVD_VulkanBuffer {
     VkBuffer buffer;
     VkDeviceMemory memory;
     VkDescriptorBufferInfo descriptorBufferInfo;
+    VkBufferUsageFlags usage;
+    VkDeviceSize size;
 } AVD_VulkanBuffer;
 
 bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
