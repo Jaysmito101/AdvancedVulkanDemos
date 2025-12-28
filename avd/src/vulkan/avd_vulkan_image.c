@@ -68,6 +68,28 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_Vulkan
     imageInfo.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
 
+    VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {0};
+    h264DecodeProfileInfo.sType                           = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
+    h264DecodeProfileInfo.stdProfileIdc                   = STD_VIDEO_H264_PROFILE_IDC_HIGH;
+    h264DecodeProfileInfo.pictureLayout                   = VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
+
+    VkVideoProfileInfoKHR videoProfileInfo = {0};
+    videoProfileInfo.sType                 = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
+    videoProfileInfo.videoCodecOperation   = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
+    videoProfileInfo.lumaBitDepth          = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+    videoProfileInfo.chromaBitDepth        = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+    videoProfileInfo.chromaSubsampling     = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
+    videoProfileInfo.pNext                 = &h264DecodeProfileInfo;
+
+    VkVideoProfileListInfoKHR videoProfileListInfo = {0};
+    videoProfileListInfo.sType                     = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
+    if (createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR || createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR || createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR) {
+        videoProfileListInfo.profileCount = 1;
+        videoProfileListInfo.pProfiles    = &videoProfileInfo;
+        videoProfileListInfo.pNext        = NULL;
+        imageInfo.pNext                   = &videoProfileListInfo;
+    }
+
     VkResult result = vkCreateImage(vulkan->device, &imageInfo, NULL, &image->image);
     AVD_CHECK_VK_RESULT(result, "Failed to create image\n");
 
@@ -149,6 +171,13 @@ bool avdVulkanImageSubresourceCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image,
     viewInfo.components.g          = VK_COMPONENT_SWIZZLE_IDENTITY;
     viewInfo.components.b          = VK_COMPONENT_SWIZZLE_IDENTITY;
     viewInfo.components.a          = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+    VkImageViewUsageCreateInfo imageViewUsageInfo = {0};
+    imageViewUsageInfo.sType                      = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
+    if (image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR || image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR || image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR) {
+        imageViewUsageInfo.usage = image->info.usage;
+        viewInfo.pNext           = &imageViewUsageInfo;
+    }
 
     VkResult result = vkCreateImageView(vulkan->device, &viewInfo, NULL, &outSubresource->imageView);
     AVD_CHECK_VK_RESULT(result, "Failed to create image subresource view\n");
