@@ -29,6 +29,10 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
         videoProfileListInfo.pProfiles    = &videoProfileInfo;
         videoProfileListInfo.pNext        = NULL;
         bufferInfo.pNext                  = &videoProfileListInfo;
+
+        // This is a workaround for nvidia video bitstream buffer which, when used for video decode and not mapped,
+        // gives incorrect decoding results.
+        properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     } else {
         bufferInfo.pNext = NULL;
     }
@@ -49,7 +53,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     result = vkAllocateMemory(vulkan->device, &allocInfo, NULL, &buffer->memory);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate buffer memory!");
 
-    result = vkBindBufferMemory(vulkan->device, buffer->buffer, buffer->memory, 0);
+    result = vkBindBufferMemory(vulkan->device, buffer->buffer,A buffer->memory, 0);
     AVD_CHECK_VK_RESULT(result, "Failed to bind buffer memory!");
 
     buffer->descriptorBufferInfo.buffer = buffer->buffer;
