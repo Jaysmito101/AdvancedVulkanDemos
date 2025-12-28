@@ -270,7 +270,7 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 write->dstBinding           = (uint32_t)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 write->descriptorType       = avdVulkanToVkDescriptorType(AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 write->dstArrayElement      = deccerCubes->imagesCount + 1;
-                write->pImageInfo           = &deccerCubes->images[deccerCubes->imagesCount].descriptorImageInfo;
+                write->pImageInfo           = &deccerCubes->images[deccerCubes->imagesCount].defaultSubresource.descriptorImageInfo;
 
                 deccerCubes->imagesCount += 1;
             }

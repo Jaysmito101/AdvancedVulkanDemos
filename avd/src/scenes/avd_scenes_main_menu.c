@@ -47,7 +47,7 @@ static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AV
     AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(vulkan->device, &allocateInfo, &card->descriptorSet), "Failed to allocate descriptor set");
 
     VkWriteDescriptorSet writeDescriptorSet = {0};
-    AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, card->descriptorSet, 0, &card->thumbnailImage.descriptorImageInfo));
+    AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, card->descriptorSet, 0, &card->thumbnailImage.defaultSubresource.descriptorImageInfo));
     vkUpdateDescriptorSets(vulkan->device, 1, &writeDescriptorSet, 0, NULL);
 
     return true;

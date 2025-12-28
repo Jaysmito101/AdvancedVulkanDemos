@@ -41,9 +41,9 @@ AVD_VulkanImageCreateInfo avdVulkanImageGetDefaultCreateInfo(uint32_t width, uin
     info.format                    = format;
     info.usage                     = usage;
 
-    info.depth = 1;
+    info.depth       = 1;
     info.arrayLayers = 1;
-    info.mipLevels = 1;
+    info.mipLevels   = 1;
 
     return info;
 }
@@ -85,7 +85,6 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_Vulkan
     result = vkBindImageMemory(vulkan->device, image->image, image->memory, 0);
     AVD_CHECK_VK_RESULT(result, "Failed to bind image memory\n");
 
-    
     VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_NONE;
     if (createInfo.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
         aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -101,38 +100,24 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_Vulkan
         aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     }
 
-
-    VkImageViewCreateInfo viewInfo           = {0};
-    viewInfo.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image                           = image->image;
-    viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format                          = createInfo.format;
-    viewInfo.subresourceRange.aspectMask     = avdVulkanFormatIsDepth(createInfo.format) ? VK_IMAGE_ASPECT_DEPTH_BIT : aspectMask;
-    viewInfo.subresourceRange.baseMipLevel   = 0;
-    viewInfo.subresourceRange.levelCount     = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount     = 1;
-    viewInfo.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    result                                   = vkCreateImageView(vulkan->device, &viewInfo, NULL, &image->imageView);
-    AVD_CHECK_VK_RESULT(result, "Failed to create image view\n");
-
-    image->subresourceRange.aspectMask     = aspectMask;
-    image->subresourceRange.baseArrayLayer = 0;
-    image->subresourceRange.layerCount     = 1;
-    image->subresourceRange.baseMipLevel   = 0;
-    image->subresourceRange.levelCount     = 1;
+    // store dimensions for upload
+    image->info = createInfo;
 
     AVD_CHECK(__avdVulkanFramebufferCreateSampler(vulkan->device, image));
 
-    image->descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image->descriptorImageInfo.imageView   = image->imageView;
-    image->descriptorImageInfo.sampler     = image->sampler;
-
-    // store dimensions for upload
-    image->info = createInfo;
+    AVD_CHECK_MSG(
+        avdVulkanImageSubresourceCreate(
+            vulkan,
+            image,
+            (VkImageSubresourceRange){
+                .aspectMask     = aspectMask,
+                .baseMipLevel   = 0,
+                .levelCount     = createInfo.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = createInfo.arrayLayers,
+            },
+            &image->defaultSubresource),
+        "Failed to create default image subresource\n");
 
     return true;
 }
@@ -142,10 +127,44 @@ void avdVulkanImageDestroy(AVD_Vulkan *vulkan, AVD_VulkanImage *image)
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(image != NULL);
 
-    vkDestroyImageView(vulkan->device, image->imageView, NULL);
+    avdVulkanImageSubresourceDestroy(vulkan, &image->defaultSubresource);
     vkDestroyImage(vulkan->device, image->image, NULL);
     vkDestroySampler(vulkan->device, image->sampler, NULL);
     vkFreeMemory(vulkan->device, image->memory, NULL);
+}
+
+bool avdVulkanImageSubresourceCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkImageSubresourceRange subresourceRange, AVD_VulkanImageSubresource *outSubresource)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(image != NULL);
+    AVD_ASSERT(outSubresource != NULL);
+
+    VkImageViewCreateInfo viewInfo = {0};
+    viewInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image                 = image->image;
+    viewInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format                = image->info.format;
+    viewInfo.subresourceRange      = subresourceRange;
+    viewInfo.components.r          = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.components.g          = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.components.b          = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.components.a          = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+    VkResult result = vkCreateImageView(vulkan->device, &viewInfo, NULL, &outSubresource->imageView);
+    AVD_CHECK_VK_RESULT(result, "Failed to create image subresource view\n");
+
+    outSubresource->descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    outSubresource->descriptorImageInfo.imageView   = outSubresource->imageView;
+    outSubresource->descriptorImageInfo.sampler     = image->sampler;
+
+    outSubresource->subresourceRange = subresourceRange;
+
+    return true;
+}
+
+void avdVulkanImageSubresourceDestroy(AVD_Vulkan *vulkan, AVD_VulkanImageSubresource *subresource)
+{
+    vkDestroyImageView(vulkan->device, subresource->imageView, NULL);
 }
 
 bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
@@ -160,7 +179,7 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
     barrier.srcQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
     barrier.image                = image->image;
-    barrier.subresourceRange     = image->subresourceRange;
+    barrier.subresourceRange     = image->defaultSubresource.subresourceRange;
 
     // Source layouts (old)
     // Source access mask controls actions that have to be finished on the old layout
@@ -383,7 +402,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
     region.bufferOffset                    = 0;
     region.bufferRowLength                 = 0;
     region.bufferImageHeight               = 0;
-    region.imageSubresource.aspectMask     = image->subresourceRange.aspectMask;
+    region.imageSubresource.aspectMask     = image->defaultSubresource.subresourceRange.aspectMask;
     region.imageSubresource.mipLevel       = 0;
     region.imageSubresource.baseArrayLayer = 0;
     region.imageSubresource.layerCount     = 1;
@@ -449,7 +468,7 @@ bool avdVulkanImageLoadFromFile(AVD_Vulkan *vulkan, const char *filename, AVD_Vu
 
     // create Vulkan image
     AVD_CHECK(avdVulkanImageCreate(
-        vulkan, image, 
+        vulkan, image,
         avdVulkanImageGetDefaultCreateInfo(
             (uint32_t)width, (uint32_t)height,
             format,
@@ -492,7 +511,6 @@ bool avdVulkanImageLoadFromMemory(AVD_Vulkan *vulkan, const void *data, size_t d
             (uint32_t)width, (uint32_t)height,
             format,
             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)));
-
 
     // upload pixel data
     AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels));

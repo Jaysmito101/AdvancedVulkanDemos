@@ -128,7 +128,7 @@ static void __avdSetupBindlessDescriptorWrite(
     write->dstBinding      = (uint32_t)descriptorType;
     write->descriptorType  = avdVulkanToVkDescriptorType(descriptorType);
     write->dstArrayElement = index;
-    write->pImageInfo      = &image->descriptorImageInfo;
+    write->pImageInfo      = &image->defaultSubresource.descriptorImageInfo;
 }
 
 #define AVD_SETUP_BINDLESS_IMAGE_DESCRIPTOR_WRITE(index, image) \

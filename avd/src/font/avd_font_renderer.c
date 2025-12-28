@@ -45,7 +45,7 @@ static bool __avdCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout desc
 
     // --- Update Descriptor Set ---
     VkWriteDescriptorSet descriptorWrite = {0};
-    AVD_CHECK(avdWriteImageDescriptorSet(&descriptorWrite, *descriptorSet, 0, &fontImage->descriptorImageInfo));
+    AVD_CHECK(avdWriteImageDescriptorSet(&descriptorWrite, *descriptorSet, 0, &fontImage->defaultSubresource.descriptorImageInfo));
     vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, NULL);
 
     return true;

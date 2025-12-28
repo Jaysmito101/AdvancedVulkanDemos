@@ -15,14 +15,17 @@ typedef struct {
 } AVD_VulkanImageCreateInfo;
 
 typedef struct {
-    VkImage image;
-    VkImageView imageView;
-    VkSampler sampler;
-
-    VkDeviceMemory memory;
-
+    VkImageView imageView;    
     VkImageSubresourceRange subresourceRange;
     VkDescriptorImageInfo descriptorImageInfo;
+} AVD_VulkanImageSubresource;
+
+typedef struct {
+    VkImage image;
+    VkSampler sampler;
+    VkDeviceMemory memory;
+
+    AVD_VulkanImageSubresource defaultSubresource;
     
     AVD_VulkanImageCreateInfo info;
 } AVD_VulkanImage;
@@ -37,5 +40,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
 bool avdVulkanImageLoadFromFile(AVD_Vulkan *vulkan, const char *filename, AVD_VulkanImage *image);
 bool avdVulkanImageLoadFromMemory(AVD_Vulkan *vulkan, const void *data, size_t dataSize, AVD_VulkanImage *image);
 bool avdVulkanImageLoadFromAsset(AVD_Vulkan *vulkan, const char *asset, AVD_VulkanImage *image);
+bool avdVulkanImageSubresourceCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkImageSubresourceRange subresourceRange, AVD_VulkanImageSubresource *outSubresource);
+void avdVulkanImageSubresourceDestroy(AVD_Vulkan *vulkan, AVD_VulkanImageSubresource *subresource);
 
 #endif // AVD_VULKAN_IMAGE_H

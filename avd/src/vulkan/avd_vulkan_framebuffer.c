@@ -30,7 +30,7 @@ static bool __avdVulkanFramebufferAttachmentDescriptorsCreate(AVD_Vulkan *vulkan
     AVD_CHECK_VK_RESULT(result, "Failed to allocate framebuffer attachment descriptor set");
 
     VkWriteDescriptorSet writeDescriptorSet = {0};
-    AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, attachment->descriptorSet, 0, &attachment->image.descriptorImageInfo));
+    AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, attachment->descriptorSet, 0, &attachment->image.defaultSubresource.descriptorImageInfo));
     vkUpdateDescriptorSets(vulkan->device, 1, &writeDescriptorSet, 0, NULL);
 
     return true;
@@ -330,12 +330,12 @@ bool avdVulkanFramebufferGetAttachmentViews(AVD_VulkanFramebuffer *framebuffer, 
 
     for (size_t i = 0; i < framebuffer->colorAttachments.count; ++i) {
         AVD_VulkanFramebufferAttachment *attachment = avdVulkanFramebufferGetColorAttachment(framebuffer, i);
-        colorAttachmentView[i]                      = attachment->image.imageView;
+        colorAttachmentView[i]                      = attachment->image.defaultSubresource.imageView;
     }
     *attachmentCount = framebuffer->colorAttachments.count;
 
     if (framebuffer->hasDepthStencil) {
-        colorAttachmentView[*attachmentCount] = framebuffer->depthStencilAttachment.image.imageView;
+        colorAttachmentView[*attachmentCount] = framebuffer->depthStencilAttachment.image.defaultSubresource.imageView;
         *attachmentCount += 1;
     }
 

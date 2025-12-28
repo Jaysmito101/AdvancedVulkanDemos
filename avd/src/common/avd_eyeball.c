@@ -38,7 +38,7 @@ bool __avdEyeballSetupDescriptors(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
     AVD_CHECK(avdWriteImageDescriptorSet(&descriptorSetWrite[1],
                                          eyeball->descriptorSet,
                                          1,
-                                         &eyeball->veinsTexture.descriptorImageInfo));
+                                         &eyeball->veinsTexture.defaultSubresource.descriptorImageInfo));
     AVD_CHECK(avdWriteBufferDescriptorSet(&descriptorSetWrite[2],
                                           eyeball->descriptorSet,
                                           2,
