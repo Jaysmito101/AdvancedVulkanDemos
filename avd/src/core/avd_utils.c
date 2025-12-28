@@ -264,8 +264,7 @@ bool avdIsStringAURL(const char *str)
         "ftps://",
         "file://",
         "ws://",
-        "wss://"
-    };
+        "wss://"};
 
     size_t schemeCount = sizeof(schemes) / sizeof(schemes[0]);
     for (size_t i = 0; i < schemeCount; i++) {
@@ -310,13 +309,13 @@ void avdResolveRelativeURL(char *buffer, size_t bufferSize, const char *baseURL,
         segment += 3;
         if (basePathLen > 0) {
             buffer[basePathLen - 1] = '\0';
-            char *prevSlash = strrchr(buffer, '/');
+            char *prevSlash         = strrchr(buffer, '/');
             if (prevSlash) {
-                basePathLen = prevSlash - buffer + 1;
+                basePathLen         = prevSlash - buffer + 1;
                 buffer[basePathLen] = '\0';
             } else {
                 basePathLen = 0;
-                buffer[0] = '\0';
+                buffer[0]   = '\0';
             }
         }
     }

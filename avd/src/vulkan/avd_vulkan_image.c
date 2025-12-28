@@ -334,7 +334,7 @@ bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_
 }
 
 // simple 2D image upload via staging buffer
-bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, const void *srcData, AVD_VulkanImageSubresource* subresourceRange)
+bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, const void *srcData, AVD_VulkanImageSubresource *subresourceRange)
 {
     AVD_ASSERT(vulkan && image && srcData);
 
@@ -422,7 +422,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                              VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 
+                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                                              NULL));
 
     vkEndCommandBuffer(cmd);

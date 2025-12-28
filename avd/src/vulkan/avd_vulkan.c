@@ -560,7 +560,7 @@ static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
 
         if (decodeCapabilities.flags) {
             vulkan->supportedFeatures.videoDecodeH264BitstreamMinOffsetAlignment = videoCapabilities.minBitstreamBufferOffsetAlignment;
-            vulkan->supportedFeatures.videoDecodeH264BitstreamMinSizeAlignment = videoCapabilities.minBitstreamBufferSizeAlignment;
+            vulkan->supportedFeatures.videoDecodeH264BitstreamMinSizeAlignment   = videoCapabilities.minBitstreamBufferSizeAlignment;
         } else {
             vulkan->supportedFeatures.videoDecode = false;
             AVD_LOG_WARN("Video decode capabilities not supported");

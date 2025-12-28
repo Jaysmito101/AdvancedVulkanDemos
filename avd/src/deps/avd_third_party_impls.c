@@ -15,10 +15,11 @@
 
 #ifdef AVD_DEBUG
 // This one is purely for the purpose of debugging (using DebugPrint functions of picoM3U8)
-#define PICO_M3U8_LOG(...) do { \
-    printf(__VA_ARGS__); \
-    printf("\n"); \
- } while(0)
+#define PICO_M3U8_LOG(...)   \
+    do {                     \
+        printf(__VA_ARGS__); \
+        printf("\n");        \
+    } while (0)
 
 #endif
 

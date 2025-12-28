@@ -49,7 +49,6 @@ typedef struct {
     AVD_SceneHLSPlayerMediaSegment segment;
 } AVD_SceneHLSPlayerDemuxWorkerPayload;
 
-
 typedef struct {
     AVD_SceneHLSPlayerMediaSegment segment;
     AVD_UInt32 sourcesHash;
@@ -100,7 +99,7 @@ typedef struct AVD_SceneHLSPlayer {
     picoThreadChannel mediaReadyChannel;     // media demux worker -> main thread
 
     AVD_SceneHLSPlayerMediaBufferCache mediaBufferCache;
-    
+
     AVD_SceneHLSPlayerMediaSegment loadedSegments[AVD_SCENE_HLS_PLAYER_MAX_SOURCES][AVD_SCENE_HLS_PLAYER_MEDIA_SEGMENTS_LOADED];
 
     bool isSupported;

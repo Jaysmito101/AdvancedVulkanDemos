@@ -103,7 +103,7 @@ void __avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height)
     event.windowResize.height = height;
 
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
-    
+
     appState->swapchain.swapchainRecreateRequired = true;
     avdInputCalculateDeltas(&appState->input);
     avdApplicationUpdateWithoutPolling(appState);

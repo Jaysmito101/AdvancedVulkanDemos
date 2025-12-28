@@ -121,7 +121,8 @@ bool avdCurlDownloadToMemory(const char *url, void **data, size_t *size)
 bool avdCurlFetchStringContent(const char *url, char **outString, int *outReturnCode)
 {
     if (!avdCurlIsSupported()) {
-        if (outReturnCode) *outReturnCode = -1;
+        if (outReturnCode)
+            *outReturnCode = -1;
         return false;
     }
 
@@ -135,7 +136,8 @@ bool avdCurlFetchStringContent(const char *url, char **outString, int *outReturn
 #endif
 
     if (fp == NULL) {
-        if (outReturnCode) *outReturnCode = -1;
+        if (outReturnCode)
+            *outReturnCode = -1;
         return false;
     }
 
@@ -149,7 +151,8 @@ bool avdCurlFetchStringContent(const char *url, char **outString, int *outReturn
 #else
         pclose(fp);
 #endif
-        if (outReturnCode) *outReturnCode = -1;
+        if (outReturnCode)
+            *outReturnCode = -1;
         return false;
     }
 
@@ -167,7 +170,8 @@ bool avdCurlFetchStringContent(const char *url, char **outString, int *outReturn
 #else
                 pclose(fp);
 #endif
-                if (outReturnCode) *outReturnCode = -1;
+                if (outReturnCode)
+                    *outReturnCode = -1;
                 return false;
             }
             buffer = newBuffer;
@@ -182,7 +186,8 @@ bool avdCurlFetchStringContent(const char *url, char **outString, int *outReturn
 
     if (length < 3) {
         free(buffer);
-        if (outReturnCode) *outReturnCode = -1;
+        if (outReturnCode)
+            *outReturnCode = -1;
         return false;
     }
 
@@ -213,7 +218,8 @@ bool avdCurlFetchStringContent(const char *url, char **outString, int *outReturn
 bool avdCurlPostRequest(const char *url, const char *postData, char **outResponse, int *outReturnCode)
 {
     if (!avdCurlIsSupported()) {
-        if (outReturnCode) *outReturnCode = -1;
+        if (outReturnCode)
+            *outReturnCode = -1;
         return false;
     }
 
@@ -227,7 +233,8 @@ bool avdCurlPostRequest(const char *url, const char *postData, char **outRespons
 #endif
 
     if (fp == NULL) {
-        if (outReturnCode) *outReturnCode = -1;
+        if (outReturnCode)
+            *outReturnCode = -1;
         return false;
     }
 
@@ -241,7 +248,8 @@ bool avdCurlPostRequest(const char *url, const char *postData, char **outRespons
 #else
         pclose(fp);
 #endif
-        if (outReturnCode) *outReturnCode = -1;
+        if (outReturnCode)
+            *outReturnCode = -1;
         return false;
     }
 
@@ -259,7 +267,8 @@ bool avdCurlPostRequest(const char *url, const char *postData, char **outRespons
 #else
                 pclose(fp);
 #endif
-                if (outReturnCode) *outReturnCode = -1;
+                if (outReturnCode)
+                    *outReturnCode = -1;
                 return false;
             }
             buffer = newBuffer;
@@ -274,7 +283,8 @@ bool avdCurlPostRequest(const char *url, const char *postData, char **outRespons
 
     if (length < 3) {
         free(buffer);
-        if (outReturnCode) *outReturnCode = -1;
+        if (outReturnCode)
+            *outReturnCode = -1;
         return false;
     }
 
