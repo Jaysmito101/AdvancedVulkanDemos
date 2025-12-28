@@ -23,8 +23,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
 
     VkVideoProfileListInfoKHR videoProfileListInfo = {0};
     videoProfileListInfo.sType                     = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
-    if (usage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
-        usage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR) {
+    if (usage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR) {
         videoProfileListInfo.profileCount = 1;
         videoProfileListInfo.pProfiles    = &videoProfileInfo;
         videoProfileListInfo.pNext        = NULL;
