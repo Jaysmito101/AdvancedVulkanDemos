@@ -167,7 +167,7 @@ void avdVulkanImageSubresourceDestroy(AVD_Vulkan *vulkan, AVD_VulkanImageSubreso
     vkDestroyImageView(vulkan->device, subresource->imageView, NULL);
 }
 
-bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, AVD_VulkanImageSubresource *subresourceRange)
 {
     AVD_ASSERT(image != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
@@ -179,7 +179,7 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
     barrier.srcQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
     barrier.image                = image->image;
-    barrier.subresourceRange     = image->defaultSubresource.subresourceRange;
+    barrier.subresourceRange     = subresourceRange ? *(&subresourceRange->subresourceRange) : image->defaultSubresource.subresourceRange;
 
     // Source layouts (old)
     // Source access mask controls actions that have to be finished on the old layout
@@ -290,7 +290,7 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
     return true;
 }
 
-bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, AVD_VulkanImageSubresource *subresourceRange)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(image != NULL);
@@ -312,7 +312,7 @@ bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_
     VkResult beginResult = vkBeginCommandBuffer(commandBuffer, &beginInfo);
     AVD_CHECK_VK_RESULT(beginResult, "Failed to begin command buffer for image layout transition");
 
-    bool transitionResult = avdVulkanImageTransitionLayout(image, commandBuffer, oldLayout, newLayout, srcStageMask, dstStageMask);
+    bool transitionResult = avdVulkanImageTransitionLayout(image, commandBuffer, oldLayout, newLayout, srcStageMask, dstStageMask, subresourceRange);
 
     VkResult endResult = vkEndCommandBuffer(commandBuffer);
     AVD_CHECK_VK_RESULT(endResult, "Failed to end command buffer for image layout transition");
@@ -395,7 +395,8 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
                                              VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                             VK_PIPELINE_STAGE_TRANSFER_BIT));
+                                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                             NULL));
 
     // copy buffer to image
     VkBufferImageCopy region               = {0};
@@ -419,7 +420,8 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                              VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT));
+                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 
+                                             NULL));
 
     vkEndCommandBuffer(cmd);
 

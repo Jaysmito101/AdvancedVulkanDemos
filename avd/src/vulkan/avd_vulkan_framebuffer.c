@@ -277,7 +277,8 @@ bool avdVulkanFramebufferCreate(
                 VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT)) {
+                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                NULL)) {
             AVD_LOG_ERROR("Failed to transition color attachment image layout");
             return false;
         }
