@@ -528,6 +528,48 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     return true;
 }
 
+static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
+{
+    if (vulkan->supportedFeatures.videoDecode) {
+        VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {0};
+        h264DecodeProfileInfo.sType                           = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
+        h264DecodeProfileInfo.stdProfileIdc                   = STD_VIDEO_H264_PROFILE_IDC_HIGH;
+        h264DecodeProfileInfo.pictureLayout                   = VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
+
+        VkVideoProfileInfoKHR videoProfileInfo = {0};
+        videoProfileInfo.sType                 = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
+        videoProfileInfo.videoCodecOperation   = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
+        videoProfileInfo.lumaBitDepth          = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+        videoProfileInfo.chromaBitDepth        = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
+        videoProfileInfo.chromaSubsampling     = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
+        videoProfileInfo.pNext                 = &h264DecodeProfileInfo;
+
+        VkVideoDecodeH264CapabilitiesKHR h264DecodeCapabilities = {0};
+        h264DecodeCapabilities.sType                            = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR;
+        h264DecodeCapabilities.pNext                            = NULL;
+
+        VkVideoDecodeCapabilitiesKHR decodeCapabilities = {0};
+        decodeCapabilities.sType                        = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
+        decodeCapabilities.pNext                        = &h264DecodeCapabilities;
+
+        VkVideoCapabilitiesKHR videoCapabilities = {0};
+        videoCapabilities.sType                  = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+        videoCapabilities.pNext                  = &decodeCapabilities;
+
+        vkGetPhysicalDeviceVideoCapabilitiesKHR(vulkan->physicalDevice, &videoProfileInfo, &videoCapabilities);
+
+        if (decodeCapabilities.flags) {
+            vulkan->supportedFeatures.videoDecodeH264BitstreamMinOffsetAlignment = videoCapabilities.minBitstreamBufferOffsetAlignment;
+            vulkan->supportedFeatures.videoDecodeH264BitstreamMinSizeAlignment = videoCapabilities.minBitstreamBufferSizeAlignment;
+        } else {
+            vulkan->supportedFeatures.videoDecode = false;
+            AVD_LOG_WARN("Video decode capabilities not supported");
+        }
+    }
+
+    return true;
+}
+
 static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
 {
     vkGetDeviceQueue(vulkan->device, vulkan->graphicsQueueFamilyIndex, 0, &vulkan->graphicsQueue);
@@ -642,6 +684,7 @@ bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface
     AVD_CHECK(__avdVulkanCreateSurface(vulkan, window->window, surface));
     AVD_CHECK(__avdVulkanPickPhysicalDevice(vulkan));
     AVD_CHECK(__avdVulkanCreateDevice(vulkan, surface));
+    AVD_CHECK(__avdVulkanQueryDeviceProperties(vulkan));
     AVD_CHECK(__avdVulkanGetQueues(vulkan));
     AVD_CHECK(__avdVulkanCreateCommandPools(vulkan));
     AVD_CHECK(__avdVulkanDescriptorPoolCreate(vulkan));

@@ -30,6 +30,9 @@ typedef enum {
 typedef struct AVD_VulkanFeatures {
     bool rayTracing;
     bool videoDecode;
+
+    uint32_t videoDecodeH264BitstreamMinSizeAlignment;
+    uint32_t videoDecodeH264BitstreamMinOffsetAlignment;
 } AVD_VulkanFeatures;
 
 typedef struct AVD_Vulkan {
