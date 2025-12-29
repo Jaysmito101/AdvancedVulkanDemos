@@ -6,25 +6,28 @@ static bool __avdVulkanFramebufferAttachmentDescriptorsCreate(AVD_Vulkan *vulkan
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(attachment != NULL);
 
-    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {0};
-    descriptorSetLayoutBinding.binding                      = 0;
-    descriptorSetLayoutBinding.descriptorType               = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descriptorSetLayoutBinding.descriptorCount              = 1;
-    descriptorSetLayoutBinding.stageFlags                   = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {
+        .binding         = 0,
+        .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptorCount = 1,
+        .stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT,
+    };
 
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {0};
-    descriptorSetLayoutInfo.sType                           = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutInfo.bindingCount                    = 1;
-    descriptorSetLayoutInfo.pBindings                       = &descriptorSetLayoutBinding;
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {
+        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = 1,
+        .pBindings    = &descriptorSetLayoutBinding,
+    };
 
     VkResult result = vkCreateDescriptorSetLayout(vulkan->device, &descriptorSetLayoutInfo, NULL, &attachment->descriptorSetLayout);
     AVD_CHECK_VK_RESULT(result, "Failed to create framebuffer attachment descriptor set layout");
 
-    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {0};
-    descriptorSetAllocateInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descriptorSetAllocateInfo.descriptorPool              = vulkan->descriptorPool;
-    descriptorSetAllocateInfo.descriptorSetCount          = 1;
-    descriptorSetAllocateInfo.pSetLayouts                 = &attachment->descriptorSetLayout;
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
+        .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool     = vulkan->descriptorPool,
+        .descriptorSetCount = 1,
+        .pSetLayouts        = &attachment->descriptorSetLayout,
+    };
 
     result = vkAllocateDescriptorSets(vulkan->device, &descriptorSetAllocateInfo, &attachment->descriptorSet);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate framebuffer attachment descriptor set");
@@ -58,29 +61,31 @@ static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_Vulka
                                        usage)));
     AVD_CHECK(__avdVulkanFramebufferAttachmentDescriptorsCreate(vulkan, attachment));
 
-    attachment->attachmentDescription.flags          = 0;
-    attachment->attachmentDescription.format         = attachment->image.info.format;
-    attachment->attachmentDescription.samples        = VK_SAMPLE_COUNT_1_BIT;
-    attachment->attachmentDescription.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachment->attachmentDescription.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
-    attachment->attachmentDescription.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachment->attachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachment->attachmentDescription.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachment->attachmentDescription = (VkAttachmentDescription){
+        .flags          = 0,
+        .format         = attachment->image.info.format,
+        .samples        = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout    = avdVulkanFormatIsDepthStencil(format)
+                              ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
+                              : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
 
-    if (avdVulkanFormatIsDepthStencil(format))
-        attachment->attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    else
-        attachment->attachmentDescription.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    attachment->attachmentImageInfo.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO;
-    attachment->attachmentImageInfo.flags           = 0;
-    attachment->attachmentImageInfo.usage           = usage;
-    attachment->attachmentImageInfo.width           = width;
-    attachment->attachmentImageInfo.height          = height;
-    attachment->attachmentImageInfo.layerCount      = 1;
-    attachment->attachmentImageInfo.viewFormatCount = 1;
-    attachment->attachmentImageInfo.pViewFormats    = &attachment->image.info.format;
-    attachment->attachmentImageInfo.pNext           = NULL;
+    attachment->attachmentImageInfo = (VkFramebufferAttachmentImageInfo){
+        .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO,
+        .pNext           = NULL,
+        .flags           = 0,
+        .usage           = usage,
+        .width           = width,
+        .height          = height,
+        .layerCount      = 1,
+        .viewFormatCount = 1,
+        .pViewFormats    = &attachment->image.info.format,
+    };
 
     return true;
 }
@@ -108,53 +113,62 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
     static VkAttachmentReference colorAttachmentReferences[64] = {0};
     uint32_t referenceCount                                    = attachmentCount;
     for (size_t i = 0; i < framebuffer->colorAttachments.count; ++i) {
-        colorAttachmentReferences[i].attachment = (uint32_t)i;
-        colorAttachmentReferences[i].layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachmentReferences[i] = (VkAttachmentReference){
+            .attachment = (uint32_t)i,
+            .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        };
     }
 
     if (framebuffer->hasDepthStencil) {
-        colorAttachmentReferences[attachmentCount - 1].attachment = (uint32_t)framebuffer->colorAttachments.count;
-        colorAttachmentReferences[attachmentCount - 1].layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        colorAttachmentReferences[attachmentCount - 1] = (VkAttachmentReference){
+            .attachment = (uint32_t)framebuffer->colorAttachments.count,
+            .layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        };
     }
 
-    VkSubpassDescription subpassDescription = {0};
-    subpassDescription.pipelineBindPoint    = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount = (uint32_t)framebuffer->colorAttachments.count;
-    subpassDescription.pColorAttachments    = colorAttachmentReferences;
-    subpassDescription.inputAttachmentCount = 0;
-    subpassDescription.pInputAttachments    = NULL;
-    subpassDescription.pResolveAttachments  = NULL;
-    if (framebuffer->hasDepthStencil)
-        subpassDescription.pDepthStencilAttachment = &colorAttachmentReferences[attachmentCount - 1];
-    else
-        subpassDescription.pDepthStencilAttachment = NULL;
+    VkSubpassDescription subpassDescription = {
+        .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount    = (uint32_t)framebuffer->colorAttachments.count,
+        .pColorAttachments       = colorAttachmentReferences,
+        .inputAttachmentCount    = 0,
+        .pInputAttachments       = NULL,
+        .pResolveAttachments     = NULL,
+        .pDepthStencilAttachment = framebuffer->hasDepthStencil
+                                       ? &colorAttachmentReferences[attachmentCount - 1]
+                                       : NULL,
+    };
 
     static VkSubpassDependency dependencies[2] = {0};
 
-    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass      = 0;
-    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    dependencies[0] = (VkSubpassDependency){
+        .srcSubpass      = VK_SUBPASS_EXTERNAL,
+        .dstSubpass      = 0,
+        .srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        .dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT,
+        .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+    };
 
-    dependencies[1].srcSubpass      = 0;
-    dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
-    dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
-    dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+    dependencies[1] = (VkSubpassDependency){
+        .srcSubpass      = 0,
+        .dstSubpass      = VK_SUBPASS_EXTERNAL,
+        .srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstStageMask    = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        .srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .dstAccessMask   = VK_ACCESS_SHADER_READ_BIT,
+        .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
+    };
 
-    VkRenderPassCreateInfo renderPassInfo = {0};
-    renderPassInfo.sType                  = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount        = attachmentCount;
-    renderPassInfo.pAttachments           = colorAttachmentDescriptions;
-    renderPassInfo.subpassCount           = 1;
-    renderPassInfo.pSubpasses             = &subpassDescription;
-    renderPassInfo.dependencyCount        = 2;
-    renderPassInfo.pDependencies          = dependencies;
+    VkRenderPassCreateInfo renderPassInfo = {
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = attachmentCount,
+        .pAttachments    = colorAttachmentDescriptions,
+        .subpassCount    = 1,
+        .pSubpasses      = &subpassDescription,
+        .dependencyCount = 2,
+        .pDependencies   = dependencies,
+    };
     VkResult result                       = vkCreateRenderPass(device, &renderPassInfo, NULL, &framebuffer->renderPass);
     AVD_CHECK_VK_RESULT(result, "Failed to create render pass");
 
@@ -168,22 +182,24 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
         attachmentImageInfos[attachmentCount - 1] = framebuffer->depthStencilAttachment.attachmentImageInfo;
     }
 
-    VkFramebufferAttachmentsCreateInfo framebufferAttachmentsInfo = {0};
-    framebufferAttachmentsInfo.sType                              = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO;
-    framebufferAttachmentsInfo.pNext                              = NULL;
-    framebufferAttachmentsInfo.attachmentImageInfoCount           = attachmentCount;
-    framebufferAttachmentsInfo.pAttachmentImageInfos              = attachmentImageInfos;
+    VkFramebufferAttachmentsCreateInfo framebufferAttachmentsInfo = {
+        .sType                          = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO,
+        .pNext                          = NULL,
+        .attachmentImageInfoCount       = attachmentCount,
+        .pAttachmentImageInfos          = attachmentImageInfos,
+    };
 
-    VkFramebufferCreateInfo framebufferInfo = {0};
-    framebufferInfo.sType                   = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    framebufferInfo.flags                   = VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT;
-    framebufferInfo.renderPass              = framebuffer->renderPass;
-    framebufferInfo.attachmentCount         = attachmentCount;
-    framebufferInfo.pAttachments            = NULL;
-    framebufferInfo.width                   = framebuffer->width;
-    framebufferInfo.height                  = framebuffer->height;
-    framebufferInfo.layers                  = 1;
-    framebufferInfo.pNext                   = &framebufferAttachmentsInfo;
+    VkFramebufferCreateInfo framebufferInfo = {
+        .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        .flags           = VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT,
+        .renderPass      = framebuffer->renderPass,
+        .attachmentCount = attachmentCount,
+        .pAttachments    = NULL,
+        .width           = framebuffer->width,
+        .height          = framebuffer->height,
+        .layers          = 1,
+        .pNext           = &framebufferAttachmentsInfo,
+    };
     result                                  = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffer->framebuffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create framebuffer");
 
