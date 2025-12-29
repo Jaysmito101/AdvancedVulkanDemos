@@ -544,27 +544,22 @@ static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
         videoProfileInfo.chromaSubsampling     = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
         videoProfileInfo.pNext                 = &h264DecodeProfileInfo;
 
-        VkVideoDecodeH264CapabilitiesKHR h264DecodeCapabilities = {0};
-        h264DecodeCapabilities.sType                            = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR;
-        h264DecodeCapabilities.pNext                            = NULL;
+        vulkan->supportedFeatures.videoDecodeH264Capabilities = (VkVideoDecodeH264CapabilitiesKHR){
+            .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR,
+            .pNext = NULL,
+        };
 
-        VkVideoDecodeCapabilitiesKHR decodeCapabilities = {0};
-        decodeCapabilities.sType                        = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
-        decodeCapabilities.pNext                        = &h264DecodeCapabilities;
+        vulkan->supportedFeatures.videoDecodeCapabilities = (VkVideoDecodeCapabilitiesKHR){
+            .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR,
+            .pNext = &vulkan->supportedFeatures.videoDecodeH264Capabilities,
+        };
 
-        VkVideoCapabilitiesKHR videoCapabilities = {0};
-        videoCapabilities.sType                  = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
-        videoCapabilities.pNext                  = &decodeCapabilities;
+        vulkan->supportedFeatures.videoCapabilities = (VkVideoCapabilitiesKHR){
+            .sType = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR,
+            .pNext = &vulkan->supportedFeatures.videoDecodeCapabilities,
+        };
 
-        vkGetPhysicalDeviceVideoCapabilitiesKHR(vulkan->physicalDevice, &videoProfileInfo, &videoCapabilities);
-
-        if (decodeCapabilities.flags) {
-            vulkan->supportedFeatures.videoDecodeH264BitstreamMinOffsetAlignment = videoCapabilities.minBitstreamBufferOffsetAlignment;
-            vulkan->supportedFeatures.videoDecodeH264BitstreamMinSizeAlignment   = videoCapabilities.minBitstreamBufferSizeAlignment;
-        } else {
-            vulkan->supportedFeatures.videoDecode = false;
-            AVD_LOG_WARN("Video decode capabilities not supported");
-        }
+        vkGetPhysicalDeviceVideoCapabilitiesKHR(vulkan->physicalDevice, &videoProfileInfo, &vulkan->supportedFeatures.videoCapabilities);
     }
 
     return true;

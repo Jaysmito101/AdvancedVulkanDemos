@@ -31,8 +31,9 @@ typedef struct AVD_VulkanFeatures {
     bool rayTracing;
     bool videoDecode;
 
-    uint32_t videoDecodeH264BitstreamMinSizeAlignment;
-    uint32_t videoDecodeH264BitstreamMinOffsetAlignment;
+    VkVideoCapabilitiesKHR videoCapabilities;
+    VkVideoDecodeCapabilitiesKHR videoDecodeCapabilities;
+    VkVideoDecodeH264CapabilitiesKHR videoDecodeH264Capabilities;
 } AVD_VulkanFeatures;
 
 typedef struct AVD_Vulkan {
