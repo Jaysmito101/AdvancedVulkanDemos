@@ -513,12 +513,15 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
         .pNext = &swapchainMaintenance1Features,
     };
 
+    uint32_t deviceExtensionCount = 0;
+    const char **deviceExtensions = __avdGetVulkanDeviceExtensions(vulkan, &deviceExtensionCount);
+
     VkDeviceCreateInfo createInfo = {
         .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .queueCreateInfoCount    = (AVD_UInt32)queueCreateInfoCount,
         .pQueueCreateInfos       = queueCreateInfos,
-        .enabledExtensionCount   = AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions),
-        .ppEnabledExtensionNames = __avd_RequiredVulkanExtensions,
+        .enabledExtensionCount   = deviceExtensionCount,
+        .ppEnabledExtensionNames = deviceExtensions,
         .pNext                   = &deviceFeatures2,
     };
 
@@ -550,18 +553,21 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
 static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
 {
     if (vulkan->supportedFeatures.videoDecode) {
-        VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {0};
-        h264DecodeProfileInfo.sType                           = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
-        h264DecodeProfileInfo.stdProfileIdc                   = STD_VIDEO_H264_PROFILE_IDC_HIGH;
-        h264DecodeProfileInfo.pictureLayout                   = VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
+        VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {
+            .sType         = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR,
+            .stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_HIGH,
+            .pictureLayout = VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR,
+            .pNext         = NULL,
+        };
 
-        VkVideoProfileInfoKHR videoProfileInfo = {0};
-        videoProfileInfo.sType                 = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
-        videoProfileInfo.videoCodecOperation   = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
-        videoProfileInfo.lumaBitDepth          = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
-        videoProfileInfo.chromaBitDepth        = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
-        videoProfileInfo.chromaSubsampling     = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
-        videoProfileInfo.pNext                 = &h264DecodeProfileInfo;
+        VkVideoProfileInfoKHR videoProfileInfo = {
+            .sType               = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR,
+            .videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR,
+            .lumaBitDepth        = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+            .chromaBitDepth      = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+            .chromaSubsampling   = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
+            .pNext               = &h264DecodeProfileInfo,
+        };
 
         vulkan->supportedFeatures.videoDecodeH264Capabilities = (VkVideoDecodeH264CapabilitiesKHR){
             .sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_CAPABILITIES_KHR,
