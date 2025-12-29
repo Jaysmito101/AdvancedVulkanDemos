@@ -5,6 +5,7 @@
 #include "pico/picoM3U8.h"
 #include "pico/picoThreads.h"
 #include "scenes/avd_scenes_base.h"
+#include "vulkan/avd_vulkan_video.h"
 #include <stdint.h>
 
 #define AVD_SCENE_HLS_PLAYER_MAX_SOURCES                4
@@ -103,7 +104,8 @@ typedef struct AVD_SceneHLSPlayer {
     AVD_SceneHLSPlayerMediaSegment loadedSegments[AVD_SCENE_HLS_PLAYER_MAX_SOURCES][AVD_SCENE_HLS_PLAYER_MEDIA_SEGMENTS_LOADED];
 
     bool isSupported;
-
+    
+    AVD_VulkanVideo vulkanVideo;
 } AVD_SceneHLSPlayer;
 
 bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene);

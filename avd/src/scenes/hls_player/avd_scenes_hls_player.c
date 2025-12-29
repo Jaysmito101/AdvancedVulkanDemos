@@ -1,4 +1,5 @@
 #include "scenes/hls_player/avd_scenes_hls_player.h"
+
 #include "avd_application.h"
 #include "core/avd_base.h"
 #include "core/avd_utils.h"
@@ -7,7 +8,8 @@
 #include "pico/picoM3U8.h"
 #include "pico/picoThreads.h"
 #include "scenes/avd_scenes.h"
-#include <objidl.h>
+#include "vulkan/avd_vulkan.h"
+
 #include <stdint.h>
 #include <string.h>
 
@@ -629,6 +631,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
 
     AVD_CHECK(__avdSceneHLSPlayerInitializeMediaBufferCache(hlsPlayer));
     AVD_CHECK(__avdSceneHLSPlayerPrepWorkers(hlsPlayer));
+    AVD_CHECK(avdVulkanVideoCreate(&appState->vulkan, &hlsPlayer->vulkanVideo));
 
     return true;
 }
@@ -640,6 +643,7 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
 
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
 
+    avdVulkanVideoDestroy(&appState->vulkan, &hlsPlayer->vulkanVideo);
     __avdSceneHLSPlayerWindDownWorkers(hlsPlayer);
     __avdSceneHLSPlayerShutdownMediaBufferCache(hlsPlayer);
     __avdSceneHLSPlayerFreeSources(appState, hlsPlayer);
