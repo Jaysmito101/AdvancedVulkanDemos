@@ -116,17 +116,18 @@ static bool __avdCreateDebugUtilsMessenger(AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
 
-    VkDebugUtilsMessengerCreateInfoEXT createInfo = {0};
-    createInfo.sType                              = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity                    = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
-    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = __avdDebugUtilsMessengerCallback;
-    createInfo.pUserData       = vulkan;
+    VkDebugUtilsMessengerCreateInfoEXT createInfo = {
+        .sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+        .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
+        .messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+        .pfnUserCallback = __avdDebugUtilsMessengerCallback,
+        .pUserData       = vulkan,
+    };
 
     VkResult result = vkCreateDebugUtilsMessengerEXT(vulkan->instance, &createInfo, NULL, &vulkan->debugMessenger);
     AVD_CHECK_VK_RESULT(result, "Failed to create debug utils messenger\n");
@@ -139,13 +140,14 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
 
-    VkApplicationInfo appInfo  = {0};
-    appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName   = "AVD";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName        = "AVD";
-    appInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion         = VK_API_VERSION_1_1;
+    VkApplicationInfo appInfo = {
+        .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName   = "AVD",
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+        .pEngineName        = "AVD",
+        .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
+        .apiVersion         = VK_API_VERSION_1_4,
+    };
 
     uint32_t extensionCount           = 0;
     static const char *extensions[64] = {0};
@@ -163,13 +165,15 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
     AVD_CHECK(__avdAddDebugLayers(&layerCount, layers, &vulkan->debugLayersEnabled));
 #endif
 
-    VkInstanceCreateInfo createInfo    = {0};
-    createInfo.sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    createInfo.pApplicationInfo        = &appInfo;
-    createInfo.enabledLayerCount       = layerCount;
-    createInfo.ppEnabledLayerNames     = layers;
-    createInfo.enabledExtensionCount   = extensionCount;
-    createInfo.ppEnabledExtensionNames = extensions;
+    VkInstanceCreateInfo createInfo    = {
+        .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pApplicationInfo        = &appInfo,
+        .enabledLayerCount       = layerCount,
+        .ppEnabledLayerNames     = layers,
+        .enabledExtensionCount   = extensionCount,
+        .ppEnabledExtensionNames = extensions,
+    };
+
 
     VkResult result = vkCreateInstance(&createInfo, NULL, &vulkan->instance);
     AVD_CHECK_VK_RESULT(result, "Failed to create Vulkan instance\n");
@@ -335,76 +339,88 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     float queuePriority                         = 1.0f;
 
     //  first the graphics queue
-    queueCreateInfos[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfos[0].queueFamilyIndex = graphicsQueueFamilyIndex;
-    queueCreateInfos[0].queueCount       = 1;
-    queueCreateInfos[0].pQueuePriorities = &queuePriority;
+    queueCreateInfos[0] = (VkDeviceQueueCreateInfo){
+        .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueFamilyIndex = graphicsQueueFamilyIndex,
+        .queueCount       = 1,
+        .pQueuePriorities = &queuePriority,
+    };
 
     // then the compute queue
-    queueCreateInfos[1].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfos[1].queueFamilyIndex = computeQueueFamilyIndex;
-    queueCreateInfos[1].queueCount       = 1;
-    queueCreateInfos[1].pQueuePriorities = &queuePriority;
+    queueCreateInfos[1] = (VkDeviceQueueCreateInfo){
+        .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        .queueFamilyIndex = computeQueueFamilyIndex,
+        .queueCount       = 1,
+        .pQueuePriorities = &queuePriority,
+    };
 
-    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {0};
-    rayTracingPipelineFeatures.sType                                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
-    // rayTracingPipelineFeatures.rayTracingPipeline                            = VK_TRUE;
-    rayTracingPipelineFeatures.pNext = NULL;
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {
+        .sType        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+        // .rayTracingPipeline = VK_TRUE,
+        .pNext        = NULL,
+    };
 
-    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {0};
-    rayQueryFeatures.sType                               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
-    rayQueryFeatures.rayQuery                            = VK_TRUE;
-    rayQueryFeatures.pNext                               = &rayTracingPipelineFeatures;
+    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {
+        .sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR,
+        .rayQuery = VK_TRUE,
+        .pNext    = NULL,
+    };
 
-    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures      = {0};
-    accelerationStructureFeatures.sType                                                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
-    accelerationStructureFeatures.accelerationStructure                                 = VK_TRUE;
-    accelerationStructureFeatures.descriptorBindingAccelerationStructureUpdateAfterBind = VK_TRUE;
-    accelerationStructureFeatures.pNext                                                 = &rayQueryFeatures;
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {
+        .sType                                                 = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR,
+        .accelerationStructure                                 = VK_TRUE,
+        .descriptorBindingAccelerationStructureUpdateAfterBind = VK_TRUE,
+        .pNext                                                 = &rayQueryFeatures,
+    };
 
-    VkPhysicalDeviceVulkan12Features deviceVulkan12Features              = {0};
-    deviceVulkan12Features.sType                                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-    deviceVulkan12Features.descriptorIndexing                            = VK_TRUE;
-    deviceVulkan12Features.bufferDeviceAddress                           = VK_TRUE;
-    deviceVulkan12Features.shaderFloat16                                 = VK_TRUE;
-    deviceVulkan12Features.shaderInt8                                    = VK_TRUE;
-    deviceVulkan12Features.uniformAndStorageBuffer8BitAccess             = VK_TRUE;
-    deviceVulkan12Features.storageBuffer8BitAccess                       = VK_TRUE;
-    deviceVulkan12Features.drawIndirectCount                             = VK_TRUE;
-    deviceVulkan12Features.imagelessFramebuffer                          = VK_TRUE;
-    deviceVulkan12Features.runtimeDescriptorArray                        = VK_TRUE;
-    deviceVulkan12Features.descriptorBindingPartiallyBound               = VK_TRUE;
-    deviceVulkan12Features.descriptorBindingSampledImageUpdateAfterBind  = VK_TRUE;
-    deviceVulkan12Features.descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE;
-    deviceVulkan12Features.descriptorBindingStorageImageUpdateAfterBind  = VK_TRUE;
-    deviceVulkan12Features.descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE;
-    deviceVulkan12Features.descriptorBindingUpdateUnusedWhilePending     = VK_TRUE;
-    deviceVulkan12Features.descriptorBindingVariableDescriptorCount      = VK_TRUE;
-    deviceVulkan12Features.pNext                                         = &accelerationStructureFeatures;
+    VkPhysicalDeviceVulkan12Features deviceVulkan12Features = {
+        .sType                                         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+        .descriptorIndexing                            = VK_TRUE,
+        .bufferDeviceAddress                           = VK_TRUE,
+        .shaderFloat16                                 = VK_TRUE,
+        .shaderInt8                                    = VK_TRUE,
+        .uniformAndStorageBuffer8BitAccess             = VK_TRUE,
+        .storageBuffer8BitAccess                       = VK_TRUE,
+        .drawIndirectCount                             = VK_TRUE,
+        .imagelessFramebuffer                          = VK_TRUE,
+        .runtimeDescriptorArray                        = VK_TRUE,
+        .descriptorBindingPartiallyBound               = VK_TRUE,
+        .descriptorBindingSampledImageUpdateAfterBind  = VK_TRUE,
+        .descriptorBindingStorageBufferUpdateAfterBind = VK_TRUE,
+        .descriptorBindingStorageImageUpdateAfterBind  = VK_TRUE,
+        .descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE,
+        .descriptorBindingUpdateUnusedWhilePending     = VK_TRUE,
+        .descriptorBindingVariableDescriptorCount      = VK_TRUE,
+        .pNext                                         = &accelerationStructureFeatures,
+    };
 
-    VkPhysicalDeviceVulkan11Features deviceVulkan11Features   = {0};
-    deviceVulkan11Features.sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-    deviceVulkan11Features.uniformAndStorageBuffer16BitAccess = VK_TRUE;
-    deviceVulkan11Features.storageBuffer16BitAccess           = VK_TRUE;
-    deviceVulkan11Features.pNext                              = &deviceVulkan12Features;
+    VkPhysicalDeviceVulkan11Features deviceVulkan11Features = {
+        .sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+        .uniformAndStorageBuffer16BitAccess = VK_TRUE,
+        .storageBuffer16BitAccess           = VK_TRUE,
+        .pNext                              = &deviceVulkan12Features,
+    };
 
-    VkPhysicalDeviceFeatures2 deviceFeatures2        = {0};
-    deviceFeatures2.sType                            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    deviceFeatures2.features.multiDrawIndirect       = VK_TRUE;
-    deviceFeatures2.features.pipelineStatisticsQuery = VK_TRUE;
-    deviceFeatures2.features.samplerAnisotropy       = VK_TRUE;
-    deviceFeatures2.features.shaderInt64             = VK_TRUE;
-    deviceFeatures2.features.shaderInt16             = VK_TRUE;
-    deviceFeatures2.pNext                            = &deviceVulkan11Features;
+    VkPhysicalDeviceFeatures2 deviceFeatures2 = {
+        .sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+        .features = (VkPhysicalDeviceFeatures){
+            .multiDrawIndirect       = VK_TRUE,
+            .pipelineStatisticsQuery = VK_TRUE,
+            .samplerAnisotropy       = VK_TRUE,
+            .shaderInt64             = VK_TRUE,
+            .shaderInt16             = VK_TRUE,
+        },
+        .pNext    = &deviceVulkan11Features,
+    };
 
-    VkDeviceCreateInfo createInfo      = {0};
-    createInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInfo.queueCreateInfoCount    = 2;
-    createInfo.pQueueCreateInfos       = queueCreateInfos;
-    createInfo.enabledExtensionCount   = AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions);
-    createInfo.ppEnabledExtensionNames = __avd_RequiredVulkanExtensions;
-    createInfo.enabledLayerCount       = 0;
-    createInfo.pNext                   = &deviceFeatures2;
+    VkDeviceCreateInfo createInfo = {
+        .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .queueCreateInfoCount    = 2,
+        .pQueueCreateInfos       = queueCreateInfos,
+        .enabledExtensionCount   = AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions),
+        .ppEnabledExtensionNames = __avd_RequiredVulkanExtensions,
+        .pNext                   = &deviceFeatures2,
+    };
 
 #ifdef AVD_DEBUG
     if (vulkan->debugLayersEnabled) {
@@ -440,10 +456,11 @@ static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
 
 static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
 {
-    VkCommandPoolCreateInfo poolInfo = {0};
-    poolInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags                   = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex        = vulkan->graphicsQueueFamilyIndex;
+    VkCommandPoolCreateInfo poolInfo = {
+        .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+        .queueFamilyIndex = vulkan->graphicsQueueFamilyIndex,
+    };
 
     VkResult result = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->graphicsCommandPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create graphics command pool\n");
@@ -459,16 +476,19 @@ static bool __avdVulkanDescriptorPoolCreate(AVD_Vulkan *vulkan)
 {
     VkDescriptorPoolSize poolSizes[AVD_VULKAN_DESCRIPTOR_TYPE_COUNT] = {0};
     for (int i = 0; i < AVD_VULKAN_DESCRIPTOR_TYPE_COUNT; ++i) {
-        poolSizes[i].type            = avdVulkanToVkDescriptorType((AVD_VulkanDescriptorType)i);
-        poolSizes[i].descriptorCount = AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE;
+        poolSizes[i] = (VkDescriptorPoolSize){
+            .type            = avdVulkanToVkDescriptorType((AVD_VulkanDescriptorType)i),
+            .descriptorCount = AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE,
+        };
     }
 
-    VkDescriptorPoolCreateInfo poolInfo = {0};
-    poolInfo.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount              = AVD_ARRAY_COUNT(poolSizes);
-    poolInfo.pPoolSizes                 = poolSizes;
-    poolInfo.maxSets                    = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT * AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE;
-    poolInfo.flags                      = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+    VkDescriptorPoolCreateInfo poolInfo = {
+        .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .poolSizeCount = AVD_ARRAY_COUNT(poolSizes),
+        .pPoolSizes    = poolSizes,
+        .maxSets       = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT * AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE,
+        .flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
+    };
 
     VkResult result = vkCreateDescriptorPool(vulkan->device, &poolInfo, NULL, &vulkan->descriptorPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create descriptor pool\n");
@@ -487,38 +507,43 @@ static bool __avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
     VkDescriptorBindingFlags layoutBindinFlags[AVD_VULKAN_DESCRIPTOR_TYPE_COUNT]  = {0};
 
     for (int i = 0; i < AVD_VULKAN_DESCRIPTOR_TYPE_COUNT; ++i) {
-        layoutBindings[i].binding            = i;
-        layoutBindings[i].descriptorType     = avdVulkanToVkDescriptorType((AVD_VulkanDescriptorType)i);
-        layoutBindings[i].descriptorCount    = AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE;
-        layoutBindings[i].stageFlags         = VK_SHADER_STAGE_ALL;
-        layoutBindings[i].pImmutableSamplers = NULL; // No immutable samplers for now
+        layoutBindings[i] = (VkDescriptorSetLayoutBinding){
+            .binding            = i,
+            .descriptorType     = avdVulkanToVkDescriptorType((AVD_VulkanDescriptorType)i),
+            .descriptorCount    = AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE,
+            .stageFlags         = VK_SHADER_STAGE_ALL,
+            .pImmutableSamplers = NULL, // No immutable samplers for now
+        };
 
         layoutBindinFlags[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT_EXT;
     }
 
-    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo = {0};
-    bindingFlagsCreateInfo.sType                                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-    bindingFlagsCreateInfo.bindingCount                                = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT;
-    bindingFlagsCreateInfo.pBindingFlags                               = layoutBindinFlags;
-    bindingFlagsCreateInfo.pNext                                       = NULL;
+    VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsCreateInfo = {
+        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,
+        .bindingCount = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT,
+        .pBindingFlags = layoutBindinFlags,
+        .pNext        = NULL,
+    };
 
-    VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {0};
-    layoutCreateInfo.sType                           = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutCreateInfo.bindingCount                    = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT;
-    layoutCreateInfo.pBindings                       = layoutBindings;
-    layoutCreateInfo.flags                           = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
-    layoutCreateInfo.pNext                           = &bindingFlagsCreateInfo;
+    VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {
+        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT,
+        .pBindings    = layoutBindings,
+        .flags        = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT,
+        .pNext        = &bindingFlagsCreateInfo,
+    };
 
     VkResult result = vkCreateDescriptorSetLayout(vulkan->device, &layoutCreateInfo, NULL, &vulkan->bindlessDescriptorSetLayout);
     AVD_CHECK_VK_RESULT(result, "Failed to create bindless descriptor set layout\n");
 
     uint32_t descriptorTypeCount = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT * AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE;
 
-    VkDescriptorSetAllocateInfo allocInfo = {0};
-    allocInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool              = vulkan->bindlessDescriptorPool;
-    allocInfo.descriptorSetCount          = 1;
-    allocInfo.pSetLayouts                 = &vulkan->bindlessDescriptorSetLayout;
+    VkDescriptorSetAllocateInfo allocInfo = {
+        .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool     = vulkan->bindlessDescriptorPool,
+        .descriptorSetCount = 1,
+        .pSetLayouts        = &vulkan->bindlessDescriptorSetLayout,
+    };
 
     result = vkAllocateDescriptorSets(vulkan->device, &allocInfo, &vulkan->bindlessDescriptorSet);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate bindless descriptor set\n");
