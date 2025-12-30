@@ -118,6 +118,7 @@ target_compile_definitions(avd PRIVATE
 
 if (MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     target_link_options(avd PRIVATE /IGNORE:4099)
+    target_compile_options(avd PRIVATE /MP /FS)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND WIN32)
     # Clang must pass MSVC-style flags via -Xlinker
     target_link_options(avd PRIVATE -Xlinker /IGNORE:4099)
