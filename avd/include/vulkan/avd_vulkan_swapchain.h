@@ -23,7 +23,7 @@ bool avdVulkanSwapchainCreate(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan
 bool avdVulkanSwapchainRecreate(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, AVD_Window *window);
 void avdVulkanSwapchainDestroy(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan);
 VkResult avdVulkanSwapchainAcquireNextImage(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t *imageIndex, VkSemaphore semaphore, VkFence fence);
-VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t imageIndex, VkSemaphore waitSemaphore);
+VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t imageIndex, VkSemaphore waitSemaphore, VkFence fence);
 bool avdVulkanSwapchainRecreateIfNeeded(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, AVD_Window *window);
 
 #endif // AVD_VULKAN_SWAPCHAIN_H

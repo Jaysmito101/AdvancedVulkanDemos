@@ -35,3 +35,7 @@ if (WIN32)
         PUBLIC _CRT_SECURE_NO_WARNINGS
     )
 endif()
+
+if (MSVC)
+    target_compile_options(avd_assets PRIVATE /MP /FS)
+endif()

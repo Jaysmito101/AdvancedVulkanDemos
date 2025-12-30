@@ -42,6 +42,14 @@ typedef enum {
     AVD_VULKAN_DESCRIPTOR_TYPE_COUNT
 } AVD_VulkanDescriptorType;
 
+typedef struct AVD_VulkanFeatures {
+    bool rayTracing;
+    bool videoDecode;
+
+    VkVideoCapabilitiesKHR videoCapabilities;
+    VkVideoDecodeCapabilitiesKHR videoDecodeCapabilities;
+    VkVideoDecodeH264CapabilitiesKHR videoDecodeH264Capabilities;
+} AVD_VulkanFeatures;
 
 
 typedef struct {
@@ -53,18 +61,25 @@ typedef struct AVD_Vulkan {
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
     VkDevice device;
+
     VkQueue graphicsQueue;
     VkQueue computeQueue;
+    VkQueue videoDecodeQueue;
+
     VkCommandPool graphicsCommandPool;
     VkCommandPool computeCommandPool;
+    VkCommandPool videoDecodeCommandPool;
+
     VkDescriptorPool descriptorPool;
     VkDescriptorPool bindlessDescriptorPool;
-
-    VkDescriptorSetLayout bindlessDescriptorSetLayout;
     VkDescriptorSet bindlessDescriptorSet;
+    VkDescriptorSetLayout bindlessDescriptorSetLayout;
 
     int32_t graphicsQueueFamilyIndex;
     int32_t computeQueueFamilyIndex;
+    int32_t videoDecodeQueueFamilyIndex;
+
+    AVD_VulkanFeatures supportedFeatures;
 
 #ifdef AVD_DEBUG
     AVD_VulkanDebugger debugger;
@@ -89,32 +104,32 @@ bool avdVulkanAddDebugLayers(uint32_t *layerCount, const char **layers, bool *de
 bool avdVulkanDebuggerCreate(AVD_Vulkan *vulkan);
 void avdVulkanDebuggerDestroy(AVD_Vulkan *vulkan);
 
-bool avdVulkanDebuggerCmdBeginLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, const char *labelName, float* color);
-bool avdVulkanDebuggerCmdInsertLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer,  const char *labelName, float* color);
+bool avdVulkanDebuggerCmdBeginLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, float* color, const char *labelName, ...);
+bool avdVulkanDebuggerCmdInsertLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, float* color, const char *labelName, ...);
 bool avdVulkanDebuggerCmdEndLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer);
 
-bool avdVulkanDebuggerQueueBeginLabel(AVD_Vulkan *vulkan, VkQueue queue, const char *labelName, float* color);
-bool avdVulkanDebuggerQueueInsertLabel(AVD_Vulkan *vulkan, VkQueue queue, const char *labelName, float* color);
+bool avdVulkanDebuggerQueueBeginLabel(AVD_Vulkan *vulkan, VkQueue queue, float* color, const char *labelName, ...);
+bool avdVulkanDebuggerQueueInsertLabel(AVD_Vulkan *vulkan, VkQueue queue, float* color, const char *labelName, ...);
 bool avdVulkanDebuggerQueueEndLabel(AVD_Vulkan *vulkan, VkQueue queue);
 
-bool avdVulkanDebuggerSetObjectName(AVD_Vulkan *vulkan, VkObjectType objectType, uint64_t objectHandle, const char *name);
+bool avdVulkanDebuggerSetObjectName(AVD_Vulkan *vulkan, VkObjectType objectType, uint64_t objectHandle, const char *name, ...);
 #endif
 
-#define AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmdBuffer, labelName, color) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerCmdBeginLabel(avdVulkanGetGlobalInstance(), cmdBuffer, labelName, color))
-#define AVD_DEBUG_VK_CMD_INSERT_LABEL(cmdBuffer, labelName, color) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerCmdInsertLabel(avdVulkanGetGlobalInstance(), cmdBuffer, labelName, color))
+#define AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmdBuffer, labelName, color, ...) \
+    AVD_DEBUG_ONLY(avdVulkanDebuggerCmdBeginLabel(avdVulkanGetGlobalInstance(), cmdBuffer, labelName, color, ##__VA_ARGS__))
+#define AVD_DEBUG_VK_CMD_INSERT_LABEL(cmdBuffer, labelName, color, ...) \
+    AVD_DEBUG_ONLY(avdVulkanDebuggerCmdInsertLabel(avdVulkanGetGlobalInstance(), cmdBuffer, labelName, color, ##__VA_ARGS__))
 #define AVD_DEBUG_VK_CMD_END_LABEL(cmdBuffer) \
     AVD_DEBUG_ONLY(avdVulkanDebuggerCmdEndLabel(avdVulkanGetGlobalInstance(), cmdBuffer))
-#define AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(queue, labelName, color) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerQueueBeginLabel(avdVulkanGetGlobalInstance(), queue, labelName, color))
-#define AVD_DEBUG_VK_QUEUE_INSERT_LABEL(queue, labelName, color) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerQueueInsertLabel(avdVulkanGetGlobalInstance(), queue, labelName, color))
+#define AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(queue, labelName, color, ...) \
+    AVD_DEBUG_ONLY(avdVulkanDebuggerQueueBeginLabel(avdVulkanGetGlobalInstance(), queue, labelName, color, ##__VA_ARGS__))
+#define AVD_DEBUG_VK_QUEUE_INSERT_LABEL(queue, labelName, color, ...) \
+    AVD_DEBUG_ONLY(avdVulkanDebuggerQueueInsertLabel(avdVulkanGetGlobalInstance(), queue, labelName, color, ##__VA_ARGS__))
 #define AVD_DEBUG_VK_QUEUE_END_LABEL(queue) \
     AVD_DEBUG_ONLY(avdVulkanDebuggerQueueEndLabel(avdVulkanGetGlobalInstance(), queue))
 
-#define AVD_DEBUG_VK_SET_OBJECT_NAME(objectType, objectHandle, name) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerSetObjectName(avdVulkanGetGlobalInstance(), objectType, (uint64_t)objectHandle, name))
+#define AVD_DEBUG_VK_SET_OBJECT_NAME(objectType, objectHandle, name, ...) \
+    AVD_DEBUG_ONLY(avdVulkanDebuggerSetObjectName(avdVulkanGetGlobalInstance(), objectType, (uint64_t)objectHandle, name, ##__VA_ARGS__))
 
 
 #endif // AVD_VULKAN_CORE_H
