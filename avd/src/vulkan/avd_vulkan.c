@@ -2,6 +2,8 @@
 #include "vulkan/avd_vulkan_base.h"
 #include "vulkan/avd_vulkan_pipeline_utils.h"
 
+static AVD_Vulkan *__avdGlobalVulkanInstance = NULL;
+
 static const char *__avd_RequiredVulkanExtensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
@@ -54,7 +56,7 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
 
     AVD_DEBUG_ONLY(avdVulkanAddDebugLayers(&layerCount, layers, &vulkan->debugger.layersEnabled));
 
-    VkInstanceCreateInfo createInfo    = {
+    VkInstanceCreateInfo createInfo = {
         .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pApplicationInfo        = &appInfo,
         .enabledLayerCount       = layerCount,
@@ -237,9 +239,9 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     };
 
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {
-        .sType        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
         // .rayTracingPipeline = VK_TRUE,
-        .pNext        = NULL,
+        .pNext = NULL,
     };
 
     VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {
@@ -292,7 +294,7 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
             .shaderInt64             = VK_TRUE,
             .shaderInt16             = VK_TRUE,
         },
-        .pNext    = &deviceVulkan11Features,
+        .pNext = &deviceVulkan11Features,
     };
 
     VkDeviceCreateInfo createInfo = {
@@ -402,10 +404,10 @@ static bool __avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
     }
 
     VkDescriptorSetLayoutBindingFlagsCreateInfoEXT bindingFlagsCreateInfo = {
-        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,
-        .bindingCount = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT,
+        .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT,
+        .bindingCount  = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT,
         .pBindingFlags = layoutBindinFlags,
-        .pNext        = NULL,
+        .pNext         = NULL,
     };
 
     VkDescriptorSetLayoutCreateInfo layoutCreateInfo = {
@@ -460,8 +462,15 @@ bool avdVulkanInstanceLayersSupported(const char **layers, uint32_t layerCount)
     return true;
 }
 
+AVD_Vulkan *avdVulkanGetGlobalInstance()
+{
+    return __avdGlobalVulkanInstance;
+}
+
 bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface)
 {
+    AVD_CHECK_MSG(__avdGlobalVulkanInstance == NULL, "Vulkan instance already initialized");
+
     AVD_CHECK_VK_RESULT(volkInitialize(), "Failed to initialize Vulkan");
     AVD_CHECK(__avdVulkanCreateInstance(vulkan));
     AVD_DEBUG_ONLY(AVD_CHECK(avdVulkanDebuggerCreate(vulkan)));
@@ -472,6 +481,8 @@ bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface
     AVD_CHECK(__avdVulkanCreateCommandPools(vulkan));
     AVD_CHECK(__avdVulkanDescriptorPoolCreate(vulkan));
     AVD_CHECK(__avdVulkanCreateDescriptorSets(vulkan));
+
+    __avdGlobalVulkanInstance = vulkan;
     return true;
 }
 

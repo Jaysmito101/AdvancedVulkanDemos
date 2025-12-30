@@ -71,6 +71,8 @@ typedef struct AVD_Vulkan {
 #endif
 } AVD_Vulkan;
 
+AVD_Vulkan* avdVulkanGetGlobalInstance();
+
 bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface);
 void avdVulkanShutdown(AVD_Vulkan *vulkan);
 void avdVulkanWaitIdle(AVD_Vulkan *vulkan);
