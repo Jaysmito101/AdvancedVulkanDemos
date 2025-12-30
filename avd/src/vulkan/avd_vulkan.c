@@ -79,8 +79,14 @@ static bool __avdVulkanCreateSurface(AVD_Vulkan *vulkan, GLFWwindow *window, VkS
     AVD_ASSERT(window != NULL);
     AVD_ASSERT(surface != NULL);
 
-    VkResult result = glfwCreateWindowSurface(vulkan->instance, window, NULL, surface);
-    AVD_CHECK_VK_RESULT(result, "Failed to create window surface\n");
+    AVD_CHECK_VK_RESULT(
+        glfwCreateWindowSurface(
+            vulkan->instance,
+            window,
+            NULL,
+            surface),
+        "Failed to create window surface\n");
+
     return true;
 }
 
@@ -325,6 +331,12 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     //                       And thus this optimizes the vulkan calls.
     volkLoadDevice(vulkan->device);
 
+    
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DEVICE,
+        (uint64_t)vulkan->device,
+        "Core/Device");
+
     vulkan->graphicsQueueFamilyIndex = graphicsQueueFamilyIndex;
     vulkan->computeQueueFamilyIndex  = computeQueueFamilyIndex;
 
@@ -334,8 +346,19 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
 static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
 {
     vkGetDeviceQueue(vulkan->device, vulkan->graphicsQueueFamilyIndex, 0, &vulkan->graphicsQueue);
+    AVD_CHECK_MSG(vulkan->graphicsQueue != VK_NULL_HANDLE, "Failed to get graphics queue\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DEVICE,
+        (uint64_t)vulkan->graphicsQueue,
+        "Core/GraphicsQueue");
+
     vkGetDeviceQueue(vulkan->device, vulkan->computeQueueFamilyIndex, 0, &vulkan->computeQueue);
-    AVD_CHECK(vulkan->graphicsQueue != VK_NULL_HANDLE && vulkan->computeQueue != VK_NULL_HANDLE);
+    AVD_CHECK_MSG(vulkan->computeQueue != VK_NULL_HANDLE, "Failed to get compute queue\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DEVICE,
+        (uint64_t)vulkan->computeQueue,
+        "Core/ComputeQueue");
+        
     return true;
 }
 
@@ -349,11 +372,18 @@ static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
 
     VkResult result = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->graphicsCommandPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create graphics command pool\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_COMMAND_POOL,
+        (uint64_t)vulkan->graphicsCommandPool,
+        "Core/GraphicsCommandPool");
 
     poolInfo.queueFamilyIndex = vulkan->computeQueueFamilyIndex;
     result                    = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->computeCommandPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create compute command pool\n");
-
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_COMMAND_POOL,
+        (uint64_t)vulkan->computeCommandPool,
+        "Core/ComputeCommandPool");
     return true;
 }
 
@@ -377,9 +407,17 @@ static bool __avdVulkanDescriptorPoolCreate(AVD_Vulkan *vulkan)
 
     VkResult result = vkCreateDescriptorPool(vulkan->device, &poolInfo, NULL, &vulkan->descriptorPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create descriptor pool\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_POOL,
+        (uint64_t)vulkan->descriptorPool,
+        "Core/DescriptorPool");
 
     result = vkCreateDescriptorPool(vulkan->device, &poolInfo, NULL, &vulkan->bindlessDescriptorPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create bindless descriptor pool\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_POOL,
+        (uint64_t)vulkan->bindlessDescriptorPool,
+        "Core/BindlessDescriptorPool");
 
     return true;
 }
@@ -420,6 +458,10 @@ static bool __avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
 
     VkResult result = vkCreateDescriptorSetLayout(vulkan->device, &layoutCreateInfo, NULL, &vulkan->bindlessDescriptorSetLayout);
     AVD_CHECK_VK_RESULT(result, "Failed to create bindless descriptor set layout\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
+        (uint64_t)vulkan->bindlessDescriptorSetLayout,
+        "Core/BindlessDescriptorSetLayout");
 
     uint32_t descriptorTypeCount = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT * AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE;
 
@@ -432,6 +474,10 @@ static bool __avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
 
     result = vkAllocateDescriptorSets(vulkan->device, &allocInfo, &vulkan->bindlessDescriptorSet);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate bindless descriptor set\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_SET,
+        (uint64_t)vulkan->bindlessDescriptorSet,
+        "Core/BindlessDescriptorSet");
 
     return true;
 }
@@ -470,6 +516,7 @@ AVD_Vulkan *avdVulkanGetGlobalInstance()
 bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface)
 {
     AVD_CHECK_MSG(__avdGlobalVulkanInstance == NULL, "Vulkan instance already initialized");
+    __avdGlobalVulkanInstance = vulkan;
 
     AVD_CHECK_VK_RESULT(volkInitialize(), "Failed to initialize Vulkan");
     AVD_CHECK(__avdVulkanCreateInstance(vulkan));
@@ -482,7 +529,6 @@ bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface
     AVD_CHECK(__avdVulkanDescriptorPoolCreate(vulkan));
     AVD_CHECK(__avdVulkanCreateDescriptorSets(vulkan));
 
-    __avdGlobalVulkanInstance = vulkan;
     return true;
 }
 
