@@ -1027,6 +1027,7 @@ static bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_Sce
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
     if (subsurfaceScattering->bloomEnabled) {
+        AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/Bloom");
         AVD_BloomParams params = {
             .prefilterType   = AVD_BLOOM_PREFILTER_TYPE_SOFTKNEE,
             .threshold       = subsurfaceScattering->bloomThreshold,
@@ -1042,6 +1043,7 @@ static bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_Sce
             &appState->renderer.sceneFramebuffer,
             &appState->vulkan,
             params));
+        AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
     }
 
     return true;
@@ -1052,6 +1054,8 @@ static bool __avdSceneRenderGBufferPass(VkCommandBuffer commandBuffer, AVD_Scene
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/GBufferPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1075,6 +1079,8 @@ static bool __avdSceneRenderGBufferPass(VkCommandBuffer commandBuffer, AVD_Scene
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
 
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
+
     return true;
 }
 
@@ -1083,6 +1089,8 @@ static bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/AOPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1106,6 +1114,8 @@ static bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsu
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
 
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
+
     return true;
 }
 
@@ -1114,6 +1124,8 @@ static bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_Scen
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/LightingPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1148,6 +1160,8 @@ static bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_Scen
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
 
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
+
     return true;
 }
 
@@ -1156,6 +1170,8 @@ static bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffe
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/IrradianceDiffusionPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1189,7 +1205,7 @@ static bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffe
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
 
-    return true;
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
 
     return true;
 }
@@ -1199,6 +1215,8 @@ static bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_Sce
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
+
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/CompositePass");
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipeline);
@@ -1237,6 +1255,8 @@ static bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_Sce
 
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
 
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
+
     return true;
 }
 
@@ -1248,12 +1268,16 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
     VkCommandBuffer commandBuffer                       = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/Render");
+
     AVD_CHECK(__avdSceneRenderGBufferPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderAOPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderLightingPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderIrradianceDiffusionPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderCompositePass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderBloomIfNeeded(commandBuffer, subsurfaceScattering, appState));
+
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
 
     return true;
 }
