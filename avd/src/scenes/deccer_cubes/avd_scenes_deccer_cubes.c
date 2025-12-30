@@ -32,7 +32,8 @@ static bool __avdSetupBuffer(
         buffer,
         size,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        "Scene/DeccerCubes/Buffer"));
     AVD_CHECK(avdVulkanBufferUpload(
         vulkan,
         buffer,
@@ -335,7 +336,7 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/DeccerCubes/Render", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/DeccerCubes/Render");
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipeline);
     VkDescriptorSet descriptorSets[] = {

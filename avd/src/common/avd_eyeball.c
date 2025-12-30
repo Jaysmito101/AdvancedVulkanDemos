@@ -116,19 +116,22 @@ bool avdEyeballCreate(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
         &eyeball->configBuffer,
         sizeof(AVD_EyeballUniforms),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        "Scene/Eyeball/ConfigBuffer"));
     AVD_CHECK(avdVulkanBufferCreate(
         vulkan,
         &eyeball->vertexBuffer,
         sizeof(AVD_ModelVertexPacked) * AVD_EYEBALL_MAX_VERTICES,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        "Scene/Eyeball/VertexBuffer"));
     AVD_CHECK(avdVulkanBufferCreate(
         vulkan,
         &eyeball->indexBuffer,
         sizeof(uint32_t) * AVD_EYEBALL_MAX_VERTICES,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        "Scene/Eyeball/IndexBuffer"));
     AVD_CHECK(avdVulkanImageCreate(
         vulkan,
         &eyeball->veinsTexture,

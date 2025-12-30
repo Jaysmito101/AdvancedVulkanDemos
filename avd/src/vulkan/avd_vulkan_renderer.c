@@ -225,7 +225,7 @@ bool avdVulkanRendererBegin(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AV
         return false; // do not render this frame
     }
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Core/Renderer/Frame", NULL);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Core/Renderer/Frame");
     
     return true;
 }
@@ -261,7 +261,7 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores    = &renderer->resources[currentFrameIndex].renderFinishedSemaphore;
 
-    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, "Core/Queue/RenderSubmit", NULL);
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "Core/Queue/RenderSubmit");
     result = vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
     if (result != VK_SUCCESS) {

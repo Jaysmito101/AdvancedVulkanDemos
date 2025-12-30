@@ -394,7 +394,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
     AVD_VulkanBuffer staging = {0};
     if (!avdVulkanBufferCreate(vulkan, &staging, imageSize,
                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Core/Image/UploadImage/Staging")) {
         return false;
     }
     void *mapped = NULL;

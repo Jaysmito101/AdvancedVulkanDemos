@@ -663,7 +663,8 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                 &subsurfaceScattering->vertexBuffer,
                 bufferSize,
                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                "SubsurfaceScatteringVertexBuffer"));
             AVD_CHECK(avdVulkanBufferUpload(
                 &appState->vulkan,
                 &subsurfaceScattering->vertexBuffer,

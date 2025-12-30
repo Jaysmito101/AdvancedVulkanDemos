@@ -262,11 +262,11 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/MainMenu/Render", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/Render");
 
     // AVD_LOG_VERBOSE("Rendering main menu scene");
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/MainMenu/RenderTitle", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/RenderTitle");
     float titleWidth, titleHeight;
     float creditsWidth, creditsHeight;
     float githubLinkWidth, githubLinkHeight;
@@ -320,7 +320,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     float offsetX        = (frameWidth - allCardsWidth) / 2.0f;
     float offsetY        = (frameHeight - allCardsHeight) / 2.0f;
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/MainMenu/RenderUi", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/RenderUi");
     
     avdUiBegin(
         commandBuffer,

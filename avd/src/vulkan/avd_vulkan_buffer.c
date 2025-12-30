@@ -1,12 +1,18 @@
 #include "vulkan/avd_vulkan_buffer.h"
 
-bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const char *label)
 {
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(buffer != NULL);
+    AVD_ASSERT(size > 0);
+
+    snprintf(buffer->label, sizeof(buffer->label), "Buffer/%s/%zu", label ? label : "Unnamed", size);
+
     VkBufferCreateInfo bufferInfo = {
-        .sType        = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size         = size,
-        .usage        = usage,
-        .sharingMode  = VK_SHARING_MODE_EXCLUSIVE, // Assuming exclusive for simplicity
+        .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size        = size,
+        .usage       = usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // Assuming exclusive for simplicity
     };
 
     VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {0};
@@ -68,6 +74,9 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
 
 void avdVulkanBufferDestroy(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer)
 {
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(buffer != NULL);
+
     vkDestroyBuffer(vulkan->device, buffer->buffer, NULL);
     vkFreeMemory(vulkan->device, buffer->memory, NULL);
 }
@@ -103,7 +112,8 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
     AVD_VulkanBuffer staging = {0};
     AVD_CHECK(avdVulkanBufferCreate(vulkan, &staging, size,
                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                    "Core/Buffer/Upload/Staging"));
 
     void *mapped = NULL;
     if (!avdVulkanBufferMap(vulkan, &staging, &mapped)) {
@@ -128,7 +138,7 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
     vkBeginCommandBuffer(cmd, &beginInfo);
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmd, "Core/Buffer/Upload", NULL);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmd, NULL, "Core/Buffer/Upload");
 
     VkBufferCopy copyRegion = {
         .srcOffset = 0,
@@ -145,7 +155,7 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
         .commandBufferCount = 1,
         .pCommandBuffers    = &cmd,
     };
-    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, "Core/Queue/BufferUpload", NULL);
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "Core/Queue/BufferUpload");
     vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
     vkQueueWaitIdle(vulkan->graphicsQueue);
