@@ -124,10 +124,12 @@ static bool __avdBloomPass(
         attachments,
         &attachmentCount));
 
-    char labelName[128]   = {0};
-    snprintf(labelName, sizeof(labelName), "Core/Bloom/%s/%s", bloom->label, avdBloomPassTypeToString(passType));
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, labelName, AVD_BLOOM_LABEL_COLOR);
-    (void)labelName;
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(
+        commandBuffer,
+        AVD_BLOOM_LABEL_COLOR,
+        "Core/Bloom/%s/%s",
+        bloom->label,
+        avdBloomPassTypeToString(passType));
 
     AVD_CHECK(avdBeginRenderPass(
         commandBuffer,
@@ -240,11 +242,11 @@ bool avdBloomApplyInplace(
     AVD_ASSERT(inputFramebuffer != NULL);
     AVD_ASSERT(vulkan != NULL);
 
-    char labelName[128];
-    snprintf(labelName, sizeof(labelName), "Core/Bloom/%s/ApplyInplace", bloom->label);
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, labelName, AVD_BLOOM_LABEL_COLOR);
-    (void)labelName;
-
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(
+        commandBuffer,
+        AVD_BLOOM_LABEL_COLOR,
+        "Core/Bloom/%s/ApplyInplace",
+        bloom->label);
 
     AVD_CHECK(__avdBloomPass(
         commandBuffer,
