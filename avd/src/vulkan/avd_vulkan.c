@@ -348,14 +348,14 @@ static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
     vkGetDeviceQueue(vulkan->device, vulkan->graphicsQueueFamilyIndex, 0, &vulkan->graphicsQueue);
     AVD_CHECK_MSG(vulkan->graphicsQueue != VK_NULL_HANDLE, "Failed to get graphics queue\n");
     AVD_DEBUG_VK_SET_OBJECT_NAME(
-        VK_OBJECT_TYPE_DEVICE,
+        VK_OBJECT_TYPE_QUEUE,
         (uint64_t)vulkan->graphicsQueue,
         "Core/GraphicsQueue");
 
     vkGetDeviceQueue(vulkan->device, vulkan->computeQueueFamilyIndex, 0, &vulkan->computeQueue);
     AVD_CHECK_MSG(vulkan->computeQueue != VK_NULL_HANDLE, "Failed to get compute queue\n");
     AVD_DEBUG_VK_SET_OBJECT_NAME(
-        VK_OBJECT_TYPE_DEVICE,
+        VK_OBJECT_TYPE_QUEUE,
         (uint64_t)vulkan->computeQueue,
         "Core/ComputeQueue");
         
