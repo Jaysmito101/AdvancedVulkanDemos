@@ -120,6 +120,10 @@ static bool __avdVulkanSwapchainQueryImages(AVD_VulkanSwapchain *swapchain, AVD_
     AVD_CHECK_MSG(imageCount == swapchain->imageCount, "Swapchain image count mismatch\n");
     vkGetSwapchainImagesKHR(vulkan->device, swapchain->swapchain, &imageCount, swapchain->images);
 
+    for (uint32_t i = 0; i < imageCount; ++i) {
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_IMAGE, swapchain->images[i], "Core/Swapchain/Image");
+    }
+
     return true;
 }
 
@@ -146,6 +150,7 @@ static bool __avdVulkanSwapchainCreateImageViews(AVD_VulkanSwapchain *swapchain,
 
         VkResult result = vkCreateImageView(vulkan->device, &viewInfo, NULL, &swapchain->imageViews[i]);
         AVD_CHECK_VK_RESULT(result, "Failed to create image view for image %d\n", i);
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_IMAGE_VIEW, swapchain->imageViews[i], "Core/Swapchain/ImageView");
     }
     return true;
 }
@@ -185,6 +190,7 @@ static bool __avdVulkanSwapchainCreateFramebuffer(AVD_VulkanSwapchain *swapchain
 
     VkResult result = vkCreateFramebuffer(vulkan->device, &framebufferInfo, NULL, &swapchain->framebuffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create framebuffer!\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_FRAMEBUFFER, swapchain->framebuffer, "Core/Swapchain/Framebuffer");
     return true;
 }
 
@@ -215,6 +221,7 @@ static bool __avdVulkanSwapchainKHRCreate(AVD_VulkanSwapchain *swapchain, AVD_Vu
 
     VkResult result = vkCreateSwapchainKHR(vulkan->device, &swapchainInfo, NULL, &swapchain->swapchain);
     AVD_CHECK_VK_RESULT(result, "Failed to create swapchain\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SWAPCHAIN_KHR, swapchain->swapchain, "Core/Swapchain");
 
     if (oldSwapchain != VK_NULL_HANDLE) {
         vkDestroySwapchainKHR(vulkan->device, oldSwapchain, NULL);
@@ -267,6 +274,7 @@ static bool __avdVulkanSwapchainCreateRenderPass(AVD_VulkanSwapchain *swapchain,
 
     VkResult result = vkCreateRenderPass(vulkan->device, &renderPassInfo, NULL, &swapchain->renderPass);
     AVD_CHECK_VK_RESULT(result, "Failed to create render pass\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_RENDER_PASS, swapchain->renderPass, "Core/Swapchain/RenderPass");
 
     return true;
 }
