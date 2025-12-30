@@ -84,6 +84,7 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
     vkBeginCommandBuffer(cmd, &beginInfo);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmd, "Core/Buffer/Upload", NULL);
 
     VkBufferCopy copyRegion = {
         .srcOffset = 0,
@@ -92,6 +93,7 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
     };
     vkCmdCopyBuffer(cmd, staging.buffer, buffer->buffer, 1, &copyRegion);
 
+    AVD_DEBUG_VK_CMD_END_LABEL(cmd);
     vkEndCommandBuffer(cmd);
 
     VkSubmitInfo submitInfo = {
@@ -99,7 +101,9 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
         .commandBufferCount = 1,
         .pCommandBuffers    = &cmd,
     };
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, "Core/Queue/BufferUpload", NULL);
     vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
     vkQueueWaitIdle(vulkan->graphicsQueue);
 
     vkFreeCommandBuffers(vulkan->device, vulkan->graphicsCommandPool, 1, &cmd);
