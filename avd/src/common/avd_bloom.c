@@ -124,6 +124,11 @@ static bool __avdBloomPass(
         attachments,
         &attachmentCount));
 
+    char labelName[128]   = {0};
+    snprintf(labelName, sizeof(labelName), "Core/Bloom/%s/%s", bloom->label, avdBloomPassTypeToString(passType));
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, labelName, AVD_BLOOM_LABEL_COLOR);
+    (void)labelName;
+
     AVD_CHECK(avdBeginRenderPass(
         commandBuffer,
         targetFramebuffer->renderPass,
@@ -155,10 +160,13 @@ static bool __avdBloomPass(
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
+
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
+
     return true;
 }
 
-bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass compositeRenderPass, uint32_t width, uint32_t height)
+bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass compositeRenderPass, uint32_t width, uint32_t height, const char *label)
 {
     // build the framebuffers
     bloom->width     = width;
@@ -166,6 +174,8 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
     bloom->passCount = AVD_BLOOM_PASS_COUNT;
 
     AVD_CHECK(__avdBloomCreateFramebuffers(bloom, vulkan, width, height));
+
+    snprintf(bloom->label, sizeof(bloom->label), "%s", label ? label : "Unnamed");
 
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &bloom->bloomDescriptorSetLayout,
@@ -230,6 +240,12 @@ bool avdBloomApplyInplace(
     AVD_ASSERT(inputFramebuffer != NULL);
     AVD_ASSERT(vulkan != NULL);
 
+    char labelName[128];
+    snprintf(labelName, sizeof(labelName), "Core/Bloom/%s/ApplyInplace", bloom->label);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, labelName, AVD_BLOOM_LABEL_COLOR);
+    (void)labelName;
+
+
     AVD_CHECK(__avdBloomPass(
         commandBuffer,
         AVD_BLOOM_PASS_TYPE_DOWNSAMPLE_PREFILTER,
@@ -282,6 +298,8 @@ bool avdBloomApplyInplace(
         0, // source index
         0, // target index
         params));
+
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
 
     return true;
 }

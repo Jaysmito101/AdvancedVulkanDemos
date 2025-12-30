@@ -78,7 +78,8 @@ bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
         &appState->vulkan,
         appState->renderer.sceneFramebuffer.renderPass,
         appState->renderer.sceneFramebuffer.width,
-        appState->renderer.sceneFramebuffer.height));
+        appState->renderer.sceneFramebuffer.height,
+        "CustomBloom"));
 
     AVD_CHECK(__avdSetupDescriptors(&bloom->descriptorSetLayout, &appState->vulkan));
 

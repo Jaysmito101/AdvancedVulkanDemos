@@ -439,7 +439,8 @@ bool avdSceneSubsurfaceScatteringInit(struct AVD_AppState *appState, union AVD_S
         &appState->vulkan,
         appState->renderer.sceneFramebuffer.renderPass,
         appState->renderer.sceneFramebuffer.width,
-        appState->renderer.sceneFramebuffer.height));
+        appState->renderer.sceneFramebuffer.height,
+        "SubsurfaceScattering"));
 
     AVD_CHECK(avdRenderableTextCreate(
         &subsurfaceScattering->title,
