@@ -58,7 +58,7 @@ static bool __avdVulkanVideoCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideo *v
         VkMemoryAllocateInfo allocInfo = {
             .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             .allocationSize  = memoryRequirements[i].memoryRequirements.size,
-            .memoryTypeIndex = avdVulkanFindMemoryType(vulkan, memoryRequirements[i].memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
+            .memoryTypeIndex = avdVulkanFindMemoryType(vulkan, memoryRequirements[i].memoryRequirements.memoryTypeBits, 0),
         };
 
         AVD_CHECK_MSG(allocInfo.memoryTypeIndex != UINT32_MAX, "Failed to find suitable memory type for video session memory!");
