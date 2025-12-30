@@ -16,6 +16,21 @@
 #define AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE 1024
 #endif
 
+#ifdef AVD_DEBUG
+
+#ifndef AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR
+#define AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR \
+    { 0.0f, 1.0f, 0.0f, 1.0f }
+#endif 
+
+#ifndef AVD_VULKAN_QUEUE_LABEL_DEFAULT_COLOR
+#define AVD_VULKAN_QUEUE_LABEL_DEFAULT_COLOR \
+    { 0.0f, 0.0f, 1.0f, 1.0f }
+#endif
+
+#endif
+
+
 typedef enum {
     AVD_VULKAN_DESCRIPTOR_TYPE_SAMPLER = 0,
     AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -71,6 +86,16 @@ bool avdVulkanAddDebugLayers(uint32_t *layerCount, const char **layers, bool *de
 
 bool avdVulkanDebuggerCreate(AVD_Vulkan *vulkan);
 void avdVulkanDebuggerDestroy(AVD_Vulkan *vulkan);
+
+bool avdVulkanDebuggerCmdBeginLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, const char *labelName, float* color);
+bool avdVulkanDebuggerCmdInsertLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer,  const char *labelName, float* color);
+bool avdVulkanDebuggerCmdEndLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer);
+
+bool avdVulkanDebuggerQueueBeginLabel(AVD_Vulkan *vulkan, VkQueue queue, const char *labelName, float* color);
+bool avdVulkanDebuggerQueueInsertLabel(AVD_Vulkan *vulkan, VkQueue queue, const char *labelName, float* color);
+bool avdVulkanDebuggerQueueEndLabel(AVD_Vulkan *vulkan, VkQueue queue);
+
+bool avdVulkanDebuggerSetObjectName(AVD_Vulkan *vulkan, VkObjectType objectType, uint64_t objectHandle, const char *name);
 #endif
 
 
