@@ -114,7 +114,7 @@ bool avdVulkanDebuggerSetObjectName(AVD_Vulkan *vulkan, VkObjectType objectType,
     AVD_DEBUG_ONLY(avdVulkanDebuggerQueueEndLabel(avdVulkanGetGlobalInstance(), queue))
 
 #define AVD_DEBUG_VK_SET_OBJECT_NAME(objectType, objectHandle, name) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerSetObjectName(avdVulkanGetGlobalInstance(), objectType, objectHandle, name))
+    AVD_DEBUG_ONLY(avdVulkanDebuggerSetObjectName(avdVulkanGetGlobalInstance(), objectType, (uint64_t)objectHandle, name))
 
 
 #endif // AVD_VULKAN_CORE_H
