@@ -20,7 +20,7 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
 
     VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, layout);
     AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (uint64_t)layout, "Scene/MainMenu/DescriptorSetLayout");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, *layout, "Scene/MainMenu/DescriptorSetLayout");
     return true;
 }
 
@@ -47,8 +47,9 @@ static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AV
     allocateInfo.pSetLayouts                 = &layout;
     AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(vulkan->device, &allocateInfo, &card->descriptorSet), "Failed to allocate descriptor set");
 
+    char debugName[128];
     snprintf(debugName, sizeof(debugName), "Scene/MainMenu/Card/%s/DescriptorSet", title);
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)card->descriptorSet, debugName);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, card->descriptorSet, debugName);
 
     VkWriteDescriptorSet writeDescriptorSet = {0};
     AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, card->descriptorSet, 0, &card->thumbnailImage.defaultSubresource.descriptorImageInfo));
