@@ -52,7 +52,6 @@ static bool __avdVulkanVideoCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideo *v
     vkGetVideoSessionMemoryRequirementsKHR(vulkan->device, video->session, &memoryRequirementsCount, memoryRequirements);
 
     VkBindVideoSessionMemoryInfoKHR bindMemoryInfo[128] = {0};
-    VkDeviceMemory memoryAllocations[128]               = {0};
 
     for (AVD_UInt32 i = 0; i < memoryRequirementsCount; ++i) {
         VkMemoryAllocateInfo allocInfo = {
@@ -63,17 +62,18 @@ static bool __avdVulkanVideoCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideo *v
 
         AVD_CHECK_MSG(allocInfo.memoryTypeIndex != UINT32_MAX, "Failed to find suitable memory type for video session memory!");
 
-        AVD_CHECK_VK_RESULT(vkAllocateMemory(vulkan->device, &allocInfo, NULL, &memoryAllocations[i]), "Failed to allocate %d th video session memory", i);
+        AVD_CHECK_VK_RESULT(vkAllocateMemory(vulkan->device, &allocInfo, NULL, &video->memory[i]), "Failed to allocate %d th video session memory", i);
 
         bindMemoryInfo[i] = (VkBindVideoSessionMemoryInfoKHR){
             .sType           = VK_STRUCTURE_TYPE_BIND_VIDEO_SESSION_MEMORY_INFO_KHR,
             .memoryBindIndex = memoryRequirements[i].memoryBindIndex,
-            .memory          = memoryAllocations[i],
+            .memory          = video->memory[i],
             .memoryOffset    = 0,
             .memorySize      = memoryRequirements[i].memoryRequirements.size,
             .pNext           = NULL,
         };
     }
+    video->memoryAllocationCount = memoryRequirementsCount;
 
     AVD_CHECK_VK_RESULT(vkBindVideoSessionMemoryKHR(vulkan->device, video->session, memoryRequirementsCount, bindMemoryInfo), "Failed to bind video session memory");
 
