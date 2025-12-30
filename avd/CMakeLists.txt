@@ -41,6 +41,7 @@ add_executable(avd
     ./src/vulkan/avd_vulkan_framebuffer.c
     ./src/vulkan/avd_vulkan_image.c
     ./src/vulkan/avd_vulkan_buffer.c
+    ./src/vulkan/avd_vulkan_debug.c
 
     ./src/ui/avd_ui.c
 

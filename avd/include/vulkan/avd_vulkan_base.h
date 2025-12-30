@@ -27,6 +27,13 @@ typedef enum {
     AVD_VULKAN_DESCRIPTOR_TYPE_COUNT
 } AVD_VulkanDescriptorType;
 
+
+
+typedef struct {
+    bool layersEnabled;
+    VkDebugUtilsMessengerEXT debugMessenger;
+} AVD_VulkanDebugger;
+
 typedef struct AVD_Vulkan {
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
@@ -45,8 +52,7 @@ typedef struct AVD_Vulkan {
     int32_t computeQueueFamilyIndex;
 
 #ifdef AVD_DEBUG
-    VkDebugUtilsMessengerEXT debugMessenger;
-    bool debugLayersEnabled;
+    AVD_VulkanDebugger debugger;
 #endif
 } AVD_Vulkan;
 
@@ -55,7 +61,17 @@ void avdVulkanShutdown(AVD_Vulkan *vulkan);
 void avdVulkanWaitIdle(AVD_Vulkan *vulkan);
 void avdVulkanDestroySurface(AVD_Vulkan *vulkan, VkSurfaceKHR surface);
 
+bool avdVulkanInstanceLayersSupported(const char **layers, uint32_t layerCount);
 uint32_t avdVulkanFindMemoryType(AVD_Vulkan *vulkan, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 VkDescriptorType avdVulkanToVkDescriptorType(AVD_VulkanDescriptorType type);
+
+#ifdef AVD_DEBUG
+bool avdVulkanAddDebugUtilsExtensions(uint32_t *extensionCount, const char **extensions);
+bool avdVulkanAddDebugLayers(uint32_t *layerCount, const char **layers, bool *debugLayersEnabled);
+
+bool avdVulkanDebuggerCreate(AVD_Vulkan *vulkan);
+void avdVulkanDebuggerDestroy(AVD_Vulkan *vulkan);
+#endif
+
 
 #endif // AVD_VULKAN_CORE_H
