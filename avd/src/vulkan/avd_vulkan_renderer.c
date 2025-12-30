@@ -47,8 +47,10 @@ static bool __avdVulkanRendererCreateCommandBuffer(AVD_VulkanRendererResources *
     VkResult result                           = vkAllocateCommandBuffers(vulkan->device, &allocInfo, commandBuffers);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate command buffer\n");
 
-    for (uint32_t i = 0; i < numInFlightFrames; ++i)
+    for (uint32_t i = 0; i < numInFlightFrames; ++i) {
         resources[i].commandBuffer = commandBuffers[i];
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_COMMAND_BUFFER, commandBuffers[i], "Core/Renderer/CommandBuffer");
+    }
 
     return true;
 }
@@ -65,8 +67,13 @@ static bool __avdVulkanRendererCreateSynchronizationObjects(AVD_VulkanRendererRe
     // create the semaphores and fence for each in-flight frame
     for (uint32_t i = 0; i < numInFlightFrames; ++i) {
         AVD_CHECK(__avdVulkanCreateSemaphore(vulkan->device, &resources[i].imageAvailableSemaphore));
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SEMAPHORE, resources[i].imageAvailableSemaphore, "Core/Renderer/ImageAvailableSemaphore");
+
         AVD_CHECK(__avdVulkanCreateSemaphore(vulkan->device, &resources[i].renderFinishedSemaphore));
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SEMAPHORE, resources[i].renderFinishedSemaphore, "Core/Renderer/RenderFinishedSemaphore");
+
         AVD_CHECK(__avdVulkanCreateFence(vulkan->device, &resources[i].renderFence));
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_FENCE, resources[i].renderFence, "Core/Renderer/RenderFence");
     }
     return true;
 }
@@ -218,6 +225,8 @@ bool avdVulkanRendererBegin(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AV
         return false; // do not render this frame
     }
 
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Core/Renderer/Frame", NULL);
+    
     return true;
 }
 
@@ -229,6 +238,8 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
 
     uint32_t currentFrameIndex    = renderer->currentFrameIndex;
     VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
+
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
 
     VkResult result = vkEndCommandBuffer(commandBuffer);
     if (result != VK_SUCCESS) {
@@ -250,7 +261,9 @@ bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores    = &renderer->resources[currentFrameIndex].renderFinishedSemaphore;
 
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, "Core/Queue/RenderSubmit", NULL);
     result = vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
     if (result != VK_SUCCESS) {
         AVD_LOG_ERROR("Failed to submit command buffer: %s", string_VkResult(result));
         vkResetFences(vulkan->device, 1, &renderer->resources[currentFrameIndex].renderFence);

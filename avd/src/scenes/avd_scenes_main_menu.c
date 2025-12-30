@@ -20,6 +20,7 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
 
     VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, layout);
     AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (uint64_t)layout, "Scene/MainMenu/DescriptorSetLayout");
     return true;
 }
 
@@ -45,6 +46,9 @@ static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AV
     allocateInfo.descriptorSetCount          = 1;
     allocateInfo.pSetLayouts                 = &layout;
     AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(vulkan->device, &allocateInfo, &card->descriptorSet), "Failed to allocate descriptor set");
+
+    snprintf(debugName, sizeof(debugName), "Scene/MainMenu/Card/%s/DescriptorSet", title);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)card->descriptorSet, debugName);
 
     VkWriteDescriptorSet writeDescriptorSet = {0};
     AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, card->descriptorSet, 0, &card->thumbnailImage.defaultSubresource.descriptorImageInfo));
@@ -257,9 +261,11 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/MainMenu/Render", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
 
     // AVD_LOG_VERBOSE("Rendering main menu scene");
 
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/MainMenu/RenderTitle", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
     float titleWidth, titleHeight;
     float creditsWidth, creditsHeight;
     float githubLinkWidth, githubLinkHeight;
@@ -299,6 +305,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
             renderer->sceneFramebuffer.width,
             renderer->sceneFramebuffer.height);
     }
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer); // Scene/MainMenu/RenderTitle
 
     float minX        = 0.0f;
     float minY        = (titleHeight + creditsHeight + githubLinkHeight + 40.0f);
@@ -312,6 +319,8 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     float offsetX        = (frameWidth - allCardsWidth) / 2.0f;
     float offsetY        = (frameHeight - allCardsHeight) / 2.0f;
 
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/MainMenu/RenderUi", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
+    
     avdUiBegin(
         commandBuffer,
         &appState->ui,
@@ -374,6 +383,8 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
             renderer->sceneFramebuffer.height);
     }
 
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer); // Scene/MainMenu/RenderUi
+
     // Draw the page indicator
     static char pageIndicator[32];
     snprintf(pageIndicator, sizeof(pageIndicator), "Page %d/%d", mainMenu->currentPage + 1, totalPages);
@@ -401,6 +412,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         &appState->ui,
         appState);
 
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
 
     return true;

@@ -147,6 +147,9 @@ bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *sce
         appState->vulkan.descriptorPool,
         deccerCubes->set0Layout,
         &deccerCubes->set0));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, deccerCubes->set0Layout, "Scene/DeccerCubes/Set0Layout");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, deccerCubes->set0, "Scene/DeccerCubes/Set0");
+
 
     AVD_CHECK(avdRenderableTextCreate(
         &deccerCubes->title,
@@ -332,6 +335,7 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/DeccerCubes/Render", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipeline);
     VkDescriptorSet descriptorSets[] = {
@@ -368,6 +372,7 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
         appState->renderer.sceneFramebuffer.width,
         appState->renderer.sceneFramebuffer.height);
 
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
 
     return true;

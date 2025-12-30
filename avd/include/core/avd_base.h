@@ -84,6 +84,24 @@
         return false;                                                               \
     }
 
+#ifdef AVD_DEBUG
+#define AVD_DEBUG_ONLY(code) \
+    do {                     \
+        code;                \
+    } while (0)
+#define AVD_RELEASE_ONLY(code) \
+    do {                       \
+    } while (0)
+#else
+#define AVD_DEBUG_ONLY(code) \
+    do {                     \
+    } while (0)
+#define AVD_RELEASE_ONLY(code) \
+    do {                       \
+        code;                  \
+    } while (0)
+#endif
+
 #define GAME_WIDTH  1920
 #define GAME_HEIGHT 1080
 

@@ -1,6 +1,9 @@
+#include "core/avd_base.h"
 #include "vulkan/avd_vulkan_base.h"
 #include "vulkan/avd_vulkan_pipeline_utils.h"
 #include <stdint.h>
+
+static AVD_Vulkan *__avdGlobalVulkanInstance = NULL;
 
 static const char *__avd_RequiredVulkanExtensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -37,32 +40,6 @@ static AVD_VulkanFeatures *__avdVulkanFeaturesInit(AVD_VulkanFeatures *features)
     features->rayTracing  = false;
     features->videoDecode = false;
     return features;
-}
-
-static bool __avdVulkanLayersSupported(const char **layers, uint32_t layerCount)
-{
-    static VkLayerProperties availableLayers[128] = {0};
-    uint32_t availableLayerCount                  = 0;
-    vkEnumerateInstanceLayerProperties(&availableLayerCount, NULL);
-    if (availableLayerCount > AVD_ARRAY_COUNT(availableLayers)) {
-        AVD_LOG_WARN("Too many available layers");
-        return false;
-    }
-    vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers);
-    for (uint32_t i = 0; i < layerCount; ++i) {
-        bool found = false;
-        for (uint32_t j = 0; j < availableLayerCount; ++j) {
-            if (strcmp(layers[i], availableLayers[j].layerName) == 0) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            AVD_LOG_WARN("Layer %s not supported", layers[i]);
-            return false;
-        }
-    }
-    return true;
 }
 
 static bool __avdAddGlfwExtenstions(uint32_t *extensionCount, const char **extensions)
@@ -119,86 +96,6 @@ static bool __avdAddSurfaceExtensions(uint32_t *extensionCount, const char **ext
     return true;
 }
 
-#ifdef AVD_DEBUG
-static bool __avdAddDebugUtilsExtenstions(uint32_t *extensionCount, const char **extensions)
-{
-    extensions[*extensionCount] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
-    (*extensionCount)++;
-    return true;
-}
-
-static bool __avdAddDebugLayers(uint32_t *layerCount, const char **layers, bool *debugLayersEnabled)
-{
-    static const char *debugLayers[] = {
-        "VK_LAYER_KHRONOS_validation",
-    };
-
-    if (__avdVulkanLayersSupported(debugLayers, AVD_ARRAY_COUNT(debugLayers))) {
-        for (uint32_t i = 0; i < AVD_ARRAY_COUNT(debugLayers); ++i) {
-            layers[i + *layerCount] = debugLayers[i];
-        }
-        *layerCount += AVD_ARRAY_COUNT(debugLayers);
-        *debugLayersEnabled = true;
-    } else {
-        AVD_LOG_WARN("Debug layers not supported");
-    }
-    return true;
-}
-
-static VkBool32 __avdDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                 VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                                                 void *pUserData)
-{
-    const char *severity = NULL;
-    switch (messageSeverity) {
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            severity = "VERBOSE";
-            AVD_LOG_DEBUG("%s: %s", severity, pCallbackData->pMessage);
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            severity = "INFO";
-            AVD_LOG_INFO("%s: %s", severity, pCallbackData->pMessage);
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-            severity = "WARNING";
-            AVD_LOG_WARN("%s: %s", severity, pCallbackData->pMessage);
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            severity = "ERROR";
-            AVD_LOG_ERROR("%s: %s", severity, pCallbackData->pMessage);
-            break;
-        default:
-            severity = "UNKNOWN";
-            AVD_LOG_VERBOSE("%s: %s", severity, pCallbackData->pMessage);
-            break;
-    }
-    return VK_FALSE; // Don't abort on debug messages
-}
-
-static bool __avdCreateDebugUtilsMessenger(AVD_Vulkan *vulkan)
-{
-    AVD_ASSERT(vulkan != NULL);
-
-    VkDebugUtilsMessengerCreateInfoEXT createInfo = {
-        .sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-        .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT,
-        .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                       VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                       VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-        .pfnUserCallback = __avdDebugUtilsMessengerCallback,
-        .pUserData       = vulkan,
-    };
-
-    VkResult result = vkCreateDebugUtilsMessengerEXT(vulkan->instance, &createInfo, NULL, &vulkan->debugMessenger);
-    AVD_CHECK_VK_RESULT(result, "Failed to create debug utils messenger\n");
-    return true;
-}
-
-#endif
 
 static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
 {
@@ -219,16 +116,12 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
     AVD_CHECK(__avdAddGlfwExtenstions(&extensionCount, extensions));
     AVD_CHECK(__avdAddSurfaceExtensions(&extensionCount, extensions));
 
-#ifdef AVD_DEBUG
-    AVD_CHECK(__avdAddDebugUtilsExtenstions(&extensionCount, extensions));
-#endif
+    AVD_DEBUG_ONLY(avdVulkanAddDebugUtilsExtensions(&extensionCount, extensions));
 
     uint32_t layerCount           = 0;
     static const char *layers[64] = {0};
 
-#ifdef AVD_DEBUG
-    AVD_CHECK(__avdAddDebugLayers(&layerCount, layers, &vulkan->debugLayersEnabled));
-#endif
+    AVD_DEBUG_ONLY(avdVulkanAddDebugLayers(&layerCount, layers, &vulkan->debugger.layersEnabled));
 
     VkInstanceCreateInfo createInfo = {
         .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -244,12 +137,6 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
 
     volkLoadInstance(vulkan->instance);
 
-#ifdef AVD_DEBUG
-    if (vulkan->debugLayersEnabled) {
-        AVD_CHECK(__avdCreateDebugUtilsMessenger(vulkan));
-    }
-#endif
-
     return true;
 }
 
@@ -259,8 +146,14 @@ static bool __avdVulkanCreateSurface(AVD_Vulkan *vulkan, GLFWwindow *window, VkS
     AVD_ASSERT(window != NULL);
     AVD_ASSERT(surface != NULL);
 
-    VkResult result = glfwCreateWindowSurface(vulkan->instance, window, NULL, surface);
-    AVD_CHECK_VK_RESULT(result, "Failed to create window surface\n");
+    AVD_CHECK_VK_RESULT(
+        glfwCreateWindowSurface(
+            vulkan->instance,
+            window,
+            NULL,
+            surface),
+        "Failed to create window surface\n");
+
     return true;
 }
 
@@ -526,7 +419,8 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     };
 
 #ifdef AVD_DEBUG
-    if (vulkan->debugLayersEnabled) {
+    // TODO: Maybe move this to the debugger creation?
+    if (vulkan->debugger.layersEnabled) {
         static const char *debugLayers[] = {
             "VK_LAYER_KHRONOS_validation",
         };
@@ -542,6 +436,8 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     // NOTE: VERY IMPORTANT: This only works as we only use a single vulkan device!
     //                       And thus this optimizes the vulkan calls.
     volkLoadDevice(vulkan->device);
+
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DEVICE, vulkan->device, "Core/Device");
 
     vulkan->graphicsQueueFamilyIndex    = graphicsQueueFamilyIndex;
     vulkan->computeQueueFamilyIndex     = computeQueueFamilyIndex;
@@ -593,13 +489,29 @@ static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
 static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
 {
     vkGetDeviceQueue(vulkan->device, vulkan->graphicsQueueFamilyIndex, 0, &vulkan->graphicsQueue);
-    vkGetDeviceQueue(vulkan->device, vulkan->computeQueueFamilyIndex, 0, &vulkan->computeQueue);
-    AVD_CHECK(vulkan->graphicsQueue != VK_NULL_HANDLE && vulkan->computeQueue != VK_NULL_HANDLE);
+    AVD_CHECK_MSG(vulkan->graphicsQueue != VK_NULL_HANDLE, "Failed to get graphics queue\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_QUEUE,
+        (uint64_t)vulkan->graphicsQueue,
+        "Core/GraphicsQueue");
 
-    if (vulkan->supportedFeatures.videoDecode) {
-        vkGetDeviceQueue(vulkan->device, vulkan->videoDecodeQueueFamilyIndex, 0, &vulkan->videoDecodeQueue);
-        AVD_CHECK(vulkan->videoDecodeQueue != VK_NULL_HANDLE);
-    }
+        
+        vkGetDeviceQueue(vulkan->device, vulkan->computeQueueFamilyIndex, 0, &vulkan->computeQueue);
+        AVD_CHECK_MSG(vulkan->computeQueue != VK_NULL_HANDLE, "Failed to get compute queue\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_QUEUE,
+        (uint64_t)vulkan->computeQueue,
+        "Core/ComputeQueue");
+
+        if (vulkan->supportedFeatures.videoDecode) {
+            vkGetDeviceQueue(vulkan->device, vulkan->videoDecodeQueueFamilyIndex, 0, &vulkan->videoDecodeQueue);
+            AVD_CHECK(vulkan->videoDecodeQueue != VK_NULL_HANDLE);
+            AVD_DEBUG_VK_SET_OBJECT_NAME(
+                VK_OBJECT_TYPE_QUEUE,
+                (uint64_t)vulkan->videoDecodeQueue,
+                "Core/VideoDecodeQueue");
+        }
+        
     return true;
 }
 
@@ -614,17 +526,29 @@ static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
     poolInfo.queueFamilyIndex = vulkan->graphicsQueueFamilyIndex;
     VkResult result           = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->graphicsCommandPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create graphics command pool\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_COMMAND_POOL,
+        (uint64_t)vulkan->graphicsCommandPool,
+        "Core/GraphicsCommandPool");
 
     poolInfo.queueFamilyIndex = vulkan->computeQueueFamilyIndex;
     result                    = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->computeCommandPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create compute command pool\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_COMMAND_POOL,
+        (uint64_t)vulkan->computeCommandPool,
+        "Core/ComputeCommandPool");
 
-    if (vulkan->supportedFeatures.videoDecode) {
-        poolInfo.queueFamilyIndex = vulkan->videoDecodeQueueFamilyIndex;
-        result                    = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->videoDecodeCommandPool);
-        AVD_CHECK_VK_RESULT(result, "Failed to create video decode command pool\n");
-    }
-
+    
+        if (vulkan->supportedFeatures.videoDecode) {
+            poolInfo.queueFamilyIndex = vulkan->videoDecodeQueueFamilyIndex;
+            result                    = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->videoDecodeCommandPool);
+            AVD_CHECK_VK_RESULT(result, "Failed to create video decode command pool\n");
+            AVD_DEBUG_VK_SET_OBJECT_NAME(
+                VK_OBJECT_TYPE_COMMAND_POOL,
+                (uint64_t)vulkan->videoDecodeCommandPool,
+                "Core/VideoDecodeCommandPool");
+        }
     return true;
 }
 
@@ -648,9 +572,17 @@ static bool __avdVulkanDescriptorPoolCreate(AVD_Vulkan *vulkan)
 
     VkResult result = vkCreateDescriptorPool(vulkan->device, &poolInfo, NULL, &vulkan->descriptorPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create descriptor pool\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_POOL,
+        (uint64_t)vulkan->descriptorPool,
+        "Core/DescriptorPool");
 
     result = vkCreateDescriptorPool(vulkan->device, &poolInfo, NULL, &vulkan->bindlessDescriptorPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create bindless descriptor pool\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_POOL,
+        (uint64_t)vulkan->bindlessDescriptorPool,
+        "Core/BindlessDescriptorPool");
 
     return true;
 }
@@ -691,6 +623,10 @@ static bool __avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
 
     VkResult result = vkCreateDescriptorSetLayout(vulkan->device, &layoutCreateInfo, NULL, &vulkan->bindlessDescriptorSetLayout);
     AVD_CHECK_VK_RESULT(result, "Failed to create bindless descriptor set layout\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
+        (uint64_t)vulkan->bindlessDescriptorSetLayout,
+        "Core/BindlessDescriptorSetLayout");
 
     uint32_t descriptorTypeCount = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT * AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE;
 
@@ -703,14 +639,53 @@ static bool __avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
 
     result = vkAllocateDescriptorSets(vulkan->device, &allocInfo, &vulkan->bindlessDescriptorSet);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate bindless descriptor set\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_SET,
+        (uint64_t)vulkan->bindlessDescriptorSet,
+        "Core/BindlessDescriptorSet");
 
     return true;
 }
 
+bool avdVulkanInstanceLayersSupported(const char **layers, uint32_t layerCount)
+{
+    static VkLayerProperties availableLayers[128] = {0};
+    uint32_t availableLayerCount                  = 0;
+    vkEnumerateInstanceLayerProperties(&availableLayerCount, NULL);
+    if (availableLayerCount > AVD_ARRAY_COUNT(availableLayers)) {
+        AVD_LOG_WARN("Too many available layers");
+        return false;
+    }
+    vkEnumerateInstanceLayerProperties(&availableLayerCount, availableLayers);
+    for (uint32_t i = 0; i < layerCount; ++i) {
+        bool found = false;
+        for (uint32_t j = 0; j < availableLayerCount; ++j) {
+            if (strcmp(layers[i], availableLayers[j].layerName) == 0) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            AVD_LOG_WARN("Layer %s not supported", layers[i]);
+            return false;
+        }
+    }
+    return true;
+}
+
+AVD_Vulkan *avdVulkanGetGlobalInstance()
+{
+    return __avdGlobalVulkanInstance;
+}
+
 bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface)
 {
+    AVD_CHECK_MSG(__avdGlobalVulkanInstance == NULL, "Vulkan instance already initialized");
+    __avdGlobalVulkanInstance = vulkan;
+
     AVD_CHECK_VK_RESULT(volkInitialize(), "Failed to initialize Vulkan");
     AVD_CHECK(__avdVulkanCreateInstance(vulkan));
+    AVD_DEBUG_ONLY(AVD_CHECK(avdVulkanDebuggerCreate(vulkan)));
     AVD_CHECK(__avdVulkanCreateSurface(vulkan, window->window, surface));
     AVD_CHECK(__avdVulkanPickPhysicalDevice(vulkan));
     AVD_CHECK(__avdVulkanCreateDevice(vulkan, surface));
@@ -719,6 +694,7 @@ bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface
     AVD_CHECK(__avdVulkanCreateCommandPools(vulkan));
     AVD_CHECK(__avdVulkanDescriptorPoolCreate(vulkan));
     AVD_CHECK(__avdVulkanCreateDescriptorSets(vulkan));
+
     return true;
 }
 
@@ -751,11 +727,7 @@ void avdVulkanShutdown(AVD_Vulkan *vulkan)
 
     vkDestroyDevice(vulkan->device, NULL);
 
-#ifdef AVD_DEBUG
-    if (vulkan->debugLayersEnabled) {
-        vkDestroyDebugUtilsMessengerEXT(vulkan->instance, vulkan->debugMessenger, NULL);
-    }
-#endif
+    AVD_DEBUG_ONLY(avdVulkanDebuggerDestroy(vulkan));
     vkDestroyInstance(vulkan->instance, NULL);
 }
 
