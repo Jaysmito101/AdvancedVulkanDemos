@@ -20,12 +20,12 @@
 
 #ifndef AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR
 #define AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR \
-    { 0.0f, 1.0f, 0.0f, 1.0f }
+    (float[]){ 0.0f, 1.0f, 0.0f, 1.0f }
 #endif 
 
 #ifndef AVD_VULKAN_QUEUE_LABEL_DEFAULT_COLOR
 #define AVD_VULKAN_QUEUE_LABEL_DEFAULT_COLOR \
-    { 0.0f, 0.0f, 1.0f, 1.0f }
+    (float[]){ 0.0f, 0.0f, 1.0f, 1.0f }
 #endif
 
 #endif
