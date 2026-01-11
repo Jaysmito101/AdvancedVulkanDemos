@@ -58,12 +58,35 @@ typedef struct AVD_ModelNode {
     AVD_Int32 id;
     AVD_Transform transform;
 
+    bool isMeshParent;
     bool hasMesh;
     AVD_Mesh mesh;
 
     struct AVD_ModelNode *children[AVD_MODEL_NODE_MAX_CHILDREN];
     struct AVD_ModelNode *parent;
 } AVD_ModelNode;
+
+typedef enum {
+    AVD_ANIMATION_TYPE_ROTATION = 0,
+    AVD_ANIMATION_TYPE_POSITION = 1,
+    AVD_ANIMATION_TYPE_SCALE    = 2,
+    AVD_ANIMATION_TYPE_WEIGHT   = 3,
+    AVD_ANIMATION_TYPE_MAX
+} AVD_AnimationType;
+
+typedef struct {
+    AVD_ModelNode *targetNode;
+    AVD_AnimationType type;
+    AVD_Size keyframeCount;
+    AVD_Size timstampsOffset;
+    AVD_Size dataOffset;
+} AVD_AnimationChannel;
+
+typedef struct {
+    char name[256];
+    AVD_AnimationChannel channels[AVD_MODEL_MAX_ANIMATION_CHANNELS];
+    AVD_Size channelCount;
+} AVD_Animation;
 
 typedef struct {
     char name[256];
@@ -74,6 +97,7 @@ typedef struct {
     AVD_Int32 nodeCount;
 
     AVD_List morphTargets;
+    AVD_List animations;
 
     AVD_ModelNode *mainScene;
     AVD_ModelNode *rootNode;

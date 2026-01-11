@@ -80,6 +80,7 @@ bool avdModelResourcesCreate(AVD_ModelResources *resources)
 
     avdListCreate(&resources->verticesList, sizeof(AVD_ModelVertexPacked));
     avdListCreate(&resources->indicesList, sizeof(uint32_t));
+    avdListCreate(&resources->animationsDataList, sizeof(float));
 
     return true;
 }
@@ -90,4 +91,5 @@ void avdModelResourcesDestroy(AVD_ModelResources *resources)
 
     avdListDestroy(&resources->verticesList);
     avdListDestroy(&resources->indicesList);
+    avdListDestroy(&resources->animationsDataList);
 }
