@@ -25,6 +25,8 @@
 
 #define PICO_LOG_THREAD_SAFE
 #define PICO_IMPLEMENTATION
+#include "pico/picoH264.h"
 #include "pico/picoLog.h"
 #include "pico/picoM3U8.h"
+#include "pico/picoMpegTS.h"
 #include "pico/picoThreads.h"
