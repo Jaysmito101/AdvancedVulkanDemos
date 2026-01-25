@@ -39,6 +39,7 @@
         b              = temp; \
     }
 #define AVD_OFFSET_OF(type, member) ((size_t)&(((type *)0)->member))
+#define AVD_ALIGN(value, alignment) ((((value) + ((alignment) - 1)) / (alignment)) * (alignment))
 #define AVD_ASSERT(condition)                                                                        \
     {                                                                                                \
         if (!(condition)) {                                                                          \
