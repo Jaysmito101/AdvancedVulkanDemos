@@ -1,6 +1,9 @@
 // #define CUTE_SOUND_IMPLEMENTATION
 // #include "cute_sound.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -22,6 +25,15 @@
     } while (0)
 
 #endif
+
+#define PICO_ASSERT(expr)                                                               \
+    {                                                                                   \
+        int __assertionResult##__LINE__ = expr;                                         \
+        if (!__assertionResult##__LINE__) {                                             \
+            printf("PICO ASSERTION FAILED: %s, in %s:%d\n", #expr, __FILE__, __LINE__); \
+            assert(__assertionResult##__LINE__);                                        \
+        }                                                                               \
+    }
 
 #define PICO_LOG_THREAD_SAFE
 #define PICO_IMPLEMENTATION
