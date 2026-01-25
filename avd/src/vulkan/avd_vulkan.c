@@ -806,6 +806,9 @@ void avdVulkanShutdown(AVD_Vulkan *vulkan)
     if (vulkan->supportedFeatures.videoDecode) {
         vkDestroyCommandPool(vulkan->device, vulkan->videoDecodeCommandPool, NULL);
     }
+    if (vulkan->supportedFeatures.videoEncode) {
+        vkDestroyCommandPool(vulkan->device, vulkan->videoEncodeCommandPool, NULL);
+    }
 
     vkDestroyDescriptorPool(vulkan->device, vulkan->descriptorPool, NULL);
     vkDestroyDescriptorPool(vulkan->device, vulkan->bindlessDescriptorPool, NULL);
