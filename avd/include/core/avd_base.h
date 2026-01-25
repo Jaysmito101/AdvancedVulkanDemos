@@ -39,15 +39,21 @@
         b              = temp; \
     }
 #define AVD_OFFSET_OF(type, member) ((size_t)&(((type *)0)->member))
-#define AVD_ASSERT(condition)       assert(condition)
+#define AVD_ASSERT(condition)                                                                        \
+    {                                                                                                \
+        if (!(condition)) {                                                                          \
+            AVD_LOG_ERROR("Assertion failed: %s, file %s, line %d", #condition, __FILE__, __LINE__); \
+            assert(condition);                                                                       \
+        }                                                                                            \
+    }
 
-#define AVD_LOG_INIT()              PICO_LOG_INIT()
-#define AVD_LOG_SHUTDOWN()          PICO_LOG_SHUTDOWN()
-#define AVD_LOG_DEBUG(msg, ...)     PICO_DEBUG(msg, ##__VA_ARGS__)
-#define AVD_LOG_VERBOSE(msg, ...)   PICO_VERBOSE(msg, ##__VA_ARGS__)
-#define AVD_LOG_INFO(msg, ...)      PICO_INFO(msg, ##__VA_ARGS__)
-#define AVD_LOG_WARN(msg, ...)      PICO_WARN(msg, ##__VA_ARGS__)
-#define AVD_LOG_ERROR(msg, ...)     PICO_ERROR(msg, ##__VA_ARGS__)
+#define AVD_LOG_INIT()            PICO_LOG_INIT()
+#define AVD_LOG_SHUTDOWN()        PICO_LOG_SHUTDOWN()
+#define AVD_LOG_DEBUG(msg, ...)   PICO_DEBUG(msg, ##__VA_ARGS__)
+#define AVD_LOG_VERBOSE(msg, ...) PICO_VERBOSE(msg, ##__VA_ARGS__)
+#define AVD_LOG_INFO(msg, ...)    PICO_INFO(msg, ##__VA_ARGS__)
+#define AVD_LOG_WARN(msg, ...)    PICO_WARN(msg, ##__VA_ARGS__)
+#define AVD_LOG_ERROR(msg, ...)   PICO_ERROR(msg, ##__VA_ARGS__)
 
 #define AVD_CHECK_VK_HANDLE(result, log, ...) \
     if (result == VK_NULL_HANDLE) {           \
