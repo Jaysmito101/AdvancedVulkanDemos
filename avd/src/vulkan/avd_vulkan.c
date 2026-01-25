@@ -510,12 +510,46 @@ static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
             .pNext = &vulkan->supportedFeatures.videoDecodeH264Capabilities,
         };
 
-        vulkan->supportedFeatures.videoCapabilities = (VkVideoCapabilitiesKHR){
+        vulkan->supportedFeatures.videoCapabilitiesDecode = (VkVideoCapabilitiesKHR){
             .sType = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR,
             .pNext = &vulkan->supportedFeatures.videoDecodeCapabilities,
         };
 
-        vkGetPhysicalDeviceVideoCapabilitiesKHR(vulkan->physicalDevice, &videoProfileInfo, &vulkan->supportedFeatures.videoCapabilities);
+        vkGetPhysicalDeviceVideoCapabilitiesKHR(vulkan->physicalDevice, &videoProfileInfo, &vulkan->supportedFeatures.videoCapabilitiesDecode);
+    }
+
+    if (vulkan->supportedFeatures.videoEncode) {
+        VkVideoEncodeH264ProfileInfoKHR h264EncodeProfileInfo = {
+            .sType         = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR,
+            .stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_HIGH,
+            .pNext         = NULL,
+        };
+
+        VkVideoProfileInfoKHR videoProfileInfo = {
+            .sType               = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR,
+            .videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,
+            .lumaBitDepth        = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+            .chromaBitDepth      = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,
+            .chromaSubsampling   = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
+            .pNext               = &h264EncodeProfileInfo,
+        };
+
+        vulkan->supportedFeatures.videoEncodeH264Capabilities = (VkVideoEncodeH264CapabilitiesKHR){
+            .sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR,
+            .pNext = NULL,
+        };
+
+        vulkan->supportedFeatures.videoEncodeCapabilities = (VkVideoEncodeCapabilitiesKHR){
+            .sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR,
+            .pNext = &vulkan->supportedFeatures.videoEncodeH264Capabilities,
+        };
+
+        vulkan->supportedFeatures.videoCapabilitiesEncode = (VkVideoCapabilitiesKHR){
+            .sType = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR,
+            .pNext = &vulkan->supportedFeatures.videoEncodeCapabilities,
+        };
+
+        vkGetPhysicalDeviceVideoCapabilitiesKHR(vulkan->physicalDevice, &videoProfileInfo, &vulkan->supportedFeatures.videoCapabilitiesEncode);
     }
 
     return true;
