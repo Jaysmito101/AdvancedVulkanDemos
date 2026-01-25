@@ -36,6 +36,8 @@ void *avdListAddEmptyN(AVD_List *list, size_t n); // adds N empty elements and r
 void *avdListPopBack(AVD_List *list);
 void *avdListPopFront(AVD_List *list);
 void *avdListGet(const AVD_List *list, size_t index);
+void *avdListGetBack(const AVD_List *list);
+void *avdListGetFront(const AVD_List *list);
 void avdListClear(AVD_List *list);
 void avdListResize(AVD_List *list, size_t newSize);
 void avdListEnsureCapacity(AVD_List *list, size_t newCapacity);
