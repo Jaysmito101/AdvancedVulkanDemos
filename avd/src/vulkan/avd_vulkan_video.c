@@ -1,4 +1,5 @@
 #include "vulkan/avd_vulkan_video.h"
+#include "core/avd_base.h"
 #include "math/avd_math_base.h"
 
 static bool __avdVulkanVideoCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideo *video)
@@ -22,16 +23,16 @@ static bool __avdVulkanVideoCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideo *v
     VkVideoSessionCreateInfoKHR videoSessionCreateInfo = {
         .sType                      = VK_STRUCTURE_TYPE_VIDEO_SESSION_CREATE_INFO_KHR,
         .queueFamilyIndex           = vulkan->videoDecodeQueueFamilyIndex,
-        .maxActiveReferencePictures = AVD_MIN(vulkan->supportedFeatures.videoCapabilities.maxActiveReferencePictures, 16),
-        .maxDpbSlots                = AVD_MIN(vulkan->supportedFeatures.videoCapabilities.maxDpbSlots, 17),
+        .maxActiveReferencePictures = AVD_MIN(vulkan->supportedFeatures.videoCapabilitiesDecode.maxActiveReferencePictures, 16),
+        .maxDpbSlots                = AVD_MIN(vulkan->supportedFeatures.videoCapabilitiesDecode.maxDpbSlots, 17),
         .maxCodedExtent             = (VkExtent2D){
-                        .width  = AVD_MIN(vulkan->supportedFeatures.videoCapabilities.maxCodedExtent.width, AVD_VULKAN_VIDEO_MAX_WIDTH),
-                        .height = AVD_MIN(vulkan->supportedFeatures.videoCapabilities.maxCodedExtent.height, AVD_VULKAN_VIDEO_MAX_HEIGHT),
+                        .width  = AVD_MIN(vulkan->supportedFeatures.videoCapabilitiesDecode.maxCodedExtent.width, AVD_VULKAN_VIDEO_MAX_WIDTH),
+                        .height = AVD_MIN(vulkan->supportedFeatures.videoCapabilitiesDecode.maxCodedExtent.height, AVD_VULKAN_VIDEO_MAX_HEIGHT),
         },
         .pictureFormat          = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, // NOTE: as for now there is no need to support any other formats
         .referencePictureFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
         .pVideoProfile          = &videoProfileInfo,
-        .pStdHeaderVersion      = &vulkan->supportedFeatures.videoCapabilities.stdHeaderVersion,
+        .pStdHeaderVersion      = &vulkan->supportedFeatures.videoCapabilitiesDecode.stdHeaderVersion,
         .flags                  = 0,
     };
 
@@ -72,6 +73,7 @@ static bool __avdVulkanVideoCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideo *v
             .memorySize      = memoryRequirements[i].memoryRequirements.size,
             .pNext           = NULL,
         };
+        AVD_LOG_INFO("Allocated %llu bytes for video session memory %d", (unsigned long long)memoryRequirements[i].memoryRequirements.size, i);
     }
     video->memoryAllocationCount = memoryRequirementsCount;
 
@@ -80,10 +82,11 @@ static bool __avdVulkanVideoCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideo *v
     return true;
 }
 
-bool avdVulkanVideoCreate(AVD_Vulkan *vulkan, AVD_VulkanVideo *video)
+bool avdVulkanVideoCreate(AVD_Vulkan *vulkan, AVD_VulkanVideo *video, AVD_H264Video *h264Video)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(video != NULL);
+    AVD_ASSERT(h264Video != NULL);
 
     if (!vulkan->supportedFeatures.videoDecode) {
         AVD_LOG_ERROR("Vulkan video decode not supported on this device");
@@ -102,3 +105,10 @@ void avdVulkanVideoDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideo *video)
         vkFreeMemory(vulkan->device, video->memory[i], NULL);
     }
 }
+
+bool avdVulkanVideoIsSupported(AVD_Vulkan *vulkan)
+{
+    AVD_ASSERT(vulkan != NULL);
+    return vulkan->supportedFeatures.videoDecode;
+}
+
