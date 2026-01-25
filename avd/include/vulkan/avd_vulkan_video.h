@@ -66,18 +66,18 @@ typedef struct {
 
     VkDeviceMemory memory[128];
     AVD_UInt32 memoryAllocationCount;
-} AVD_VulkanVideo;
+
+    AVD_H264Video* h264Video;
+} AVD_VulkanVideoDecoder;
 
 bool avdH264VideoLoadParamsDefault(AVD_H264VideoLoadParams *outParams);
 
-bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSizem, AVD_H264VideoLoadParams *params, AVD_H264Video *outVideo);
-bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *params, AVD_H264Video *outVideo);
+bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSizem, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
+bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 void avdH264VideoDestroy(AVD_H264Video *video);
 void avdH264VideoDebugPrint(AVD_H264Video *video);
 
-// NOTE: you must keep alive the AVD_H264Video instance while using the AVD_VulkanVideo instance
-bool avdVulkanVideoCreate(AVD_Vulkan *vulkan, AVD_VulkanVideo *video, AVD_H264Video *h264Video);
-void avdVulkanVideoDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideo *video);
-bool avdVulkanVideoIsSupported(AVD_Vulkan *vulkan);
+bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video);
+void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video);
 
 #endif // AVD_VULKAN_VIDEO_H

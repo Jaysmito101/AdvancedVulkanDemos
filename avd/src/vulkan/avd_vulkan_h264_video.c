@@ -222,21 +222,29 @@ static bool __avdH264VideoLoadFromBitstream(picoH264Bitstream bitstream, AVD_H26
     return true;
 }
 
-bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, AVD_H264VideoLoadParams *params, AVD_H264Video *outVideo)
+bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo)
 {
     AVD_ASSERT(buffer != NULL);
     AVD_ASSERT(bufferSize > 0);
+    AVD_ASSERT(outVideo != NULL);
+    AVD_H264Video *video = (AVD_H264Video *)malloc(sizeof(AVD_H264Video));
+    AVD_CHECK_MSG(video != NULL, "Failed to allocate memory for H.264 video");
+    *outVideo                   = video;
     picoH264Bitstream bitstream = picoH264BitstreamFromBuffer(buffer, bufferSize);
     AVD_CHECK_MSG(bitstream != NULL, "Failed to create bitstream from buffer");
-    return __avdH264VideoLoadFromBitstream(bitstream, params, outVideo);
+    return __avdH264VideoLoadFromBitstream(bitstream, params, video);
 }
 
-bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *params, AVD_H264Video *outVideo)
+bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo)
 {
     AVD_ASSERT(filename != NULL);
+    AVD_ASSERT(outVideo != NULL);
+    AVD_H264Video *video = (AVD_H264Video *)malloc(sizeof(AVD_H264Video));
+    AVD_CHECK_MSG(video != NULL, "Failed to allocate memory for H.264 video");
+    *outVideo                   = video;
     picoH264Bitstream bitstream = picoH264BitstreamFromFile(filename);
     AVD_CHECK_MSG(bitstream != NULL, "Failed to create bitstream from file: %s", filename);
-    return __avdH264VideoLoadFromBitstream(bitstream, params, outVideo);
+    return __avdH264VideoLoadFromBitstream(bitstream, params, video);
 }
 
 void avdH264VideoDestroy(AVD_H264Video *video)
@@ -262,7 +270,7 @@ void avdH264VideoDestroy(AVD_H264Video *video)
         }
     }
 
-    memset(video, 0, sizeof(AVD_H264Video));
+    free(video);
 }
 
 void avdH264VideoDebugPrint(AVD_H264Video *video)

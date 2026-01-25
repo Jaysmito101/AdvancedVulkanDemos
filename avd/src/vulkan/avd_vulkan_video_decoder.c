@@ -1,8 +1,8 @@
-#include "vulkan/avd_vulkan_video.h"
 #include "core/avd_base.h"
 #include "math/avd_math_base.h"
+#include "vulkan/avd_vulkan_video.h"
 
-static bool __avdVulkanVideoCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideo *video)
+static bool __avdVulkanVideoDecoderCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video)
 {
     VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {
         .sType         = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR,
@@ -82,7 +82,7 @@ static bool __avdVulkanVideoCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideo *v
     return true;
 }
 
-bool avdVulkanVideoCreate(AVD_Vulkan *vulkan, AVD_VulkanVideo *video, AVD_H264Video *h264Video)
+bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(video != NULL);
@@ -93,22 +93,17 @@ bool avdVulkanVideoCreate(AVD_Vulkan *vulkan, AVD_VulkanVideo *video, AVD_H264Vi
         return false;
     }
 
-    AVD_CHECK(__avdVulkanVideoCreateSession(vulkan, video));
+    video->h264Video = h264Video;
+    AVD_CHECK(__avdVulkanVideoDecoderCreateSession(vulkan, video));
 
     return true;
 }
 
-void avdVulkanVideoDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideo *video)
+void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video)
 {
     vkDestroyVideoSessionKHR(vulkan->device, video->session, NULL);
     for (AVD_UInt32 i = 0; i < video->memoryAllocationCount; ++i) {
         vkFreeMemory(vulkan->device, video->memory[i], NULL);
     }
+    avdH264VideoDestroy(video->h264Video);
 }
-
-bool avdVulkanVideoIsSupported(AVD_Vulkan *vulkan)
-{
-    AVD_ASSERT(vulkan != NULL);
-    return vulkan->supportedFeatures.videoDecode;
-}
-

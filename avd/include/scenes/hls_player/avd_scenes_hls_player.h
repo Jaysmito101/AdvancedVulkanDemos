@@ -105,7 +105,7 @@ typedef struct AVD_SceneHLSPlayer {
 
     bool isSupported;
     
-    AVD_VulkanVideo vulkanVideo;
+    AVD_VulkanVideoDecoder vulkanVideo;
 } AVD_SceneHLSPlayer;
 
 bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene);

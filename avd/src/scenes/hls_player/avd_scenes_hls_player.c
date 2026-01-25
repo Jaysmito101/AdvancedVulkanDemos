@@ -9,6 +9,7 @@
 #include "pico/picoThreads.h"
 #include "scenes/avd_scenes.h"
 #include "vulkan/avd_vulkan.h"
+#include "vulkan/avd_vulkan_video.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -631,7 +632,11 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
 
     AVD_CHECK(__avdSceneHLSPlayerInitializeMediaBufferCache(hlsPlayer));
     AVD_CHECK(__avdSceneHLSPlayerPrepWorkers(hlsPlayer));
-    AVD_CHECK(avdVulkanVideoCreate(&appState->vulkan, &hlsPlayer->vulkanVideo));
+
+    // TODO: properly manage this...
+    AVD_H264Video *video = NULL;
+    AVD_CHECK(avdH264VideoLoadFromFile("C:\\Users\\jaysm\\projs\\libpico\\output\\video_25.h264", NULL, &video));
+    AVD_CHECK(avdVulkanVideoDecoderCreate(&appState->vulkan, &hlsPlayer->vulkanVideo, video));
 
     return true;
 }
@@ -643,7 +648,7 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
 
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
 
-    avdVulkanVideoDestroy(&appState->vulkan, &hlsPlayer->vulkanVideo);
+    avdVulkanVideoDecoderDestroy(&appState->vulkan, &hlsPlayer->vulkanVideo);
     __avdSceneHLSPlayerWindDownWorkers(hlsPlayer);
     __avdSceneHLSPlayerShutdownMediaBufferCache(hlsPlayer);
     __avdSceneHLSPlayerFreeSources(appState, hlsPlayer);
