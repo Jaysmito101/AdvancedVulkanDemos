@@ -1,11 +1,15 @@
 #include "scenes/hls_player/avd_scenes_hls_player.h"
 
 #include "avd_application.h"
+#include "core/avd_aligned_buffer.h"
 #include "core/avd_base.h"
+#include "core/avd_types.h"
 #include "core/avd_utils.h"
 #include "font/avd_font.h"
 #include "math/avd_math_base.h"
+#include "pico/picoLog.h"
 #include "pico/picoM3U8.h"
+#include "pico/picoMpegTS.h"
 #include "pico/picoThreads.h"
 #include "scenes/avd_scenes.h"
 #include "vulkan/avd_vulkan.h"
@@ -13,6 +17,8 @@
 
 #include <stdint.h>
 #include <string.h>
+
+#include "pico/picoPerf.h"
 
 typedef struct {
     uint32_t activeSources; // each source has got 4 bits (4 * 8 = 32)
@@ -34,7 +40,10 @@ static void __avdSceneHLSPlayerFreeMediaSegment(void *segmentRaw, void *context)
 
     AVD_SceneHLSPlayerMediaSegmentPayload *segment = (AVD_SceneHLSPlayerMediaSegmentPayload *)segmentRaw;
     AVD_ASSERT(segment != NULL);
-    // TODO: To be implemented when we have actual demuxed data
+    if (segment->segment.video) {
+        avdH264VideoDestroy(segment->segment.video);
+        segment->segment.video = NULL;
+    }
 }
 
 static void __avdSceneHLSPlayerFreeDemuxWorkerPayload(void *segmentRaw, void *context)
@@ -214,6 +223,25 @@ static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSP
     return true;
 }
 
+static bool __avdSceneHLSPlayerFreeLoadedSegments(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+{
+    (void)appState;
+    for (AVD_Size i = 0; i < scene->sourceCount; i++) {
+        for (AVD_Size j = 0; j < AVD_SCENE_HLS_PLAYER_MEDIA_SEGMENTS_LOADED; j++) {
+            AVD_SceneHLSPlayerMediaSegment *segment = &scene->loadedSegments[i][j];
+            if (segment->video) {
+                avdH264VideoDestroy(segment->video);
+                segment->video = NULL;
+            }
+            segment->id                = 0;
+            segment->duration          = 0.0f;
+            segment->sourceIndex       = 0;
+            segment->refreshIntervalMs = 0.0f;
+        }
+    }
+    return true;
+}
+
 static bool __avdSceneHLSPlayerHasSegment(AVD_SceneHLSPlayer *scene, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId)
 {
     AVD_ASSERT(scene != NULL);
@@ -311,10 +339,15 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
         if (source->currentSegmentIndex == 0 || __avdSceneHLSPlayerFindSegment(scene, (AVD_UInt32)i, source->currentSegmentIndex, &currentSegment)) {
             if (source->currentSegmentIndex == 0 || source->currentSegmentStartTime + currentSegment->duration < time) {
                 if (!__avdSceneHLSPlayerFindNextSegment(scene, (AVD_UInt32)i, source->currentSegmentIndex, &source->currentSegmentIndex) && source->currentSegmentIndex != 0) {
+                    avdH264VideoDebugPrint(currentSegment->video);
                     // AVD_LOG_WARN("HLS Main Thread could not find next segment for source index %u after segment index %u", (AVD_UInt32)i, source->currentSegmentIndex);
                     continue;
                 } else if (currentSegment) {
                     currentSegment->id = 0; // free previous segment slot
+                    if (currentSegment->video) {
+                        avdH264VideoDestroy(currentSegment->video);
+                        currentSegment->video = NULL;
+                    }
                 }
 
                 source->currentSegmentStartTime = (AVD_Float)appState->framerate.currentTime;
@@ -358,7 +391,6 @@ static bool __avdSceneHLSPlayerRecieveReadySegments(AVD_AppState *appState, AVD_
         if (!segmentInserted) {
             AVD_LOG_WARN("HLS Main Thread could not insert loaded segment %u for source index %u: no empty slots available", payload.segment.id, payload.segment.sourceIndex);
         }
-        __avdSceneHLSPlayerFreeMediaSegment(&payload, NULL);
     }
 
     return true;
@@ -459,7 +491,60 @@ static void __avdSceneHLSMediaDemuxWorker(void *args)
     AVD_SceneHLSPlayerMediaSegmentPayload segmentPayload = {0};
     while (scene->mediaDemuxWorkerRunning) {
         if (picoThreadChannelReceive(scene->mediaDemuxChannel, &payload, 1000)) {
-            free(payload.data); // TODO: actually demux the data here
+            // gotta parse the mpegts buffer
+            picoMpegTS mpegts = picoMpegTSCreate(true);
+            if (!mpegts) {
+                AVD_LOG_ERROR("Failed to create MPEG-TS parser for source index %u, segment index %u", payload.segment.sourceIndex, payload.segment.id);
+                continue;
+            }
+            if (picoMpegTSAddBuffer(mpegts, (uint8_t *)payload.data, payload.dataSize) != PICO_MPEGTS_RESULT_SUCCESS) {
+                AVD_LOG_ERROR("Failed to parse MPEG-TS buffer for source index %u, segment index %u", payload.segment.sourceIndex, payload.segment.id);
+                picoMpegTSDestroy(mpegts);
+                continue;
+            }
+            size_t pesPacketCount           = 0;
+            picoMpegTSPESPacket *pesPackets = picoMpegTSGetPESPackets(mpegts, &pesPacketCount);
+            AVD_Size totalH264Size          = 0;
+            for (AVD_Size i = 0; i < pesPacketCount; i++) {
+                picoMpegTSPESPacket pesPacket = pesPackets[i];
+                if (picoMpegTSIsStreamIDVideo(pesPacket->head.streamId)) {
+                    totalH264Size += pesPacket->dataLength;
+                }
+            }
+            if (totalH264Size == 0) {
+                AVD_LOG_ERROR("No H.264 video data found in MPEG-TS segment for source index %u, segment index %u", payload.segment.sourceIndex, payload.segment.id);
+                picoMpegTSDestroy(mpegts);
+                continue;
+            }
+            char *h264Buffer = (char *)AVD_MALLOC(totalH264Size);
+            if (!h264Buffer) {
+                AVD_LOG_ERROR("Failed to allocate H.264 buffer for demuxed segment for source index %u, segment index %u", payload.segment.sourceIndex, payload.segment.id);
+                picoMpegTSDestroy(mpegts);
+                continue;
+            }
+            size_t h264Offset = 0;
+            for (AVD_Size i = 0; i < pesPacketCount; i++) {
+                picoMpegTSPESPacket pesPacket = pesPackets[i];
+                if (picoMpegTSIsStreamIDVideo(pesPacket->head.streamId)) {
+                    memcpy(h264Buffer + h264Offset, pesPacket->data, pesPacket->dataLength);
+                    h264Offset += pesPacket->dataLength;
+                }
+            }
+            picoMpegTSDestroy(mpegts);
+
+            segmentPayload.segment.video   = NULL;
+            AVD_H264VideoLoadParams params = {0};
+            avdH264VideoLoadParamsDefault(scene->vulkan, &params);
+            if (!avdH264VideoLoadFromBuffer(
+                    (uint8_t *)h264Buffer,
+                    totalH264Size,
+                    true,
+                    &params,
+                    &segmentPayload.segment.video)) {
+                free(payload.data);
+                AVD_LOG_ERROR("Failed to demux HLS media segment for source index %u, segment index %u", payload.segment.sourceIndex, payload.segment.id);
+                continue;
+            }
 
             segmentPayload.sourcesHash = payload.sourcesHash;
             segmentPayload.segment     = payload.segment;
@@ -630,15 +715,10 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
         AVD_LOG_INFO("Loaded HLS sources from sources.txt");
     }
 
+    hlsPlayer->vulkan = &appState->vulkan;
+
     AVD_CHECK(__avdSceneHLSPlayerInitializeMediaBufferCache(hlsPlayer));
     AVD_CHECK(__avdSceneHLSPlayerPrepWorkers(hlsPlayer));
-
-    // TODO: properly manage this...
-    AVD_H264Video *video                    = NULL;
-    AVD_H264VideoLoadParams videoLoadParams = {0};
-    AVD_CHECK(avdH264VideoLoadParamsDefault(&appState->vulkan, &videoLoadParams));
-    AVD_CHECK(avdH264VideoLoadFromFile("C:\\Users\\jaysm\\projs\\libpico\\output\\video_25.h264", &videoLoadParams, &video));
-    AVD_CHECK(avdVulkanVideoDecoderCreate(&appState->vulkan, &hlsPlayer->vulkanVideo, video));
 
     return true;
 }
@@ -654,6 +734,7 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
     __avdSceneHLSPlayerWindDownWorkers(hlsPlayer);
     __avdSceneHLSPlayerShutdownMediaBufferCache(hlsPlayer);
     __avdSceneHLSPlayerFreeSources(appState, hlsPlayer);
+    __avdSceneHLSPlayerFreeLoadedSegments(appState, hlsPlayer);
 
     avdRenderableTextDestroy(&hlsPlayer->title, &appState->vulkan);
     avdRenderableTextDestroy(&hlsPlayer->info, &appState->vulkan);
@@ -694,6 +775,8 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
     } else if (event->type == AVD_INPUT_EVENT_DRAG_N_DROP) {
         if (event->dragNDrop.count > 0) {
             AVD_LOG_INFO("Trying to load sources from: %s", event->dragNDrop.paths[0]);
+            __avdSceneHLSPlayerFreeLoadedSegments(appState, __avdSceneGetTypePtr(scene));
+            __avdSceneHLSPlayerFreeSources(appState, __avdSceneGetTypePtr(scene));
             __avdSceneHLSPlayerLoadSourcesFromPath(__avdSceneGetTypePtr(scene), event->dragNDrop.paths[0]);
         }
     }

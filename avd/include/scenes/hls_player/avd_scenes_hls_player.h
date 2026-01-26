@@ -29,6 +29,7 @@ typedef struct {
     AVD_Float duration;
     AVD_UInt32 sourceIndex;
     AVD_Float refreshIntervalMs;
+    AVD_H264Video* video;
 } AVD_SceneHLSPlayerMediaSegment;
 
 typedef struct {
@@ -106,6 +107,8 @@ typedef struct AVD_SceneHLSPlayer {
     bool isSupported;
     
     AVD_VulkanVideoDecoder vulkanVideo;
+
+    AVD_Vulkan *vulkan;
 } AVD_SceneHLSPlayer;
 
 bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene);
