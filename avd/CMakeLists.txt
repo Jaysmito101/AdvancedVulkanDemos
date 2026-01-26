@@ -63,14 +63,26 @@ add_executable(avd
     ./src/model/avd_meshgen.c
 
     ./src/scenes/avd_scenes.c
+    
     ./src/scenes/avd_scenes_main_menu.c
+    
     ./src/scenes/bloom/avd_scenes_bloom.c
+    
     ./src/scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.c
+    
     ./src/scenes/deccer_cubes/avd_scenes_deccer_cubes.c
+    
     ./src/scenes/subsurface_scattering/avd_scenes_subsurface_scattering.c
+    
     ./src/scenes/eyeballs/avd_scenes_eyeballs.c
+    
     ./src/scenes/realistic_head/avd_scenes_realistic_head.c
+    
     ./src/scenes/hls_player/avd_scenes_hls_player.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_segment_store.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_url_pool.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_media_cache.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_worker_pool.c
 )
 
 include_directories(avd
