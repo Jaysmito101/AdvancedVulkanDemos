@@ -112,7 +112,7 @@ static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, uint8_t spsId)
 
     return true;
 }
-static bool __avdH264VideoPeekNextNalUnit(AVD_H264Video *video, picoH264NALUnitHeader outNalUnitHeader, bool restorePosition)
+static bool __avdH264VideoPeekNextNalUnit(AVD_H264Video *video, picoH264NALUnitHeader outNalUnitHeader, bool restorePosition, bool *eof)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(outNalUnitHeader != NULL);
@@ -120,7 +120,12 @@ static bool __avdH264VideoPeekNextNalUnit(AVD_H264Video *video, picoH264NALUnitH
     AVD_Size currentCursor = video->bitstream->tell(video->bitstream->userData);
 
     AVD_Size nalUnitSize = 0;
-    AVD_CHECK(picoH264FindNextNALUnit(video->bitstream, &nalUnitSize));
+    if (!picoH264FindNextNALUnit(video->bitstream, &nalUnitSize)) {
+        if (eof) {
+            *eof = true;
+        }
+        return false;
+    }
 
     AVD_CHECK(
         picoH264ReadNALUnit(
@@ -393,13 +398,18 @@ static bool __avdH264VideoCalculatePictureOrderCount(AVD_H264Video *video, picoH
     return true;
 }
 
-static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnitHeader outNalUnitHeader, bool *spsDirty, bool *ppsDirty)
+static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnitHeader outNalUnitHeader, bool *spsDirty, bool *ppsDirty, bool *eof)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(outNalUnitHeader != NULL);
 
     AVD_Size nalUnitSize = 0;
-    AVD_CHECK(picoH264FindNextNALUnit(video->bitstream, &nalUnitSize));
+    if (!picoH264FindNextNALUnit(video->bitstream, &nalUnitSize)) {
+        if (eof) {
+            *eof = true;
+        }
+        return false;
+    }
 
     AVD_Size currentCursor = video->bitstream->tell(video->bitstream->userData);
 
@@ -525,8 +535,6 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnit
             break;
     }
 
-    avdH264VideoDebugPrint(video);
-
     return true;
 }
 
@@ -560,18 +568,22 @@ static bool __avdH264VideoLoadFromBitstream(picoH264Bitstream bitstream, AVD_H26
     bool spsDirty                         = false;
     bool ppsDirty                         = false;
     bool failed                           = false;
+    bool eof                              = false;
     picoH264NALUnitHeader_t nalUnitHeader = {0};
 
     AVD_Size currentCursor = bitstream->tell(bitstream->userData);
-    while (!failed && (spsDirty == false || ppsDirty == false)) {
-        if (!__avdH264VideoPeekNextNalUnit(outVideo, &nalUnitHeader, true)) {
+    while (!failed && !eof && (spsDirty == false || ppsDirty == false)) {
+        if (!__avdH264VideoPeekNextNalUnit(outVideo, &nalUnitHeader, true, &eof)) {
             failed = true;
             break;
         }
 
         if (nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_SPS ||
             nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_PPS) {
-            failed = !__avdH264VideoParseNextNalUnit(outVideo, &nalUnitHeader, &spsDirty, &ppsDirty);
+            if (!__avdH264VideoParseNextNalUnit(outVideo, &nalUnitHeader, &spsDirty, &ppsDirty, &eof)) {
+                failed = !eof;
+                break;
+            }
         } else {
             AVD_Size nalUnitSize = 0;
             AVD_CHECK(picoH264FindNextNALUnit(outVideo->bitstream, &nalUnitSize));
@@ -718,7 +730,7 @@ bool avdH264VideoLoadParamsDefault(AVD_Vulkan *vulkan, AVD_H264VideoLoadParams *
     return true;
 }
 
-bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk)
+bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk, bool *eof)
 {
     AVD_ASSERT(video != NULL);
 
@@ -731,7 +743,12 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk)
 
     do {
         AVD_Size currentCursor = video->bitstream->tell(video->bitstream->userData);
-        AVD_CHECK(__avdH264VideoPeekNextNalUnit(video, &nalUnitHeader, true));
+        if (!__avdH264VideoPeekNextNalUnit(video, &nalUnitHeader, true, eof)) {
+            if (eof && *eof) {
+                break;
+            }
+            AVD_CHECK_MSG(false, "Failed to peek next NAL unit");
+        }
         if (nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_IDR) {
             if (idrEncountered) {
                 break;
@@ -740,11 +757,21 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk)
         } else if (nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_NON_IDR && !idrEncountered) {
             // if we havent yet encountered an IDR frame, we skip non-IDR frames
             AVD_Size nalUnitSize = 0;
-            AVD_CHECK(picoH264FindNextNALUnit(video->bitstream, &nalUnitSize));
+            if (!picoH264FindNextNALUnit(video->bitstream, &nalUnitSize)) {
+                if (eof) {
+                    *eof = true;
+                }
+                break;
+            }
             video->bitstream->seek(video->bitstream->userData, nalUnitSize, SEEK_CUR);
             continue;
         }
-        AVD_CHECK(__avdH264VideoParseNextNalUnit(video, &nalUnitHeader, &spsDirty, &ppsDirty));
+        if (!__avdH264VideoParseNextNalUnit(video, &nalUnitHeader, &spsDirty, &ppsDirty, eof)) {
+            if (eof && *eof) {
+                break;
+            }
+            AVD_CHECK_MSG(false, "Failed to parse next NAL unit");
+        }
     } while (true);
 
     video->currentChunk.spsArray = &video->sps[0];
