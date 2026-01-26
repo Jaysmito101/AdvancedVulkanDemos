@@ -222,7 +222,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType0(AVD_H264Video *video, 
             // therefore we don't have to distinguish between top and bottom fields here
             chunk->pocState.type0.prevPicOrderCntLsb = 0;
         }
-    } else if (outFrameInfo->isReferenceFrame) // reference picture
+    } else if (outFrameInfo->referencePriority != 0) // reference picture
     {
         chunk->pocState.type0.prevPicOrderCntMsb = picOrderCntMsb;
         chunk->pocState.type0.prevPicOrderCntLsb = sliceHeader->picOrderCntLsb;
