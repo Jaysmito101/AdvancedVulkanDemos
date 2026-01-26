@@ -17,6 +17,7 @@ add_executable(avd
     ./src/core/avd_hashtable.c
     ./src/core/avd_hashtable_tests.c
     ./src/core/avd_input.c
+    ./src/core/avd_aligned_buffer.c
 
     ./src/avd_main.c
     ./src/avd_application.c
