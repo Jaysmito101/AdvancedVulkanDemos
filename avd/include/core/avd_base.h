@@ -50,6 +50,22 @@
         }                                                                                            \
     }
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <malloc.h>
+#define AVD_ALIGNED_ALLOC(alignment, size) _aligned_malloc(size, alignment)
+#define AVD_ALIGNED_FREE(ptr)              _aligned_free(ptr)
+#else
+#define AVD_ALIGNED_ALLOC(alignment, size) aligned_alloc(alignment, size)
+#define AVD_ALIGNED_FREE(ptr)              free(ptr)
+#endif
+
+#define AVD_MALLOC(size) malloc(size)
+#define AVD_FREE(ptr) \
+    {                 \
+        free(ptr);    \
+        ptr = NULL;   \
+    }
+
 #define AVD_LOG_INIT()            PICO_LOG_INIT()
 #define AVD_LOG_SHUTDOWN()        PICO_LOG_SHUTDOWN()
 #define AVD_LOG_DEBUG(msg, ...)   PICO_DEBUG(msg, ##__VA_ARGS__)
