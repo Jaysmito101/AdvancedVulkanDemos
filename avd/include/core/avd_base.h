@@ -25,6 +25,8 @@
 #include <windows.h>
 #endif
 
+#include "core/avd_types.h"
+
 #include "pico/picoLog.h"
 
 // common macros
