@@ -108,7 +108,7 @@ static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, uint8_t spsId)
     return true;
 }
 
-static bool __avdH264VideoPeekNextNalUnit(AVD_H264Video *video, picoH264NALUnitHeader outNalUnitHeader)
+static bool __avdH264VideoPeekNextNalUnit(AVD_H264Video *video, picoH264NALUnitHeader outNalUnitHeader, bool restorePosition)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(outNalUnitHeader != NULL);
@@ -134,7 +134,9 @@ static bool __avdH264VideoPeekNextNalUnit(AVD_H264Video *video, picoH264NALUnitH
             video->nalUnitPayloadBuffer,
             &nalUnitPayloadSize));
 
-    video->bitstream->seek(video->bitstream->userData, currentCursor, SEEK_SET);
+    if (restorePosition) {
+        video->bitstream->seek(video->bitstream->userData, currentCursor, SEEK_SET);
+    }
 
     return true;
 }
@@ -246,7 +248,19 @@ static bool __avdH264VideoLoadFromBitstream(picoH264Bitstream bitstream, AVD_H26
 
     AVD_Size currentCursor = bitstream->tell(bitstream->userData);
     while (!failed && (spsDirty == false || ppsDirty == false)) {
-        failed = !__avdH264VideoParseNextNalUnit(outVideo, &nalUnitHeader, &spsDirty, &ppsDirty);
+        if (!__avdH264VideoPeekNextNalUnit(outVideo, &nalUnitHeader, true)) {
+            failed = true;
+            break;
+        }
+
+        if (nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_SPS ||
+            nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_PPS) {
+            failed = !__avdH264VideoParseNextNalUnit(outVideo, &nalUnitHeader, &spsDirty, &ppsDirty);
+        } else {
+            AVD_Size nalUnitSize = 0;
+            AVD_CHECK(picoH264FindNextNALUnit(outVideo->bitstream, &nalUnitSize));
+            outVideo->bitstream->seek(outVideo->bitstream->userData, nalUnitSize, SEEK_CUR);
+        }
     }
     AVD_CHECK_MSG(!failed, "Failed to parse initial SPS/PPS NAL units");
 
@@ -359,7 +373,7 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk)
 
     do {
         AVD_Size currentCursor = video->bitstream->tell(video->bitstream->userData);
-        AVD_CHECK(__avdH264VideoPeekNextNalUnit(video, &nalUnitHeader));
+        AVD_CHECK(__avdH264VideoPeekNextNalUnit(video, &nalUnitHeader, true));
         if (nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_IDR) {
             if (idrEncountered) {
                 break;
