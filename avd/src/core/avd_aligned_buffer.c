@@ -53,6 +53,7 @@ AVD_Bool avdAlignedBufferEmplace(AVD_AlignedBuffer *buffer, AVD_Size size, AVD_D
     }
 
     *dataOut = (AVD_UInt8 *)buffer->data + buffer->size;
+    memset(*dataOut, 0, alignedSize);
     buffer->size += alignedSize;
     return true;
 }
