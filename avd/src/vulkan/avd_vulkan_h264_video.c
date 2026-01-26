@@ -668,6 +668,38 @@ void avdH264VideoDebugPrint(AVD_H264Video *video)
     AVD_LOG_INFO("  Frame Duration: %.6f seconds", video->frameDurationSeconds);
 }
 
+void avdH264VideoChunkDebugPrint(AVD_H264VideoChunk *chunk, bool logFrameInfos)
+{
+    AVD_ASSERT(chunk != NULL);
+
+    AVD_LOG_INFO("H.264 Video Chunk Debug Info:");
+    AVD_LOG_INFO("  Slice Data Buffer:");
+    AVD_LOG_INFO("    Size: %zu bytes", chunk->sliceDataBuffer.size);
+    AVD_LOG_INFO("    Alignment: %zu bytes", chunk->sliceDataBuffer.alignment);
+    AVD_LOG_INFO("    Capacity: %zu bytes", chunk->sliceDataBuffer.capacity);
+    AVD_LOG_INFO("  Number of Frame Infos: %zu", chunk->frameInfos.count);
+    AVD_LOG_INFO("  Number of Slice Headers: %zu", chunk->sliceHeaders.count);
+    AVD_LOG_INFO("  SPS Hash: 0x%08X", chunk->spsHash);
+    AVD_LOG_INFO("  PPS Hash: 0x%08X", chunk->ppsHash);
+    if (logFrameInfos && chunk->frameInfos.count > 0) {
+        AVD_LOG_INFO("  Frame Infos:");
+        for (AVD_Size i = 0; i < chunk->frameInfos.count; ++i) {
+            AVD_H264VideoFrameInfo *frameInfo = (AVD_H264VideoFrameInfo *)avdListGet(&chunk->frameInfos, i);
+            AVD_LOG_INFO("    Frame %zu:", i);
+            AVD_LOG_INFO("      Offset: %zu", frameInfo->offset);
+            AVD_LOG_INFO("      Size: %zu", frameInfo->size);
+            AVD_LOG_INFO("      Timestamp: %.6f seconds", frameInfo->timestampSeconds);
+            AVD_LOG_INFO("      Duration: %.6f seconds", frameInfo->durationSeconds);
+            AVD_LOG_INFO("      Is Reference Frame: %s", frameInfo->isReferenceFrame ? "Yes" : "No");
+            AVD_LOG_INFO("      Reference Priority: %u", frameInfo->referencePriority);
+            AVD_LOG_INFO("      Picture Order Count: %d", frameInfo->pictureOrderCount);
+            AVD_LOG_INFO("      Top Field Order Count: %d", frameInfo->topFieldOrderCount);
+            AVD_LOG_INFO("      Bottom Field Order Count: %d", frameInfo->bottomFieldOrderCount);
+            AVD_LOG_INFO("      Complementary Field Pair: %s", frameInfo->complementaryFieldPair ? "Yes" : "No");
+        }
+    }
+}
+
 bool avdH264VideoLoadParamsDefault(AVD_Vulkan *vulkan, AVD_H264VideoLoadParams *outParams)
 {
     AVD_ASSERT(outParams != NULL);

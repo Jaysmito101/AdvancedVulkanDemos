@@ -26,7 +26,7 @@ typedef struct {
     AVD_Float durationSeconds;
     AVD_UInt32 referencePriority;
     bool isReferenceFrame;
-    AVD_UInt32 displayOrder;
+
     AVD_UInt32 pictureOrderCount;
     AVD_UInt32 topFieldOrderCount;
     AVD_UInt32 bottomFieldOrderCount;
@@ -120,6 +120,7 @@ bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSizem, AVD_H
 bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 void avdH264VideoDestroy(AVD_H264Video *video);
 void avdH264VideoDebugPrint(AVD_H264Video *video);
+void avdH264VideoChunkDebugPrint(AVD_H264VideoChunk *chunk, bool logFrameInfos);
 // load next chunk of NAL units, till the next IDR frame or till end of stream
 // it will be loaded into the internal currentChunk member
 // the current chunk is managed by the video object and will be reset on each call
