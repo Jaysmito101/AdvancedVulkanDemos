@@ -45,9 +45,6 @@ typedef struct AVD_SceneHLSPlayer {
     AVD_HLSWorkerPool workerPool;
 
     bool isSupported;
-
-    AVD_VulkanVideoDecoder vulkanVideo;
-
     AVD_Vulkan *vulkan;
 } AVD_SceneHLSPlayer;
 
