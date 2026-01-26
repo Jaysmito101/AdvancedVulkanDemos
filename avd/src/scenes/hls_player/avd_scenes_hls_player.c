@@ -198,10 +198,7 @@ static AVD_UInt32 __avdSceneHLSPlayerUpdateActiveSources(AVD_SceneHLSPlayer *sce
     for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_SOURCES; i++) {
         currentSegmentIds[i] = scene->sources[i].active ? scene->sources[i].currentSegmentIndex : 0;
     }
-    AVD_UInt32 activeSources = avdHLSSegmentStoreGetActiveSourcesBitfield(&scene->segmentStore, currentSegmentIds);
-    // print activeSources in binary
-    // printBinary(activeSources);
-    return activeSources;
+    return avdHLSSegmentStoreGetActiveSourcesBitfield(&scene->segmentStore, currentSegmentIds);
 }
 
 static bool avdSceneHLSPlayerCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage)
@@ -316,7 +313,7 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
 
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
 
-//    avdVulkanVideoDecoderDestroy(&appState->vulkan, &hlsPlayer->vulkanVideo);
+    //    avdVulkanVideoDecoderDestroy(&appState->vulkan, &hlsPlayer->vulkanVideo);
 
     avdHLSWorkerPoolDestroy(&hlsPlayer->workerPool);
     avdHLSSegmentStoreDestroy(&hlsPlayer->segmentStore);

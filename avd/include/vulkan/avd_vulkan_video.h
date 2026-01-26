@@ -27,6 +27,7 @@ typedef struct {
     AVD_UInt32 referencePriority;
     bool isReferenceFrame;
 
+    AVD_UInt32 chunkDisplayOrder;
     AVD_UInt32 pictureOrderCount;
     AVD_UInt32 topFieldOrderCount;
     AVD_UInt32 bottomFieldOrderCount;
