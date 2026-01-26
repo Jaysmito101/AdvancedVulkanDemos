@@ -6,9 +6,10 @@
 
 static void __avdHLSSegmentStoreResetSlot(AVD_HLSSegmentSlot *slot)
 {
-    if (slot->video) {
-        avdH264VideoDestroy(slot->video);
-        slot->video = NULL;
+    if (slot->h264Buffer) {
+        AVD_FREE(slot->h264Buffer);
+        slot->h264Buffer = NULL;
+        slot->h264Size   = 0;
     }
     slot->segmentId = 0;
     slot->duration  = 0.0f;
@@ -95,16 +96,17 @@ bool avdHLSSegmentStoreReserve(AVD_HLSSegmentStore *store, AVD_UInt32 sourceInde
         __avdHLSSegmentStoreResetSlot(slot);
     }
 
-    slot->segmentId = segmentId;
-    slot->state     = AVD_HLS_SEGMENT_STATE_RESERVED;
-    slot->video     = NULL;
-    slot->duration  = 0.0f;
+    slot->segmentId  = segmentId;
+    slot->state      = AVD_HLS_SEGMENT_STATE_RESERVED;
+    slot->h264Buffer = NULL;
+    slot->h264Size   = 0;
+    slot->duration   = 0.0f;
 
     picoThreadMutexUnlock(ring->mutex);
     return true;
 }
 
-bool avdHLSSegmentStoreCommit(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, AVD_H264Video *video, AVD_Float duration)
+bool avdHLSSegmentStoreCommit(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, uint8_t *h264Buffer, AVD_Size h264Size, AVD_Float duration)
 {
     AVD_ASSERT(store != NULL);
     AVD_ASSERT(sourceIndex < store->sourceCount);
@@ -117,22 +119,23 @@ bool avdHLSSegmentStoreCommit(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex
     AVD_HLSSegmentSlot *slot = &ring->slots[slotIndex];
 
     if (slot->segmentId != segmentId || slot->state != AVD_HLS_SEGMENT_STATE_RESERVED) {
-        if (video) {
-            avdH264VideoDestroy(video);
+        if (h264Buffer) {
+            AVD_FREE(h264Buffer);
         }
         picoThreadMutexUnlock(ring->mutex);
         return false;
     }
 
-    slot->video    = video;
-    slot->duration = duration;
-    slot->state    = AVD_HLS_SEGMENT_STATE_READY;
+    slot->h264Buffer = h264Buffer;
+    slot->h264Size   = h264Size;
+    slot->duration   = duration;
+    slot->state      = AVD_HLS_SEGMENT_STATE_READY;
 
     picoThreadMutexUnlock(ring->mutex);
     return true;
 }
 
-AVD_H264Video *avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId)
+uint8_t *avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, AVD_Size *outH264Size)
 {
     AVD_ASSERT(store != NULL);
     AVD_ASSERT(sourceIndex < store->sourceCount);
@@ -149,12 +152,15 @@ AVD_H264Video *avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 
         return NULL;
     }
 
-    slot->state          = AVD_HLS_SEGMENT_STATE_PLAYING;
-    AVD_H264Video *video = slot->video;
-    slot->video          = NULL; // Transfer ownership
+    slot->state = AVD_HLS_SEGMENT_STATE_PLAYING;
+
+    uint8_t *h264Buffer = slot->h264Buffer;
+    if (outH264Size) {
+        *outH264Size = slot->h264Size;
+    }
 
     picoThreadMutexUnlock(ring->mutex);
-    return video;
+    return h264Buffer;
 }
 
 AVD_HLSSegmentSlot *avdHLSSegmentStoreGetSlot(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId)

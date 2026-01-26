@@ -19,7 +19,8 @@ typedef struct {
     AVD_UInt32 segmentId;
     AVD_Float duration;
     AVD_HLSSegmentState state;
-    AVD_H264Video *video;
+    uint8_t *h264Buffer;
+    AVD_Size h264Size;
 } AVD_HLSSegmentSlot;
 
 typedef struct {
@@ -38,10 +39,10 @@ void avdHLSSegmentStoreDestroy(AVD_HLSSegmentStore *store);
 void avdHLSSegmentStoreClear(AVD_HLSSegmentStore *store);
 
 bool avdHLSSegmentStoreReserve(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
-bool avdHLSSegmentStoreCommit(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, AVD_H264Video *video, AVD_Float duration);
-AVD_H264Video *avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
+bool avdHLSSegmentStoreCommit(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, uint8_t *h264Buffer, AVD_Size h264Size, AVD_Float duration);
 void avdHLSSegmentStoreRelease(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
 void avdHLSSegmentStoreAdvance(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 newMinSegmentId);
+uint8_t* avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, AVD_Size* outH264Size);
 AVD_HLSSegmentSlot *avdHLSSegmentStoreGetSlot(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
 
 bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);

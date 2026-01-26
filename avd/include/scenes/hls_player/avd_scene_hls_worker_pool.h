@@ -6,6 +6,7 @@
 #include "scenes/hls_player/avd_scene_hls_media_cache.h"
 #include "scenes/hls_player/avd_scene_hls_segment_store.h"
 #include "scenes/hls_player/avd_scene_hls_url_pool.h"
+#include <stdint.h>
 
 #define AVD_HLS_WORKER_NUM_SOURCE_WORKERS         4
 #define AVD_HLS_WORKER_NUM_MEDIA_DOWNLOAD_WORKERS 8
@@ -39,12 +40,10 @@ typedef struct {
     AVD_UInt32 segmentId;
     AVD_UInt32 sourceIndex;
     AVD_Float duration;
-    AVD_H264Video *video;
+    uint8_t* h264Buffer;
+    AVD_Size h264Size;
     AVD_UInt32 sourcesHash;
 } AVD_HLSReadyPayload;
-
-struct AVD_Vulkan;
-struct AVD_SceneHLSPlayer;
 
 typedef struct {
     picoThread sourceDownloadWorkers[AVD_HLS_WORKER_NUM_SOURCE_WORKERS];
@@ -63,12 +62,9 @@ typedef struct {
     AVD_HLSURLPool *urlPool;
     AVD_HLSMediaCache *mediaCache;
     AVD_HLSSegmentStore *segmentStore;
-    
-    struct AVD_Vulkan *vulkan;
-    struct AVD_SceneHLSPlayer *scene;
 } AVD_HLSWorkerPool;
 
-bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache, AVD_HLSSegmentStore *segmentStore, struct AVD_Vulkan *vulkan, struct AVD_SceneHLSPlayer *scene);
+bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache, AVD_HLSSegmentStore *segmentStore);
 void avdHLSWorkerPoolDestroy(AVD_HLSWorkerPool *pool);
 void avdHLSWorkerPoolFlush(AVD_HLSWorkerPool *pool);
 

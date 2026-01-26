@@ -4,7 +4,9 @@
 #include "core/avd_base.h"
 #include "core/avd_types.h"
 #include "core/avd_utils.h"
+#include "pico/picoStream.h"
 #include "scenes/avd_scenes.h"
+#include "scenes/hls_player/avd_scene_hls_stream.h"
 #include "vulkan/avd_vulkan_video.h"
 
 #include <stdint.h>
@@ -65,6 +67,8 @@ static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, co
             scene->sources[sourceIndex].currentSegmentStartTime = 0.0f;
             scene->sources[sourceIndex].currentsegmentDuration  = 0.0f;
 
+            scene->sources[sourceIndex].videoDecoder = (AVD_VulkanVideoDecoder){0};
+
             sourceIndex++;
         }
 
@@ -85,6 +89,10 @@ static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSP
     for (AVD_Size i = 0; i < scene->sourceCount; i++) {
         if (scene->sources[i].active) {
             scene->sources[i].active = false;
+        }
+        if (scene->sources[i].videoDecoder.session != VK_NULL_HANDLE) {
+            avdVulkanVideoDecoderDestroy(&appState->vulkan, &scene->sources[i].videoDecoder);
+            scene->sources[i].videoDecoder = (AVD_VulkanVideoDecoder){0};
         }
     }
     scene->sourceCount = 0;
@@ -122,12 +130,29 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
                         avdHLSSegmentStoreRelease(&scene->segmentStore, (AVD_UInt32)i, currentSegmentId);
                     }
 
-                    AVD_H264Video *video = avdHLSSegmentStoreAcquire(&scene->segmentStore, (AVD_UInt32)i, nextSegmentId);
-                    AVD_CHECK_MSG(video != NULL, "Failed to acquire video for segment %u of source index %u", nextSegmentId, (AVD_UInt32)i);
+                    // AVD_LOG_INFO("HLS Source %u playing segment %u [prev segment: %u] %f", (AVD_UInt32)i, nextSegmentId, currentSegmentId, time);
 
-                    AVD_LOG_INFO("HLS Source %u playing segment %u [prev segment: %u] %f", (AVD_UInt32)i, nextSegmentId, currentSegmentId, time);
-                    // avdH264VideoDebugPrint(video);
-                    avdH264VideoDestroy(video);
+                    AVD_Size dataSize = 0;
+                    uint8_t *data     = avdHLSSegmentStoreAcquire(&scene->segmentStore, (AVD_UInt32)i, nextSegmentId, &dataSize);
+
+                    if (source->videoDecoder.session == VK_NULL_HANDLE) {
+                        // TODO: Fix this is broken
+                        picoStream videoSourceStream = avdHLSStreamCreate();
+                        AVD_CHECK_MSG(videoSourceStream != NULL, "Failed to create HLS video source stream");
+
+                        AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, data, dataSize));
+
+                        AVD_H264VideoLoadParams params = {0};
+                        AVD_CHECK(avdH264VideoLoadParamsDefault(&appState->vulkan, &params));
+
+                        AVD_H264Video *video = NULL;
+                        AVD_CHECK(avdH264VideoLoadFromStream(videoSourceStream, &params, &video));
+
+                        AVD_CHECK(avdVulkanVideoDecoderCreate(&appState->vulkan, &source->videoDecoder, video));
+                    } else {
+                        picoStream videoSourceStream = (picoStream)source->videoDecoder.h264Video->bitstream->userData;
+                        AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, data, dataSize));
+                    }
 
                     source->currentSegmentIndex     = nextSegmentId;
                     source->currentSegmentStartTime = time;
@@ -151,8 +176,8 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
     while (avdHLSWorkerPoolReceiveReadySegment(&scene->workerPool, &payload)) {
         if (payload.sourcesHash != scene->sourcesHash) {
             AVD_LOG_WARN("HLS Main Thread received segment for outdated sources hash 0x%08X (current: 0x%08X), discarding", payload.sourcesHash, scene->sourcesHash);
-            if (payload.video) {
-                avdH264VideoDestroy(payload.video);
+            if (payload.h264Buffer) {
+                AVD_FREE(payload.h264Buffer);
             }
             continue;
         }
@@ -165,14 +190,14 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
         bool segmentAlreadyLoaded = avdHLSSegmentStoreHasSegment(&scene->segmentStore, payload.sourceIndex, payload.segmentId);
 
         if (isSegmentOld || segmentAlreadyLoaded) {
-            if (payload.video) {
-                avdH264VideoDestroy(payload.video);
+            if (payload.h264Buffer) {
+                AVD_FREE(payload.h264Buffer);
             }
             continue;
         }
 
         // AVD_LOG_VERBOSE("Received ready segment %u for source index %u (duration: %f s)", payload.segmentId, payload.sourceIndex, payload.duration);
-        if (!avdHLSSegmentStoreCommit(&scene->segmentStore, payload.sourceIndex, payload.segmentId, payload.video, payload.duration)) {
+        if (!avdHLSSegmentStoreCommit(&scene->segmentStore, payload.sourceIndex, payload.segmentId, payload.h264Buffer, payload.h264Size, payload.duration)) {
             AVD_LOG_WARN("HLS Main Thread could not commit segment %u for source index %u", payload.segmentId, payload.sourceIndex);
         }
     }
@@ -297,7 +322,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
     AVD_CHECK(avdHLSURLPoolInit(&hlsPlayer->urlPool));
     AVD_CHECK(avdHLSMediaCacheInit(&hlsPlayer->mediaCache));
     AVD_CHECK(avdHLSSegmentStoreInit(&hlsPlayer->segmentStore, hlsPlayer->sourceCount > 0 ? hlsPlayer->sourceCount : AVD_SCENE_HLS_PLAYER_MAX_SOURCES));
-    AVD_CHECK(avdHLSWorkerPoolInit(&hlsPlayer->workerPool, &hlsPlayer->urlPool, &hlsPlayer->mediaCache, &hlsPlayer->segmentStore, hlsPlayer->vulkan, hlsPlayer));
+    AVD_CHECK(avdHLSWorkerPoolInit(&hlsPlayer->workerPool, &hlsPlayer->urlPool, &hlsPlayer->mediaCache, &hlsPlayer->segmentStore));
 
     return true;
 }

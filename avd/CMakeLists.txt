@@ -81,6 +81,7 @@ add_executable(avd
     ./src/scenes/hls_player/avd_scenes_hls_player.c
     ./src/scenes/hls_player/avd_scenes_hls_player_segment_store.c
     ./src/scenes/hls_player/avd_scenes_hls_player_url_pool.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_stream.c
     ./src/scenes/hls_player/avd_scenes_hls_player_media_cache.c
     ./src/scenes/hls_player/avd_scenes_hls_player_worker_pool.c
 )

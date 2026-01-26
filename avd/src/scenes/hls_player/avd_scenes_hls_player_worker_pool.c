@@ -32,9 +32,10 @@ static void __avdHLSWorkerPoolFreeReadyPayload(void *payloadRaw, void *context)
     AVD_HLSReadyPayload *payload = (AVD_HLSReadyPayload *)payloadRaw;
     AVD_ASSERT(payload != NULL);
 
-    if (payload->video) {
-        avdH264VideoDestroy(payload->video);
-        payload->video = NULL;
+    if (payload->h264Buffer) {
+        AVD_FREE(payload->h264Buffer);
+        payload->h264Buffer = NULL;
+        payload->h264Size   = 0;
     }
 }
 
@@ -192,7 +193,6 @@ static void __avdHLSMediaDemuxWorker(void *arg)
 
         picoPerfTime demuxStartTime = picoPerfNow();
 
-        char *h264Buffer  = NULL;
         picoMpegTS mpegts = picoMpegTSCreate(false);
         if (!mpegts) {
             AVD_LOG_ERROR("Failed to create MPEG-TS parser for segment %u", demuxPayload.segmentId);
@@ -222,7 +222,7 @@ static void __avdHLSMediaDemuxWorker(void *arg)
             goto cleanup;
         }
 
-        h264Buffer = (char *)AVD_MALLOC(totalH264Size);
+        char *h264Buffer = (char *)AVD_MALLOC(totalH264Size);
         if (!h264Buffer) {
             AVD_LOG_ERROR("Failed to allocate H.264 buffer for segment %u", demuxPayload.segmentId);
             goto cleanup;
@@ -237,21 +237,11 @@ static void __avdHLSMediaDemuxWorker(void *arg)
             }
         }
 
-        AVD_H264Video *video           = NULL;
-        AVD_H264VideoLoadParams params = {0};
-        avdH264VideoLoadParamsDefault(pool->vulkan, &params);
-
-        if (!avdH264VideoLoadFromBuffer((uint8_t *)h264Buffer, totalH264Size, true, &params, &video)) {
-            AVD_LOG_ERROR("Failed to load H.264 video for segment %u", demuxPayload.segmentId);
-            goto cleanup;
-        }
-
-        h264Buffer = NULL; // ownership transferred to avdH264VideoLoadFromBuffer
-
         readyPayload.segmentId   = demuxPayload.segmentId;
         readyPayload.sourceIndex = demuxPayload.sourceIndex;
         readyPayload.duration    = demuxPayload.duration;
-        readyPayload.video       = video;
+        readyPayload.h264Buffer  = (uint8_t *)h264Buffer;
+        readyPayload.h264Size    = totalH264Size;
         readyPayload.sourcesHash = demuxPayload.sourcesHash;
 
         picoPerfTime demuxEndTime = picoPerfNow();
@@ -259,13 +249,10 @@ static void __avdHLSMediaDemuxWorker(void *arg)
 
         if (!picoThreadChannelSend(pool->mediaReadyChannel, &readyPayload)) {
             AVD_LOG_ERROR("Failed to send ready segment %u", demuxPayload.segmentId);
-            avdH264VideoDestroy(video);
+            AVD_FREE(h264Buffer);
         }
 
     cleanup:
-        if (h264Buffer) {
-            free(h264Buffer);
-        }
         if (mpegts) {
             picoMpegTSDestroy(mpegts);
         }
@@ -277,22 +264,18 @@ static void __avdHLSMediaDemuxWorker(void *arg)
     AVD_LOG_INFO("HLS Media Demux Worker stopping with thread ID: %llu.", picoThreadGetCurrentId());
 }
 
-bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache, AVD_HLSSegmentStore *segmentStore, struct AVD_Vulkan *vulkan, struct AVD_SceneHLSPlayer *scene)
+bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache, AVD_HLSSegmentStore *segmentStore)
 {
     AVD_ASSERT(pool != NULL);
     AVD_ASSERT(urlPool != NULL);
     AVD_ASSERT(mediaCache != NULL);
     AVD_ASSERT(segmentStore != NULL);
-    AVD_ASSERT(vulkan != NULL);
-    AVD_ASSERT(scene != NULL);
 
     memset(pool, 0, sizeof(AVD_HLSWorkerPool));
 
     pool->urlPool      = urlPool;
     pool->mediaCache   = mediaCache;
     pool->segmentStore = segmentStore;
-    pool->vulkan       = vulkan;
-    pool->scene        = scene;
 
     pool->sourceDownloadChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_HLSSourceTaskPayload));
     AVD_CHECK_MSG(pool->sourceDownloadChannel != NULL, "Failed to create source download channel");

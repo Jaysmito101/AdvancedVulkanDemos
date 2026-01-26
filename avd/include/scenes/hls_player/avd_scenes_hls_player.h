@@ -19,6 +19,7 @@ typedef struct {
     AVD_UInt32 currentSegmentIndex;
     AVD_Float currentSegmentStartTime;
     AVD_Float currentsegmentDuration;
+    AVD_VulkanVideoDecoder videoDecoder;
 } AVD_SceneHLSPlayerSource;
 
 typedef struct AVD_SceneHLSPlayer {
