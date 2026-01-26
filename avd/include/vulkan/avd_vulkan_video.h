@@ -1,6 +1,8 @@
 #ifndef AVD_VULKAN_VIDEO_H
 #define AVD_VULKAN_VIDEO_H
 
+#include "core/avd_aligned_buffer.h"
+#include "core/avd_types.h"
 #include "math/avd_math_base.h"
 #include "pico/picoH264.h"
 #include "vulkan/avd_vulkan_base.h"
@@ -31,20 +33,34 @@ typedef struct {
 
 typedef struct {
     AVD_Size bufferOffset;    // offset to start parsing from
+    AVD_Size frameDataAlignment; // alignment for frame data allocations
 } AVD_H264VideoLoadParams;
 
 
 typedef struct {
+    AVD_AlignedBuffer sliceDataBuffer;
+
+    AVD_List frameInfos;
+    AVD_List sliceHeaders;
+
+    picoH264PictureParameterSet ppsArray;
+    AVD_UInt32 ppsHash;
+
+    picoH264SequenceParameterSet spsArray;
+    AVD_UInt32 spsHash;
+} AVD_H264VideoChunk;
+
+typedef struct {
     picoH264SequenceParameterSet sps[PICO_H264_MAX_SPS_COUNT];
+    AVD_UInt32 spsHash;
 
     picoH264PictureParameterSet pps[PICO_H264_MAX_PPS_COUNT];
-
-    AVD_UInt32 spsHash;
     AVD_UInt32 ppsHash;
+
+    AVD_H264VideoChunk currentChunk;
 
     uint8_t* nalUnitBuffer;
     uint8_t* nalUnitPayloadBuffer;
-
 
     AVD_UInt32 width;
     AVD_UInt32 height;
@@ -70,14 +86,19 @@ typedef struct {
     AVD_H264Video* h264Video;
 } AVD_VulkanVideoDecoder;
 
-bool avdH264VideoLoadParamsDefault(AVD_H264VideoLoadParams *outParams);
+bool avdH264VideoLoadParamsDefault(AVD_Vulkan* vulkan, AVD_H264VideoLoadParams *outParams);
 
 bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSizem, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 void avdH264VideoDestroy(AVD_H264Video *video);
 void avdH264VideoDebugPrint(AVD_H264Video *video);
+// load next chunk of NAL units, till the next IDR frame or till end of stream
+// it will be loaded into the internal currentChunk member
+// the current chunk is managed by the video object and will be reset on each call
+bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk** outChunk);
 
 bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video);
 void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video);
+
 
 #endif // AVD_VULKAN_VIDEO_H
