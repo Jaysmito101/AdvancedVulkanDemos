@@ -41,4 +41,6 @@
 #include "pico/picoLog.h"
 #include "pico/picoM3U8.h"
 #include "pico/picoMpegTS.h"
+#include "pico/picoPerf.h"
 #include "pico/picoThreads.h"
+
