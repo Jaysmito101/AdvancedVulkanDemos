@@ -7,7 +7,62 @@
 #include "vulkan/avd_vulkan_video.h"
 
 #include "pico/picoH264.h"
+#include "pico/picoStream.h"
 #include <stdint.h>
+
+static size_t __avdH264BitstreamReadCallback(void *userData, uint8_t *buffer, size_t size)
+{
+    picoStream stream = (picoStream)userData;
+    return picoStreamRead(stream, buffer, size);
+}
+
+static bool __avdH264BitstreamSeekCallback(void *userData, int64_t offset, int origin)
+{
+    picoStream stream = (picoStream)userData;
+    picoStreamSeekOrigin streamOrigin;
+    switch (origin) {
+        case SEEK_SET:
+            streamOrigin = PICO_STREAM_SEEK_SET;
+            break;
+        case SEEK_CUR:
+            streamOrigin = PICO_STREAM_SEEK_CUR;
+            break;
+        case SEEK_END:
+            streamOrigin = PICO_STREAM_SEEK_END;
+            break;
+        default:
+            return false;
+    }
+    return picoStreamSeek(stream, offset, streamOrigin) == 0;
+}
+
+static size_t __avdH264BitstreamTellCallback(void *userData)
+{
+    picoStream stream = (picoStream)userData;
+    return (size_t)picoStreamTell(stream);
+}
+
+static void __avdH264BitstreamDestroyCallback(void *userData)
+{
+    picoStream stream = (picoStream)userData;
+    if (stream) {
+        picoStreamDestroy(stream);
+    }
+}
+
+static picoH264Bitstream __avdH264BitstreamFromPicoStream(picoStream stream)
+{
+    picoH264Bitstream bitstream = picoH264BitstreamCreate();
+    if (!bitstream) {
+        return NULL;
+    }
+    bitstream->userData = stream;
+    bitstream->read     = __avdH264BitstreamReadCallback;
+    bitstream->seek     = __avdH264BitstreamSeekCallback;
+    bitstream->tell     = __avdH264BitstreamTellCallback;
+    bitstream->destroy  = __avdH264BitstreamDestroyCallback;
+    return bitstream;
+}
 
 static bool __avdH264VideoAddSPS(AVD_H264Video *video, picoH264SequenceParameterSet sps)
 {
@@ -540,9 +595,9 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnit
     return true;
 }
 
-static bool __avdH264VideoLoadFromBitstream(picoH264Bitstream bitstream, AVD_H264VideoLoadParams *params, AVD_H264Video *outVideo)
+static bool __avdH264VideoLoadFromStream(picoStream stream, AVD_H264VideoLoadParams *params, AVD_H264Video *outVideo)
 {
-    AVD_ASSERT(bitstream != NULL);
+    AVD_ASSERT(stream != NULL);
     AVD_ASSERT(outVideo != NULL);
     AVD_ASSERT(params != NULL);
 
@@ -554,7 +609,7 @@ static bool __avdH264VideoLoadFromBitstream(picoH264Bitstream bitstream, AVD_H26
 
     avdListCreate(&outVideo->seekPoints, sizeof(AVD_H264VideoSeekInfo));
 
-    bitstream->seek(bitstream->userData, params->bufferOffset, SEEK_SET);
+    picoStreamSeek(stream, (int64_t)params->bufferOffset, PICO_STREAM_SEEK_SET);
 
     outVideo->nalUnitBuffer = (uint8_t *)malloc(AVD_VULKAN_VIDEO_MAX_NAL_TEMP_BUFFER_SIZE);
     AVD_CHECK_MSG(outVideo->nalUnitBuffer != NULL, "Failed to allocate memory for NAL unit buffer");
@@ -562,18 +617,16 @@ static bool __avdH264VideoLoadFromBitstream(picoH264Bitstream bitstream, AVD_H26
     outVideo->nalUnitPayloadBuffer = (uint8_t *)malloc(AVD_VULKAN_VIDEO_MAX_NAL_TEMP_BUFFER_SIZE);
     AVD_CHECK_MSG(outVideo->nalUnitPayloadBuffer != NULL, "Failed to allocate memory for NAL unit payload buffer");
 
-    outVideo->bitstream = bitstream;
+    outVideo->bitstream = __avdH264BitstreamFromPicoStream(stream);
+    AVD_CHECK_MSG(outVideo->bitstream != NULL, "Failed to create bitstream from picoStream");
 
-    // initially we parse a few sps and pps units to setup the video parameters
-    // dirty flags arent propagated out here, as its assumed this is the initial load
-    // and the flags are always dirty
     bool spsDirty                         = false;
     bool ppsDirty                         = false;
     bool failed                           = false;
     bool eof                              = false;
     picoH264NALUnitHeader_t nalUnitHeader = {0};
 
-    AVD_Size currentCursor = bitstream->tell(bitstream->userData);
+    AVD_Size currentCursor = outVideo->bitstream->tell(outVideo->bitstream->userData);
     while (!failed && !eof && (spsDirty == false || ppsDirty == false)) {
         if (!__avdH264VideoPeekNextNalUnit(outVideo, &nalUnitHeader, true, &eof)) {
             failed = true;
@@ -594,7 +647,7 @@ static bool __avdH264VideoLoadFromBitstream(picoH264Bitstream bitstream, AVD_H26
     }
     AVD_CHECK_MSG(!failed, "Failed to parse initial SPS/PPS NAL units");
 
-    bitstream->seek(bitstream->userData, currentCursor, SEEK_SET);
+    outVideo->bitstream->seek(outVideo->bitstream->userData, currentCursor, SEEK_SET);
 
     return true;
 }
@@ -625,10 +678,10 @@ bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, AVD_H2
     AVD_ASSERT(outVideo != NULL);
     AVD_H264Video *video = (AVD_H264Video *)malloc(sizeof(AVD_H264Video));
     AVD_CHECK_MSG(video != NULL, "Failed to allocate memory for H.264 video");
-    *outVideo                   = video;
-    picoH264Bitstream bitstream = picoH264BitstreamFromBuffer(buffer, bufferSize);
-    AVD_CHECK_MSG(bitstream != NULL, "Failed to create bitstream from buffer");
-    return __avdH264VideoLoadFromBitstream(bitstream, params, video);
+    *outVideo         = video;
+    picoStream stream = picoStreamFromMemory((void *)buffer, bufferSize, true, false, false);
+    AVD_CHECK_MSG(stream != NULL, "Failed to create picoStream from buffer");
+    return __avdH264VideoLoadFromStream(stream, params, video);
 }
 
 bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo)
@@ -637,10 +690,10 @@ bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *par
     AVD_ASSERT(outVideo != NULL);
     AVD_H264Video *video = (AVD_H264Video *)malloc(sizeof(AVD_H264Video));
     AVD_CHECK_MSG(video != NULL, "Failed to allocate memory for H.264 video");
-    *outVideo                   = video;
-    picoH264Bitstream bitstream = picoH264BitstreamFromFile(filename);
-    AVD_CHECK_MSG(bitstream != NULL, "Failed to create bitstream from file: %s", filename);
-    return __avdH264VideoLoadFromBitstream(bitstream, params, video);
+    *outVideo         = video;
+    picoStream stream = picoStreamFromFileMapped(filename);
+    AVD_CHECK_MSG(stream != NULL, "Failed to create picoStream from file: %s", filename);
+    return __avdH264VideoLoadFromStream(stream, params, video);
 }
 
 void avdH264VideoDestroy(AVD_H264Video *video)
