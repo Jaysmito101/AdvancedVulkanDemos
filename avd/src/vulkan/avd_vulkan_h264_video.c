@@ -445,8 +445,10 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnit
                     nalUnitPayloadSize,
                     sps,
                     &pps));
-            if (ppsDirty) {
-                *ppsDirty |= true;
+            if (__avdH264VideoAddPPS(video, &pps)) {
+                if (ppsDirty) {
+                    *ppsDirty |= true;
+                }
             }
             break;
         }
