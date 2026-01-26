@@ -42,5 +42,5 @@
 #include "pico/picoM3U8.h"
 #include "pico/picoMpegTS.h"
 #include "pico/picoPerf.h"
+#include "pico/picoStream.h"
 #include "pico/picoThreads.h"
-
