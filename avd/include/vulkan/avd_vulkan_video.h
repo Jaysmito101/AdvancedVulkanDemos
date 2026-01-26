@@ -116,7 +116,7 @@ typedef struct {
 
 bool avdH264VideoLoadParamsDefault(AVD_Vulkan* vulkan, AVD_H264VideoLoadParams *outParams);
 
-bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
+bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, bool bufferOwned, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 void avdH264VideoDestroy(AVD_H264Video *video);
 void avdH264VideoDebugPrint(AVD_H264Video *video);

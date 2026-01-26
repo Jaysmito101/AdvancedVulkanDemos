@@ -671,7 +671,7 @@ static bool __avdH264VideoResetChunk(AVD_H264Video *video)
     return true;
 }
 
-bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo)
+bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, bool bufferOwned, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo)
 {
     AVD_ASSERT(buffer != NULL);
     AVD_ASSERT(bufferSize > 0);
@@ -679,7 +679,7 @@ bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, AVD_H2
     AVD_H264Video *video = (AVD_H264Video *)malloc(sizeof(AVD_H264Video));
     AVD_CHECK_MSG(video != NULL, "Failed to allocate memory for H.264 video");
     *outVideo         = video;
-    picoStream stream = picoStreamFromMemory((void *)buffer, bufferSize, true, false, false);
+    picoStream stream = picoStreamFromMemory((void *)buffer, bufferSize, true, false, bufferOwned);
     AVD_CHECK_MSG(stream != NULL, "Failed to create picoStream from buffer");
     return __avdH264VideoLoadFromStream(stream, params, video);
 }
