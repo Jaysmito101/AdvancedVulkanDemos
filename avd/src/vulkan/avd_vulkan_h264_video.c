@@ -107,7 +107,6 @@ static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, uint8_t spsId)
 
     return true;
 }
-
 static bool __avdH264VideoPeekNextNalUnit(AVD_H264Video *video, picoH264NALUnitHeader outNalUnitHeader, bool restorePosition)
 {
     AVD_ASSERT(video != NULL);
@@ -141,6 +140,254 @@ static bool __avdH264VideoPeekNextNalUnit(AVD_H264Video *video, picoH264NALUnitH
     return true;
 }
 
+static bool __avdH264VideoIsMMCO5Present(picoH264SliceHeader sliceHeader, picoH264NALRefIDC nalRefIdc)
+{
+    AVD_ASSERT(sliceHeader != NULL);
+
+    if (nalRefIdc == PICO_H264_NAL_REF_IDC_DISPOSABLE) {
+        return false;
+    }
+
+    picoH264DecRefPicMarking marking = &sliceHeader->decRefPicMarking;
+    if (marking->adaptiveRefPicMarkingModeFlag) {
+        for (AVD_Size i = 0; i < marking->numMMCOOperations; ++i) {
+            picoH264MMCOOperation op = &marking->mmcoOperations[i];
+            if (op->memoryManagementControlOperation == 5) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+static bool __avdH264VideoCalculatePictureOrderCountType0(AVD_H264Video *video, picoH264SequenceParameterSet sps, picoH264SliceHeader sliceHeader, AVD_H264VideoFrameInfo *outFrameInfo)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(sps != NULL);
+    AVD_ASSERT(sliceHeader != NULL);
+    AVD_ASSERT(outFrameInfo != NULL);
+
+    if (!outFrameInfo->isReferenceFrame) {
+        // reset poc state on IDR frames
+        video->currentChunk.pocState.type0.prevPicOrderCntMsb = 0;
+        video->currentChunk.pocState.type0.prevPicOrderCntLsb = 0;
+    }
+
+    // this determines the poc wrap around point (7 - 2)
+    AVD_UInt32 maxPicOrderCntLsb = 1 << (sps->log2MaxPicOrderCntLsbMinus4 + 4);
+
+    AVD_H264VideoChunk *chunk = &video->currentChunk;
+
+    // calculate msb with wrap around detection (8-3)
+    AVD_UInt32 picOrderCntMsb = 0;
+    if ((sliceHeader->picOrderCntLsb < chunk->pocState.type0.prevPicOrderCntLsb) && ((chunk->pocState.type0.prevPicOrderCntLsb - sliceHeader->picOrderCntLsb) >= (maxPicOrderCntLsb / 2))) {
+        picOrderCntMsb = chunk->pocState.type0.prevPicOrderCntMsb + maxPicOrderCntLsb; // wrapped forward
+    } else if ((sliceHeader->picOrderCntLsb > chunk->pocState.type0.prevPicOrderCntLsb) && ((sliceHeader->picOrderCntLsb - chunk->pocState.type0.prevPicOrderCntLsb) > (maxPicOrderCntLsb / 2))) {
+        picOrderCntMsb = chunk->pocState.type0.prevPicOrderCntMsb - maxPicOrderCntLsb; // wrapped backward
+    } else {
+        picOrderCntMsb = chunk->pocState.type0.prevPicOrderCntMsb; // no wrap
+    }
+
+    // top field order count calculation (8-4)
+    if (!sliceHeader->fieldPicFlag || !sliceHeader->bottomFieldFlag) {
+        outFrameInfo->topFieldOrderCount = picOrderCntMsb + sliceHeader->picOrderCntLsb;
+    }
+
+    // bottom field order count calculation (8-5)
+    if (!sliceHeader->fieldPicFlag) {
+        outFrameInfo->bottomFieldOrderCount = outFrameInfo->topFieldOrderCount + sliceHeader->deltaPicOrderCntBottom;
+    } else if (sliceHeader->bottomFieldFlag) {
+        outFrameInfo->bottomFieldOrderCount = picOrderCntMsb + sliceHeader->picOrderCntLsb;
+    }
+
+    if (__avdH264VideoIsMMCO5Present(sliceHeader, (picoH264NALRefIDC)outFrameInfo->referencePriority)) {
+        chunk->pocState.type0.prevPicOrderCntMsb = 0;
+        if (!sliceHeader->fieldPicFlag) {
+            // set to TopFieldOrderCount after having been reset by mmco 5
+            int tempPicOrderCnt                      = AVD_MIN(outFrameInfo->topFieldOrderCount, outFrameInfo->bottomFieldOrderCount);
+            chunk->pocState.type0.prevPicOrderCntLsb = outFrameInfo->topFieldOrderCount - tempPicOrderCnt;
+        } else {
+            // note that for a top field TopFieldOrderCnt is 0 after mmco 5
+            // therefore we don't have to distinguish between top and bottom fields here
+            chunk->pocState.type0.prevPicOrderCntLsb = 0;
+        }
+    } else if (outFrameInfo->isReferenceFrame) // reference picture
+    {
+        chunk->pocState.type0.prevPicOrderCntMsb = picOrderCntMsb;
+        chunk->pocState.type0.prevPicOrderCntLsb = sliceHeader->picOrderCntLsb;
+    }
+
+    return true;
+}
+
+static bool __avdH264VideoCalculatePictureOrderCountType1(AVD_H264Video *video, picoH264SequenceParameterSet sps, picoH264SliceHeader sliceHeader, AVD_H264VideoFrameInfo *outFrameInfo)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(sps != NULL);
+    AVD_ASSERT(sliceHeader != NULL);
+    AVD_ASSERT(outFrameInfo != NULL);
+
+    AVD_UInt32 maxFrameNum = 1 << (sps->log2MaxFrameNumMinus4 + 4); // (7-1)
+
+    AVD_H264VideoChunk *chunk = &video->currentChunk;
+
+    // FrameNumOffset (8-6)
+    AVD_UInt32 frameNumOffset = 0;
+    if (!outFrameInfo->isReferenceFrame) { // (nal_unit_type == 5)
+        frameNumOffset = 0;
+    } else if (chunk->pocState.type1.prevFrameNum > sliceHeader->frameNum) {
+        frameNumOffset = chunk->pocState.type1.prevFrameNumOffset + maxFrameNum;
+    } else {
+        frameNumOffset = chunk->pocState.type1.prevFrameNumOffset;
+    }
+
+    // absFrameNum (8-7)
+    AVD_UInt32 absFrameNum = 0;
+    if (sps->numRefFramesInPicOrderCntCycle > 0) {
+        absFrameNum = frameNumOffset + sliceHeader->frameNum;
+    } else {
+        absFrameNum = 0;
+    }
+
+    if (outFrameInfo->referencePriority == 0 && absFrameNum > 0) {
+        absFrameNum = absFrameNum - 1;
+    }
+
+    // picOrderCntCycleCnt, frameNumInPicOrderCntCycle (8-8)
+    AVD_UInt32 expectedPicOrderCnt = 0;
+    if (absFrameNum > 0) {
+        AVD_UInt32 picOrderCntCycleCnt        = (absFrameNum - 1) / sps->numRefFramesInPicOrderCntCycle;
+        AVD_UInt32 frameNumInPicOrderCntCycle = (absFrameNum - 1) % sps->numRefFramesInPicOrderCntCycle;
+        // expectedDeltaPerPicOrderCntCycle (8-9)
+        AVD_UInt32 expectedDeltaPerPicOrderCntCycle = 0;
+        for (AVD_UInt32 i = 0; i < sps->numRefFramesInPicOrderCntCycle; i++) {
+            expectedDeltaPerPicOrderCntCycle += sps->offsetForRefFrame[i];
+        }
+        // expectedPicOrderCnt (8-10)
+        expectedPicOrderCnt = picOrderCntCycleCnt * expectedDeltaPerPicOrderCntCycle;
+        for (AVD_UInt32 i = 0; i <= frameNumInPicOrderCntCycle; i++) {
+            expectedPicOrderCnt = expectedPicOrderCnt + sps->offsetForRefFrame[i];
+        }
+    } else {
+        expectedPicOrderCnt = 0;
+    }
+
+    if (outFrameInfo->referencePriority == 0) {
+        expectedPicOrderCnt += sps->offsetForNonRefPic;
+    }
+
+    // TopFieldOrderCnt, BottomFieldOrderCnt (8-11)
+    if (!sliceHeader->fieldPicFlag) {
+        outFrameInfo->topFieldOrderCount    = expectedPicOrderCnt + sliceHeader->deltaPicOrderCnt[0];
+        outFrameInfo->bottomFieldOrderCount = outFrameInfo->topFieldOrderCount + sps->offsetForTopToBottomField + sliceHeader->deltaPicOrderCnt[1];
+    } else if (!sliceHeader->bottomFieldFlag) {
+        outFrameInfo->topFieldOrderCount = expectedPicOrderCnt + sliceHeader->deltaPicOrderCnt[0];
+    } else {
+        outFrameInfo->bottomFieldOrderCount = expectedPicOrderCnt + sps->offsetForTopToBottomField + sliceHeader->deltaPicOrderCnt[0];
+    }
+
+    if (__avdH264VideoIsMMCO5Present(sliceHeader, (picoH264NALRefIDC)outFrameInfo->referencePriority)) {
+        chunk->pocState.type1.prevFrameNumOffset = 0;
+        chunk->pocState.type1.prevFrameNum       = 0;
+    } else {
+        chunk->pocState.type1.prevFrameNumOffset = frameNumOffset;
+        chunk->pocState.type1.prevFrameNum       = sliceHeader->frameNum;
+    }
+
+    return true;
+}
+
+static bool __avdH264VideoCalculatePictureOrderCountType2(AVD_H264Video *video, picoH264SequenceParameterSet sps, picoH264SliceHeader sliceHeader, AVD_H264VideoFrameInfo *outFrameInfo)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(sps != NULL);
+    AVD_ASSERT(sliceHeader != NULL);
+    AVD_ASSERT(outFrameInfo != NULL);
+
+    AVD_H264VideoChunk *chunk = &video->currentChunk;
+
+    AVD_UInt32 maxFrameNum = 1 << (sps->log2MaxFrameNumMinus4 + 4); // (7-1)
+
+    // FrameNumOffset (8-12)
+    AVD_UInt32 frameNumOffset = 0;
+    if (!outFrameInfo->isReferenceFrame) { // (slh->nal_unit_type == 5)
+        frameNumOffset = 0;
+    } else if (chunk->pocState.type2.prevFrameNum > sliceHeader->frameNum) {
+        frameNumOffset = chunk->pocState.type2.prevFrameNumOffset + maxFrameNum;
+    } else {
+        frameNumOffset = chunk->pocState.type2.prevFrameNumOffset;
+    }
+
+    // tempPicOrderCnt (8-13)
+    AVD_Int32 tempPicOrderCnt = 0;
+    if (!outFrameInfo->isReferenceFrame) { // (slh->nal_unit_type == 5)
+        tempPicOrderCnt = 0;
+    } else if (outFrameInfo->referencePriority == 0) {
+        tempPicOrderCnt = 2 * (frameNumOffset + sliceHeader->frameNum) - 1;
+    } else {
+        tempPicOrderCnt = 2 * (frameNumOffset + sliceHeader->frameNum);
+    }
+
+    // TopFieldOrderCnt, BottomFieldOrderCnt (8-14)
+    if (!sliceHeader->fieldPicFlag) {
+        outFrameInfo->topFieldOrderCount    = tempPicOrderCnt;
+        outFrameInfo->bottomFieldOrderCount = tempPicOrderCnt;
+    } else if (sliceHeader->bottomFieldFlag) {
+        outFrameInfo->bottomFieldOrderCount = tempPicOrderCnt;
+    } else {
+        outFrameInfo->topFieldOrderCount = tempPicOrderCnt;
+    }
+
+    if (__avdH264VideoIsMMCO5Present(sliceHeader, (picoH264NALRefIDC)outFrameInfo->referencePriority)) {
+        chunk->pocState.type2.prevFrameNumOffset = 0;
+        chunk->pocState.type2.prevFrameNum       = 0;
+    } else {
+        chunk->pocState.type2.prevFrameNumOffset = frameNumOffset;
+        chunk->pocState.type2.prevFrameNum       = sliceHeader->frameNum;
+    }
+
+    return true;
+}
+
+static bool __avdH264VideoCalculatePictureOrderCount(AVD_H264Video *video, picoH264SequenceParameterSet sps, picoH264SliceHeader sliceHeader, AVD_H264VideoFrameInfo *outFrameInfo)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(sps != NULL);
+    AVD_ASSERT(sliceHeader != NULL);
+    AVD_ASSERT(outFrameInfo != NULL);
+
+    switch (sps->picOrderCntType) {
+        case 0: {
+            AVD_CHECK(__avdH264VideoCalculatePictureOrderCountType0(video, sps, sliceHeader, outFrameInfo));
+            break;
+        }
+        case 1: {
+            AVD_CHECK(__avdH264VideoCalculatePictureOrderCountType1(video, sps, sliceHeader, outFrameInfo));
+            break;
+        }
+        case 2: {
+            AVD_CHECK(__avdH264VideoCalculatePictureOrderCountType2(video, sps, sliceHeader, outFrameInfo));
+            break;
+        }
+        default:
+            AVD_CHECK_MSG(false, "Unsupported pic order count type: %d", sps->picOrderCntType);
+            break;
+    }
+
+    if (sliceHeader->fieldPicFlag || outFrameInfo->complementaryFieldPair) {
+        outFrameInfo->pictureOrderCount = AVD_MIN(
+            outFrameInfo->topFieldOrderCount,
+            outFrameInfo->bottomFieldOrderCount);
+    } else if (!sliceHeader->bottomFieldFlag) {
+        outFrameInfo->pictureOrderCount = outFrameInfo->topFieldOrderCount;
+    } else {
+        outFrameInfo->pictureOrderCount = outFrameInfo->bottomFieldOrderCount;
+    }
+
+    return true;
+}
+
 static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnitHeader outNalUnitHeader, bool *spsDirty, bool *ppsDirty)
 {
     AVD_ASSERT(video != NULL);
@@ -148,6 +395,8 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnit
 
     AVD_Size nalUnitSize = 0;
     AVD_CHECK(picoH264FindNextNALUnit(video->bitstream, &nalUnitSize));
+
+    AVD_Size currentCursor = video->bitstream->tell(video->bitstream->userData);
 
     AVD_CHECK(
         picoH264ReadNALUnit(
@@ -201,10 +450,68 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnit
             }
             break;
         }
-        case PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_IDR: {
-            break;
-        }
+        case PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_IDR:
         case PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_NON_IDR: {
+            bool isReferenceFrame = (outNalUnitHeader->nalUnitType != PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_IDR);
+            uint8_t ppsId         = 0;
+            uint8_t spsId         = 0;
+            AVD_CHECK(picoH264SliceHeaderParsePPSId(
+                video->nalUnitPayloadBuffer,
+                nalUnitPayloadSize,
+                &ppsId));
+            picoH264PictureParameterSet pps = video->pps[ppsId];
+            AVD_CHECK_MSG(pps != NULL, "Could not find referenced PPS ID %u for Slice", ppsId);
+            spsId                            = pps->seqParameterSetId;
+            picoH264SequenceParameterSet sps = video->sps[spsId];
+            AVD_CHECK_MSG(sps != NULL, "Could not find referenced SPS ID %u for Slice", spsId);
+
+            picoH264SliceLayerWithoutPartitioning_t slice = {};
+            AVD_CHECK(
+                picoH264ParseSliceLayerWithoutPartitioning(
+                    video->nalUnitPayloadBuffer,
+                    nalUnitPayloadSize,
+                    outNalUnitHeader,
+                    sps,
+                    pps,
+                    &slice));
+
+            AVD_H264VideoChunk *chunk = &video->currentChunk;
+            avdListPushBack(&video->currentChunk.sliceHeaders, &slice.header);
+            AVD_H264VideoFrameInfo frameInfo = {
+                .offset            = chunk->sliceDataBuffer.size,
+                .size              = AVD_ALIGN(nalUnitSize, chunk->sliceDataBuffer.alignment),
+                .timestampSeconds  = video->timestampSinceStartSeconds,
+                .durationSeconds   = video->frameDurationSeconds,
+                .referencePriority = outNalUnitHeader->nalRefIDC,
+                .isReferenceFrame  = isReferenceFrame,
+            };
+            avdListPushBack(&video->currentChunk.frameInfos, &frameInfo);
+
+            AVD_DataPtr dataPtr = {0};
+            AVD_CHECK(avdAlignedBufferEmplace(
+                &chunk->sliceDataBuffer,
+                nalUnitSize,
+                &dataPtr));
+            memcpy(dataPtr, video->nalUnitBuffer, nalUnitSize);
+
+            AVD_CHECK(
+                __avdH264VideoCalculatePictureOrderCount(
+                    video,
+                    sps,
+                    &slice.header,
+                    &frameInfo));
+
+            if (!isReferenceFrame) {
+                AVD_H264VideoSeekInfo seekInfo = {
+                    .byteOffset       = currentCursor,
+                    .timestampSeconds = frameInfo.timestampSeconds,
+                    .poc              = frameInfo.pictureOrderCount,
+                };
+                avdListPushBack(&video->seekPoints, &seekInfo);
+            }
+
+            video->timestampSinceStartSeconds += video->frameDurationSeconds;
+
             break;
         }
         default:
@@ -227,6 +534,8 @@ static bool __avdH264VideoLoadFromBitstream(picoH264Bitstream bitstream, AVD_H26
     avdAlignedBufferCreate(&outVideo->currentChunk.sliceDataBuffer, 256, params->frameDataAlignment);
     avdListCreate(&outVideo->currentChunk.frameInfos, sizeof(AVD_H264VideoFrameInfo));
     avdListCreate(&outVideo->currentChunk.sliceHeaders, sizeof(picoH264SliceHeader_t));
+
+    avdListCreate(&outVideo->seekPoints, sizeof(AVD_H264VideoSeekInfo));
 
     bitstream->seek(bitstream->userData, params->bufferOffset, SEEK_SET);
 
@@ -273,9 +582,17 @@ static bool __avdH264VideoResetChunk(AVD_H264Video *video)
 {
     AVD_ASSERT(video != NULL);
 
-    avdAlignedBufferDestroy(&video->currentChunk.sliceDataBuffer);
+    avdAlignedBufferClear(&video->currentChunk.sliceDataBuffer);
     avdListClear(&video->currentChunk.frameInfos);
     avdListClear(&video->currentChunk.sliceHeaders);
+
+    video->currentChunk.spsArray = NULL;
+    video->currentChunk.spsHash  = 0;
+
+    video->currentChunk.ppsArray = NULL;
+    video->currentChunk.ppsHash  = 0;
+
+    memset(&video->currentChunk.pocState, 0, sizeof(AVD_H264VideoPictureOrderCountState));
 
     return true;
 }
@@ -313,6 +630,8 @@ void avdH264VideoDestroy(AVD_H264Video *video)
     avdAlignedBufferDestroy(&video->currentChunk.sliceDataBuffer);
     avdListDestroy(&video->currentChunk.frameInfos);
     avdListDestroy(&video->currentChunk.sliceHeaders);
+
+    avdListDestroy(&video->seekPoints);
 
     if (video->bitstream) {
         picoH264BitstreamDestroy(video->bitstream);
@@ -379,9 +698,21 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk)
                 break;
             }
             idrEncountered = true;
+        } else if (nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_NON_IDR && !idrEncountered) {
+            // if we havent yet encountered an IDR frame, we skip non-IDR frames
+            AVD_Size nalUnitSize = 0;
+            AVD_CHECK(picoH264FindNextNALUnit(video->bitstream, &nalUnitSize));
+            video->bitstream->seek(video->bitstream->userData, nalUnitSize, SEEK_CUR);
+            continue;
         }
         AVD_CHECK(__avdH264VideoParseNextNalUnit(video, &nalUnitHeader, &spsDirty, &ppsDirty));
     } while (true);
+
+    video->currentChunk.spsArray = &video->sps[0];
+    video->currentChunk.spsHash  = video->spsHash;
+
+    video->currentChunk.ppsArray = &video->pps[0];
+    video->currentChunk.ppsHash  = video->ppsHash;
 
     *outChunk = &video->currentChunk;
 

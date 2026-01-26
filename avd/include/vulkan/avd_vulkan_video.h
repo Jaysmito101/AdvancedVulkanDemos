@@ -25,10 +25,12 @@ typedef struct {
     AVD_Float timestampSeconds;
     AVD_Float durationSeconds;
     AVD_UInt32 referencePriority;
-    AVD_UInt32 pos;
-    AVD_UInt32 gop;
+    bool isReferenceFrame;
     AVD_UInt32 displayOrder;
-    bool isIntraFrame;
+    AVD_UInt32 pictureOrderCount;
+    AVD_UInt32 topFieldOrderCount;
+    AVD_UInt32 bottomFieldOrderCount;
+    bool complementaryFieldPair;
 } AVD_H264VideoFrameInfo;
 
 typedef struct {
@@ -36,6 +38,20 @@ typedef struct {
     AVD_Size frameDataAlignment; // alignment for frame data allocations
 } AVD_H264VideoLoadParams;
 
+typedef struct {
+    struct {
+        AVD_UInt32 prevPicOrderCntLsb;
+        AVD_Int32 prevPicOrderCntMsb;
+    } type0;
+    struct {
+        AVD_UInt32 prevFrameNum;
+        AVD_UInt32 prevFrameNumOffset;
+    } type1;
+    struct {
+        AVD_UInt32 prevFrameNum;
+        AVD_UInt32 prevFrameNumOffset;
+    } type2;
+} AVD_H264VideoPictureOrderCountState;
 
 typedef struct {
     AVD_AlignedBuffer sliceDataBuffer;
@@ -43,12 +59,20 @@ typedef struct {
     AVD_List frameInfos;
     AVD_List sliceHeaders;
 
-    picoH264PictureParameterSet ppsArray;
+    picoH264PictureParameterSet* ppsArray;
     AVD_UInt32 ppsHash;
 
-    picoH264SequenceParameterSet spsArray;
+    picoH264SequenceParameterSet* spsArray;
     AVD_UInt32 spsHash;
+
+    AVD_H264VideoPictureOrderCountState pocState;
 } AVD_H264VideoChunk;
+
+typedef struct {
+    AVD_Size byteOffset;
+    AVD_Float timestampSeconds;
+    AVD_Size poc;
+} AVD_H264VideoSeekInfo;
 
 typedef struct {
     picoH264SequenceParameterSet sps[PICO_H264_MAX_SPS_COUNT];
@@ -56,6 +80,8 @@ typedef struct {
 
     picoH264PictureParameterSet pps[PICO_H264_MAX_PPS_COUNT];
     AVD_UInt32 ppsHash;
+
+    AVD_List seekPoints;
 
     AVD_H264VideoChunk currentChunk;
 
@@ -72,6 +98,8 @@ typedef struct {
     uint64_t framerateRaw;
     AVD_Float framerate;
     AVD_Float frameDurationSeconds;
+
+    AVD_Float timestampSinceStartSeconds;
 
     picoH264Bitstream bitstream;
 } AVD_H264Video;
