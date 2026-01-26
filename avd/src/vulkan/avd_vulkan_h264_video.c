@@ -90,6 +90,11 @@ static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, uint8_t spsId)
         video->framerateRaw         = ((uint64_t)sps->vui.timeScale << 32) / (2 * (uint64_t)sps->vui.numUnitsInTick);
         video->framerate            = fps;
         video->frameDurationSeconds = 1.0f / fps;
+    } else {
+        AVD_LOG_WARN("SPS does not contain valid VUI timing info, cannot determine framerate, gussing it to be 30 FPS");
+        video->framerateRaw         = (30ULL << 32) / 1ULL;
+        video->framerate            = 30.0f;
+        video->frameDurationSeconds = 1.0f / 30.0f;
     }
 
     // if any of these values have changed, then its and error as we dont support dynamic changes yet
