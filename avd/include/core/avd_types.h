@@ -28,5 +28,7 @@ typedef bool AVD_Bool;
 typedef char AVD_Char;
 typedef unsigned char AVD_UChar;
 
+typedef void AVD_Void;
+typedef void* AVD_DataPtr;
 
 #endif // AVD_TYPES_H
