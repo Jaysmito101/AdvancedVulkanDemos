@@ -4,11 +4,7 @@
 #include "core/avd_base.h"
 #include "core/avd_types.h"
 #include "core/avd_utils.h"
-#include "font/avd_font.h"
-#include "math/avd_math_base.h"
-#include "pico/picoLog.h"
 #include "scenes/avd_scenes.h"
-#include "vulkan/avd_vulkan.h"
 #include "vulkan/avd_vulkan_video.h"
 
 #include <stdint.h>
