@@ -634,8 +634,10 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
     AVD_CHECK(__avdSceneHLSPlayerPrepWorkers(hlsPlayer));
 
     // TODO: properly manage this...
-    AVD_H264Video *video = NULL;
-    AVD_CHECK(avdH264VideoLoadFromFile("C:\\Users\\jaysm\\projs\\libpico\\output\\video_25.h264", NULL, &video));
+    AVD_H264Video *video                    = NULL;
+    AVD_H264VideoLoadParams videoLoadParams = {0};
+    AVD_CHECK(avdH264VideoLoadParamsDefault(&appState->vulkan, &videoLoadParams));
+    AVD_CHECK(avdH264VideoLoadFromFile("C:\\Users\\jaysm\\projs\\libpico\\output\\video_25.h264", &videoLoadParams, &video));
     AVD_CHECK(avdVulkanVideoDecoderCreate(&appState->vulkan, &hlsPlayer->vulkanVideo, video));
 
     return true;
