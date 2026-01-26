@@ -3,9 +3,9 @@
 
 #include "core/avd_types.h"
 #include "pico/picoThreads.h"
-#include "scenes/hls_player/avd_hls_media_cache.h"
-#include "scenes/hls_player/avd_hls_segment_store.h"
-#include "scenes/hls_player/avd_hls_url_pool.h"
+#include "scenes/hls_player/avd_scene_hls_media_cache.h"
+#include "scenes/hls_player/avd_scene_hls_segment_store.h"
+#include "scenes/hls_player/avd_scene_hls_url_pool.h"
 
 #define AVD_HLS_WORKER_NUM_SOURCE_WORKERS         4
 #define AVD_HLS_WORKER_NUM_MEDIA_DOWNLOAD_WORKERS 8

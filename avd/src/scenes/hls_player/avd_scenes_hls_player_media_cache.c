@@ -1,4 +1,4 @@
-#include "scenes/hls_player/avd_hls_media_cache.h"
+#include "scenes/hls_player/avd_scene_hls_media_cache.h"
 
 #include "core/avd_base.h"
 

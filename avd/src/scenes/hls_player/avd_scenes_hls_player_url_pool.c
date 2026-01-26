@@ -1,4 +1,4 @@
-#include "scenes/hls_player/avd_hls_url_pool.h"
+#include "scenes/hls_player/avd_scene_hls_url_pool.h"
 
 #include "core/avd_base.h"
 #include "core/avd_types.h"

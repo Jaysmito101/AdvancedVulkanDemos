@@ -2,10 +2,10 @@
 #define AVD_SCENES_HLS_PLAYER_H
 
 #include "scenes/avd_scenes_base.h"
-#include "scenes/hls_player/avd_hls_media_cache.h"
-#include "scenes/hls_player/avd_hls_segment_store.h"
-#include "scenes/hls_player/avd_hls_url_pool.h"
-#include "scenes/hls_player/avd_hls_worker_pool.h"
+#include "scenes/hls_player/avd_scene_hls_media_cache.h"
+#include "scenes/hls_player/avd_scene_hls_segment_store.h"
+#include "scenes/hls_player/avd_scene_hls_url_pool.h"
+#include "scenes/hls_player/avd_scene_hls_worker_pool.h"
 
 #include "vulkan/avd_vulkan_video.h"
 
