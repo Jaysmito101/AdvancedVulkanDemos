@@ -47,9 +47,6 @@ typedef struct AVD_VulkanFeatures {
     bool videoDecode;
     bool videoEncode;
 
-    size_t minVideoBufferOffsetAlignment;
-    size_t minVideoBufferSizeAlignment;
-
     VkVideoCapabilitiesKHR videoCapabilitiesDecode;
     VkVideoDecodeCapabilitiesKHR videoDecodeCapabilities;
     VkVideoDecodeH264CapabilitiesKHR videoDecodeH264Capabilities;
