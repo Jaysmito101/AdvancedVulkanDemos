@@ -494,7 +494,7 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnit
 
             AVD_H264VideoChunk *chunk = &video->currentChunk;
             avdListPushBack(&video->currentChunk.sliceHeaders, &slice.header);
-            AVD_H264VideoFrameInfo frameInfo = {
+            AVD_H264VideoFrameInfo frameInfoRaw = {
                 .offset            = chunk->sliceDataBuffer.size,
                 .size              = AVD_ALIGN(nalUnitSize, chunk->sliceDataBuffer.alignment),
                 .timestampSeconds  = video->timestampSinceStartSeconds,
@@ -502,7 +502,9 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnit
                 .referencePriority = outNalUnitHeader->nalRefIDC,
                 .isReferenceFrame  = isReferenceFrame,
             };
-            avdListPushBack(&video->currentChunk.frameInfos, &frameInfo);
+            AVD_H264VideoFrameInfo *frameInfo = (AVD_H264VideoFrameInfo *)avdListPushBack(
+                &video->currentChunk.frameInfos,
+                &frameInfoRaw);
 
             AVD_DataPtr dataPtr = {0};
             AVD_CHECK(avdAlignedBufferEmplace(
@@ -516,13 +518,13 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnit
                     video,
                     sps,
                     &slice.header,
-                    &frameInfo));
+                    frameInfo));
 
             if (!isReferenceFrame) {
                 AVD_H264VideoSeekInfo seekInfo = {
                     .byteOffset       = currentCursor,
-                    .timestampSeconds = frameInfo.timestampSeconds,
-                    .poc              = frameInfo.pictureOrderCount,
+                    .timestampSeconds = frameInfo->timestampSeconds,
+                    .poc              = frameInfo->pictureOrderCount,
                 };
                 avdListPushBack(&video->seekPoints, &seekInfo);
             }
