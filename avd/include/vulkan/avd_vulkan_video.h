@@ -3,9 +3,9 @@
 
 #include "core/avd_aligned_buffer.h"
 #include "core/avd_types.h"
-#include "math/avd_math_base.h"
-#include "pico/picoH264.h"
 #include "vulkan/avd_vulkan_base.h"
+#include "pico/picoH264.h"
+#include "pico/picoStream.h"
 
 #ifndef AVD_VULKAN_VIDEO_MAX_WIDTH
 #define AVD_VULKAN_VIDEO_MAX_WIDTH 3840
@@ -117,6 +117,7 @@ typedef struct {
 
 bool avdH264VideoLoadParamsDefault(AVD_Vulkan* vulkan, AVD_H264VideoLoadParams *outParams);
 
+bool avdH264VideoLoadFromStream(picoStream stream, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, bool bufferOwned, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 bool avdH264VideoLoadFromFile(const char *filename, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 void avdH264VideoDestroy(AVD_H264Video *video);
