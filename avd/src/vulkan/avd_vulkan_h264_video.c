@@ -788,6 +788,7 @@ bool avdH264VideoLoadParamsDefault(AVD_Vulkan *vulkan, AVD_H264VideoLoadParams *
 bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk, bool *eof)
 {
     AVD_ASSERT(video != NULL);
+    AVD_ASSERT(outChunk != NULL);
 
     AVD_CHECK(__avdH264VideoResetChunk(video));
 
@@ -796,6 +797,7 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk, 
     bool spsDirty                         = false;
     bool ppsDirty                         = false;
 
+    video->currentChunk.numNalUnitsParsed = 0;
     do {
         AVD_Size currentCursor = video->bitstream->tell(video->bitstream->userData);
         if (!__avdH264VideoPeekNextNalUnit(video, &nalUnitHeader, true, eof)) {
@@ -827,6 +829,7 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk, 
             }
             AVD_CHECK_MSG(false, "Failed to parse next NAL unit");
         }
+        video->currentChunk.numNalUnitsParsed++;
     } while (true);
 
     video->currentChunk.spsArray = &video->sps[0];

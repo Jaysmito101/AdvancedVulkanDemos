@@ -6,6 +6,7 @@
 #include "core/avd_utils.h"
 #include "pico/picoStream.h"
 #include "scenes/avd_scenes.h"
+#include "scenes/hls_player/avd_scene_hls_segment_store.h"
 #include "scenes/hls_player/avd_scene_hls_stream.h"
 #include "vulkan/avd_vulkan_video.h"
 
@@ -130,8 +131,6 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
                         avdHLSSegmentStoreRelease(&scene->segmentStore, (AVD_UInt32)i, currentSegmentId);
                     }
 
-                    // AVD_LOG_INFO("HLS Source %u playing segment %u [prev segment: %u] %f", (AVD_UInt32)i, nextSegmentId, currentSegmentId, time);
-
                     AVD_Size dataSize = 0;
                     uint8_t *data     = avdHLSSegmentStoreAcquire(&scene->segmentStore, (AVD_UInt32)i, nextSegmentId, &dataSize);
 
@@ -149,6 +148,8 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
                         AVD_CHECK(avdH264VideoLoadFromStream(videoSourceStream, &params, &video));
 
                         AVD_CHECK(avdVulkanVideoDecoderCreate(&appState->vulkan, &source->videoDecoder, video));
+
+                        source->videoStartTime = time;
                     } else {
                         picoStream videoSourceStream = (picoStream)source->videoDecoder.h264Video->bitstream->userData;
                         AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, data, dataSize));
@@ -196,12 +197,48 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
             continue;
         }
 
-        // AVD_LOG_VERBOSE("Received ready segment %u for source index %u (duration: %f s)", payload.segmentId, payload.sourceIndex, payload.duration);
         if (!avdHLSSegmentStoreCommit(&scene->segmentStore, payload.sourceIndex, payload.segmentId, payload.h264Buffer, payload.h264Size, payload.duration)) {
             AVD_LOG_WARN("HLS Main Thread could not commit segment %u for source index %u", payload.segmentId, payload.sourceIndex);
         }
     }
 
+    return true;
+}
+
+static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+{
+    AVD_Float time = (AVD_Float)appState->framerate.currentTime;
+
+    for (AVD_Size i = 0; i < scene->sourceCount; i++) {
+        AVD_SceneHLSPlayerSource *source = &scene->sources[i];
+        if (!source->active || source->videoDecoder.session == VK_NULL_HANDLE) {
+            continue;
+        }
+
+        source->decodedThisFrame      = false;
+        AVD_VulkanVideoDecoder *video = &source->videoDecoder;
+        AVD_Float videoTime           = time - source->videoStartTime;
+
+        if (avdVulkanVideoDecoderGetNumDecodedFrames(video) < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES) {
+            // we have room for more decoded frames
+            if (!avdVulkanVideoDecoderChunkHasFrames(video) || avdVulkanVideoDecoderIsChunkOutdated(video, videoTime)) {
+                bool eof = false;
+                AVD_CHECK(avdVulkanVideoDecoderNextChunk(&appState->vulkan, video, &eof));
+                if (video->h264Video->currentChunk.numNalUnitsParsed > 0) {
+                    AVD_LOG_WARN("(timestamp: %.3f) at time %.3f seconds [%f %f] %s", video->currentChunk.timestampSeconds, videoTime, video->currentChunk.videoChunk->durationSeconds, source->currentsegmentDuration, eof ? "(eof)" : "");
+                    // AVD_LOG_WARN("End of video stream reached, no more chunks available...");
+                }
+            } else {
+                source->decodedThisFrame = true;
+                AVD_CHECK(
+                    avdVulkanVideoDecoderDecodeFrame(
+                        &appState->vulkan,
+                        video,
+                        VK_NULL_HANDLE,
+                        VK_NULL_HANDLE));
+            }
+        }
+    }
     return true;
 }
 
@@ -408,6 +445,7 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
 
     AVD_CHECK(__avdSceneHLSPlayerUpdateSources(appState, hlsPlayer));
     AVD_CHECK(__avdSceneHLSPlayerReceiveReadySegments(appState, hlsPlayer));
+    AVD_CHECK(__avdSceneHLSPlayerUpdateDecoders(appState, hlsPlayer));
 
     return true;
 }

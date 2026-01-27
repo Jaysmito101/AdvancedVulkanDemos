@@ -1,5 +1,6 @@
 #include "core/avd_base.h"
 #include "math/avd_math_base.h"
+#include "pico/picoPerf.h"
 #include "vulkan/avd_vulkan_video.h"
 
 static bool __avdVulkanVideoDecoderCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video)
@@ -88,6 +89,8 @@ bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(h264Video != NULL);
 
+    memset(video, 0, sizeof(AVD_VulkanVideoDecoder));
+
     if (!vulkan->supportedFeatures.videoDecode) {
         AVD_LOG_ERROR("Vulkan video decode not supported on this device");
         return false;
@@ -101,9 +104,91 @@ bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
 
 void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video)
 {
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(vulkan != NULL);
+
     vkDestroyVideoSessionKHR(vulkan->device, video->session, NULL);
     for (AVD_UInt32 i = 0; i < video->memoryAllocationCount; ++i) {
         vkFreeMemory(vulkan->device, video->memory[i], NULL);
     }
     avdH264VideoDestroy(video->h264Video);
+}
+
+AVD_Size avdVulkanVideoDecoderGetNumDecodedFrames(AVD_VulkanVideoDecoder *video)
+{
+    AVD_ASSERT(video != NULL);
+
+    AVD_Size count = 0;
+    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
+        if (video->decodedFrames[i].inUse) {
+            count++;
+        }
+    }
+    return count;
+}
+
+bool avdVulkanVideoDecoderChunkHasFrames(AVD_VulkanVideoDecoder *video)
+{
+    AVD_ASSERT(video != NULL);
+
+    // check is the current slice index is less than the number of frames in the chunk
+    if (video->currentChunk.videoChunk == NULL) {
+        return false;
+    }
+    return video->currentChunk.currentSliceIndex < video->currentChunk.videoChunk->frameInfos.count;
+}
+
+bool avdVulkanVideoDecoderIsChunkOutdated(AVD_VulkanVideoDecoder *video, AVD_Float videoTime)
+{
+    AVD_ASSERT(video != NULL);
+
+    if (video->currentChunk.videoChunk == NULL) {
+        return true;
+    }
+
+    return video->currentChunk.timestampSeconds + video->currentChunk.videoChunk->durationSeconds < videoTime;
+}
+
+bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, bool *eof)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(eof != NULL);
+
+    // first reset current chunk
+    video->currentChunk.videoChunk              = NULL;
+    video->currentChunk.currentSliceIndex       = 0;
+    video->currentChunk.timestampSeconds        = video->timestampSecondsOffset;
+    video->currentChunk.chunkDisplayOrderOffset = video->displayOrderOffset;
+
+    AVD_CHECK(
+        avdH264VideoLoadChunk(
+            video->h264Video,
+            &video->currentChunk.videoChunk,
+            eof));
+
+    video->displayOrderOffset += video->currentChunk.videoChunk->frameInfos.count;
+    video->timestampSecondsOffset += video->currentChunk.videoChunk->durationSeconds;
+
+    return true;
+}
+
+bool avdVulkanVideoDecoderDecodeFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, VkSemaphore signalSemaphore, VkFence signalFence)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(vulkan != NULL);
+
+    AVD_CHECK_MSG(
+        avdVulkanVideoDecoderChunkHasFrames(video),
+        "No frames available in current chunk to decode");
+
+    // placeholder implementation, just simulating some decoding time
+    static picoPerfTime time = 0;
+    if (picoPerfDurationSeconds(time, picoPerfNow()) > video->h264Video->frameDurationSeconds) {
+        time = picoPerfNow();
+        // AVD_LOG_VERBOSE("Decoding frame %d of current chunk", (int)video->currentChunk.currentSliceIndex);
+        video->currentChunk.currentSliceIndex++;
+    }
+
+    return true;
 }
