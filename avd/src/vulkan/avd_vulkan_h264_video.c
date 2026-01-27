@@ -153,11 +153,11 @@ static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, uint8_t spsId)
     }
 
     // if any of these values have changed, then its and error as we dont support dynamic changes yet
-    AVD_CHECK_MSG(video->width == 0 || video->width == newWidth, "Dynamic change of video width not supported yet");
-    AVD_CHECK_MSG(video->height == 0 || video->height == newHeight, "Dynamic change of video height not supported yet");
-    AVD_CHECK_MSG(video->paddedWidth == 0 || video->paddedWidth == newPaddedWidth, "Dynamic change of video padded width not supported yet");
-    AVD_CHECK_MSG(video->paddedHeight == 0 || video->paddedHeight == newPaddedHeight, "Dynamic change of video padded height not supported yet");
-    AVD_CHECK_MSG(video->numDPBSlots == 0 || video->numDPBSlots == newNumDPBSlots, "Dynamic change of video num DPB slots not supported yet");
+    AVD_CHECK_MSG(video->width == 0 || video->width == newWidth, "Dynamic change of video width not supported yet %d -> %d", (int)video->width, (int)newWidth);
+    AVD_CHECK_MSG(video->height == 0 || video->height == newHeight, "Dynamic change of video height not supported yet %d -> %d", (int)video->height, (int)newHeight);
+    AVD_CHECK_MSG(video->paddedWidth == 0 || video->paddedWidth == newPaddedWidth, "Dynamic change of video padded width not supported yet %d -> %d", (int)video->paddedWidth, (int)newPaddedWidth);
+    AVD_CHECK_MSG(video->paddedHeight == 0 || video->paddedHeight == newPaddedHeight, "Dynamic change of video padded height not supported yet %d -> %d", (int)video->paddedHeight, (int)newPaddedHeight);
+    AVD_CHECK_MSG(video->numDPBSlots == 0 || video->numDPBSlots == newNumDPBSlots, "Dynamic change of video num DPB slots not supported yet %d -> %d", (int)video->numDPBSlots, (int)newNumDPBSlots);
 
     video->width        = newWidth;
     video->height       = newHeight;
