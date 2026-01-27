@@ -753,6 +753,8 @@ void avdH264VideoChunkDebugPrint(AVD_H264VideoChunk *chunk, bool logFrameInfos)
     AVD_LOG_INFO("  Number of Slice Headers: %zu", chunk->sliceHeaders.count);
     AVD_LOG_INFO("  SPS Hash: 0x%08X", chunk->spsHash);
     AVD_LOG_INFO("  PPS Hash: 0x%08X", chunk->ppsHash);
+    AVD_LOG_INFO("  Duration of Chunk: %.6f seconds", chunk->durationSeconds);
+    AVD_LOG_INFO("  Timestamp of Chunk: %.6f seconds", chunk->timestampSeconds);
     if (logFrameInfos && chunk->frameInfos.count > 0) {
         AVD_LOG_INFO("  Frame Infos:");
         for (AVD_Size i = 0; i < chunk->frameInfos.count; ++i) {
@@ -832,6 +834,13 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk, 
 
     video->currentChunk.ppsArray = &video->pps[0];
     video->currentChunk.ppsHash  = video->ppsHash;
+
+    video->currentChunk.timestampSeconds = 0.0;
+    if (video->currentChunk.frameInfos.count > 0) {
+        AVD_H264VideoFrameInfo *firstFrameInfo = (AVD_H264VideoFrameInfo *)avdListGet(&video->currentChunk.frameInfos, 0);
+        video->currentChunk.timestampSeconds   = firstFrameInfo->timestampSeconds;
+    }
+    video->currentChunk.durationSeconds = video->frameDurationSeconds * (AVD_Float)video->currentChunk.frameInfos.count;
 
     *outChunk = &video->currentChunk;
 

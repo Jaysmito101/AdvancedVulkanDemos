@@ -67,6 +67,9 @@ typedef struct {
     AVD_UInt32 spsHash;
 
     AVD_H264VideoPictureOrderCountState pocState;
+
+    AVD_Float durationSeconds;
+    AVD_Float timestampSeconds;
 } AVD_H264VideoChunk;
 
 typedef struct {
