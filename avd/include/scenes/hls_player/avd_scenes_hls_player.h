@@ -11,6 +11,7 @@
 #include "vulkan/avd_vulkan_video.h"
 
 #define AVD_SCENE_HLS_PLAYER_MAX_SOURCES 4
+#define AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
 
 typedef struct {
     char url[1024];

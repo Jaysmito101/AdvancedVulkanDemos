@@ -138,6 +138,16 @@ static bool __avdSceneHLSPlayerSwitchToNextSegment(AVD_AppState *appState, AVD_S
     source->currentSegmentFrameCount = frameCount;
     source->currentsegmentDuration   = slot->duration;
 
+#ifdef AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
+    static char buffer[64] = {0};
+    snprintf(buffer, sizeof(buffer), "hls_segments/source_%u", sourceIndex);
+    AVD_CHECK(avdCreateDirectoryIfNotExists(buffer));
+    snprintf(buffer, sizeof(buffer), "hls_segments/source_%u/%u.h264", sourceIndex, nextSegmentId);
+    if (!avdWriteBinaryFile(buffer, data, dataSize)) {
+        AVD_LOG_WARN("Failed to write HLS segment to disk: %s", buffer);
+    }
+#endif
+
     AVD_LOG_VERBOSE("loaded segment %u (size: %zu bytes, frames: %zu, duration: %.3f) at time %.3f seconds", nextSegmentId, dataSize, frameCount, slot->duration, time - source->videoStartTime);
 
     // if we have less than 1 ready segments ahead, request source update (with a debounce of 1 second)
