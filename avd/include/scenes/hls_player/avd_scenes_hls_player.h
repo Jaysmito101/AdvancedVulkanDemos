@@ -1,6 +1,7 @@
 #ifndef AVD_SCENES_HLS_PLAYER_H
 #define AVD_SCENES_HLS_PLAYER_H
 
+#include "core/avd_types.h"
 #include "scenes/avd_scenes_base.h"
 #include "scenes/hls_player/avd_scene_hls_media_cache.h"
 #include "scenes/hls_player/avd_scene_hls_segment_store.h"
@@ -21,7 +22,10 @@ typedef struct {
     AVD_UInt32 currentSegmentIndex;
     AVD_Float currentSegmentStartTime;
     AVD_Float currentsegmentDuration;
+    AVD_Size currentSegmentFrameCount;
 
+    AVD_UInt32 lastLoadedSegmentIndex;
+    AVD_Bool decoderReady;
     AVD_VulkanVideoDecoder videoDecoder;
     AVD_Bool decodedThisFrame;
 } AVD_SceneHLSPlayerSource;

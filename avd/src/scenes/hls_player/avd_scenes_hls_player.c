@@ -27,10 +27,29 @@ static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
     return &scene->hlsPlayer;
 }
 
-static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, const char *path)
+static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+{
+    (void)appState;
+    for (AVD_Size i = 0; i < scene->sourceCount; i++) {
+        if (scene->sources[i].active) {
+            scene->sources[i].active = false;
+        }
+        if (scene->sources[i].videoDecoder.session != VK_NULL_HANDLE) {
+            avdVulkanVideoDecoderDestroy(&appState->vulkan, &scene->sources[i].videoDecoder);
+            scene->sources[i].videoDecoder = (AVD_VulkanVideoDecoder){0};
+        }
+    }
+    memset(scene->sources, 0, sizeof(scene->sources));
+    scene->sourceCount = 0;
+    return true;
+}
+
+static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, const char *path)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(path != NULL);
+
+    __avdSceneHLSPlayerFreeSources(appState, scene);
 
     char *fileData  = NULL;
     size_t fileSize = 0;
@@ -60,15 +79,11 @@ static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, co
             }
             AVD_LOG_INFO("Loaded HLS source: %.*s", (int)lineLength, lineStart);
             strncpy(scene->sources[sourceIndex].url, lineStart, lineLength);
-            scene->sources[sourceIndex].url[lineLength]         = '\0';
-            scene->sources[sourceIndex].active                  = true;
-            scene->sources[sourceIndex].refreshIntervalMs       = 10000.0f;
-            scene->sources[sourceIndex].lastRefreshed           = -10000.0f;
-            scene->sources[sourceIndex].currentSegmentIndex     = 0;
-            scene->sources[sourceIndex].currentSegmentStartTime = 0.0f;
-            scene->sources[sourceIndex].currentsegmentDuration  = 0.0f;
-
-            scene->sources[sourceIndex].videoDecoder = (AVD_VulkanVideoDecoder){0};
+            scene->sources[sourceIndex].url[lineLength]   = '\0';
+            scene->sources[sourceIndex].active            = true;
+            scene->sources[sourceIndex].refreshIntervalMs = 10000.0f;
+            scene->sources[sourceIndex].lastRefreshed     = -10000.0f;
+            scene->sources[sourceIndex].decoderReady      = false;
 
             sourceIndex++;
         }
@@ -84,22 +99,6 @@ static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_SceneHLSPlayer *scene, co
     return true;
 }
 
-static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
-{
-    (void)appState;
-    for (AVD_Size i = 0; i < scene->sourceCount; i++) {
-        if (scene->sources[i].active) {
-            scene->sources[i].active = false;
-        }
-        if (scene->sources[i].videoDecoder.session != VK_NULL_HANDLE) {
-            avdVulkanVideoDecoderDestroy(&appState->vulkan, &scene->sources[i].videoDecoder);
-            scene->sources[i].videoDecoder = (AVD_VulkanVideoDecoder){0};
-        }
-    }
-    scene->sourceCount = 0;
-    return true;
-}
-
 static bool __avdSceneHLSPlayerRequestSourceUpdate(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, AVD_UInt32 source)
 {
     AVD_ASSERT(scene != NULL);
@@ -112,6 +111,41 @@ static bool __avdSceneHLSPlayerRequestSourceUpdate(AVD_AppState *appState, AVD_S
             scene->sources[source].url),
         "Failed to send source download task");
     scene->sources[source].lastRefreshed = (AVD_Float)appState->framerate.currentTime;
+    return true;
+}
+
+static bool __avdSceneHLSPlayerSwitchToNextSegment(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, AVD_UInt32 sourceIndex, AVD_UInt32 nextSegmentId)
+{
+    AVD_ASSERT(scene != NULL);
+    AVD_ASSERT(sourceIndex < scene->sourceCount);
+    AVD_ASSERT(nextSegmentId > 0);
+
+    AVD_Float time                   = (AVD_Float)appState->framerate.currentTime;
+    AVD_SceneHLSPlayerSource *source = &scene->sources[sourceIndex];
+    AVD_Size currentSegmentId        = source->currentSegmentIndex;
+
+    if (currentSegmentId != 0) {
+        avdHLSSegmentStoreRelease(&scene->segmentStore, sourceIndex, currentSegmentId);
+    }
+    AVD_Size dataSize   = 0;
+    uint8_t *data       = avdHLSSegmentStoreAcquire(&scene->segmentStore, sourceIndex, nextSegmentId, &dataSize);
+    AVD_Size frameCount = avdH264VideoCountFrames(data, dataSize);
+
+    AVD_HLSSegmentSlot *slot = avdHLSSegmentStoreGetSlot(&scene->segmentStore, sourceIndex, nextSegmentId);
+    AVD_CHECK_MSG(slot != NULL, "Failed to get slot for segment %u of source index %u", nextSegmentId, sourceIndex);
+    source->currentSegmentIndex      = nextSegmentId;
+    source->currentSegmentStartTime  = time;
+    source->currentSegmentFrameCount = frameCount;
+    source->currentsegmentDuration   = slot->duration;
+
+    AVD_LOG_VERBOSE("loaded segment %u (size: %zu bytes, frames: %zu, duration: %.3f) at time %.3f seconds", nextSegmentId, dataSize, frameCount, slot->duration, time - source->videoStartTime);
+
+    // if we have less than 1 ready segments ahead, request source update (with a debounce of 1 second)
+    if (avdHLSSegmentStoreCountReadySegments(&scene->segmentStore, sourceIndex) < 1 && source->lastRefreshed - time < 1000.0f) {
+        AVD_LOG_INFO("Source %u low on ready segments, requesting update", sourceIndex);
+        AVD_CHECK(__avdSceneHLSPlayerRequestSourceUpdate(appState, scene, sourceIndex));
+    }
+
     return true;
 }
 
@@ -135,48 +169,7 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
             if (currentSegmentId == 0 || avdHLSSegmentStoreHasSegment(&scene->segmentStore, (AVD_UInt32)i, currentSegmentId)) {
                 AVD_UInt32 nextSegmentId = 0;
                 if (avdHLSSegmentStoreFindNextSegment(&scene->segmentStore, (AVD_UInt32)i, currentSegmentId, &nextSegmentId)) {
-                    if (currentSegmentId != 0) {
-                        avdHLSSegmentStoreRelease(&scene->segmentStore, (AVD_UInt32)i, currentSegmentId);
-                    }
-
-                    AVD_Size dataSize = 0;
-                    uint8_t *data     = avdHLSSegmentStoreAcquire(&scene->segmentStore, (AVD_UInt32)i, nextSegmentId, &dataSize);
-
-                    if (source->videoDecoder.session == VK_NULL_HANDLE) {
-                        // TODO: Fix this is broken
-                        picoStream videoSourceStream = avdHLSStreamCreate();
-                        AVD_CHECK_MSG(videoSourceStream != NULL, "Failed to create HLS video source stream");
-
-                        AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, data, dataSize));
-
-                        AVD_H264VideoLoadParams params = {0};
-                        AVD_CHECK(avdH264VideoLoadParamsDefault(&appState->vulkan, &params));
-
-                        AVD_H264Video *video = NULL;
-                        AVD_CHECK(avdH264VideoLoadFromStream(videoSourceStream, &params, &video));
-
-                        AVD_CHECK(avdVulkanVideoDecoderCreate(&appState->vulkan, &source->videoDecoder, video));
-
-                        source->videoStartTime = time;
-                    } else {
-                        picoStream videoSourceStream = (picoStream)source->videoDecoder.h264Video->bitstream->userData;
-                        AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, data, dataSize));
-                    }
-
-                    // AVD_LOG_VERBOSE("loaded segment %u (size: %zu bytes) at time %.3f seconds", nextSegmentId, dataSize, time - source->videoStartTime);
-
-                    source->currentSegmentIndex     = nextSegmentId;
-                    source->currentSegmentStartTime = time;
-
-                    AVD_HLSSegmentSlot *slot = avdHLSSegmentStoreGetSlot(&scene->segmentStore, (AVD_UInt32)i, nextSegmentId);
-                    AVD_CHECK_MSG(slot != NULL, "Failed to get slot for segment %u of source index %u", nextSegmentId, (AVD_UInt32)i);
-                    source->currentsegmentDuration = slot->duration;
-
-                    // if we have less than 1 ready segments ahead, request source update (with a debounce of 1 second)
-                    if (avdHLSSegmentStoreCountReadySegments(&scene->segmentStore, (AVD_UInt32)i) < 1 && source->lastRefreshed - time < 1000.0f) {
-                        AVD_LOG_INFO("Source %u low on ready segments, requesting update", (AVD_UInt32)i);
-                        AVD_CHECK(__avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i));
-                    }
+                    AVD_CHECK(__avdSceneHLSPlayerSwitchToNextSegment(appState, scene, i, nextSegmentId));
                 }
             }
         }
@@ -229,33 +222,61 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
 
     for (AVD_Size i = 0; i < scene->sourceCount; i++) {
         AVD_SceneHLSPlayerSource *source = &scene->sources[i];
-        if (!source->active || source->videoDecoder.session == VK_NULL_HANDLE) {
+        if (!source->active) {
             continue;
+        }
+
+        if (!source->decoderReady && source->currentSegmentIndex != 0) {
+            source->decoderReady   = true;
+            source->videoStartTime = time - source->currentSegmentStartTime;
+
+            picoStream videoSourceStream = avdHLSStreamCreate();
+            AVD_CHECK_MSG(videoSourceStream != NULL, "Failed to create HLS video source stream");
+            AVD_HLSSegmentSlot *slot = avdHLSSegmentStoreGetSlot(&scene->segmentStore, (AVD_UInt32)i, source->currentSegmentIndex);
+            AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->h264Buffer, slot->h264Size));
+            AVD_H264VideoLoadParams params = {0};
+            AVD_CHECK(avdH264VideoLoadParamsDefault(&appState->vulkan, &params));
+            AVD_H264Video *video = NULL;
+            AVD_CHECK(avdH264VideoLoadFromStream(videoSourceStream, &params, &video));
+            AVD_CHECK(avdVulkanVideoDecoderCreate(&appState->vulkan, &source->videoDecoder, video));
         }
 
         source->decodedThisFrame      = false;
         AVD_VulkanVideoDecoder *video = &source->videoDecoder;
         AVD_Float videoTime           = time - source->videoStartTime;
 
-        if (avdVulkanVideoDecoderGetNumDecodedFrames(video) < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES) {
+        // update decoder frames
+        if (source->decoderReady && avdVulkanVideoDecoderGetNumDecodedFrames(video) < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES) {
             // we have room for more decoded frames
             if (!avdVulkanVideoDecoderChunkHasFrames(video) || avdVulkanVideoDecoderIsChunkOutdated(video, videoTime)) {
-                bool eof = false;
-                AVD_CHECK(avdVulkanVideoDecoderNextChunk(&appState->vulkan, video, &eof));
+                AVD_H264VideoLoadParams loadParams = {0};
+                AVD_CHECK(avdH264VideoLoadParamsDefault(&appState->vulkan, &loadParams));
+                loadParams.targetFramerate = source->currentSegmentFrameCount / source->currentsegmentDuration;
+                bool eof                   = false;
+                AVD_CHECK(avdVulkanVideoDecoderNextChunk(&appState->vulkan, video, &loadParams, &eof));
                 if (video->h264Video->currentChunk.numNalUnitsParsed > 0) {
-                    // AVD_LOG_WARN("(timestamp: %.3f) at time %.3f seconds [%f %f] %s", video->currentChunk.timestampSeconds, videoTime, video->currentChunk.videoChunk->durationSeconds, source->currentsegmentDuration, eof ? "(eof)" : "");
-                    (void)0;
+                    AVD_LOG_WARN(
+                        "(timestamp: %.3f) at time %.3f seconds [%f %f] [%zu frames/%zu nal units] %s",
+                        video->currentChunk.timestampSeconds,
+                        videoTime,
+                        video->currentChunk.videoChunk->durationSeconds,
+                        source->currentsegmentDuration,
+                        video->currentChunk.videoChunk->frameInfos.count,
+                        video->currentChunk.videoChunk->numNalUnitsParsed,
+                        eof ? "(eof)" : "");
+                    // (void)0;
                 } else if (eof) {
-                    // we have reached end of the stream but we also did run out of data to consume in the buffer
-                    // this could happen due to various reasons but a big reason is that sometimes the H.264 elementary
-                    // stream doesnt have any timing info at all and thus we assume it to be 30 FPS and thus the duration
-                    // and play rate we calculate of it is off thus we may end earlier or later than expected, thus to prevent
-                    // that we expire the currently playing segment early here so that more data can be fed to the player
-                    source->currentsegmentDuration = 0.0; // expire segment
-
-                    // also update the timestamp to be in sync so that even if there is a delay in loading the next segment
-                    // we dont go too much out of sync, from the next segment
-                    video->currentChunk.timestampSeconds = videoTime;
+                    if (source->currentSegmentIndex > source->lastLoadedSegmentIndex) {
+                        // if we have a new segment loaded, add it to the decoder
+                        source->lastLoadedSegmentIndex = source->currentSegmentIndex;
+                        AVD_HLSSegmentSlot *slot       = avdHLSSegmentStoreGetSlot(&scene->segmentStore, (AVD_UInt32)i, source->currentSegmentIndex);
+                        picoStream videoSourceStream   = (picoStream)video->h264Video->bitstream->userData;
+                        AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->h264Buffer, slot->h264Size));
+                    } else {
+                        // also update the timestamp to be in sync so that even if there is a delay in loading the next segment
+                        // we dont go too much out of sync, from the next segment
+                        video->currentChunk.timestampSeconds = videoTime;
+                    }
                 }
             } else {
                 source->decodedThisFrame = true;
@@ -379,7 +400,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
         &pipelineCreationInfo));
 
     if (avdPathExists("assets/scene_hls_player/sources.txt")) {
-        AVD_CHECK(__avdSceneHLSPlayerLoadSourcesFromPath(hlsPlayer, "assets/scene_hls_player/sources.txt"));
+        AVD_CHECK(__avdSceneHLSPlayerLoadSourcesFromPath(appState, hlsPlayer, "assets/scene_hls_player/sources.txt"));
         AVD_LOG_INFO("Loaded HLS sources from sources.txt");
     }
 
@@ -455,8 +476,7 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
             avdHLSWorkerPoolFlush(&hlsPlayer->workerPool);
             avdHLSSegmentStoreClear(&hlsPlayer->segmentStore);
             avdHLSURLPoolClear(&hlsPlayer->urlPool);
-            __avdSceneHLSPlayerFreeSources(appState, hlsPlayer);
-            __avdSceneHLSPlayerLoadSourcesFromPath(hlsPlayer, event->dragNDrop.paths[0]);
+            __avdSceneHLSPlayerLoadSourcesFromPath(appState, hlsPlayer, event->dragNDrop.paths[0]);
         }
     }
 }
