@@ -149,7 +149,7 @@ bool avdVulkanVideoDecoderIsChunkOutdated(AVD_VulkanVideoDecoder *video, AVD_Flo
     return video->currentChunk.timestampSeconds + video->currentChunk.videoChunk->durationSeconds < videoTime;
 }
 
-bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, bool *eof)
+bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264VideoLoadParams *chunkLoadParams, bool *eof)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -164,6 +164,7 @@ bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *
     AVD_CHECK(
         avdH264VideoLoadChunk(
             video->h264Video,
+            chunkLoadParams,
             &video->currentChunk.videoChunk,
             eof));
 

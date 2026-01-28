@@ -126,7 +126,7 @@ static bool __avdH264VideoAddPPS(AVD_H264Video *video, picoH264PictureParameterS
     return changed;
 }
 
-static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, uint8_t spsId)
+static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkLoadParams, uint8_t spsId)
 {
     AVD_ASSERT(video != NULL);
 
@@ -145,11 +145,13 @@ static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, uint8_t spsId)
         video->framerateRaw         = ((uint64_t)sps->vui.timeScale << 32) / (2 * (uint64_t)sps->vui.numUnitsInTick);
         video->framerate            = fps;
         video->frameDurationSeconds = 1.0f / fps;
+        AVD_LOG_WARN("SPS VUI timing info found, setting framerate to %.2f fps", fps);
     } else {
-        AVD_LOG_WARN("SPS does not contain valid VUI timing info, cannot determine framerate, gussing it to be 30 FPS");
-        video->framerateRaw         = (30ULL << 32) / 1ULL;
-        video->framerate            = 30.0f;
-        video->frameDurationSeconds = 1.0f / 30.0f;
+        AVD_LOG_WARN("SPS does not contain valid VUI timing info, cannot determine framerate, using hinted target framerate %.2f", chunkLoadParams->targetFramerate);
+        AVD_UInt32 framerate        = (AVD_UInt32)chunkLoadParams->targetFramerate;
+        video->framerateRaw         = (uint64_t)framerate << 32;
+        video->framerate            = chunkLoadParams->targetFramerate;
+        video->frameDurationSeconds = 1.0f / chunkLoadParams->targetFramerate;
     }
 
     // if any of these values have changed, then its and error as we dont support dynamic changes yet
@@ -453,10 +455,11 @@ static bool __avdH264VideoCalculatePictureOrderCount(AVD_H264Video *video, picoH
     return true;
 }
 
-static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnitHeader outNalUnitHeader, bool *spsDirty, bool *ppsDirty, bool *eof)
+static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkLoadParams, picoH264NALUnitHeader outNalUnitHeader, bool *spsDirty, bool *ppsDirty, bool *eof)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(outNalUnitHeader != NULL);
+    AVD_ASSERT(chunkLoadParams != NULL);
 
     AVD_Size nalUnitSize = 0;
     if (!picoH264FindNextNALUnit(video->bitstream, &nalUnitSize)) {
@@ -492,7 +495,7 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, picoH264NALUnit
                 nalUnitPayloadSize,
                 &sps));
             if (__avdH264VideoAddSPS(video, &sps)) {
-                AVD_CHECK(__avdH264VideoSPSUpdated(video, sps.seqParameterSetId));
+                AVD_CHECK(__avdH264VideoSPSUpdated(video, chunkLoadParams, sps.seqParameterSetId));
                 if (spsDirty) {
                     *spsDirty |= true;
                 }
@@ -658,7 +661,7 @@ bool avdH264VideoLoadFromStream(picoStream stream, AVD_H264VideoLoadParams *para
 
         if (nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_SPS ||
             nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_PPS) {
-            if (!__avdH264VideoParseNextNalUnit(video, &nalUnitHeader, &spsDirty, &ppsDirty, &eof)) {
+            if (!__avdH264VideoParseNextNalUnit(video, params, &nalUnitHeader, &spsDirty, &ppsDirty, &eof)) {
                 failed = !eof;
                 break;
             }
@@ -782,10 +785,11 @@ bool avdH264VideoLoadParamsDefault(AVD_Vulkan *vulkan, AVD_H264VideoLoadParams *
     outParams->frameDataAlignment = AVD_ALIGN(
         vulkan->supportedFeatures.videoCapabilitiesDecode.minBitstreamBufferOffsetAlignment,
         vulkan->supportedFeatures.videoCapabilitiesDecode.minBitstreamBufferSizeAlignment);
+    outParams->targetFramerate = 30.0;
     return true;
 }
 
-bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk, bool *eof)
+bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkLoadParams, AVD_H264VideoChunk **outChunk, bool *eof)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(outChunk != NULL);
@@ -823,7 +827,7 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk, 
             video->bitstream->seek(video->bitstream->userData, nalUnitSize, SEEK_CUR);
             continue;
         }
-        if (!__avdH264VideoParseNextNalUnit(video, &nalUnitHeader, &spsDirty, &ppsDirty, eof)) {
+        if (!__avdH264VideoParseNextNalUnit(video, chunkLoadParams, &nalUnitHeader, &spsDirty, &ppsDirty, eof)) {
             if (eof && *eof) {
                 break;
             }
@@ -848,4 +852,41 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk, 
     *outChunk = &video->currentChunk;
 
     return true;
+}
+
+AVD_Size avdH264VideoCountFrames(uint8_t *buffer, size_t bufferSize)
+{
+    AVD_ASSERT(buffer != NULL);
+    AVD_ASSERT(bufferSize > 0);
+
+    picoH264Bitstream bitstream = picoH264BitstreamFromBuffer(buffer, bufferSize);
+    AVD_CHECK_MSG(bitstream != NULL, "Failed to create bitstream from buffer");
+
+    AVD_Size frameCount = 0;
+    size_t nalUnitSize  = 0;
+
+    picoH264NALUnitHeader_t nalUnitHeader = {0};
+    while (picoH264FindNextNALUnit(bitstream, &nalUnitSize)) {
+        if (nalUnitSize > AVD_VULKAN_VIDEO_MAX_NAL_TEMP_BUFFER_SIZE) {
+            bitstream->seek(bitstream->userData, (int64_t)nalUnitSize, SEEK_CUR);
+            continue;
+        }
+
+        uint8_t *nalUnitPtr   = buffer + bitstream->tell(bitstream->userData);
+        size_t nalPayloadSize = 0;
+        if (!picoH264ParseNALUnit(nalUnitPtr, nalUnitSize, &nalUnitHeader, NULL, &nalPayloadSize)) {
+            continue;
+        }
+
+        if (nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_IDR ||
+            nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_NON_IDR) {
+            frameCount++;
+        }
+
+        bitstream->seek(bitstream->userData, (int64_t)nalUnitSize, SEEK_CUR);
+    }
+
+    picoH264BitstreamDestroy(bitstream);
+
+    return frameCount;
 }

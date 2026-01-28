@@ -42,6 +42,7 @@ typedef struct {
 typedef struct {
     AVD_Size bufferOffset;    // offset to start parsing from
     AVD_Size frameDataAlignment; // alignment for frame data allocations
+    AVD_Float targetFramerate;
 } AVD_H264VideoLoadParams;
 
 typedef struct {
@@ -158,14 +159,16 @@ void avdH264VideoChunkDebugPrint(AVD_H264VideoChunk *chunk, bool logFrameInfos);
 // load next chunk of NAL units, till the next IDR frame or till end of stream
 // it will be loaded into the internal currentChunk member
 // the current chunk is managed by the video object and will be reset on each call
-bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoChunk **outChunk, bool *eof);
+bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams* chunkLoadParams, AVD_H264VideoChunk **outChunk, bool *eof);
+
+AVD_Size avdH264VideoCountFrames(uint8_t *buffer, size_t bufferSize);
 
 bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video);
 void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video);
 AVD_Size avdVulkanVideoDecoderGetNumDecodedFrames(AVD_VulkanVideoDecoder *video);
 bool avdVulkanVideoDecoderChunkHasFrames(AVD_VulkanVideoDecoder *video);
 bool avdVulkanVideoDecoderIsChunkOutdated(AVD_VulkanVideoDecoder *video, AVD_Float videoTime);
-bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, bool *eof);
+bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264VideoLoadParams* chunkLoadParams, bool *eof);
 bool avdVulkanVideoDecoderDecodeFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, VkSemaphore signalSemaphore, VkFence signalFence);
 
 
