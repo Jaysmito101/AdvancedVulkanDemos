@@ -148,7 +148,7 @@ static bool __avdSceneHLSPlayerSwitchToNextSegment(AVD_AppState *appState, AVD_S
     }
 #endif
 
-    AVD_LOG_VERBOSE("loaded segment %u (size: %zu bytes, frames: %zu, duration: %.3f) at time %.3f seconds", nextSegmentId, dataSize, frameCount, slot->duration, time - source->videoStartTime);
+    // AVD_LOG_VERBOSE("loaded segment %u (size: %zu bytes, frames: %zu, duration: %.3f) at time %.3f seconds", nextSegmentId, dataSize, frameCount, slot->duration, time - source->videoStartTime);
 
     // if we have less than 1 ready segments ahead, request source update (with a debounce of 1 second)
     if (avdHLSSegmentStoreCountReadySegments(&scene->segmentStore, sourceIndex) < 1 && source->lastRefreshed - time < 1000.0f) {
@@ -238,7 +238,7 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
 
         if (!source->decoderReady && source->currentSegmentIndex != 0) {
             source->decoderReady   = true;
-            source->videoStartTime = time - source->currentSegmentStartTime;
+            source->videoStartTime = time;
 
             picoStream videoSourceStream = avdHLSStreamCreate();
             AVD_CHECK_MSG(videoSourceStream != NULL, "Failed to create HLS video source stream");
@@ -265,16 +265,16 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
                 bool eof                   = false;
                 AVD_CHECK(avdVulkanVideoDecoderNextChunk(&appState->vulkan, video, &loadParams, &eof));
                 if (video->h264Video->currentChunk.numNalUnitsParsed > 0) {
-                    AVD_LOG_WARN(
-                        "(timestamp: %.3f) at time %.3f seconds [%f %f] [%zu frames/%zu nal units] %s",
-                        video->currentChunk.timestampSeconds,
-                        videoTime,
-                        video->currentChunk.videoChunk->durationSeconds,
-                        source->currentsegmentDuration,
-                        video->currentChunk.videoChunk->frameInfos.count,
-                        video->currentChunk.videoChunk->numNalUnitsParsed,
-                        eof ? "(eof)" : "");
-                    // (void)0;
+                    // AVD_LOG_WARN(
+                    //     "(timestamp: %.3f) at time %.3f seconds [%f %f] [%zu frames/%zu nal units] %s",
+                    //     video->currentChunk.timestampSeconds,
+                    //     videoTime,
+                    //     video->currentChunk.videoChunk->durationSeconds,
+                    //     source->currentsegmentDuration,
+                    //     video->currentChunk.videoChunk->frameInfos.count,
+                    //     video->currentChunk.videoChunk->numNalUnitsParsed,
+                    //     eof ? "(eof)" : "");
+                    (void)0;
                 } else if (eof) {
                     if (source->currentSegmentIndex > source->lastLoadedSegmentIndex) {
                         // if we have a new segment loaded, add it to the decoder
