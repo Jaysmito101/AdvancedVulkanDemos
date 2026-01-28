@@ -187,6 +187,44 @@ const char *avdDumpToTmpFile(const void *data, size_t size, const char *extensio
     return tmpFilePath;
 }
 
+bool avdWriteBinaryFile(const char *filename, const void *data, size_t size)
+{
+    if (filename == NULL || data == NULL || size == 0) {
+        return false;
+    }
+
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        return false;
+    }
+
+    size_t written = fwrite(data, 1, size, file);
+    fclose(file);
+
+    return written == size;
+}
+
+bool avdCreateDirectoryIfNotExists(const char *path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return false;
+    }
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+    DWORD attrs = GetFileAttributesA(path);
+    if (attrs != INVALID_FILE_ATTRIBUTES) {
+        return (attrs & FILE_ATTRIBUTE_DIRECTORY) != 0;
+    }
+    return CreateDirectoryA(path, NULL) != 0;
+#else
+    struct stat st;
+    if (stat(path, &st) == 0) {
+        return S_ISDIR(st.st_mode);
+    }
+    return mkdir(path, 0755) == 0;
+#endif
+}
+
 // NOTE: These implementations are taken from the meshoptimizer library.
 // Source: https://github.com/zeux/meshoptimizer/blob/3beccf6f3653992cf1724a5ff954af8455eb9965/src/quantization.cpp
 
