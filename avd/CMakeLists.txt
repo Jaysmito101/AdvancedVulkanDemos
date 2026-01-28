@@ -17,6 +17,7 @@ add_executable(avd
     ./src/core/avd_hashtable.c
     ./src/core/avd_hashtable_tests.c
     ./src/core/avd_input.c
+    ./src/core/avd_aligned_buffer.c
 
     ./src/avd_main.c
     ./src/avd_application.c
@@ -42,6 +43,8 @@ add_executable(avd
     ./src/vulkan/avd_vulkan_image.c
     ./src/vulkan/avd_vulkan_buffer.c
     ./src/vulkan/avd_vulkan_debug.c
+    ./src/vulkan/avd_vulkan_video_decoder.c
+    ./src/vulkan/avd_vulkan_h264_video.c
 
     ./src/ui/avd_ui.c
 
@@ -60,13 +63,27 @@ add_executable(avd
     ./src/model/avd_meshgen.c
 
     ./src/scenes/avd_scenes.c
+    
     ./src/scenes/avd_scenes_main_menu.c
+    
     ./src/scenes/bloom/avd_scenes_bloom.c
+    
     ./src/scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.c
+    
     ./src/scenes/deccer_cubes/avd_scenes_deccer_cubes.c
+    
     ./src/scenes/subsurface_scattering/avd_scenes_subsurface_scattering.c
+    
     ./src/scenes/eyeballs/avd_scenes_eyeballs.c
+    
     ./src/scenes/realistic_head/avd_scenes_realistic_head.c
+    
+    ./src/scenes/hls_player/avd_scenes_hls_player.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_segment_store.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_url_pool.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_stream.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_media_cache.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_worker_pool.c
 )
 
 include_directories(avd
@@ -109,9 +126,16 @@ if (MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
 endif()
 
-add_dependencies(avd generate_assets)
-
 target_compile_definitions(avd PRIVATE
     $<$<CONFIG:Debug>:AVD_DEBUG>          # Define AVD_DEBUG for Debug builds
     $<$<NOT:$<CONFIG:Debug>>:AVD_RELEASE> # Define AVD_RELEASE for non-Debug builds
 )
+
+
+if (MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_link_options(avd PRIVATE /IGNORE:4099)
+    target_compile_options(avd PRIVATE /MP /FS)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND WIN32)
+    # Clang must pass MSVC-style flags via -Xlinker
+    target_link_options(avd PRIVATE -Xlinker /IGNORE:4099)
+endif()

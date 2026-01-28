@@ -21,13 +21,19 @@ if "%1"=="--release" (
 )
 if "%1"=="--mingw" (
     set TOOLCHAIN=mingw
-    set BUILD_DIR=build.mingw
+    set BUILD_DIR=build
     shift
     goto parse_args
 )
 if "%1"=="--vs" (
     set TOOLCHAIN=vs
     set BUILD_DIR=build.vs
+    shift
+    goto parse_args
+)
+if "%1"=="--ninja" (
+    set TOOLCHAIN=ninja
+    set BUILD_DIR=build.ninja
     shift
     goto parse_args
 )
@@ -38,11 +44,40 @@ goto parse_args
 echo Using %TOOLCHAIN% toolchain with %BUILD_TYPE% configuration
 echo Build directory: %BUILD_DIR%
 
+echo Generating assets...
+python tools/assets.py
+
+@REM Check if assets changed and invalidate cache
+if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
+set "ASSET_HASH_FILE=avd_assets\generated\.assetshash"
+set "BUILD_ASSET_HASH_FILE=%BUILD_DIR%\.assetshash"
+set "INVALIDATE_CACHE=0"
+
+if exist "%ASSET_HASH_FILE%" (
+    if exist "%BUILD_ASSET_HASH_FILE%" (
+        fc /b "%ASSET_HASH_FILE%" "%BUILD_ASSET_HASH_FILE%" >nul
+        if errorlevel 1 (
+            echo Assets have changed. Invalidating CMake cache...
+            set "INVALIDATE_CACHE=1"
+        )
+    ) else (
+        echo Asset hash missing in build directory. Invalidating CMake cache...
+        set "INVALIDATE_CACHE=1"
+    )
+)
+
+if "%INVALIDATE_CACHE%"=="1" (
+    if exist "%BUILD_DIR%\CMakeCache.txt" del "%BUILD_DIR%\CMakeCache.txt"
+    copy /y "%ASSET_HASH_FILE%" "%BUILD_ASSET_HASH_FILE%" >nul
+)
+
 @REM check if build directory and CMakeCache.txt exists, if not run cmake
 if not exist %BUILD_DIR%\CMakeCache.txt (
     echo CMakeCache.txt not found in %BUILD_DIR%. Running cmake to generate build files...
     if "%TOOLCHAIN%"=="mingw" (
         cmake -S . -B %BUILD_DIR% -G "MinGW Makefiles"
+    ) else if "%TOOLCHAIN%"=="ninja" (
+        cmake -S . -B %BUILD_DIR% -G "Ninja"
     ) else (
         cmake -S . -B %BUILD_DIR%
     )
@@ -53,9 +88,18 @@ if not exist %BUILD_DIR%\CMakeCache.txt (
 ) else (
     echo CMakeCache.txt found in %BUILD_DIR%. Skipping cmake configuration.
 )
-
-echo Generating assets...
-python tools/assets.py
+rem If `compile_commands.json` exists in the build directory, copy it to ./build
+if exist "%BUILD_DIR%\compile_commands.json" (
+    if not exist build (
+        mkdir build
+    )
+    copy /Y "%BUILD_DIR%\compile_commands.json" "build\compile_commands.json" >nul 2>nul
+    if %errorlevel% equ 0 (
+        echo Copied compile_commands.json to build\compile_commands.json
+    ) else (
+        echo Failed to copy compile_commands.json
+    )
+)
 
 echo Building the project...
 if "%BUILD_TYPE%"=="Release" (
@@ -70,7 +114,7 @@ if %errorlevel% neq 0 (
 
 @REM run the program (debug or release)
 echo Running the program...
-if "%TOOLCHAIN%"=="mingw" (
+if "%TOOLCHAIN%"=="mingw" OR "%TOOLCHAIN%"=="ninja" (
     if "%BUILD_TYPE%"=="Release" (
         .\%BUILD_DIR%\avd\avd.exe
     ) else (

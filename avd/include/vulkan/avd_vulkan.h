@@ -9,5 +9,6 @@
 #include "vulkan/avd_vulkan_presentation.h"
 #include "vulkan/avd_vulkan_renderer.h"
 #include "vulkan/avd_vulkan_swapchain.h"
+#include "vulkan/avd_vulkan_video.h"
 
 #endif // AVD_VULKAN_H

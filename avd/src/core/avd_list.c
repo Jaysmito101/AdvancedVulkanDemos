@@ -168,6 +168,28 @@ void *avdListGet(const AVD_List *list, size_t index)
     return (char *)list->items + (index * list->itemSize);
 }
 
+void *avdListGetBack(const AVD_List *list)
+{
+    assert(list != NULL);
+
+    if (list->count == 0) {
+        return NULL;
+    }
+
+    return (char *)list->items + ((list->count - 1) * list->itemSize);
+}
+
+void *avdListGetFront(const AVD_List *list)
+{
+    assert(list != NULL);
+
+    if (list->count == 0) {
+        return NULL;
+    }
+
+    return list->items;
+}
+
 void avdListClear(AVD_List *list)
 {
     assert(list != NULL);
