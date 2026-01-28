@@ -38,6 +38,7 @@ bool avdHLSSegmentStoreInit(AVD_HLSSegmentStore *store, AVD_UInt32 sourceCount);
 void avdHLSSegmentStoreDestroy(AVD_HLSSegmentStore *store);
 void avdHLSSegmentStoreClear(AVD_HLSSegmentStore *store);
 
+AVD_Size avdHLSSegmentStoreCountReadySegments(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex);
 bool avdHLSSegmentStoreReserve(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
 bool avdHLSSegmentStoreCommit(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, uint8_t *h264Buffer, AVD_Size h264Size, AVD_Float duration);
 void avdHLSSegmentStoreRelease(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);

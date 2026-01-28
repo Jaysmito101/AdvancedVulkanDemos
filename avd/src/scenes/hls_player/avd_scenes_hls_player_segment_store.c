@@ -72,6 +72,27 @@ void avdHLSSegmentStoreClear(AVD_HLSSegmentStore *store)
     }
 }
 
+AVD_Size avdHLSSegmentStoreCountReadySegments(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex)
+{
+    AVD_ASSERT(store != NULL);
+    AVD_ASSERT(sourceIndex < store->sourceCount);
+
+    AVD_HLSSegmentRing *ring = &store->rings[sourceIndex];
+    AVD_Size readyCount      = 0;
+
+    picoThreadMutexLock(ring->mutex, PICO_THREAD_INFINITE);
+
+    for (AVD_UInt32 j = 0; j < AVD_HLS_SEGMENT_RING_SIZE; j++) {
+        AVD_HLSSegmentSlot *slot = &ring->slots[j];
+        if (slot->state == AVD_HLS_SEGMENT_STATE_READY) {
+            readyCount++;
+        }
+    }
+
+    picoThreadMutexUnlock(ring->mutex);
+    return readyCount;
+}
+
 bool avdHLSSegmentStoreReserve(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId)
 {
     AVD_ASSERT(store != NULL);
