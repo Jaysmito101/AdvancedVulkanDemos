@@ -12,6 +12,8 @@
 #define AVD_HLS_WORKER_NUM_MEDIA_DOWNLOAD_WORKERS 8
 #define AVD_HLS_WORKER_NUM_MEDIA_DEMUX_WORKERS    2
 
+#define AVD_HLS_WORKER_POOL_LOG(...) AVD_LOG_DEBUG("[HLS WORKER] " __VA_ARGS__)
+
 typedef struct {
     AVD_UInt32 sourceIndex;
     AVD_UInt32 sourcesHash;

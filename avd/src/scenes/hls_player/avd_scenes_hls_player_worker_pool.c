@@ -44,7 +44,7 @@ static void __avdHLSSourceDownloadWorker(void *arg)
     AVD_HLSWorkerPool *pool     = (AVD_HLSWorkerPool *)arg;
     pool->sourceDownloadRunning = true;
 
-    AVD_LOG_INFO("HLS Source Download Worker started with thread ID: %llu.", picoThreadGetCurrentId());
+    AVD_HLS_WORKER_POOL_LOG("Source download worker started [tid: %llu]", picoThreadGetCurrentId());
 
     AVD_HLSSourceTaskPayload sourcePayload = {0};
     AVD_HLSMediaTaskPayload mediaPayload   = {0};
@@ -54,6 +54,8 @@ static void __avdHLSSourceDownloadWorker(void *arg)
         if (!picoThreadChannelReceive(pool->sourceDownloadChannel, &sourcePayload, 200)) {
             continue;
         }
+
+        AVD_HLS_WORKER_POOL_LOG("Source download worker received task [src: %u, urlHash: 0x%08X, sourcesHash: 0x%08X]", sourcePayload.sourceIndex, sourcePayload.sourceUrlHash, sourcePayload.sourcesHash);
 
         const char *sourceUrl = avdHLSURLPoolGet(pool->urlPool, sourcePayload.sourceUrlHash);
         if (!sourceUrl) {
@@ -104,6 +106,7 @@ static void __avdHLSSourceDownloadWorker(void *arg)
                 continue;
             }
 
+            AVD_HLS_WORKER_POOL_LOG("Source download worker enqueue media [seg: %u, src: %u, urlHash: 0x%08X]", mediaPayload.segmentId, mediaPayload.sourceIndex, mediaPayload.urlHash);
             if (!picoThreadChannelSend(pool->mediaDownloadChannel, &mediaPayload)) {
                 AVD_LOG_ERROR("Failed to send media download task");
             }
@@ -118,7 +121,7 @@ static void __avdHLSSourceDownloadWorker(void *arg)
         }
     }
 
-    AVD_LOG_INFO("HLS Source Download Worker stopping with thread ID: %llu.", picoThreadGetCurrentId());
+    AVD_HLS_WORKER_POOL_LOG("Source download worker stopping [tid: %llu]", picoThreadGetCurrentId());
 }
 
 static void __avdHLSMediaDownloadWorker(void *arg)
@@ -126,7 +129,7 @@ static void __avdHLSMediaDownloadWorker(void *arg)
     AVD_HLSWorkerPool *pool    = (AVD_HLSWorkerPool *)arg;
     pool->mediaDownloadRunning = true;
 
-    AVD_LOG_INFO("HLS Media Download Worker started with thread ID: %llu.", picoThreadGetCurrentId());
+    AVD_HLS_WORKER_POOL_LOG("Media download worker started [tid: %llu]", picoThreadGetCurrentId());
 
     AVD_HLSMediaTaskPayload mediaPayload = {0};
     AVD_HLSDemuxTaskPayload demuxPayload = {0};
@@ -136,6 +139,8 @@ static void __avdHLSMediaDownloadWorker(void *arg)
             continue;
         }
 
+        AVD_HLS_WORKER_POOL_LOG("Media download worker received task [src: %u, seg: %u, urlHash: 0x%08X]", mediaPayload.sourceIndex, mediaPayload.segmentId, mediaPayload.urlHash);
+
         demuxPayload.segmentId   = mediaPayload.segmentId;
         demuxPayload.sourceIndex = mediaPayload.sourceIndex;
         demuxPayload.duration    = mediaPayload.duration;
@@ -144,6 +149,7 @@ static void __avdHLSMediaDownloadWorker(void *arg)
         demuxPayload.dataSize    = 0;
 
         if (avdHLSMediaCacheQuery(pool->mediaCache, mediaPayload.urlHash, &demuxPayload.data, &demuxPayload.dataSize)) {
+            AVD_HLS_WORKER_POOL_LOG("Media download worker cache hit [urlHash: 0x%08X, seg: %u]", mediaPayload.urlHash, mediaPayload.segmentId);
             if (!picoThreadChannelSend(pool->mediaDemuxChannel, &demuxPayload)) {
                 AVD_LOG_ERROR("Failed to send media demux task (cached)");
                 free(demuxPayload.data);
@@ -167,13 +173,13 @@ static void __avdHLSMediaDownloadWorker(void *arg)
 
         avdHLSMediaCacheInsert(pool->mediaCache, mediaPayload.urlHash, demuxPayload.data, demuxPayload.dataSize);
 
+        AVD_HLS_WORKER_POOL_LOG("Media download worker forwarding demux [seg: %u]", demuxPayload.segmentId);
         if (!picoThreadChannelSend(pool->mediaDemuxChannel, &demuxPayload)) {
             AVD_LOG_ERROR("Failed to send media demux task");
             free(demuxPayload.data);
         }
     }
-
-    AVD_LOG_INFO("HLS Media Download Worker stopping with thread ID: %llu.", picoThreadGetCurrentId());
+    AVD_HLS_WORKER_POOL_LOG("Media download worker stopping [tid: %llu]", picoThreadGetCurrentId());
 }
 
 static void __avdHLSMediaDemuxWorker(void *arg)
@@ -181,7 +187,7 @@ static void __avdHLSMediaDemuxWorker(void *arg)
     AVD_HLSWorkerPool *pool = (AVD_HLSWorkerPool *)arg;
     pool->mediaDemuxRunning = true;
 
-    AVD_LOG_INFO("HLS Media Demux Worker started with thread ID: %llu.", picoThreadGetCurrentId());
+    AVD_HLS_WORKER_POOL_LOG("Media demux worker started [tid: %llu]", picoThreadGetCurrentId());
 
     AVD_HLSDemuxTaskPayload demuxPayload = {0};
     AVD_HLSReadyPayload readyPayload     = {0};
@@ -190,6 +196,8 @@ static void __avdHLSMediaDemuxWorker(void *arg)
         if (!picoThreadChannelReceive(pool->mediaDemuxChannel, &demuxPayload, 200)) {
             continue;
         }
+
+        AVD_HLS_WORKER_POOL_LOG("Media demux worker received task [src: %u, seg: %u, size: %zu]", demuxPayload.sourceIndex, demuxPayload.segmentId, demuxPayload.dataSize);
 
         picoPerfTime demuxStartTime = picoPerfNow();
 
@@ -247,6 +255,7 @@ static void __avdHLSMediaDemuxWorker(void *arg)
         picoPerfTime demuxEndTime = picoPerfNow();
         // AVD_LOG_VERBOSE("Demuxing segment %u took %lf ms", demuxPayload.segmentId, picoPerfDurationMilliseconds(demuxStartTime, demuxEndTime));
 
+        AVD_HLS_WORKER_POOL_LOG("Media demux worker forwarding ready payload [seg: %u, h264: %zu bytes]", demuxPayload.segmentId, totalH264Size);
         if (!picoThreadChannelSend(pool->mediaReadyChannel, &readyPayload)) {
             AVD_LOG_ERROR("Failed to send ready segment %u", demuxPayload.segmentId);
             AVD_FREE(h264Buffer);
