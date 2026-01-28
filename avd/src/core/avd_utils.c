@@ -2,7 +2,7 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#include <Shlobj.h>
+#include <shlobj.h>
 #endif
 
 #include "core/avd_utils.h"
@@ -71,6 +71,17 @@ bool avdPathExists(const char *path)
 #else
     struct stat buffer;
     return (stat(path, &buffer) == 0 && S_ISREG(buffer.st_mode));
+#endif
+}
+
+bool avdDirectoryExists(const char *path)
+{
+#if defined(_WIN32) || defined(__CYGWIN__)
+    DWORD attrs = GetFileAttributesA(path);
+    return (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY));
+#else
+    struct stat st;
+    return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
 #endif
 }
 
@@ -211,14 +222,13 @@ bool avdCreateDirectoryIfNotExists(const char *path)
         return false;
     }
 
+    char command[4096];
 #if defined(_WIN32) || defined(__CYGWIN__)
-    int result = SHCreateDirectoryExA(NULL, path, NULL);
-    return result == ERROR_SUCCESS || result == ERROR_ALREADY_EXISTS;
+    snprintf(command, sizeof(command), "mkdir \"%s\" 2>nul", path);
 #else
-    char cmd[2048];
-    snprintf(cmd, sizeof(cmd), "mkdir -p \"%s\"", path);
-    return system(cmd) == 0;
+    snprintf(command, sizeof(command), "mkdir -p \"%s\"", path);
 #endif
+    return system(command) == 0 || avdDirectoryExists(path);
 }
 
 // NOTE: These implementations are taken from the meshoptimizer library.
