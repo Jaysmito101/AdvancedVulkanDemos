@@ -27,6 +27,7 @@
 typedef struct {
     AVD_Size offset;
     AVD_Size size;
+    AVD_Size chunkNalUnitIndex;
     AVD_Float timestampSeconds;
     AVD_Float durationSeconds;
     AVD_UInt32 referencePriority;

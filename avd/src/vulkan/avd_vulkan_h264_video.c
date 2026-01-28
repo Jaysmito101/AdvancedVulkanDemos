@@ -558,6 +558,7 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, AVD_H264VideoLo
                 .durationSeconds   = video->frameDurationSeconds,
                 .referencePriority = outNalUnitHeader->nalRefIDC,
                 .isReferenceFrame  = isReferenceFrame,
+                .chunkNalUnitIndex = video->currentChunk.numNalUnitsParsed,
             };
             AVD_H264VideoFrameInfo *frameInfo = (AVD_H264VideoFrameInfo *)avdListPushBack(
                 &video->currentChunk.frameInfos,
@@ -772,6 +773,7 @@ void avdH264VideoChunkDebugPrint(AVD_H264VideoChunk *chunk, bool logFrameInfos)
             AVD_LOG_INFO("      Top Field Order Count: %d", frameInfo->topFieldOrderCount);
             AVD_LOG_INFO("      Bottom Field Order Count: %d", frameInfo->bottomFieldOrderCount);
             AVD_LOG_INFO("      Complementary Field Pair: %s", frameInfo->complementaryFieldPair ? "Yes" : "No");
+            AVD_LOG_INFO("      Chunk NAL Unit Index: %zu", frameInfo->chunkNalUnitIndex);
         }
     }
 }
@@ -815,16 +817,30 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkL
             }
             idrEncountered = true;
         } else if (nalUnitHeader.nalUnitType == PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_NON_IDR && !idrEncountered) {
-            // if we havent yet encountered an IDR frame, we skip non-IDR frames
-            AVD_Size nalUnitSize = 0;
-            if (!picoH264FindNextNALUnit(video->bitstream, &nalUnitSize)) {
-                if (eof) {
-                    *eof = true;
+            // check if the fram is an non idr but I frame in that case we treat it as an IDR frame for now atleast
+            AVD_Size currentPos = video->bitstream->tell(video->bitstream->userData);
+            uint8_t buffer[1024];
+            (void)video->bitstream->read(video->bitstream->userData, buffer, 1024);
+            uint8_t sliceType = 0;
+            AVD_CHECK(picoH264SliceHeaderParseSliceType(buffer, 1024, &sliceType));
+
+            if (sliceType == PICO_H264_SLICE_TYPE_I || sliceType == PICO_H264_SLICE_TYPE_SI) {
+                AVD_LOG_DEBUG("Found non-IDR I-frame at index %zu", video->currentChunk.numNalUnitsParsed);
+                idrEncountered = true;
+            } else {
+                // if we havent yet encountered an IDR frame, we skip non-IDR frames
+                AVD_Size nalUnitSize = 0;
+                if (!picoH264FindNextNALUnit(video->bitstream, &nalUnitSize)) {
+                    if (eof) {
+                        *eof = true;
+                    }
+                    break;
                 }
-                break;
+                video->bitstream->seek(video->bitstream->userData, nalUnitSize, SEEK_CUR);
+
+                video->currentChunk.numNalUnitsParsed++;
+                continue;
             }
-            video->bitstream->seek(video->bitstream->userData, nalUnitSize, SEEK_CUR);
-            continue;
         }
         if (!__avdH264VideoParseNextNalUnit(video, chunkLoadParams, &nalUnitHeader, &spsDirty, &ppsDirty, eof)) {
             if (eof && *eof) {
