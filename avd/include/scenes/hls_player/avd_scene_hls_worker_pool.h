@@ -12,7 +12,11 @@
 #define AVD_HLS_WORKER_NUM_MEDIA_DOWNLOAD_WORKERS 8
 #define AVD_HLS_WORKER_NUM_MEDIA_DEMUX_WORKERS    2
 
+#ifdef AVD_HLS_WORKER_POOL_LOG
 #define AVD_HLS_WORKER_POOL_LOG(...) AVD_LOG_DEBUG("[HLS WORKER] " __VA_ARGS__)
+#else 
+#define AVD_HLS_WORKER_POOL_LOG(...) do { (void)0; } while(0)
+#endif
 
 typedef struct {
     AVD_UInt32 sourceIndex;
