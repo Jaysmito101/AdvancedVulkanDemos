@@ -139,7 +139,6 @@ static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, AVD_H264VideoLoadPara
     AVD_UInt32 newPaddedHeight = (AVD_UInt32)(sps->picHeightInMapUnitsMinus1 + 1) * 16;
     AVD_UInt32 newNumDPBSlots  = AVD_MAX(video->numDPBSlots, sps->maxNumRefFrames + 1);
 
-    // AVD_UInt32 framerate =
     if (sps->vuiParametersPresentFlag && sps->vui.timingInfoPresentFlag && sps->vui.numUnitsInTick > 0 && sps->vui.timeScale > sps->vui.numUnitsInTick) {
         AVD_Float fps               = (AVD_Float)sps->vui.timeScale / (AVD_Float)(2 * sps->vui.numUnitsInTick);
         video->framerateRaw         = ((uint64_t)sps->vui.timeScale << 32) / (2 * (uint64_t)sps->vui.numUnitsInTick);
