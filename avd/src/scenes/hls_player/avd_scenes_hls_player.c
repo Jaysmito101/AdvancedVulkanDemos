@@ -174,6 +174,7 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
 
                     // if we have less than 1 ready segments ahead, request source update (with a debounce of 1 second)
                     if (avdHLSSegmentStoreCountReadySegments(&scene->segmentStore, (AVD_UInt32)i) < 1 && source->lastRefreshed - time < 1000.0f) {
+                        AVD_LOG_INFO("Source %u low on ready segments, requesting update", (AVD_UInt32)i);
                         AVD_CHECK(__avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i));
                     }
                 }
