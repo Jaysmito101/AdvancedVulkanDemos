@@ -2,6 +2,7 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <Shlobj.h>
 #endif
 
 #include "core/avd_utils.h"
@@ -211,17 +212,12 @@ bool avdCreateDirectoryIfNotExists(const char *path)
     }
 
 #if defined(_WIN32) || defined(__CYGWIN__)
-    DWORD attrs = GetFileAttributesA(path);
-    if (attrs != INVALID_FILE_ATTRIBUTES) {
-        return (attrs & FILE_ATTRIBUTE_DIRECTORY) != 0;
-    }
-    return CreateDirectoryA(path, NULL) != 0;
+    int result = SHCreateDirectoryExA(NULL, path, NULL);
+    return result == ERROR_SUCCESS || result == ERROR_ALREADY_EXISTS;
 #else
-    struct stat st;
-    if (stat(path, &st) == 0) {
-        return S_ISDIR(st.st_mode);
-    }
-    return mkdir(path, 0755) == 0;
+    char cmd[2048];
+    snprintf(cmd, sizeof(cmd), "mkdir -p \"%s\"", path);
+    return system(cmd) == 0;
 #endif
 }
 
