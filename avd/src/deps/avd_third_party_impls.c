@@ -24,6 +24,18 @@
         printf("\n");        \
     } while (0)
 
+#define PICO_H264_LOG(...)   \
+    do {                     \
+        printf(__VA_ARGS__); \
+        printf("\n");        \
+    } while (0)
+
+#define PICO_AUDIO_LOG(...)  \
+    do {                     \
+        printf(__VA_ARGS__); \
+        printf("\n");        \
+    } while (0)
+
 #endif
 
 #define PICO_ASSERT(expr)                                                               \
@@ -37,6 +49,7 @@
 
 #define PICO_LOG_THREAD_SAFE
 #define PICO_IMPLEMENTATION
+#include "pico/picoAudio.h"
 #include "pico/picoH264.h"
 #include "pico/picoLog.h"
 #include "pico/picoM3U8.h"
