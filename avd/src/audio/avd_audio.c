@@ -45,14 +45,10 @@ static bool __avdAudioBufferFromDecoder(picoAudioDecoder decoder, AVD_AudioBuffe
         return false;
     }
 
-    ALuint alBuffer = (ALuint)*outBuffer;
-    if (alBuffer == 0) {
-        AL_CALL(alGenBuffers(1, &alBuffer));
-        *outBuffer = (AVD_AudioBuffer)alBuffer;
-    }
+    AL_CALL(alGenBuffers(1, outBuffer));
 
     AL_CALL(alBufferData(
-        alBuffer,
+        (ALuint)(*outBuffer),
         (info.channelCount == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16,
         pcmData,
         (ALsizei)dataSize,
