@@ -16,3 +16,6 @@
 [submodule "dep/libpico"]
 	path = dep/libpico
 	url = https://github.com/Jaysmito101/libpico
+[submodule "dep/openal-soft"]
+	path = dep/openal-soft
+	url = https://github.com/kcat/openal-soft.git
