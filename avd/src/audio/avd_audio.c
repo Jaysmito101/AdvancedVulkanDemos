@@ -1,4 +1,4 @@
-#include "audio/avd_audio.h"
+#include "audio/avd_audio_core.h"
 
 #include "pico/picoAudio.h"
 
@@ -14,10 +14,9 @@
         }                                                                  \
     } while (0)
 
-static bool __avdAudioBufferFromDecoder(picoAudioDecoder decoder, AVD_AudioBuffer *outBuffer)
+static bool __avdAudioBufferFromDecoder(picoAudioDecoder decoder, AVD_AudioBuffer buffer)
 {
     AVD_ASSERT(decoder != NULL);
-    AVD_ASSERT(outBuffer != NULL);
 
     picoAudioInfo_t info = {0};
     if (picoAudioDecoderGetAudioInfo(decoder, &info) != PICO_AUDIO_RESULT_SUCCESS) {
@@ -45,10 +44,8 @@ static bool __avdAudioBufferFromDecoder(picoAudioDecoder decoder, AVD_AudioBuffe
         return false;
     }
 
-    AL_CALL(alGenBuffers(1, outBuffer));
-
     AL_CALL(alBufferData(
-        (ALuint)(*outBuffer),
+        (ALuint)buffer,
         (info.channelCount == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16,
         pcmData,
         (ALsizei)dataSize,
@@ -104,11 +101,19 @@ void avdAudioShutdown(AVD_Audio *audio)
     }
 }
 
-bool avdAudioLoadBufferFromFile(AVD_Audio *audio, const char *filename, AVD_AudioBuffer *outBuffer)
+bool avdAudioBufferCreate(AVD_Audio *audio, AVD_AudioBuffer *outBuffer)
+{
+    AVD_ASSERT(audio != NULL);
+    AVD_ASSERT(outBuffer != NULL);
+
+    AL_CALL(alGenBuffers(1, (ALuint *)outBuffer));
+    return true;
+}
+
+bool avdAudioLoadBufferFromFile(AVD_Audio *audio, const char *filename, AVD_AudioBuffer buffer)
 {
     AVD_ASSERT(audio != NULL);
     AVD_ASSERT(filename != NULL);
-    AVD_ASSERT(outBuffer != NULL);
 
     picoAudioDecoder decoder = picoAudioDecoderCreate();
     if (decoder == NULL) {
@@ -122,16 +127,15 @@ bool avdAudioLoadBufferFromFile(AVD_Audio *audio, const char *filename, AVD_Audi
         return false;
     }
 
-    bool result = __avdAudioBufferFromDecoder(decoder, outBuffer);
+    bool result = __avdAudioBufferFromDecoder(decoder, buffer);
     picoAudioDecoderDestroy(decoder);
     return result;
 }
 
-bool avdAudioLoadBufferFromMemory(AVD_Audio *audio, const void *data, size_t size, AVD_AudioBuffer *outBuffer)
+bool avdAudioLoadBufferFromMemory(AVD_Audio *audio, const void *data, size_t size, AVD_AudioBuffer buffer)
 {
     AVD_ASSERT(audio != NULL);
     AVD_ASSERT(data != NULL);
-    AVD_ASSERT(outBuffer != NULL);
 
     picoAudioDecoder decoder = picoAudioDecoderCreate();
     if (decoder == NULL) {
@@ -145,7 +149,7 @@ bool avdAudioLoadBufferFromMemory(AVD_Audio *audio, const void *data, size_t siz
         return false;
     }
 
-    bool result = __avdAudioBufferFromDecoder(decoder, outBuffer);
+    bool result = __avdAudioBufferFromDecoder(decoder, buffer);
     picoAudioDecoderDestroy(decoder);
     return result;
 }
