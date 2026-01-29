@@ -96,6 +96,7 @@ include_directories(avd
     ../dep/cute_headers
     ../dep/volk
     ../dep/tinyobjloader-c
+    ../dep/openal-soft/include
     ../avd_assets/generated/include
     ${Vulkan_INCLUDE_DIRS}
 )
@@ -116,6 +117,7 @@ target_link_libraries(avd
     avd_assets
     glfw
     volk
+    OpenAL
     debug ${VULKAN_SDK_PATH}/Lib/shaderc_combinedd.lib
     optimized ${VULKAN_SDK_PATH}/Lib/shaderc_combined.lib
 )

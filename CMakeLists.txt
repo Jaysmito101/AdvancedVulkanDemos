@@ -74,6 +74,7 @@ endif()
 
 add_subdirectory(dep/glfw)
 add_subdirectory(dep/volk)
+add_subdirectory(dep/openal-soft)
 add_subdirectory(avd_assets)
 add_subdirectory(avd)
 
