@@ -25,6 +25,7 @@ bool avdApplicationInit(AVD_AppState *appState)
     appState->running = true;
 
     AVD_CHECK(avdShaderManagerInit(&appState->shaderManager));
+    AVD_CHECK(avdAudioInit(&appState->audio));
     AVD_CHECK(avdWindowInit(&appState->window, appState));
     AVD_CHECK(avdVulkanInit(&appState->vulkan, &appState->window, &appState->surface));
     AVD_CHECK(avdVulkanSwapchainCreate(&appState->swapchain, &appState->vulkan, appState->surface, &appState->window));

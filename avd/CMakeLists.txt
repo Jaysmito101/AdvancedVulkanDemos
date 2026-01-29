@@ -46,6 +46,8 @@ add_executable(avd
     ./src/vulkan/avd_vulkan_video_decoder.c
     ./src/vulkan/avd_vulkan_h264_video.c
 
+    ./src/audio/avd_audio.c
+
     ./src/ui/avd_ui.c
 
     ./src/math/avd_matrix_non_simd.c
