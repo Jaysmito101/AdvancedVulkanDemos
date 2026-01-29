@@ -17,11 +17,12 @@ void avdAudioShutdown(AVD_Audio *audio);
 
 bool avdAudioBufferFromFile(AVD_Audio *audio, const char *filename, AVD_AudioBuffer *outBuffer);
 bool avdAudioBufferFromMemory(AVD_Audio *audio, const void *data, size_t size, AVD_AudioBuffer *outBuffer);
-void avdAudioBufferDestroy(AVD_Audio *audio, AVD_AudioBuffer *buffer);
+void avdAudioBufferDestroy(AVD_Audio *audio, AVD_AudioBuffer buffer);
 
 bool avdAudioSourceCreate(AVD_Audio* audio, AVD_AudioSource* outSource);
-void avdAudioSourceDestroy(AVD_Audio* audio, AVD_AudioSource* source);
+void avdAudioSourceDestroy(AVD_Audio* audio, AVD_AudioSource source);
 bool avdAudioSourceLinkBuffer(AVD_Audio* audio, AVD_AudioSource source, AVD_AudioBuffer buffer);
+bool avdAudioSourceUnlinkBuffer(AVD_Audio* audio, AVD_AudioSource source);
 bool avdAudioSourcePlay(AVD_Audio* audio, AVD_AudioSource source);
 bool avdAudioSourceStop(AVD_Audio* audio, AVD_AudioSource source);
 bool avdAudioSourceSetLooping(AVD_Audio* audio, AVD_AudioSource source, bool looping);
