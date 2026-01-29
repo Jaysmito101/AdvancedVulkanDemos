@@ -205,6 +205,14 @@ bool avdAudioSourcePlay(AVD_Audio *audio, AVD_AudioSource source)
     return true;
 }
 
+bool avdAudioSourcePause(AVD_Audio *audio, AVD_AudioSource source)
+{
+    AVD_ASSERT(audio != NULL);
+
+    AL_CALL(alSourcePause((ALuint)source));
+    return true;
+}
+
 bool avdAudioSourceStop(AVD_Audio *audio, AVD_AudioSource source)
 {
     AVD_ASSERT(audio != NULL);
@@ -265,6 +273,16 @@ bool avdAudioSourceSetupDefaults(AVD_Audio *audio, AVD_AudioSource source)
     AL_CALL(alSource3f((ALuint)source, AL_POSITION, 0.0f, 0.0f, 0.0f));
     AL_CALL(alSource3f((ALuint)source, AL_VELOCITY, 0.0f, 0.0f, 0.0f));
     AL_CALL(alSourcei((ALuint)source, AL_LOOPING, AL_FALSE));
+    return true;
+}
+
+bool avdAudioSourceEnqueueBuffers(AVD_Audio *audio, AVD_AudioSource source, AVD_AudioBuffer *buffers, AVD_Size bufferCount)
+{
+    AVD_ASSERT(audio != NULL);
+    AVD_ASSERT(buffers != NULL);
+    AVD_ASSERT(bufferCount > 0);
+
+    AL_CALL(alSourceQueueBuffers((ALuint)source, (ALsizei)bufferCount, (ALuint *)buffers));
     return true;
 }
 
