@@ -32,11 +32,7 @@ static void __avdHLSWorkerPoolFreeReadyPayload(void *payloadRaw, void *context)
     AVD_HLSReadyPayload *payload = (AVD_HLSReadyPayload *)payloadRaw;
     AVD_ASSERT(payload != NULL);
 
-    if (payload->h264Buffer) {
-        AVD_FREE(payload->h264Buffer);
-        payload->h264Buffer = NULL;
-        payload->h264Size   = 0;
-    }
+    avdHLSSegmentAVDataFree(&payload->avData);
 }
 
 static void __avdHLSSourceDownloadWorker(void *arg)
@@ -215,7 +211,9 @@ static void __avdHLSMediaDemuxWorker(void *arg)
         size_t pesPacketCount           = 0;
         picoMpegTSPESPacket *pesPackets = picoMpegTSGetPESPackets(mpegts, &pesPacketCount);
 
-        AVD_Size totalH264Size = 0;
+        AVD_Size totalH264Size  = 0;
+        AVD_Size totalAudioSize = 0;
+
         for (AVD_Size i = 0; i < pesPacketCount; i++) {
             picoMpegTSPESPacket pesPacket = pesPackets[i];
             if (picoMpegTSGetPMSStreamByPID(mpegts, pesPacket->head.pid)->streamType == PICO_MPEGTS_STREAM_TYPE_H264) {
@@ -223,9 +221,14 @@ static void __avdHLSMediaDemuxWorker(void *arg)
             } else if (picoMpegTSIsStreamIDVideo(pesPacket->head.streamId)) {
                 AVD_LOG_WARN("Found video PES packet with video, but stream type is not H.264 for segment %u", demuxPayload.segmentId);
             }
+            if (picoMpegTSGetPMSStreamByPID(mpegts, pesPacket->head.pid)->streamType == PICO_MPEGTS_STREAM_TYPE_AAC_ADTS) {
+                totalAudioSize += pesPacket->dataLength;
+            } else if (picoMpegTSIsStreamIDAudio(pesPacket->head.streamId)) {
+                AVD_LOG_WARN("Found audio PES packet with audio, but stream type is not AAC ADTS for segment %u", demuxPayload.segmentId);
+            }
         }
 
-        if (totalH264Size == 0) {
+        if (totalH264Size == 0 || totalAudioSize == 0) {
             AVD_LOG_ERROR("No H.264 video data found in segment %u", demuxPayload.segmentId);
             goto cleanup;
         }
@@ -236,21 +239,38 @@ static void __avdHLSMediaDemuxWorker(void *arg)
             goto cleanup;
         }
 
-        size_t h264Offset = 0;
+        char *audioBuffer = (char *)AVD_MALLOC(totalAudioSize);
+        if (!audioBuffer) {
+            AVD_LOG_ERROR("Failed to allocate audio buffer for segment %u", demuxPayload.segmentId);
+            AVD_FREE(h264Buffer);
+            goto cleanup;
+        }
+
+        size_t h264Offset  = 0;
+        size_t audioOffset = 0;
         for (AVD_Size i = 0; i < pesPacketCount; i++) {
             picoMpegTSPESPacket pesPacket = pesPackets[i];
             if (picoMpegTSGetPMSStreamByPID(mpegts, pesPacket->head.pid)->streamType == PICO_MPEGTS_STREAM_TYPE_H264) {
                 memcpy(h264Buffer + h264Offset, pesPacket->data, pesPacket->dataLength);
                 h264Offset += pesPacket->dataLength;
             }
+
+            if (picoMpegTSGetPMSStreamByPID(mpegts, pesPacket->head.pid)->streamType == PICO_MPEGTS_STREAM_TYPE_AAC_ADTS) {
+                memcpy(audioBuffer + audioOffset, pesPacket->data, pesPacket->dataLength);
+                audioOffset += pesPacket->dataLength;
+            }
         }
 
         readyPayload.segmentId   = demuxPayload.segmentId;
         readyPayload.sourceIndex = demuxPayload.sourceIndex;
         readyPayload.duration    = demuxPayload.duration;
-        readyPayload.h264Buffer  = (uint8_t *)h264Buffer;
-        readyPayload.h264Size    = totalH264Size;
         readyPayload.sourcesHash = demuxPayload.sourcesHash;
+        readyPayload.avData      = (AVD_HLSSegmentAVData){
+                 .h264Buffer = (uint8_t *)h264Buffer,
+                 .h264Size   = totalH264Size,
+                 .aacBuffer  = (uint8_t *)audioBuffer,
+                 .aacSize    = totalAudioSize,
+        };
 
         picoPerfTime demuxEndTime = picoPerfNow();
         // AVD_LOG_VERBOSE("Demuxing segment %u took %lf ms", demuxPayload.segmentId, picoPerfDurationMilliseconds(demuxStartTime, demuxEndTime));
@@ -259,6 +279,7 @@ static void __avdHLSMediaDemuxWorker(void *arg)
         if (!picoThreadChannelSend(pool->mediaReadyChannel, &readyPayload)) {
             AVD_LOG_ERROR("Failed to send ready segment %u", demuxPayload.segmentId);
             AVD_FREE(h264Buffer);
+            AVD_FREE(audioBuffer);
         }
 
     cleanup:

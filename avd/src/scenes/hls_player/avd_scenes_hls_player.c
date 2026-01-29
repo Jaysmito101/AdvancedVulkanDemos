@@ -127,9 +127,10 @@ static bool __avdSceneHLSPlayerSwitchToNextSegment(AVD_AppState *appState, AVD_S
     if (currentSegmentId != 0) {
         avdHLSSegmentStoreRelease(&scene->segmentStore, sourceIndex, currentSegmentId);
     }
-    AVD_Size dataSize   = 0;
-    uint8_t *data       = avdHLSSegmentStoreAcquire(&scene->segmentStore, sourceIndex, nextSegmentId, &dataSize);
-    AVD_Size frameCount = avdH264VideoCountFrames(data, dataSize);
+
+    AVD_HLSSegmentAVData avData = {0};
+    AVD_CHECK(avdHLSSegmentStoreAcquire(&scene->segmentStore, sourceIndex, nextSegmentId, &avData));
+    AVD_Size frameCount = avdH264VideoCountFrames(avData.h264Buffer, avData.h264Size);
 
     AVD_HLSSegmentSlot *slot = avdHLSSegmentStoreGetSlot(&scene->segmentStore, sourceIndex, nextSegmentId);
     AVD_CHECK_MSG(slot != NULL, "Failed to get slot for segment %u of source index %u", nextSegmentId, sourceIndex);
@@ -143,7 +144,7 @@ static bool __avdSceneHLSPlayerSwitchToNextSegment(AVD_AppState *appState, AVD_S
     snprintf(buffer, sizeof(buffer), "hls_segments/source_%u", sourceIndex);
     AVD_CHECK(avdCreateDirectoryIfNotExists(buffer));
     snprintf(buffer, sizeof(buffer), "hls_segments/source_%u/%u.h264", sourceIndex, nextSegmentId);
-    if (!avdWriteBinaryFile(buffer, data, dataSize)) {
+    if (!avdWriteBinaryFile(buffer, avData.h264Buffer, avData.h264Size)) {
         AVD_LOG_WARN("Failed to write HLS segment to disk: %s", buffer);
     }
 #endif
@@ -196,9 +197,7 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
     while (avdHLSWorkerPoolReceiveReadySegment(&scene->workerPool, &payload)) {
         if (payload.sourcesHash != scene->sourcesHash) {
             AVD_LOG_WARN("HLS Main Thread received segment for outdated sources hash 0x%08X (current: 0x%08X), discarding", payload.sourcesHash, scene->sourcesHash);
-            if (payload.h264Buffer) {
-                AVD_FREE(payload.h264Buffer);
-            }
+            avdHLSSegmentAVDataFree(&payload.avData);
             continue;
         }
 
@@ -210,15 +209,13 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
         bool segmentAlreadyLoaded = avdHLSSegmentStoreHasSegment(&scene->segmentStore, payload.sourceIndex, payload.segmentId);
 
         if (isSegmentOld || segmentAlreadyLoaded) {
-            if (payload.h264Buffer) {
-                AVD_FREE(payload.h264Buffer);
-            }
+            avdHLSSegmentAVDataFree(&payload.avData);
             continue;
         }
 
         AVD_LOG_INFO("received ready segment %u uration: %.3f at %.3f", payload.segmentId, payload.duration, appState->framerate.currentTime - scene->sources[payload.sourceIndex].videoStartTime);
 
-        if (!avdHLSSegmentStoreCommit(&scene->segmentStore, payload.sourceIndex, payload.segmentId, payload.h264Buffer, payload.h264Size, payload.duration)) {
+        if (!avdHLSSegmentStoreCommit(&scene->segmentStore, payload.sourceIndex, payload.segmentId, payload.avData, payload.duration)) {
             AVD_LOG_WARN("HLS Main Thread could not commit segment %u for source index %u", payload.segmentId, payload.sourceIndex);
         }
     }
@@ -243,7 +240,7 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
             picoStream videoSourceStream = avdHLSStreamCreate();
             AVD_CHECK_MSG(videoSourceStream != NULL, "Failed to create HLS video source stream");
             AVD_HLSSegmentSlot *slot = avdHLSSegmentStoreGetSlot(&scene->segmentStore, (AVD_UInt32)i, source->currentSegmentIndex);
-            AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->h264Buffer, slot->h264Size));
+            AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->avData.h264Buffer, slot->avData.h264Size));
             AVD_H264VideoLoadParams params = {0};
             AVD_CHECK(avdH264VideoLoadParamsDefault(&appState->vulkan, &params));
             AVD_H264Video *video = NULL;
@@ -282,7 +279,7 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
                         source->lastLoadedSegmentIndex = source->currentSegmentIndex;
                         AVD_HLSSegmentSlot *slot       = avdHLSSegmentStoreGetSlot(&scene->segmentStore, (AVD_UInt32)i, source->currentSegmentIndex);
                         picoStream videoSourceStream   = (picoStream)video->h264Video->bitstream->userData;
-                        AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->h264Buffer, slot->h264Size));
+                        AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->avData.h264Buffer, slot->avData.h264Size));
                     }
                     // also update the timestamp to be in sync so that even if there is a delay in loading the next segment
                     // we dont go too much out of sync, from the next segment

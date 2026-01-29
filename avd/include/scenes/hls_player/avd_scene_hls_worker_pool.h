@@ -4,8 +4,8 @@
 #include "core/avd_types.h"
 #include "pico/picoThreads.h"
 #include "scenes/hls_player/avd_scene_hls_media_cache.h"
-#include "scenes/hls_player/avd_scene_hls_segment_store.h"
 #include "scenes/hls_player/avd_scene_hls_url_pool.h"
+#include "scenes/hls_player/avd_scene_hls_segment_store.h"
 #include <stdint.h>
 
 #define AVD_HLS_WORKER_NUM_SOURCE_WORKERS         4
@@ -17,6 +17,7 @@
 #else 
 #define AVD_HLS_WORKER_POOL_LOG(...) do { (void)0; } while(0)
 #endif
+
 
 typedef struct {
     AVD_UInt32 sourceIndex;
@@ -46,8 +47,7 @@ typedef struct {
     AVD_UInt32 segmentId;
     AVD_UInt32 sourceIndex;
     AVD_Float duration;
-    uint8_t* h264Buffer;
-    AVD_Size h264Size;
+    AVD_HLSSegmentAVData avData;
     AVD_UInt32 sourcesHash;
 } AVD_HLSReadyPayload;
 

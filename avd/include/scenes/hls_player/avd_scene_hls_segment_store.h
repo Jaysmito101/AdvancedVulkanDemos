@@ -15,12 +15,20 @@ typedef enum {
     AVD_HLS_SEGMENT_STATE_PLAYING
 } AVD_HLSSegmentState;
 
+
+typedef struct {
+    uint8_t* h264Buffer;
+    AVD_Size h264Size;
+    
+    uint8_t* aacBuffer;
+    AVD_Size aacSize;
+} AVD_HLSSegmentAVData;
+
 typedef struct {
     AVD_UInt32 segmentId;
     AVD_Float duration;
     AVD_HLSSegmentState state;
-    uint8_t *h264Buffer;
-    AVD_Size h264Size;
+    AVD_HLSSegmentAVData avData;
 } AVD_HLSSegmentSlot;
 
 typedef struct {
@@ -40,14 +48,16 @@ void avdHLSSegmentStoreClear(AVD_HLSSegmentStore *store);
 
 AVD_Size avdHLSSegmentStoreCountReadySegments(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex);
 bool avdHLSSegmentStoreReserve(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
-bool avdHLSSegmentStoreCommit(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, uint8_t *h264Buffer, AVD_Size h264Size, AVD_Float duration);
+bool avdHLSSegmentStoreCommit(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, AVD_HLSSegmentAVData avData, AVD_Float duration);
 void avdHLSSegmentStoreRelease(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
 void avdHLSSegmentStoreAdvance(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 newMinSegmentId);
-uint8_t* avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, AVD_Size* outH264Size);
+bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, AVD_HLSSegmentAVData* outAvData);
 AVD_HLSSegmentSlot *avdHLSSegmentStoreGetSlot(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
 
 bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
 bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 currentSegmentId, AVD_UInt32 *outNextSegmentId);
 AVD_UInt32 avdHLSSegmentStoreGetActiveSourcesBitfield(AVD_HLSSegmentStore *store, AVD_UInt32 *currentSegmentIds);
+
+void avdHLSSegmentAVDataFree(AVD_HLSSegmentAVData *avData);
 
 #endif // AVD_HLS_SEGMENT_STORE_H
