@@ -1,6 +1,7 @@
 #ifndef AVD_SCENES_HLS_PLAYER_H
 #define AVD_SCENES_HLS_PLAYER_H
 
+#include "audio/avd_audio.h"
 #include "core/avd_types.h"
 #include "scenes/avd_scenes_base.h"
 #include "scenes/hls_player/avd_scene_hls_media_cache.h"
@@ -29,6 +30,9 @@ typedef struct {
     AVD_Bool decoderReady;
     AVD_VulkanVideoDecoder videoDecoder;
     AVD_Bool decodedThisFrame;
+
+    AVD_AudioBuffer audioBuffer;
+    AVD_AudioSource audioSource;
 } AVD_SceneHLSPlayerSource;
 
 typedef struct AVD_SceneHLSPlayer {

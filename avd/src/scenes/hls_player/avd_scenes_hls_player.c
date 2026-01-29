@@ -1,5 +1,6 @@
 #include "scenes/hls_player/avd_scenes_hls_player.h"
 
+#include "audio/avd_audio.h"
 #include "avd_application.h"
 #include "core/avd_base.h"
 #include "core/avd_types.h"
@@ -37,6 +38,14 @@ static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSP
         if (scene->sources[i].videoDecoder.session != VK_NULL_HANDLE) {
             avdVulkanVideoDecoderDestroy(&appState->vulkan, &scene->sources[i].videoDecoder);
             scene->sources[i].videoDecoder = (AVD_VulkanVideoDecoder){0};
+        }
+        if (scene->sources[i].audioSource) {
+            avdAudioSourceDestroy(&appState->audio, scene->sources[i].audioSource);
+            scene->sources[i].audioSource = 0;
+        }
+        if (scene->sources[i].audioBuffer) {
+            avdAudioBufferDestroy(&appState->audio, scene->sources[i].audioBuffer);
+            scene->sources[i].audioBuffer = 0;
         }
     }
     memset(scene->sources, 0, sizeof(scene->sources));
@@ -254,6 +263,15 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
             AVD_H264Video *video = NULL;
             AVD_CHECK(avdH264VideoLoadFromStream(videoSourceStream, &params, &video));
             AVD_CHECK(avdVulkanVideoDecoderCreate(&appState->vulkan, &source->videoDecoder, video));
+
+            AVD_CHECK(avdAudioSourceCreate(&appState->audio, &source->audioSource));
+            AVD_CHECK(avdAudioLoadBufferFromMemory(
+                &appState->audio,
+                slot->avData.aacBuffer,
+                slot->avData.aacSize,
+                &source->audioBuffer));
+            AVD_CHECK(avdAudioSourceLinkBuffer(&appState->audio, source->audioSource, source->audioBuffer));
+            AVD_CHECK(avdAudioSourcePlay(&appState->audio, source->audioSource));
         }
 
         source->decodedThisFrame      = false;
@@ -288,6 +306,18 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
                         AVD_HLSSegmentSlot *slot       = avdHLSSegmentStoreGetSlot(&scene->segmentStore, (AVD_UInt32)i, source->currentSegmentIndex);
                         picoStream videoSourceStream   = (picoStream)video->h264Video->bitstream->userData;
                         AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->avData.h264Buffer, slot->avData.h264Size));
+
+                        AVD_AudioBuffer currentBuffer = source->audioBuffer;
+
+                        AVD_CHECK(avdAudioLoadBufferFromMemory(
+                            &appState->audio,
+                            slot->avData.aacBuffer,
+                            slot->avData.aacSize,
+                            &source->audioBuffer));
+                        AVD_CHECK(avdAudioSourceStop(&appState->audio, source->audioSource));
+                        AVD_CHECK(avdAudioSourceLinkBuffer(&appState->audio, source->audioSource, source->audioBuffer));
+                        AVD_CHECK(avdAudioSourcePlay(&appState->audio, source->audioSource));
+                        avdAudioBufferDestroy(&appState->audio, currentBuffer);
                     }
                     // also update the timestamp to be in sync so that even if there is a delay in loading the next segment
                     // we dont go too much out of sync, from the next segment
