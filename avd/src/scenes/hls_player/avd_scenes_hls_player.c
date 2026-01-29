@@ -141,10 +141,18 @@ static bool __avdSceneHLSPlayerSwitchToNextSegment(AVD_AppState *appState, AVD_S
 
 #ifdef AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
     static char buffer[64] = {0};
-    snprintf(buffer, sizeof(buffer), "hls_segments/source_%u", sourceIndex);
+    snprintf(buffer, sizeof(buffer), "hls_segments/source_%u/aac_adts", sourceIndex);
     AVD_CHECK(avdCreateDirectoryIfNotExists(buffer));
-    snprintf(buffer, sizeof(buffer), "hls_segments/source_%u/%u.h264", sourceIndex, nextSegmentId);
+    snprintf(buffer, sizeof(buffer), "hls_segments/source_%u/h264", sourceIndex);
+    AVD_CHECK(avdCreateDirectoryIfNotExists(buffer));
+
+    snprintf(buffer, sizeof(buffer), "hls_segments/source_%u/h264/%u.h264", sourceIndex, nextSegmentId);
     if (!avdWriteBinaryFile(buffer, avData.h264Buffer, avData.h264Size)) {
+        AVD_LOG_WARN("Failed to write HLS segment to disk: %s", buffer);
+    }
+
+    snprintf(buffer, sizeof(buffer), "hls_segments/source_%u/aac_adts/%u.aac", sourceIndex, nextSegmentId);
+    if (!avdWriteBinaryFile(buffer, avData.aacBuffer, avData.aacSize)) {
         AVD_LOG_WARN("Failed to write HLS segment to disk: %s", buffer);
     }
 #endif
