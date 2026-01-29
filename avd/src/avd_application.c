@@ -60,6 +60,7 @@ void avdApplicationShutdown(AVD_AppState *appState)
     avdVulkanDestroySurface(&appState->vulkan, appState->surface);
     avdVulkanShutdown(&appState->vulkan);
     avdWindowShutdown(&appState->window);
+    avdAudioShutdown(&appState->audio);
     avdShaderManagerDestroy(&appState->shaderManager);
 }
 
