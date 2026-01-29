@@ -34,23 +34,23 @@ static bool __avdAudioBufferFromDecoder(picoAudioDecoder decoder, AVD_AudioBuffe
         return false;
     }
 
-    AVD_Size avdSizeOffset = 0;
-    while (!picoAudioDecoderIsEOF(decoder)) {
-        AVD_Size samplesRead = 0;
-        if (picoAudioDecoderDecode(
-                decoder,
-                (AVD_Int16 *)(pcmData + avdSizeOffset),
-                (dataSize - avdSizeOffset) / bytesPerSample,
-                &samplesRead) != PICO_AUDIO_RESULT_SUCCESS) {
-            AVD_LOG_ERROR("Failed to read samples from decoder");
-            AVD_FREE(pcmData);
-            return false;
-        }
-        avdSizeOffset += samplesRead * bytesPerSample;
+    AVD_Size samplesRead = 0;
+    if (picoAudioDecoderDecode(
+            decoder,
+            (AVD_Int16 *)pcmData,
+            dataSize / bytesPerSample,
+            &samplesRead) != PICO_AUDIO_RESULT_SUCCESS) {
+        AVD_LOG_ERROR("Failed to read samples from decoder");
+        AVD_FREE(pcmData);
+        return false;
     }
 
-    ALuint alBuffer;
-    AL_CALL(alGenBuffers(1, &alBuffer));
+    ALuint alBuffer = (ALuint)*outBuffer;
+    if (alBuffer == 0) {
+        AL_CALL(alGenBuffers(1, &alBuffer));
+        *outBuffer = (AVD_AudioBuffer)alBuffer;
+    }
+
     AL_CALL(alBufferData(
         alBuffer,
         (info.channelCount == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16,
@@ -59,8 +59,6 @@ static bool __avdAudioBufferFromDecoder(picoAudioDecoder decoder, AVD_AudioBuffe
         (ALsizei)info.sampleRate));
 
     AVD_FREE(pcmData);
-
-    *outBuffer = (AVD_AudioBuffer)alBuffer;
 
     return true;
 }
@@ -110,7 +108,7 @@ void avdAudioShutdown(AVD_Audio *audio)
     }
 }
 
-bool avdAudioBufferFromFile(AVD_Audio *audio, const char *filename, AVD_AudioBuffer *outBuffer)
+bool avdAudioLoadBufferFromFile(AVD_Audio *audio, const char *filename, AVD_AudioBuffer *outBuffer)
 {
     AVD_ASSERT(audio != NULL);
     AVD_ASSERT(filename != NULL);
@@ -133,7 +131,7 @@ bool avdAudioBufferFromFile(AVD_Audio *audio, const char *filename, AVD_AudioBuf
     return result;
 }
 
-bool avdAudioBufferFromMemory(AVD_Audio *audio, const void *data, size_t size, AVD_AudioBuffer *outBuffer)
+bool avdAudioLoadBufferFromMemory(AVD_Audio *audio, const void *data, size_t size, AVD_AudioBuffer *outBuffer)
 {
     AVD_ASSERT(audio != NULL);
     AVD_ASSERT(data != NULL);
