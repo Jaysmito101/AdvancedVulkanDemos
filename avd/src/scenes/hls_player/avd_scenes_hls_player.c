@@ -216,7 +216,7 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
             continue;
         }
 
-        // AVD_LOG_INFO("received ready segment %u uration: %.3f at %.3f", payload.segmentId, payload.duration, appState->framerate.currentTime - scene->sources[payload.sourceIndex].videoStartTime);
+        AVD_LOG_INFO("received ready segment %u uration: %.3f at %.3f", payload.segmentId, payload.duration, appState->framerate.currentTime - scene->sources[payload.sourceIndex].videoStartTime);
 
         if (!avdHLSSegmentStoreCommit(&scene->segmentStore, payload.sourceIndex, payload.segmentId, payload.h264Buffer, payload.h264Size, payload.duration)) {
             AVD_LOG_WARN("HLS Main Thread could not commit segment %u for source index %u", payload.segmentId, payload.sourceIndex);
@@ -265,15 +265,16 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
                 bool eof                   = false;
                 AVD_CHECK(avdVulkanVideoDecoderNextChunk(&appState->vulkan, video, &loadParams, &eof));
                 if (video->h264Video->currentChunk.numNalUnitsParsed > 0) {
-                    // AVD_LOG_WARN(
-                    //     "(timestamp: %.3f) at time %.3f seconds [%f %f] [%zu frames/%zu nal units] %s",
-                    //     video->currentChunk.timestampSeconds,
-                    //     videoTime,
-                    //     video->currentChunk.videoChunk->durationSeconds,
-                    //     source->currentsegmentDuration,
-                    //     video->currentChunk.videoChunk->frameInfos.count,
-                    //     video->currentChunk.videoChunk->numNalUnitsParsed,
-                    //     eof ? "(eof)" : "");
+                    AVD_LOG_WARN(
+                        "%u (timestamp: %.3f) at time %.3f seconds [%f %f] [%zu frames/%zu nal units] %s",
+                        source->currentSegmentIndex,
+                        video->currentChunk.timestampSeconds,
+                        videoTime,
+                        video->currentChunk.videoChunk->durationSeconds,
+                        source->currentsegmentDuration,
+                        video->currentChunk.videoChunk->frameInfos.count,
+                        video->currentChunk.videoChunk->numNalUnitsParsed,
+                        eof ? "(eof)" : "");
                     (void)0;
                 } else if (eof) {
                     if (source->currentSegmentIndex > source->lastLoadedSegmentIndex) {
@@ -282,11 +283,10 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
                         AVD_HLSSegmentSlot *slot       = avdHLSSegmentStoreGetSlot(&scene->segmentStore, (AVD_UInt32)i, source->currentSegmentIndex);
                         picoStream videoSourceStream   = (picoStream)video->h264Video->bitstream->userData;
                         AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->h264Buffer, slot->h264Size));
-                    } else {
-                        // also update the timestamp to be in sync so that even if there is a delay in loading the next segment
-                        // we dont go too much out of sync, from the next segment
-                        video->currentChunk.timestampSeconds = videoTime;
                     }
+                    // also update the timestamp to be in sync so that even if there is a delay in loading the next segment
+                    // we dont go too much out of sync, from the next segment
+                    video->currentChunk.timestampSeconds = videoTime;
                 }
             } else {
                 source->decodedThisFrame = true;
