@@ -72,11 +72,17 @@ else()
   set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
 endif()
 
-set(LIBTYPE STATIC)
+set(PA_BUILD_SHARED_LIBS OFF)
+
+if(CMAKE_C_COMPILER_ID STREQUAL "Clang" AND WIN32)
+  set(PA_USE_WDMKS OFF CACHE BOOL "Disable WDMKS for Clang" FORCE)
+  set(PA_USE_WDMKS_DEVICE_INFO OFF CACHE BOOL "Disable WDMKS device info for Clang" FORCE)
+  set(PA_USE_WASAPI OFF CACHE BOOL "Disable WASAPI for Clang" FORCE)
+endif()
 
 add_subdirectory(dep/glfw)
 add_subdirectory(dep/volk)
-add_subdirectory(dep/openal-soft)
+add_subdirectory(dep/portaudio)
 add_subdirectory(avd_assets)
 add_subdirectory(avd)
 

@@ -6,11 +6,6 @@
 
 #define AL_CALL(call)                                                      \
     do {                                                                   \
-        call;                                                              \
-        ALenum __alError = alGetError();                                   \
-        if (__alError != AL_NO_ERROR) {                                    \
-            AVD_LOG_ERROR("OpenAL error in %s: 0x%04X", #call, __alError); \
-        }                                                                  \
     } while (0)
 
 typedef AVD_UInt32 AVD_AudioBuffer;
