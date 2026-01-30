@@ -134,6 +134,7 @@ typedef struct {
 } AVD_VulkanVideoDecoderFrame;
 
 typedef struct {
+    bool initialized;
     VkVideoSessionKHR session;
     VkVideoSessionParametersKHR sessionParameters;
 

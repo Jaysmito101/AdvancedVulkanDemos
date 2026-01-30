@@ -99,6 +99,7 @@ bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
     video->h264Video = h264Video;
     AVD_CHECK(__avdVulkanVideoDecoderCreateSession(vulkan, video));
 
+    video->initialized = true;
     return true;
 }
 
@@ -112,6 +113,7 @@ void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vi
         vkFreeMemory(vulkan->device, video->memory[i], NULL);
     }
     avdH264VideoDestroy(video->h264Video);
+    memset(video, 0, sizeof(AVD_VulkanVideoDecoder));
 }
 
 AVD_Size avdVulkanVideoDecoderGetNumDecodedFrames(AVD_VulkanVideoDecoder *video)

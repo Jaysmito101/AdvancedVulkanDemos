@@ -2,12 +2,15 @@
 #define AVD_SCENES_HLS_PLAYER_H
 
 #include "audio/avd_audio.h"
+#include "avd_scene_hls_player_segment_store.h"
+#include "avd_scene_hls_worker_pool.h"
 #include "core/avd_types.h"
 #include "scenes/avd_scenes_base.h"
 #include "scenes/hls_player/avd_scene_hls_media_cache.h"
-#include "scenes/hls_player/avd_scene_hls_segment_store.h"
 #include "scenes/hls_player/avd_scene_hls_url_pool.h"
 #include "scenes/hls_player/avd_scene_hls_worker_pool.h"
+
+#include "scenes/hls_player/avd_scene_hls_player_context.h"
 
 #include "vulkan/avd_vulkan_video.h"
 
@@ -20,19 +23,9 @@ typedef struct {
     AVD_Float refreshIntervalMs;
     AVD_Float lastRefreshed;
     AVD_Float videoStartTime;
-
-    AVD_UInt32 currentSegmentIndex;
-    AVD_Float currentSegmentStartTime;
-    AVD_Float currentsegmentDuration;
-    AVD_Size currentSegmentFrameCount;
-
-    AVD_UInt32 lastLoadedSegmentIndex;
-    AVD_Bool decoderReady;
-    AVD_VulkanVideoDecoder videoDecoder;
-    AVD_Bool decodedThisFrame;
-
-    AVD_AudioBuffer audioBuffer;
-    AVD_AudioSource audioSource;
+    AVD_UInt32 lastPushedSegment;
+    
+    AVD_SceneHLSPlayerContext player;
 } AVD_SceneHLSPlayerSource;
 
 typedef struct AVD_SceneHLSPlayer {
@@ -53,10 +46,11 @@ typedef struct AVD_SceneHLSPlayer {
     AVD_UInt32 sourceCount;
     AVD_UInt32 sourcesHash;
 
+
     AVD_HLSURLPool urlPool;
     AVD_HLSMediaCache mediaCache;
-    AVD_HLSSegmentStore segmentStore;
     AVD_HLSWorkerPool workerPool;
+    AVD_HLSSegmentStore segmentStore;
 
     bool isSupported;
     AVD_Vulkan *vulkan;

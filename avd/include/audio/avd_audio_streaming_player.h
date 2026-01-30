@@ -20,6 +20,7 @@ typedef struct {
 } AVD_AudioStreamingPlayerBufferChunk;
 
 typedef struct {
+    bool initialized;
     AVD_AudioBuffer buffers[AVD_AUDIO_STREAMING_PLAYER_MAX_BUFFERS];
     AVD_Size bufferCount;
 

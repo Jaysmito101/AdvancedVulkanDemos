@@ -5,7 +5,7 @@
 #include "pico/picoThreads.h"
 #include "scenes/hls_player/avd_scene_hls_media_cache.h"
 #include "scenes/hls_player/avd_scene_hls_url_pool.h"
-#include "scenes/hls_player/avd_scene_hls_segment_store.h"
+#include "scenes/hls_player/avd_scene_hls_player_segment_store.h"
 #include <stdint.h>
 
 #define AVD_HLS_WORKER_NUM_SOURCE_WORKERS         4
@@ -44,9 +44,6 @@ typedef struct {
 } AVD_HLSDemuxTaskPayload;
 
 typedef struct {
-    AVD_UInt32 segmentId;
-    AVD_UInt32 sourceIndex;
-    AVD_Float duration;
     AVD_HLSSegmentAVData avData;
     AVD_UInt32 sourcesHash;
 } AVD_HLSReadyPayload;
@@ -67,14 +64,14 @@ typedef struct {
 
     AVD_HLSURLPool *urlPool;
     AVD_HLSMediaCache *mediaCache;
-    AVD_HLSSegmentStore *segmentStore;
 } AVD_HLSWorkerPool;
 
-bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache, AVD_HLSSegmentStore *segmentStore);
+bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache);
 void avdHLSWorkerPoolDestroy(AVD_HLSWorkerPool *pool);
 void avdHLSWorkerPoolFlush(AVD_HLSWorkerPool *pool);
 
 bool avdHLSWorkerPoolSendSourceTask(AVD_HLSWorkerPool *pool, AVD_UInt32 sourceIndex, AVD_UInt32 sourcesHash, const char *sourceUrl);
 bool avdHLSWorkerPoolReceiveReadySegment(AVD_HLSWorkerPool *pool, AVD_HLSReadyPayload *outPayload);
+
 
 #endif // AVD_HLS_WORKER_POOL_H

@@ -19,7 +19,13 @@ bool avdAudioStreamingPlayerInit(AVD_Audio *audio, AVD_AudioStreamingPlayer *pla
             return false;
         }
 
-        if (!avdAudioLoadEmptyBuffer(audio, player->buffers[i], 44100, 2)) {
+        // if (!avdAudioLoadEmptyBuffer(audio, player->buffers[i], 44100, 2)) {
+        //     AVD_LOG_ERROR("Failed to load empty buffer for streaming player");
+        //     avdAudioStreamingPlayerShutdown(audio, player);
+        //     return false;
+        // }
+
+        if (!avdAudioLoadBufferFromFile(audio, "./hls_segments/source_0/aac_adts/393724.aac", player->buffers[i])) {
             AVD_LOG_ERROR("Failed to load empty buffer for streaming player");
             avdAudioStreamingPlayerShutdown(audio, player);
             return false;
@@ -44,6 +50,13 @@ bool avdAudioStreamingPlayerInit(AVD_Audio *audio, AVD_AudioStreamingPlayer *pla
         return false;
     }
 
+    if (!avdAudioSourcePlay(audio, player->source)) {
+        AVD_LOG_ERROR("Failed to start audio source playback for streaming player");
+        avdAudioStreamingPlayerShutdown(audio, player);
+        return false;
+    }
+
+    player->initialized = true;
     return true;
 }
 
@@ -127,6 +140,7 @@ bool avdAudioStreamingPlayerUpdate(AVD_Audio *audio, AVD_AudioStreamingPlayer *p
 
     while (processedCount > 0) {
         AVD_LOG_DEBUG("processed buffers: %zu, queued buffers: %zu", processedCount, queuedCount);
+
         AVD_AudioBuffer buffer = 0;
         AVD_CHECK(avdAudioSourceUnqueueBuffers(audio, player->source, &buffer, 1));
 
@@ -151,6 +165,7 @@ bool avdAudioStreamingPlayerUpdate(AVD_Audio *audio, AVD_AudioStreamingPlayer *p
 
             chunk->inUse = false;
             player->chunkCount--;
+
             AVD_LOG_DEBUG("Streaming audio chunk, current chunk count: %zu", player->chunkCount);
         } else {
             AVD_LOG_WARN("No available audio chunk to stream, loading silent buffer, current chunk count: %zu", player->chunkCount);
@@ -161,10 +176,6 @@ bool avdAudioStreamingPlayerUpdate(AVD_Audio *audio, AVD_AudioStreamingPlayer *p
 
         processedCount--;
         player->buffersProcessed++;
-    }
-
-    if (avdAudioSourceIsStopped(audio, player->source)) {
-        AVD_CHECK(avdAudioSourcePlay(audio, player->source));
     }
 
     return true;

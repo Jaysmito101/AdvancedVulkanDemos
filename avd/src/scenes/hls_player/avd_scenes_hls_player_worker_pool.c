@@ -5,7 +5,6 @@
 #include "core/avd_utils.h"
 #include "pico/picoM3U8.h"
 #include "pico/picoMpegTS.h"
-#include "scenes/hls_player/avd_scenes_hls_player.h"
 #include "vulkan/avd_vulkan_video.h"
 
 #include <stdlib.h>
@@ -95,10 +94,6 @@ static void __avdHLSSourceDownloadWorker(void *arg)
             mediaPayload.duration  = segment->duration;
             if (!avdHLSURLPoolInsert(pool->urlPool, resolvedUrl, &mediaPayload.urlHash)) {
                 AVD_LOG_ERROR("Failed to intern URL into pool: %s", resolvedUrl);
-                continue;
-            }
-
-            if (!avdHLSSegmentStoreReserve(pool->segmentStore, sourcePayload.sourceIndex, mediaPayload.segmentId)) {
                 continue;
             }
 
@@ -261,16 +256,15 @@ static void __avdHLSMediaDemuxWorker(void *arg)
             }
         }
 
-        readyPayload.segmentId   = demuxPayload.segmentId;
-        readyPayload.sourceIndex = demuxPayload.sourceIndex;
-        readyPayload.duration    = demuxPayload.duration;
         readyPayload.sourcesHash = demuxPayload.sourcesHash;
         readyPayload.avData      = (AVD_HLSSegmentAVData){
                  .h264Buffer = (uint8_t *)h264Buffer,
                  .h264Size   = totalH264Size,
                  .aacBuffer  = (uint8_t *)audioBuffer,
                  .aacSize    = totalAudioSize,
-        };
+                 .duration   = demuxPayload.duration,
+                 .segmentId  = demuxPayload.segmentId,
+                 .source     = demuxPayload.sourceIndex};
 
         picoPerfTime demuxEndTime = picoPerfNow();
         // AVD_LOG_VERBOSE("Demuxing segment %u took %lf ms", demuxPayload.segmentId, picoPerfDurationMilliseconds(demuxStartTime, demuxEndTime));
@@ -294,18 +288,16 @@ static void __avdHLSMediaDemuxWorker(void *arg)
     AVD_LOG_INFO("HLS Media Demux Worker stopping with thread ID: %llu.", picoThreadGetCurrentId());
 }
 
-bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache, AVD_HLSSegmentStore *segmentStore)
+bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache)
 {
     AVD_ASSERT(pool != NULL);
     AVD_ASSERT(urlPool != NULL);
     AVD_ASSERT(mediaCache != NULL);
-    AVD_ASSERT(segmentStore != NULL);
 
     memset(pool, 0, sizeof(AVD_HLSWorkerPool));
 
-    pool->urlPool      = urlPool;
-    pool->mediaCache   = mediaCache;
-    pool->segmentStore = segmentStore;
+    pool->urlPool    = urlPool;
+    pool->mediaCache = mediaCache;
 
     pool->sourceDownloadChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_HLSSourceTaskPayload));
     AVD_CHECK_MSG(pool->sourceDownloadChannel != NULL, "Failed to create source download channel");

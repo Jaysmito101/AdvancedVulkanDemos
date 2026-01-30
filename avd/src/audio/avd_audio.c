@@ -151,7 +151,7 @@ bool avdAudioLoadEmptyBuffer(AVD_Audio *audio, AVD_AudioBuffer buffer, AVD_UInt3
     // just load a simple silent buffer
     AVD_ASSERT(audio != NULL);
 
-    static int16_t slientSamples[16] = {0};
+    static int16_t slientSamples[1600] = {0};
     AL_CALL(alBufferData(
         (ALuint)buffer,
         (channels == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16,
