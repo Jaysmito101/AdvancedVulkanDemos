@@ -47,6 +47,8 @@ add_executable(avd
     ./src/vulkan/avd_vulkan_h264_video.c
 
     ./src/audio/avd_audio.c
+    ./src/audio/avd_audio_clip.c
+    ./src/audio/avd_audio_player.c
     ./src/audio/avd_audio_streaming_player.c
 
     ./src/ui/avd_ui.c
