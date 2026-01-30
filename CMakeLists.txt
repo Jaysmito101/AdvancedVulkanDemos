@@ -72,6 +72,8 @@ else()
   set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
 endif()
 
+set(LIBTYPE STATIC)
+
 add_subdirectory(dep/glfw)
 add_subdirectory(dep/volk)
 add_subdirectory(dep/openal-soft)
