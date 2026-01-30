@@ -21,7 +21,6 @@ typedef struct {
 
 typedef struct {
     bool initialized;
-    AVD_AudioBuffer buffers[AVD_AUDIO_STREAMING_PLAYER_MAX_BUFFERS];
     AVD_Size bufferCount;
 
     AVD_AudioStreamingPlayerBufferChunk chunks[AVD_AUDIO_STREAMING_PLAYER_MAX_BUFFERS];
@@ -29,7 +28,6 @@ typedef struct {
 
     AVD_Size buffersProcessed;
 
-    AVD_AudioSource source;
 } AVD_AudioStreamingPlayer;
 
 bool avdAudioStreamingPlayerInit(AVD_Audio *audio, AVD_AudioStreamingPlayer *player, AVD_Size bufferCount);
