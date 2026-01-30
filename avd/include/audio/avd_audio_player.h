@@ -25,7 +25,8 @@ typedef struct {
 } AVD_AudiPlayerContext;
 
 struct AVD_AudioPlayer {
-    void *context;
+    bool initialized;
+
     AVD_Audio *audio;
 
     AVD_Float globalVolume;
@@ -34,7 +35,7 @@ struct AVD_AudioPlayer {
 };
 
 bool avdAudioPlayerInit(AVD_Audio *audio, AVD_AudioPlayer *player);
-void avdAudioPlayerShutdown(AVD_Audio *audio, AVD_AudioPlayer *player);
+void avdAudioPlayerShutdown(AVD_AudioPlayer *player);
 
 bool avdAudioPlayerConfigDefaults(AVD_AudioPlayerConfig *config);
 

@@ -84,6 +84,7 @@ bool avdAudioPlayerInit(AVD_Audio *audio, AVD_AudioPlayer *player)
     memset(player, 0, sizeof(AVD_AudioPlayer));
     player->audio        = audio;
     player->globalVolume = 1.0f;
+    player->initialized  = true;
 
     for (AVD_Size i = 0; i < AVD_AUDIO_PLAYER_MAX_CLIPS; i++) {
         player->clips[i].parent       = player;
@@ -97,9 +98,8 @@ bool avdAudioPlayerInit(AVD_Audio *audio, AVD_AudioPlayer *player)
     return true;
 }
 
-void avdAudioPlayerShutdown(AVD_Audio *audio, AVD_AudioPlayer *player)
+void avdAudioPlayerShutdown(AVD_AudioPlayer *player)
 {
-    AVD_ASSERT(audio != NULL);
     AVD_ASSERT(player != NULL);
 
     avdAudioPlayerStop(player);
