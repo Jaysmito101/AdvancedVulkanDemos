@@ -30,8 +30,9 @@ static bool __avdAudioPlayerCallback(
     AVD_Size totalSamples = clip->sampleCount;
 
     AVD_Float effectiveSpeed = config->speed * config->pitch;
-    if (effectiveSpeed <= 0.0f)
+    if (effectiveSpeed <= 0.0f) {
         effectiveSpeed = 1.0f;
+    }
 
     for (AVD_Size frame = 0; frame < framesPerBuffer; frame++) {
         AVD_Float srcPosition = (AVD_Float)ctx->sampleOffset + (AVD_Float)frame * effectiveSpeed * (AVD_Float)channels;
@@ -61,11 +62,7 @@ static bool __avdAudioPlayerCallback(
             }
 
             sample *= config->volume;
-
-            if (sample > 1.0f)
-                sample = 1.0f;
-            if (sample < -1.0f)
-                sample = -1.0f;
+            sample = AVD_CLAMP(sample, -1.0f, 1.0f);
 
             out[frame * channels + ch] = sample;
         }
