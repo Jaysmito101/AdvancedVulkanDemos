@@ -16,14 +16,8 @@ static bool __avdAudioBufferFromDecoder(picoAudioDecoder decoder, AVD_AudioBuffe
         return false;
     }
 
-    AVD_LOG_DEBUG("Loading audio buffer: %u Hz, %u channels, %u bits per sample, %llu total samples. duration: %.2f seconds",
-                  info.sampleRate,
-                  info.channelCount,
-                  info.bitsPerSample,
-                  (unsigned long long)info.totalSamples,
-                  (double)info.durationSeconds);
     AVD_Size bytesPerSample = (info.bitsPerSample / 8) * info.channelCount;
-    AVD_Size dataSize       = info.totalSamples * bytesPerSample;
+    AVD_Size dataSize       = info.totalSamples * 2 * bytesPerSample;
     AVD_UInt8 *pcmData      = (AVD_UInt8 *)AVD_MALLOC(dataSize);
     if (pcmData == NULL) {
         AVD_LOG_ERROR("Failed to allocate memory for PCM data");
