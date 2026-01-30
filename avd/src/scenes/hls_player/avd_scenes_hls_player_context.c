@@ -1,4 +1,5 @@
 #include "audio/avd_audio_core.h"
+#include "audio/avd_audio_streaming_player.h"
 #include "core/avd_base.h"
 #include "core/avd_utils.h"
 #include "pico/picoStream.h"
@@ -49,6 +50,18 @@ static bool __avdSceneHLSPlayerContextInit(
 
     if (!avdAudioStreamingPlayerInit(audio, &context->audioPlayer, 4)) {
         AVD_LOG_ERROR("Failed to initialize audio streaming player for HLS player context");
+        avdSceneHLSPlayerContextDestroy(vulkan, audio, context);
+        return false;
+    }
+
+    if (!avdAudioStreamingPlayerAddChunk(&context->audioPlayer, avData.aacBuffer, avData.aacSize)) {
+        AVD_LOG_ERROR("Failed to add audio chunk to streaming player in HLS player context");
+        avdSceneHLSPlayerContextDestroy(vulkan, audio, context);
+        return false;
+    }
+
+    if (!avdAudioStreamingPlayerPlay(&context->audioPlayer)) {
+        AVD_LOG_ERROR("Failed to start audio streaming player for HLS player context");
         avdSceneHLSPlayerContextDestroy(vulkan, audio, context);
         return false;
     }
@@ -105,15 +118,15 @@ bool avdSceneHLSPlayerContextAddSegment(
 
     if (!context->initialized) {
         AVD_CHECK(__avdSceneHLSPlayerContextInit(vulkan, audio, context, avData));
+        return true;
     }
 
     // this part is temporary
     AVD_CHECK(__avdSceneHLSPlayerContextAddSegmentAudio(audio, context, avData));
 
+    AVD_LOG_VERBOSE("new segment: src=%zu seg=%zu duration=%.3f", avData.source, avData.segmentId, avData.duration);
+
     avdHLSSegmentAVDataFree(&avData);
-
-    AVD_LOG_VERBOSE("new segment: src=%u seg=%u duration=%.3f", avData.source, avData.segmentId, avData.duration);
-
     return true;
 }
 
