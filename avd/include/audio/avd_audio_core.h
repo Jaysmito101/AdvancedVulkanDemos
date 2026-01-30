@@ -4,51 +4,75 @@
 #include "core/avd_core.h"
 #include "core/avd_types.h"
 
-#define AL_CALL(call)                                                      \
-    do {                                                                   \
-    } while (0)
 
-typedef AVD_UInt32 AVD_AudioBuffer;
-typedef AVD_UInt32 AVD_AudioSource;
+#define AVD_AUDIO_DEVICE_DEFAULT UINT32_MAX
 
 typedef struct {
-    void *device;
     void *context;
 } AVD_Audio;
+
+typedef struct {
+    char name[256];
+    AVD_UInt32 maxInputChannels;
+    AVD_UInt32 maxOutputChannels;
+
+    AVD_Float defaultLowInputLatency;
+    AVD_Float defaultLowOutputLatency;
+
+    AVD_Float defaultHighInputLatency;
+    AVD_Float defaultHighOutputLatency;
+
+    AVD_Float defaultSampleRate;
+
+    AVD_Size index;
+} AVD_AudioDevice;
+
+typedef bool (AVD_AudioCallback)(
+    const void *inputBuffer,
+    void *outputBuffer,
+    AVD_Size framesPerBuffer,
+    AVD_UInt32 statusFlags,
+    void *userData);
+
+typedef struct {
+    AVD_Audio* audio;
+    void* stream;
+    void* userData;
+    AVD_AudioCallback* callback;
+    AVD_Size device;
+} AVD_AudioStream;
+
 
 bool avdAudioInit(AVD_Audio *audio);
 void avdAudioShutdown(AVD_Audio *audio);
 
-bool avdAudioBufferCreate(AVD_Audio *audio, AVD_AudioBuffer *outBuffer);
-void avdAudioBufferDestroy(AVD_Audio *audio, AVD_AudioBuffer buffer);
-bool avdAudioLoadBufferFromFile(AVD_Audio *audio, const char *filename, AVD_AudioBuffer buffer);
-bool avdAudioLoadBufferFromMemory(AVD_Audio *audio, const void *data, size_t size, AVD_AudioBuffer buffer);
-bool avdAudioLoadEmptyBuffer(AVD_Audio *audio, AVD_AudioBuffer buffer, AVD_UInt32 sampleRate, AVD_UInt32 channels);
+bool avdAudioGetDevices(AVD_Audio *audio, AVD_AudioDevice *devices, AVD_Size *deviceCount, AVD_Size maxDevices);
+bool avdAudioGetDefaultOutputDevice(AVD_Audio *audio, AVD_AudioDevice *device);
+bool avdAudioGetDefaultInputDevice(AVD_Audio *audio, AVD_AudioDevice *device);
 
-bool avdAudioSourceCreate(AVD_Audio *audio, AVD_AudioSource *outSource);
-void avdAudioSourceDestroy(AVD_Audio *audio, AVD_AudioSource source);
-bool avdAudioSourceLinkBuffer(AVD_Audio *audio, AVD_AudioSource source, AVD_AudioBuffer buffer);
-bool avdAudioSourceUnlinkBuffer(AVD_Audio *audio, AVD_AudioSource source);
-bool avdAudioSourcePlay(AVD_Audio *audio, AVD_AudioSource source);
-bool avdAudioSourcePause(AVD_Audio *audio, AVD_AudioSource source);
-bool avdAudioSourceStop(AVD_Audio *audio, AVD_AudioSource source);
-bool avdAudioSourceIsPlaying(AVD_Audio *audio, AVD_AudioSource source);
-bool avdAudioSourceIsPaused(AVD_Audio *audio, AVD_AudioSource source);
-bool avdAudioSourceIsStopped(AVD_Audio *audio, AVD_AudioSource source);
-bool avdAudioSourceSetLooping(AVD_Audio *audio, AVD_AudioSource source, bool looping);
-bool avdAudioSourceSetGain(AVD_Audio *audio, AVD_AudioSource source, float gain);
-bool avdAudioSourceSetPosition(AVD_Audio *audio, AVD_AudioSource source, float x, float y, float z);
-bool avdAudioSourceSetVelocity(AVD_Audio *audio, AVD_AudioSource source, float x, float y, float z);
-bool avdAudioSourceSetupDefaults(AVD_Audio *audio, AVD_AudioSource source);
-bool avdAudioSourceEnqueueBuffers(AVD_Audio *audio, AVD_AudioSource source, AVD_AudioBuffer *buffers, AVD_Size bufferCount);
-bool avdAudioSourceUnqueueBuffers(AVD_Audio *audio, AVD_AudioSource source, AVD_AudioBuffer *buffers, AVD_Size bufferCount);
-bool avdAudioSourceGetProcessedBufferCount(AVD_Audio *audio, AVD_AudioSource source, AVD_Size *outCount);
-bool avdAudioSourceGetQueuedBufferCount(AVD_Audio *audio, AVD_AudioSource source, AVD_Size *outCount);
+bool avdAudioOpenOutputStream(
+    AVD_Audio *audio,
+    AVD_AudioStream *stream,
+    AVD_UInt32 outputDeviceIndex,
+    AVD_UInt32 sampleRate,
+    AVD_Bool stereo,
+    AVD_UInt32 framesPerBuffer,
+    AVD_AudioCallback *callback,
+    void *userData);
+bool avdAudioOpenInputStream(
+    AVD_Audio *audio,
+    AVD_AudioStream *stream,
+    AVD_UInt32 inputDeviceIndex,
+    AVD_UInt32 sampleRate,
+    AVD_Bool stereo,
+    AVD_UInt32 framesPerBuffer,
+    AVD_AudioCallback *callback,
+    void *userData);
 
-bool avdAudioListenerSetDirection(AVD_Audio *audio, float x, float y, float z);
-bool avdAudioListenerSetPosition(AVD_Audio *audio, float x, float y, float z);
-bool avdAudioListenerSetVelocity(AVD_Audio *audio, float x, float y, float z);
-bool avdAudioListenerSetOrientation(AVD_Audio *audio, float atX, float atY, float atZ, float upX, float upY, float upZ);
-bool avdAudioListenerSetupDefaults(AVD_Audio *audio);
+bool avdAudioStartStream(AVD_Audio *audio, AVD_AudioStream *stream);
+bool avdAudioStopStream(AVD_Audio *audio, AVD_AudioStream *stream);
+bool avdAudioCloseStream(AVD_Audio *audio, AVD_AudioStream *stream);
+void avdAudioStreamDestroy(AVD_Audio *audio, AVD_AudioStream *stream);
+
 
 #endif // AVD_AUDIO_CORE_H
