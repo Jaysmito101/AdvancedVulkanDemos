@@ -15,7 +15,10 @@ static bool __avdAudioPlayerCallback(
 
     AVD_AudiPlayerContext *ctx = (AVD_AudiPlayerContext *)userData;
     if (!ctx || !ctx->clip || !ctx->isPlaying) {
-        memset(outputBuffer, 0, framesPerBuffer * sizeof(float) * (ctx && ctx->clip ? ctx->clip->channels : 2));
+        AVD_Size size = framesPerBuffer * sizeof(float) * (ctx && ctx->clip ? ctx->clip->channels : 2);
+        for (AVD_Size i = 0; i < size / sizeof(float); i++) {
+            ((float *)outputBuffer)[i] = 0.0f;
+        }
         return true;
     }
 
