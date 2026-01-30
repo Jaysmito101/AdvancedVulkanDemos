@@ -43,12 +43,7 @@ static bool __avdAudioClipFromDecoder(picoAudioDecoder decoder, AVD_AudioClip *o
         totalSamples,
         &framesRead);
 
-    if (totalSamples != framesRead) {
-        AVD_LOG_ERROR("Failed to decode all audio samples: expected %zu, got %zu", totalSamples, framesRead);
-        PICO_FREE(outAudioData->samples);
-        picoAudioDecoderDestroy(decoder);
-        return false;
-    }
+    outAudioData->sampleCount = framesRead;
 
     picoAudioDecoderDestroy(decoder);
     return true;
