@@ -156,18 +156,18 @@ bool avdAudioOpenOutputStream(
     stream->callback = callback;
 
     PaDeviceIndex deviceIndex = (outputDeviceIndex == AVD_AUDIO_DEVICE_DEFAULT) ? Pa_GetDefaultOutputDevice() : (PaDeviceIndex)outputDeviceIndex;
-    
+
     const PaDeviceInfo *deviceInfo = Pa_GetDeviceInfo(deviceIndex);
     if (!deviceInfo) {
         AVD_LOG_ERROR("Failed to get device info for device index %d", deviceIndex);
         return false;
     }
 
-    PaStreamParameters outputParameters = {0};
-    outputParameters.device             = deviceIndex;
-    outputParameters.channelCount       = stereo ? 2 : 1;
-    outputParameters.sampleFormat       = paFloat32;
-    outputParameters.suggestedLatency   = deviceInfo->defaultHighOutputLatency;
+    PaStreamParameters outputParameters        = {0};
+    outputParameters.device                    = deviceIndex;
+    outputParameters.channelCount              = stereo ? 2 : 1;
+    outputParameters.sampleFormat              = paFloat32;
+    outputParameters.suggestedLatency          = deviceInfo->defaultHighOutputLatency;
     outputParameters.hostApiSpecificStreamInfo = NULL;
 
     PaError err = Pa_OpenStream(
@@ -208,10 +208,12 @@ bool avdAudioOpenInputStream(
 
     PaDeviceIndex deviceIndex = (inputDeviceIndex == AVD_AUDIO_DEVICE_DEFAULT) ? Pa_GetDefaultInputDevice() : (PaDeviceIndex)inputDeviceIndex;
 
-    PaStreamParameters inputParameters = {0};
-    inputParameters.device             = deviceIndex;
-    inputParameters.channelCount       = stereo ? 2 : 1;
-    inputParameters.sampleFormat       = paFloat32;
+    PaStreamParameters inputParameters        = {0};
+    inputParameters.device                    = deviceIndex;
+    inputParameters.channelCount              = stereo ? 2 : 1;
+    inputParameters.sampleFormat              = paFloat32;
+    inputParameters.suggestedLatency          = Pa_GetDeviceInfo(deviceIndex)->defaultHighInputLatency;
+    inputParameters.hostApiSpecificStreamInfo = NULL;
 
     PaError err = Pa_OpenStream(
         (PaStream **)&stream->stream,
