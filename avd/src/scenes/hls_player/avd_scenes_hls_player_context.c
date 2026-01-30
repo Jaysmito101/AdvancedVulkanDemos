@@ -65,7 +65,7 @@ static bool __avdSceneHLSPlayerContextAddSegmentAudio(
     AVD_ASSERT(audio != NULL);
     AVD_ASSERT(context != NULL);
 
-    if (!avdAudioStreamingPlayerAddChunk(audio, &context->audioPlayer, avData.aacBuffer, avData.aacSize)) {
+    if (!avdAudioStreamingPlayerAddChunk(&context->audioPlayer, avData.aacBuffer, avData.aacSize)) {
         AVD_LOG_ERROR("Failed to add audio chunk to streaming player in HLS player context");
         return false;
     }
@@ -88,7 +88,7 @@ void avdSceneHLSPlayerContextDestroy(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_S
         avdVulkanVideoDecoderDestroy(vulkan, &context->videoPlayer);
     }
     if (context->audioPlayer.initialized) {
-        avdAudioStreamingPlayerShutdown(audio, &context->audioPlayer);
+        avdAudioStreamingPlayerShutdown(&context->audioPlayer);
     }
     memset(context, 0, sizeof(AVD_SceneHLSPlayerContext));
 }
@@ -128,7 +128,7 @@ bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_Sc
     }
 
     // AVD_CHECK(avdVulkanVideoDecoderDecodeFrame(vulkan, &context->videoPlayer, VK_NULL_HANDLE, VK_NULL_HANDLE));
-    AVD_CHECK(avdAudioStreamingPlayerUpdate(audio, &context->audioPlayer));
+    AVD_CHECK(avdAudioStreamingPlayerUpdate(&context->audioPlayer));
 
     return true;
 }
