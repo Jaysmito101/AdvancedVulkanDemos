@@ -4,15 +4,7 @@
 
 #include "AL/al.h"
 #include "AL/alc.h"
-
-#define AL_CALL(call)                                                      \
-    do {                                                                   \
-        call;                                                              \
-        ALenum __alError = alGetError();                                   \
-        if (__alError != AL_NO_ERROR) {                                    \
-            AVD_LOG_ERROR("OpenAL error in %s: 0x%04X", #call, __alError); \
-        }                                                                  \
-    } while (0)
+#include <stdbool.h>
 
 static bool __avdAudioBufferFromDecoder(picoAudioDecoder decoder, AVD_AudioBuffer buffer)
 {
@@ -24,6 +16,12 @@ static bool __avdAudioBufferFromDecoder(picoAudioDecoder decoder, AVD_AudioBuffe
         return false;
     }
 
+    AVD_LOG_DEBUG("Loading audio buffer: %u Hz, %u channels, %u bits per sample, %llu total samples. duration: %.2f seconds",
+                  info.sampleRate,
+                  info.channelCount,
+                  info.bitsPerSample,
+                  (unsigned long long)info.totalSamples,
+                  (double)info.durationSeconds);
     AVD_Size bytesPerSample = (info.bitsPerSample / 8) * info.channelCount;
     AVD_Size dataSize       = info.totalSamples * bytesPerSample;
     AVD_UInt8 *pcmData      = (AVD_UInt8 *)AVD_MALLOC(dataSize);
@@ -154,6 +152,22 @@ bool avdAudioLoadBufferFromMemory(AVD_Audio *audio, const void *data, size_t siz
     return result;
 }
 
+bool avdAudioLoadEmptyBuffer(AVD_Audio *audio, AVD_AudioBuffer buffer, AVD_UInt32 sampleRate, AVD_UInt32 channels)
+{
+    // just load a simple silent buffer
+    AVD_ASSERT(audio != NULL);
+
+    static int16_t slientSamples[16] = {0};
+    AL_CALL(alBufferData(
+        (ALuint)buffer,
+        (channels == 1) ? AL_FORMAT_MONO16 : AL_FORMAT_STEREO16,
+        slientSamples,
+        sizeof(slientSamples),
+        (ALsizei)sampleRate));
+
+    return true;
+}
+
 void avdAudioBufferDestroy(AVD_Audio *audio, AVD_AudioBuffer buffer)
 {
     AVD_ASSERT(audio != NULL);
@@ -175,9 +189,7 @@ void avdAudioSourceDestroy(AVD_Audio *audio, AVD_AudioSource source)
 {
     AVD_ASSERT(audio != NULL);
 
-    bool isPlaying = false;
-    (void)avdAudioSourceIsPlaying(audio, source, &isPlaying);
-    if (isPlaying) {
+    if (avdAudioSourceIsPlaying(audio, source)) {
         (void)avdAudioSourceStop(audio, source);
     }
     (void)avdAudioSourceUnlinkBuffer(audio, source);
@@ -241,15 +253,31 @@ bool avdAudioSourceSetGain(AVD_Audio *audio, AVD_AudioSource source, float gain)
     return true;
 }
 
-bool avdAudioSourceIsPlaying(AVD_Audio *audio, AVD_AudioSource source, bool *outIsPlaying)
+bool avdAudioSourceIsPlaying(AVD_Audio *audio, AVD_AudioSource source)
 {
     AVD_ASSERT(audio != NULL);
-    AVD_ASSERT(outIsPlaying != NULL);
 
     ALint state;
     AL_CALL(alGetSourcei((ALuint)source, AL_SOURCE_STATE, &state));
-    *outIsPlaying = (state == AL_PLAYING);
-    return true;
+    return (state == AL_PLAYING);
+}
+
+bool avdAudioSourceIsPaused(AVD_Audio *audio, AVD_AudioSource source)
+{
+    AVD_ASSERT(audio != NULL);
+
+    ALint state;
+    AL_CALL(alGetSourcei((ALuint)source, AL_SOURCE_STATE, &state));
+    return (state == AL_PAUSED);
+}
+
+bool avdAudioSourceIsStopped(AVD_Audio *audio, AVD_AudioSource source)
+{
+    AVD_ASSERT(audio != NULL);
+
+    ALint state;
+    AL_CALL(alGetSourcei((ALuint)source, AL_SOURCE_STATE, &state));
+    return (state == AL_STOPPED);
 }
 
 bool avdAudioSourceSetPosition(AVD_Audio *audio, AVD_AudioSource source, float x, float y, float z)
@@ -287,6 +315,38 @@ bool avdAudioSourceEnqueueBuffers(AVD_Audio *audio, AVD_AudioSource source, AVD_
     AVD_ASSERT(bufferCount > 0);
 
     AL_CALL(alSourceQueueBuffers((ALuint)source, (ALsizei)bufferCount, (ALuint *)buffers));
+    return true;
+}
+
+bool avdAudioSourceUnqueueBuffers(AVD_Audio *audio, AVD_AudioSource source, AVD_AudioBuffer *buffers, AVD_Size bufferCount)
+{
+    AVD_ASSERT(audio != NULL);
+    AVD_ASSERT(buffers != NULL);
+    AVD_ASSERT(bufferCount > 0);
+
+    AL_CALL(alSourceUnqueueBuffers((ALuint)source, (ALsizei)bufferCount, (ALuint *)buffers));
+    return true;
+}
+
+bool avdAudioSourceGetProcessedBufferCount(AVD_Audio *audio, AVD_AudioSource source, AVD_Size *outCount)
+{
+    AVD_ASSERT(audio != NULL);
+    AVD_ASSERT(outCount != NULL);
+
+    ALint count = 0;
+    AL_CALL(alGetSourcei((ALuint)source, AL_BUFFERS_PROCESSED, &count));
+    *outCount = (AVD_Size)count;
+    return true;
+}
+
+bool avdAudioSourceGetQueuedBufferCount(AVD_Audio *audio, AVD_AudioSource source, AVD_Size *outCount)
+{
+    AVD_ASSERT(audio != NULL);
+    AVD_ASSERT(outCount != NULL);
+
+    ALint count = 0;
+    AL_CALL(alGetSourcei((ALuint)source, AL_BUFFERS_QUEUED, &count));
+    *outCount = (AVD_Size)count;
     return true;
 }
 

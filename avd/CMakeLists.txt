@@ -47,6 +47,7 @@ add_executable(avd
     ./src/vulkan/avd_vulkan_h264_video.c
 
     ./src/audio/avd_audio.c
+    ./src/audio/avd_audio_streaming_player.c
 
     ./src/ui/avd_ui.c
 
@@ -102,6 +103,7 @@ include_directories(avd
     ../avd_assets/generated/include
     ${Vulkan_INCLUDE_DIRS}
 )
+
 
 # Ensure the Vulkan SDK path is set properly
 if(DEFINED ENV{VULKAN_SDK})
