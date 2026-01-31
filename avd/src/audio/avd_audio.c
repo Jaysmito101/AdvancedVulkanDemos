@@ -56,6 +56,17 @@ bool avdAudioInit(AVD_Audio *audio)
         return false;
     }
 
+    PaDeviceIndex defaultInputDeviceIndex       = Pa_GetDefaultInputDevice();
+    PaDeviceIndex defaultOutputDeviceIndex      = Pa_GetDefaultOutputDevice();
+    const PaDeviceInfo *defaultInputDeviceInfo  = Pa_GetDeviceInfo(defaultInputDeviceIndex);
+    const PaDeviceInfo *defaultOutputDeviceInfo = Pa_GetDeviceInfo(defaultOutputDeviceIndex);
+    if (defaultInputDeviceInfo) {
+        AVD_LOG_INFO("Default Audio Input Device: %s", defaultInputDeviceInfo->name);
+    }
+    if (defaultOutputDeviceInfo) {
+        AVD_LOG_INFO("Default Audio Output Device: %s", defaultOutputDeviceInfo->name);
+    }
+
     return true;
 }
 
