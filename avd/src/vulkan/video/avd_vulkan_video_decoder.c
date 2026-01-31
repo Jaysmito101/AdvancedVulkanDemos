@@ -2,7 +2,8 @@
 #include "core/avd_base.h"
 #include "math/avd_math_base.h"
 #include "pico/picoPerf.h"
-
+#include "vulkan/avd_vulkan_buffer.h"
+#include <stdbool.h>
 
 static bool __avdVulkanVideoDecoderCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video)
 {
@@ -84,7 +85,56 @@ static bool __avdVulkanVideoDecoderCreateSession(AVD_Vulkan *vulkan, AVD_VulkanV
     return true;
 }
 
-bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video)
+static bool __avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(chunk != NULL);
+    AVD_ASSERT(chunk->videoChunk != NULL);
+
+    // first check if the bitstream buffer is large enough to hold the new chunk
+    if (video->bitstreamBuffer.size < chunk->videoChunk->sliceDataBuffer.size) {
+        if (video->bitstreamBuffer.buffer != VK_NULL_HANDLE) {
+            avdVulkanBufferDestroy(vulkan, &video->bitstreamBuffer);
+        }
+        char bufferLabel[64];
+        snprintf(bufferLabel, sizeof(bufferLabel), "%s/BitstreamBuffer", video->label);
+        AVD_CHECK(
+            avdVulkanBufferCreate(
+                vulkan,
+                &video->bitstreamBuffer,
+                chunk->videoChunk->sliceDataBuffer.size,
+                VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+                bufferLabel));
+        AVD_LOG_VERBOSE("Created bitstream buffer of size %llu bytes for video decoder", (unsigned long long)video->bitstreamBuffer.size);
+    }
+
+    AVD_CHECK(avdVulkanBufferUpload(
+        vulkan,
+        &video->bitstreamBuffer,
+        chunk->videoChunk->sliceDataBuffer.data,
+        chunk->videoChunk->sliceDataBuffer.size));
+
+    return true;
+}
+
+static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(vulkan != NULL);
+
+    // reset current slice index
+    video->currentChunk.currentSliceIndex = 0;
+
+    // push the data
+    AVD_CHECK(__avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(vulkan, video, chunk));
+
+    chunk->ready = true;
+    return true;
+}
+
+bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video, const char *label)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(video != NULL);
@@ -100,7 +150,12 @@ bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
     video->h264Video = h264Video;
     AVD_CHECK(__avdVulkanVideoDecoderCreateSession(vulkan, video));
 
-    video->initialized = true;
+    strncpy(video->label, label, sizeof(video->label) - 1);
+    video->label[sizeof(video->label) - 1] = '\0';
+
+    video->currentChunk.ready = false;
+    video->initialized        = true;
+
     return true;
 }
 
@@ -109,6 +164,7 @@ void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vi
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
 
+    avdVulkanBufferDestroy(vulkan, &video->bitstreamBuffer);
     vkDestroyVideoSessionKHR(vulkan->device, video->session, NULL);
     for (AVD_UInt32 i = 0; i < video->memoryAllocationCount; ++i) {
         vkFreeMemory(vulkan->device, video->memory[i], NULL);
@@ -159,6 +215,7 @@ bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *
     AVD_ASSERT(eof != NULL);
 
     // first reset current chunk
+    video->currentChunk.ready                   = false;
     video->currentChunk.videoChunk              = NULL;
     video->currentChunk.currentSliceIndex       = 0;
     video->currentChunk.timestampSeconds        = video->timestampSecondsOffset;
@@ -171,6 +228,8 @@ bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *
             &video->currentChunk.videoChunk,
             eof));
 
+    AVD_CHECK(__avdVulkanVideoDecoderPrepareForNewChunk(vulkan, video, &video->currentChunk));
+
     video->displayOrderOffset += video->currentChunk.videoChunk->frameInfos.count;
     video->timestampSecondsOffset += video->currentChunk.videoChunk->durationSeconds;
 
@@ -181,6 +240,10 @@ bool avdVulkanVideoDecoderDecodeFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
+
+    AVD_CHECK_MSG(
+        video->initialized && video->currentChunk.ready,
+        "Video decoder not initialized");
 
     AVD_CHECK_MSG(
         avdVulkanVideoDecoderChunkHasFrames(video),

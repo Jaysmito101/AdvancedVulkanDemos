@@ -13,6 +13,7 @@
 
 
 typedef struct {
+    AVD_Bool ready;
     AVD_H264VideoChunk* videoChunk;
     AVD_Float timestampSeconds;
     AVD_Size chunkDisplayOrderOffset;
@@ -45,11 +46,13 @@ typedef struct {
 
     AVD_Size displayOrderOffset;
     AVD_Float timestampSecondsOffset;
+
+    char label[64];
 } AVD_VulkanVideoDecoder;
 
 
 
-bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video);
+bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video, const char* label);
 void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video);
 AVD_Size avdVulkanVideoDecoderGetNumDecodedFrames(AVD_VulkanVideoDecoder *video);
 bool avdVulkanVideoDecoderChunkHasFrames(AVD_VulkanVideoDecoder *video);

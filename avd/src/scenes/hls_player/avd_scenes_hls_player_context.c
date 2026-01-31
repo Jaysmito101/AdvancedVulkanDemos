@@ -41,7 +41,10 @@ static bool __avdSceneHLSPlayerContextInitVideo(
         return false;
     }
 
-    if (!avdVulkanVideoDecoderCreate(vulkan, &context->videoPlayer, h264Video)) {
+    static char videoLabel[64];
+    sprintf(videoLabel, "HLSPlayer/%zu", avData.source);
+
+    if (!avdVulkanVideoDecoderCreate(vulkan, &context->videoPlayer, h264Video, videoLabel)) {
         AVD_LOG_ERROR("Failed to initialize Vulkan video decoder for HLS player context");
         avdSceneHLSPlayerContextDestroy(vulkan, audio, context);
         return false;
