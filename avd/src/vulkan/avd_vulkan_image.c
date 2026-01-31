@@ -71,23 +71,14 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_Vulkan
     imageInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.flags             = createInfo.flags;
 
-    VkVideoProfileListInfoKHR videoProfileListInfo = {0};
-    videoProfileListInfo.sType                     = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
-    bool isVideoDecodeImage                        = createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR ||
+    bool isVideoDecodeImage = createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR ||
                               createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
                               createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR;
     bool isVideoEncodeImage = createInfo.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR ||
                               createInfo.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR ||
                               createInfo.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
     if (isVideoDecodeImage || isVideoEncodeImage) {
-        videoProfileListInfo.profileCount = 1;
-        videoProfileListInfo.pNext        = NULL;
-        imageInfo.pNext                   = &videoProfileListInfo;
-        if (isVideoEncodeImage) {
-            videoProfileListInfo.pProfiles = avdVulkanVideoGetH264EncodeProfileInfo(NULL);
-        } else {
-            videoProfileListInfo.pProfiles = avdVulkanVideoGetH264DecodeProfileInfo(NULL);
-        }
+        imageInfo.pNext = avdVulkanVideoGetH264ProfileListInfo(isVideoDecodeImage);
     }
 
     VkResult result = vkCreateImage(vulkan->device, &imageInfo, NULL, &image->image);

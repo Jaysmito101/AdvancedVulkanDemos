@@ -16,26 +16,16 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // Assuming exclusive for simplicity
     };
 
-    VkVideoProfileListInfoKHR videoProfileListInfo = {0};
-    videoProfileListInfo.sType                     = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
-    bool isVideoDecodeBuffer                       = usage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR;
-    bool isVideoEncodeBuffer                       = usage & VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
+    bool isVideoDecodeBuffer = usage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR;
+    bool isVideoEncodeBuffer = usage & VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
     if (isVideoDecodeBuffer || isVideoEncodeBuffer) {
-        videoProfileListInfo.profileCount = 1;
-        videoProfileListInfo.pNext        = NULL;
-        bufferInfo.pNext                  = &videoProfileListInfo;
-        if (isVideoEncodeBuffer) {
-            videoProfileListInfo.pProfiles = avdVulkanVideoGetH264EncodeProfileInfo(NULL);
-        } else {
-            videoProfileListInfo.pProfiles = avdVulkanVideoGetH264DecodeProfileInfo(NULL);
-        }
-
         if (properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
             AVD_LOG_WARN("Forcing HOST_VISIBLE memory property for video decode/encode buffers");
         }
         // This is a workaround for nvidia video bitstream buffer which, when used for video decode and not mapped,
         // gives incorrect decoding results.
-        properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        properties       = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        bufferInfo.pNext = avdVulkanVideoGetH264ProfileListInfo(isVideoDecodeBuffer);
     } else {
         bufferInfo.pNext = NULL;
     }

@@ -502,7 +502,7 @@ static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
 
         vkGetPhysicalDeviceVideoCapabilitiesKHR(
             vulkan->physicalDevice,
-            avdVulkanVideoGetH264DecodeProfileInfo(NULL),
+            avdVulkanVideoGetH264DecodeProfileInfo(),
             &vulkan->supportedFeatures.videoCapabilitiesDecode);
     }
 
@@ -524,7 +524,7 @@ static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
 
         vkGetPhysicalDeviceVideoCapabilitiesKHR(
             vulkan->physicalDevice,
-            avdVulkanVideoGetH264EncodeProfileInfo(NULL),
+            avdVulkanVideoGetH264EncodeProfileInfo(),
             &vulkan->supportedFeatures.videoCapabilitiesEncode);
     }
 
