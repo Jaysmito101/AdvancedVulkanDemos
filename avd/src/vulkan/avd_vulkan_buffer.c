@@ -78,6 +78,8 @@ void avdVulkanBufferDestroy(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer)
 
     vkDestroyBuffer(vulkan->device, buffer->buffer, NULL);
     vkFreeMemory(vulkan->device, buffer->memory, NULL);
+
+    memset(buffer, 0, sizeof(AVD_VulkanBuffer));
 }
 
 bool avdVulkanBufferMap(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, void **data)
