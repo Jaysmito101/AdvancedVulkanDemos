@@ -147,8 +147,7 @@ static bool __avdAudioStreamingPlayerAddClip(AVD_AudioStreamingPlayer *player, A
         player->bitsPerSample     = clip->bitsPerSample;
         player->formatInitialized = true;
         player->state             = AVD_AUDIO_STREAMING_PLAYER_STATE_READY;
-        AVD_LOG_DEBUG("Auto-initialized streaming player: %u Hz, %u channels, %u bits",
-                      clip->sampleRate, clip->channels, clip->bitsPerSample);
+        AVD_LOG_DEBUG("Auto-initialized streaming player: %u Hz, %u channels, %u bits", clip->sampleRate, clip->channels, clip->bitsPerSample);
     } else {
         if (player->sampleRate != clip->sampleRate ||
             player->channels != clip->channels ||
