@@ -164,7 +164,7 @@ bool avdSceneHLSPlayerContextAddSegment(
             "HLS Player context video framerate changed from %.3f to %.3f fps",
             context->videoFramerate,
             videoFramerate);
-        context->videoFramerate = roundf(context->videoFramerate);
+        context->videoFramerate = videoFramerate;
     }
 
     if (!context->initialized) {
