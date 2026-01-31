@@ -7,8 +7,9 @@
 #include "scenes/hls_player/avd_scene_hls_stream.h"
 #include "scenes/hls_player/avd_scene_hls_worker_pool.h"
 #include "vulkan/avd_vulkan_video.h"
+#include <math.h>
 
-static bool __avdSceneHLSPlayerContextInit(
+static bool __avdSceneHLSPlayerContextInitVideo(
     AVD_Vulkan *vulkan,
     AVD_Audio *audio,
     AVD_SceneHLSPlayerContext *context,
@@ -17,8 +18,6 @@ static bool __avdSceneHLSPlayerContextInit(
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(audio != NULL);
     AVD_ASSERT(context != NULL);
-
-    memset(context, 0, sizeof(AVD_SceneHLSPlayerContext));
 
     context->videoDataStream = avdHLSStreamCreate();
     if (!context->videoDataStream) {
@@ -48,6 +47,15 @@ static bool __avdSceneHLSPlayerContextInit(
         return false;
     }
 
+    return true;
+}
+
+static bool __avdSceneHLSPlayerContextInitAudio(
+    AVD_Vulkan *vulkan,
+    AVD_Audio *audio,
+    AVD_SceneHLSPlayerContext *context,
+    AVD_HLSSegmentAVData avData)
+{
     if (!avdAudioStreamingPlayerInit(audio, &context->audioPlayer, 4)) {
         AVD_LOG_ERROR("Failed to initialize audio streaming player for HLS player context");
         avdSceneHLSPlayerContextDestroy(vulkan, audio, context);
@@ -66,6 +74,24 @@ static bool __avdSceneHLSPlayerContextInit(
         return false;
     }
 
+    return true;
+}
+
+static bool __avdSceneHLSPlayerContextInit(
+    AVD_Vulkan *vulkan,
+    AVD_Audio *audio,
+    AVD_SceneHLSPlayerContext *context,
+    AVD_HLSSegmentAVData avData)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(audio != NULL);
+    AVD_ASSERT(context != NULL);
+
+    memset(context, 0, sizeof(AVD_SceneHLSPlayerContext));
+
+    AVD_CHECK(__avdSceneHLSPlayerContextInitVideo(vulkan, audio, context, avData));
+    AVD_CHECK(__avdSceneHLSPlayerContextInitAudio(vulkan, audio, context, avData));
+
     context->initialized = true;
     return true;
 }
@@ -80,6 +106,22 @@ static bool __avdSceneHLSPlayerContextAddSegmentAudio(
 
     if (!avdAudioStreamingPlayerAddChunk(&context->audioPlayer, avData.aacBuffer, avData.aacSize)) {
         AVD_LOG_ERROR("Failed to add audio chunk to streaming player in HLS player context");
+        return false;
+    }
+
+    return true;
+}
+
+static bool __avdSceneHLSPlayerContextAddSegmentVideo(
+    AVD_Vulkan *vulkan,
+    AVD_SceneHLSPlayerContext *context,
+    AVD_HLSSegmentAVData avData)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(context != NULL);
+
+    if (!avdHLSStreamAppendData(context->videoDataStream, avData.h264Buffer, avData.h264Size)) {
+        AVD_LOG_ERROR("Failed to append data to HLS stream for HLS player context");
         return false;
     }
 
@@ -116,6 +158,15 @@ bool avdSceneHLSPlayerContextAddSegment(
     AVD_ASSERT(audio != NULL);
     AVD_ASSERT(context != NULL);
 
+    AVD_Float videoFramerate = (AVD_Float)avdH264VideoCountFrames(avData.h264Buffer, avData.h264Size) / avData.duration;
+    if (fabsf(context->videoFramerate - videoFramerate) > 0.01f) {
+        AVD_LOG_WARN(
+            "HLS Player context video framerate changed from %.3f to %.3f fps",
+            context->videoFramerate,
+            videoFramerate);
+        context->videoFramerate = roundf(context->videoFramerate);
+    }
+
     if (!context->initialized) {
         AVD_CHECK(__avdSceneHLSPlayerContextInit(vulkan, audio, context, avData));
         return true;
@@ -123,6 +174,7 @@ bool avdSceneHLSPlayerContextAddSegment(
 
     // this part is temporary
     AVD_CHECK(__avdSceneHLSPlayerContextAddSegmentAudio(audio, context, avData));
+    AVD_CHECK(__avdSceneHLSPlayerContextAddSegmentVideo(vulkan, context, avData));
 
     AVD_LOG_VERBOSE("new segment: src=%zu seg=%zu duration=%.3f", avData.source, avData.segmentId, avData.duration);
 

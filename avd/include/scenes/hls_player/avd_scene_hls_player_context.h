@@ -16,7 +16,7 @@ typedef struct {
     AVD_Float startTime;
     AVD_Float lastUpdateTime;
 
-    AVD_UInt32 currentSegment;
+    AVD_Float videoFramerate;
 
     picoStream videoDataStream;
     AVD_VulkanVideoDecoder videoPlayer;
