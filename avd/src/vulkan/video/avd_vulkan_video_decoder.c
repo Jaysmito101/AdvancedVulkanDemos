@@ -3,6 +3,7 @@
 #include "math/avd_math_base.h"
 #include "pico/picoPerf.h"
 #include "vulkan/avd_vulkan_buffer.h"
+#include "vulkan/video/avd_vulkan_video_dpb.h"
 #include <stdbool.h>
 
 static bool __avdVulkanVideoDecoderCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video)
@@ -119,6 +120,33 @@ static bool __avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(AVD_Vulkan *vulkan
     return true;
 }
 
+static bool __avdVulkanVideoDecoderUpdateDPB(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(chunk != NULL);
+    AVD_ASSERT(chunk->videoChunk != NULL);
+
+    if (!video->dpb.initialized || video->dpb.numDPBSlots < video->h264Video->numDPBSlots || video->dpb.numDPBSlots < video->h264Video->numDPBSlots || video->dpb.width != video->h264Video->width || video->dpb.height != video->h264Video->height) {
+        if (video->dpb.initialized) {
+            avdVulkanVideoDPBDestroy(vulkan, &video->dpb);
+        }
+
+        char dpbLabel[64];
+        snprintf(dpbLabel, sizeof(dpbLabel), "%s/DPB", video->label);
+        AVD_CHECK(
+            avdVulkanVideoDecodeDPBCreate(
+                vulkan,
+                &video->dpb,
+                video->h264Video->width,
+                video->h264Video->height,
+                dpbLabel));
+        AVD_LOG_VERBOSE("Created DPB with %u slots for video decoder", video->dpb.numDPBSlots);
+    }
+
+    return true;
+}
+
 static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
 {
     AVD_ASSERT(video != NULL);
@@ -129,6 +157,7 @@ static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_Vu
 
     // push the data
     AVD_CHECK(__avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(vulkan, video, chunk));
+    AVD_CHECK(__avdVulkanVideoDecoderUpdateDPB(vulkan, video, chunk));
 
     chunk->ready = true;
     return true;
@@ -165,6 +194,7 @@ void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vi
     AVD_ASSERT(vulkan != NULL);
 
     avdVulkanBufferDestroy(vulkan, &video->bitstreamBuffer);
+    avdVulkanVideoDPBDestroy(vulkan, &video->dpb);
     vkDestroyVideoSessionKHR(vulkan->device, video->session, NULL);
     for (AVD_UInt32 i = 0; i < video->memoryAllocationCount; ++i) {
         vkFreeMemory(vulkan->device, video->memory[i], NULL);

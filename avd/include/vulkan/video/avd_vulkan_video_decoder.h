@@ -1,6 +1,7 @@
 #ifndef AVD_VULKAN_VIDEO_DECODER_H
 #define AVD_VULKAN_VIDEO_DECODER_H
 
+#include "avd_vulkan_video_dpb.h"
 #include "vulkan/avd_vulkan_buffer.h"
 #include "vulkan/video/avd_vulkan_video_core.h"
 #include "vulkan/video/avd_vulkan_video_h264_data.h"
@@ -37,7 +38,7 @@ typedef struct {
     AVD_UInt32 memoryAllocationCount;
 
     AVD_VulkanBuffer bitstreamBuffer;
-
+    AVD_VulkanVideoDPB dpb;
 
     AVD_VulkanVideoDecoderFrame decodedFrames[AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES];
 
