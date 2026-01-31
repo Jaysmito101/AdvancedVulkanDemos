@@ -22,13 +22,13 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     bool isVideoEncodeBuffer                       = usage & VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
     if (isVideoDecodeBuffer || isVideoEncodeBuffer) {
         videoProfileListInfo.profileCount = 1;
+        videoProfileListInfo.pNext        = NULL;
+        bufferInfo.pNext                  = &videoProfileListInfo;
         if (isVideoEncodeBuffer) {
             videoProfileListInfo.pProfiles = avdVulkanVideoGetH264EncodeProfileInfo(NULL);
         } else {
             videoProfileListInfo.pProfiles = avdVulkanVideoGetH264DecodeProfileInfo(NULL);
         }
-        videoProfileListInfo.pNext = NULL;
-        bufferInfo.pNext           = &videoProfileListInfo;
 
         if (properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
             AVD_LOG_WARN("Forcing HOST_VISIBLE memory property for video decode/encode buffers");
