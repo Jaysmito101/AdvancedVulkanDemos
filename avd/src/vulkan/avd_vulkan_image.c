@@ -153,6 +153,8 @@ void avdVulkanImageDestroy(AVD_Vulkan *vulkan, AVD_VulkanImage *image)
     vkDestroyImage(vulkan->device, image->image, NULL);
     vkDestroySampler(vulkan->device, image->sampler, NULL);
     vkFreeMemory(vulkan->device, image->memory, NULL);
+
+    memset(image, 0, sizeof(AVD_VulkanImage));
 }
 
 bool avdVulkanImageSubresourceCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkImageSubresourceRange subresourceRange, AVD_VulkanImageSubresource *outSubresource)
