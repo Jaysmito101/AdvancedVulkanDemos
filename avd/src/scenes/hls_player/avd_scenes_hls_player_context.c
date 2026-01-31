@@ -128,6 +128,20 @@ static bool __avdSceneHLSPlayerContextAddSegmentVideo(
     return true;
 }
 
+static bool __avdVulkanVideoDecoderUpdate(
+    AVD_Vulkan *vulkan,
+    AVD_VulkanVideoDecoder *decoder)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(decoder != NULL);
+
+    if (!decoder->initialized) {
+        return true;
+    }
+
+    return true;
+}
+
 void avdSceneHLSPlayerContextDestroy(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_SceneHLSPlayerContext *context)
 {
     AVD_ASSERT(vulkan != NULL);
@@ -192,8 +206,21 @@ bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_Sc
         return true;
     }
 
-    // AVD_CHECK(avdVulkanVideoDecoderDecodeFrame(vulkan, &context->videoPlayer, VK_NULL_HANDLE, VK_NULL_HANDLE));
     AVD_CHECK(avdAudioStreamingPlayerUpdate(&context->audioPlayer));
+    AVD_CHECK(__avdVulkanVideoDecoderUpdate(vulkan, &context->videoPlayer));
 
     return true;
+}
+
+bool avdSceneHLSPlayerContextIsFed(AVD_SceneHLSPlayerContext *context)
+{
+    AVD_ASSERT(context != NULL);
+
+    if (!context->initialized) {
+        return false;
+    }
+
+    AVD_Bool audoFed = avdAudioStreamingPlayerIsFed(&context->audioPlayer);
+
+    return audoFed;
 }

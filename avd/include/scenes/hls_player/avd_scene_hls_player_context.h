@@ -30,5 +30,7 @@ bool avdSceneHLSPlayerContextAddSegment(
     AVD_SceneHLSPlayerContext *context,
     AVD_HLSSegmentAVData avData);
 bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_SceneHLSPlayerContext *context);
+bool avdSceneHLSPlayerContextIsFed(AVD_SceneHLSPlayerContext *context);
+
 
 #endif // AVD_SCENE_HLS_PLAYER_CONTEXT_H

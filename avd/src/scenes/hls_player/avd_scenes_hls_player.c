@@ -234,9 +234,20 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
 
 static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
-
     AVD_ASSERT(scene != NULL);
-    AVD_CHECK(avdSceneHLSPlayerContextUpdate(&appState->vulkan, &appState->audio, &scene->sources[0].player));
+
+    for (AVD_Size i = 0; i < scene->sourceCount; i++) {
+        AVD_SceneHLSPlayerSource *source = &scene->sources[i];
+
+        AVD_CHECK(avdSceneHLSPlayerContextUpdate(&appState->vulkan, &appState->audio, &source->player));
+
+        AVD_Float time = (AVD_Float)appState->framerate.currentTime;
+
+        if (!avdSceneHLSPlayerContextIsFed(&source->player) && source->lastRefreshed - time < 1.0f) {
+            AVD_LOG_WARN("HLS Player context ran out of data to decode/play!");
+            __avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i);
+        }
+    }
 
     // AVD_Float time = (AVD_Float)appState->framerate.currentTime;
 
