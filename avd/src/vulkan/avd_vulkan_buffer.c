@@ -1,4 +1,5 @@
 #include "vulkan/avd_vulkan_buffer.h"
+#include "vulkan/video/avd_vulkan_video_core.h"
 
 bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const char *label)
 {
@@ -15,30 +16,26 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // Assuming exclusive for simplicity
     };
 
-    VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {0};
-    h264DecodeProfileInfo.sType                           = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
-    h264DecodeProfileInfo.stdProfileIdc                   = STD_VIDEO_H264_PROFILE_IDC_HIGH;
-    h264DecodeProfileInfo.pictureLayout                   = VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
-
-    VkVideoProfileInfoKHR videoProfileInfo = {0};
-    videoProfileInfo.sType                 = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
-    videoProfileInfo.videoCodecOperation   = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
-    videoProfileInfo.lumaBitDepth          = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
-    videoProfileInfo.chromaBitDepth        = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
-    videoProfileInfo.chromaSubsampling     = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
-    videoProfileInfo.pNext                 = &h264DecodeProfileInfo;
-
     VkVideoProfileListInfoKHR videoProfileListInfo = {0};
     videoProfileListInfo.sType                     = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
-    if (usage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR) {
+    bool isVideoDecodeBuffer                       = usage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR;
+    bool isVideoEncodeBuffer                       = usage & VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
+    if (isVideoDecodeBuffer || isVideoEncodeBuffer) {
         videoProfileListInfo.profileCount = 1;
-        videoProfileListInfo.pProfiles    = &videoProfileInfo;
-        videoProfileListInfo.pNext        = NULL;
-        bufferInfo.pNext                  = &videoProfileListInfo;
+        if (isVideoEncodeBuffer) {
+            videoProfileListInfo.pProfiles = avdVulkanVideoGetH264EncodeProfileInfo(NULL);
+        } else {
+            videoProfileListInfo.pProfiles = avdVulkanVideoGetH264DecodeProfileInfo(NULL);
+        }
+        videoProfileListInfo.pNext = NULL;
+        bufferInfo.pNext           = &videoProfileListInfo;
 
+        if (properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+            AVD_LOG_WARN("Forcing HOST_VISIBLE memory property for video decode/encode buffers");
+        }
         // This is a workaround for nvidia video bitstream buffer which, when used for video decode and not mapped,
         // gives incorrect decoding results.
-        properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
     } else {
         bufferInfo.pNext = NULL;
     }
@@ -68,6 +65,8 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     buffer->descriptorBufferInfo.range  = size;
     buffer->usage                       = usage;
     buffer->size                        = size;
+    buffer->hostVisible                 = (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
+    buffer->hostCoherent                = (properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
 
     return true;
 }
@@ -90,6 +89,11 @@ bool avdVulkanBufferMap(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, void **dat
 
 void avdVulkanBufferUnmap(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer)
 {
+    // auto flush if not host coherent
+    if (!buffer->hostCoherent) {
+        avdVulkanBufferFlush(vulkan, buffer, buffer->size, 0);
+    }
+
     vkUnmapMemory(vulkan->device, buffer->memory);
 }
 
@@ -99,7 +103,7 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
     AVD_ASSERT(buffer != NULL);
     AVD_ASSERT(srcData != NULL);
 
-    if (buffer->usage & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT && buffer->usage & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
+    if (buffer->hostVisible) {
         void *mapped = NULL;
         if (!avdVulkanBufferMap(vulkan, buffer, &mapped)) {
             return false;
@@ -162,5 +166,32 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
 
     vkFreeCommandBuffers(vulkan->device, vulkan->graphicsCommandPool, 1, &cmd);
     avdVulkanBufferDestroy(vulkan, &staging);
+    return true;
+}
+
+bool avdVulkanBufferFlush(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkDeviceSize offset)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(buffer != NULL);
+
+    if (!buffer->hostVisible) {
+        AVD_LOG_ERROR("Cannot flush a non-host-visible buffer");
+        return false;
+    }
+
+    if (buffer->hostCoherent) {
+        return true;
+    }
+
+    VkMappedMemoryRange mappedRange = {
+        .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = buffer->memory,
+        .offset = offset,
+        .size   = size,
+    };
+
+    VkResult result = vkFlushMappedMemoryRanges(vulkan->device, 1, &mappedRange);
+    AVD_CHECK_VK_RESULT(result, "Failed to flush mapped memory ranges!");
+
     return true;
 }
