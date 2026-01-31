@@ -30,6 +30,7 @@ bool avdHLSSegmentStoreClear(AVD_HLSSegmentStore *store)
     }
 
     store->loadedSegmentCount = 0;
+    return true;
 }
 
 bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId)
