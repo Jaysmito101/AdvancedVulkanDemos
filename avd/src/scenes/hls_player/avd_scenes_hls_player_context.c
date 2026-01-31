@@ -47,6 +47,8 @@ static bool __avdSceneHLSPlayerContextInitVideo(
         return false;
     }
 
+    context->videoHungry = false;
+
     return true;
 }
 
@@ -129,6 +131,7 @@ static bool __avdSceneHLSPlayerContextAddSegmentVideo(
 }
 
 static bool __avdVulkanVideoDecoderUpdate(
+    AVD_SceneHLSPlayerContext *context,
     AVD_Vulkan *vulkan,
     AVD_VulkanVideoDecoder *decoder)
 {
@@ -137,6 +140,30 @@ static bool __avdVulkanVideoDecoderUpdate(
 
     if (!decoder->initialized) {
         return true;
+    }
+
+    if (avdVulkanVideoDecoderGetNumDecodedFrames(decoder) < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES) {
+        // we have room for more decoded frames
+        if (!avdVulkanVideoDecoderChunkHasFrames(decoder)) {
+            // try to decode more frames
+            AVD_H264VideoLoadParams loadParams = {0};
+            AVD_CHECK(avdH264VideoLoadParamsDefault(vulkan, &loadParams));
+            loadParams.targetFramerate = context->videoFramerate;
+            bool eof                   = false;
+            AVD_CHECK(avdVulkanVideoDecoderNextChunk(vulkan, decoder, &loadParams, &eof));
+            if (decoder->h264Video->currentChunk.numNalUnitsParsed == 0 && eof) {
+                // no more data to decode
+                context->videoHungry = true;
+            }
+        } else {
+
+            AVD_CHECK(
+                avdVulkanVideoDecoderDecodeFrame(
+                    vulkan,
+                    decoder,
+                    VK_NULL_HANDLE,
+                    VK_NULL_HANDLE));
+        }
     }
 
     return true;
@@ -207,7 +234,7 @@ bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_Sc
     }
 
     AVD_CHECK(avdAudioStreamingPlayerUpdate(&context->audioPlayer));
-    AVD_CHECK(__avdVulkanVideoDecoderUpdate(vulkan, &context->videoPlayer));
+    AVD_CHECK(__avdVulkanVideoDecoderUpdate(context, vulkan, &context->videoPlayer));
 
     return true;
 }
@@ -220,7 +247,13 @@ bool avdSceneHLSPlayerContextIsFed(AVD_SceneHLSPlayerContext *context)
         return false;
     }
 
-    AVD_Bool audoFed = avdAudioStreamingPlayerIsFed(&context->audioPlayer);
+    AVD_Bool audioFed = avdAudioStreamingPlayerIsFed(&context->audioPlayer);
 
-    return audoFed;
+    if (audioFed == context->videoHungry) {
+        AVD_LOG_ERROR("Audio/Video sync issue in HLS Player context: audioFed=%s videoFed=%s",
+                      audioFed ? "true" : "false",
+                      !context->videoHungry ? "true" : "false");
+    }
+
+    return audioFed && !context->videoHungry;
 }

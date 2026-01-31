@@ -18,6 +18,8 @@ typedef struct {
 
     AVD_Float videoFramerate;
 
+    AVD_Bool videoHungry;
+
     picoStream videoDataStream;
     AVD_VulkanVideoDecoder videoPlayer;
     AVD_AudioStreamingPlayer audioPlayer;
