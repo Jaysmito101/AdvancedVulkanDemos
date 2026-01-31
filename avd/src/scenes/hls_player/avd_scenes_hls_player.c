@@ -135,7 +135,7 @@ static bool __avdSceneHLSPlayerSaveSegmentToDisk(AVD_HLSSegmentAVData *avData)
     return true;
 }
 
-static bool __avdSceneHLSPlayerPushNextSegment(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, AVD_UInt32 sourceIndex)
+static bool __avdSceneHLSPlayerPushNextSegment(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, AVD_Size sourceIndex)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(sourceIndex < scene->sourceCount);

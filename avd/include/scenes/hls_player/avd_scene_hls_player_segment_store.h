@@ -31,10 +31,10 @@ bool avdHLSSegmentStoreInit(AVD_HLSSegmentStore *store);
 void avdHLSSegmentStoreDestroy(AVD_HLSSegmentStore *store);
 bool avdHLSSegmentStoreClear(AVD_HLSSegmentStore *store);
 
-bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId);
+bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size segmentId);
 bool avdHLSSegmentStoreAdd(AVD_HLSSegmentStore *store, AVD_HLSSegmentAVData data);
-bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, AVD_HLSSegmentAVData* data);
-bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 currentSegmentId, AVD_Size* outSegmentId);
+bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size segmentId, AVD_HLSSegmentAVData* data);
+bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size currentSegmentId, AVD_Size* outSegmentId);
 
 void avdHLSSegmentAVDataFree(AVD_HLSSegmentAVData *avData);
 

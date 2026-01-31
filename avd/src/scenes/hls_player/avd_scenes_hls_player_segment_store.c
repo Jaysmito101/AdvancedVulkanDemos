@@ -33,7 +33,7 @@ bool avdHLSSegmentStoreClear(AVD_HLSSegmentStore *store)
     return true;
 }
 
-bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId)
+bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size segmentId)
 {
     AVD_ASSERT(store != NULL);
 
@@ -88,7 +88,7 @@ bool avdHLSSegmentStoreAdd(AVD_HLSSegmentStore *store, AVD_HLSSegmentAVData data
     return true;
 }
 
-bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 segmentId, AVD_HLSSegmentAVData *data)
+bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size segmentId, AVD_HLSSegmentAVData *data)
 {
     AVD_ASSERT(store != NULL);
     AVD_ASSERT(data != NULL);
@@ -106,11 +106,11 @@ bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_UInt32 sourceInde
     return false;
 }
 
-bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_UInt32 sourceIndex, AVD_UInt32 currentSegmentId, AVD_Size *outSegmentId)
+bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size currentSegmentId, AVD_Size *outSegmentId)
 {
     AVD_ASSERT(store != NULL);
 
-    AVD_UInt32 nextSegmentId = UINT32_MAX;
+    AVD_Size nextSegmentId = UINT32_MAX;
     for (AVD_Size i = 0; i < store->loadedSegmentCount; i++) {
         if (store->loadedSegments[i].source == sourceIndex &&
             store->loadedSegments[i].segmentId > currentSegmentId &&
