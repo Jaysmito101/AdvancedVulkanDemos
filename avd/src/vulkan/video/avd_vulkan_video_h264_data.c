@@ -154,12 +154,17 @@ static bool __avdH264VideoSPSUpdated(AVD_H264Video *video, AVD_H264VideoLoadPara
         video->frameDurationSeconds = 1.0f / chunkLoadParams->targetFramerate;
     }
 
-    // if any of these values have changed, then its and error as we dont support dynamic changes yet
-    AVD_CHECK_MSG(video->width == 0 || video->width == newWidth, "Dynamic change of video width not supported yet %d -> %d", (int)video->width, (int)newWidth);
-    AVD_CHECK_MSG(video->height == 0 || video->height == newHeight, "Dynamic change of video height not supported yet %d -> %d", (int)video->height, (int)newHeight);
-    AVD_CHECK_MSG(video->paddedWidth == 0 || video->paddedWidth == newPaddedWidth, "Dynamic change of video padded width not supported yet %d -> %d", (int)video->paddedWidth, (int)newPaddedWidth);
-    AVD_CHECK_MSG(video->paddedHeight == 0 || video->paddedHeight == newPaddedHeight, "Dynamic change of video padded height not supported yet %d -> %d", (int)video->paddedHeight, (int)newPaddedHeight);
-    AVD_CHECK_MSG(video->numDPBSlots == 0 || video->numDPBSlots == newNumDPBSlots, "Dynamic change of video num DPB slots not supported yet %d -> %d", (int)video->numDPBSlots, (int)newNumDPBSlots);
+// if any of these values have changed, then its and error as we dont support dynamic changes yet
+#define AVD_LOG_SPS_PARAM_CHANGED(original, new)                                                \
+    if (original != new) {                                                                      \
+        AVD_LOG_WARN("SPS parameter changed: " #original " %d -> %d", (int)original, (int)new); \
+    }
+
+    AVD_LOG_SPS_PARAM_CHANGED(video->width, newWidth);
+    AVD_LOG_SPS_PARAM_CHANGED(video->height, newHeight);
+    AVD_LOG_SPS_PARAM_CHANGED(video->paddedWidth, newPaddedWidth);
+    AVD_LOG_SPS_PARAM_CHANGED(video->paddedHeight, newPaddedHeight);
+    AVD_LOG_SPS_PARAM_CHANGED(video->numDPBSlots, newNumDPBSlots);
 
     video->width        = newWidth;
     video->height       = newHeight;
