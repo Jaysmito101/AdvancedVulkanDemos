@@ -268,7 +268,7 @@ static bool __avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
 
     VkPhysicalDeviceProperties deviceProperties = {0};
     vkGetPhysicalDeviceProperties(vulkan->physicalDevice, &deviceProperties);
-    AVD_LOG_INFO("Selected physical device: %s", deviceProperties.deviceName);
+    AVD_LOG_INFO("Selected GPU device: %s", deviceProperties.deviceName);
 
     return true;
 }
