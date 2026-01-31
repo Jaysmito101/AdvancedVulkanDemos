@@ -3,6 +3,7 @@
 #include "stb_image.h"
 #include "vulkan/avd_vulkan_buffer.h"
 #include "vulkan/avd_vulkan_framebuffer.h"
+#include "vulkan/video/avd_vulkan_video_core.h"
 
 static bool __avdVulkanFramebufferCreateSampler(VkDevice device, AVD_VulkanImage *image)
 {
@@ -41,6 +42,7 @@ AVD_VulkanImageCreateInfo avdVulkanImageGetDefaultCreateInfo(uint32_t width, uin
     info.format                    = format;
     info.usage                     = usage;
 
+    info.flags       = 0;
     info.depth       = 1;
     info.arrayLayers = 1;
     info.mipLevels   = 1;
@@ -67,27 +69,25 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_Vulkan
     imageInfo.usage             = createInfo.usage;
     imageInfo.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {0};
-    h264DecodeProfileInfo.sType                           = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR;
-    h264DecodeProfileInfo.stdProfileIdc                   = STD_VIDEO_H264_PROFILE_IDC_HIGH;
-    h264DecodeProfileInfo.pictureLayout                   = VK_VIDEO_DECODE_H264_PICTURE_LAYOUT_INTERLACED_INTERLEAVED_LINES_BIT_KHR;
-
-    VkVideoProfileInfoKHR videoProfileInfo = {0};
-    videoProfileInfo.sType                 = VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR;
-    videoProfileInfo.videoCodecOperation   = VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR;
-    videoProfileInfo.lumaBitDepth          = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
-    videoProfileInfo.chromaBitDepth        = VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR;
-    videoProfileInfo.chromaSubsampling     = VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR;
-    videoProfileInfo.pNext                 = &h264DecodeProfileInfo;
+    imageInfo.flags             = createInfo.flags;
 
     VkVideoProfileListInfoKHR videoProfileListInfo = {0};
     videoProfileListInfo.sType                     = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
-    if (createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR || createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR || createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR) {
+    bool isVideoDecodeImage                        = createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR ||
+                              createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
+                              createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR;
+    bool isVideoEncodeImage = createInfo.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR ||
+                              createInfo.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR ||
+                              createInfo.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
+    if (isVideoDecodeImage || isVideoEncodeImage) {
         videoProfileListInfo.profileCount = 1;
-        videoProfileListInfo.pProfiles    = &videoProfileInfo;
         videoProfileListInfo.pNext        = NULL;
         imageInfo.pNext                   = &videoProfileListInfo;
+        if (isVideoEncodeImage) {
+            videoProfileListInfo.pProfiles = avdVulkanVideoGetH264EncodeProfileInfo(NULL);
+        } else {
+            videoProfileListInfo.pProfiles = avdVulkanVideoGetH264DecodeProfileInfo(NULL);
+        }
     }
 
     VkResult result = vkCreateImage(vulkan->device, &imageInfo, NULL, &image->image);
@@ -166,7 +166,7 @@ bool avdVulkanImageSubresourceCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image,
     VkImageViewCreateInfo viewInfo = {0};
     viewInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image                 = image->image;
-    viewInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.viewType              = subresourceRange.layerCount > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format                = image->info.format;
     viewInfo.subresourceRange      = subresourceRange;
     viewInfo.components.r          = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -176,7 +176,13 @@ bool avdVulkanImageSubresourceCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image,
 
     VkImageViewUsageCreateInfo imageViewUsageInfo = {0};
     imageViewUsageInfo.sType                      = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
-    if (image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR || image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR || image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR) {
+    bool isVideoDecodeImage                       = image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR ||
+                              image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
+                              image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR;
+    bool isVideoEncodeImage = image->info.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR ||
+                              image->info.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR ||
+                              image->info.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
+    if (isVideoDecodeImage || isVideoEncodeImage) {
         imageViewUsageInfo.usage = image->info.usage;
         viewInfo.pNext           = &imageViewUsageInfo;
     }
