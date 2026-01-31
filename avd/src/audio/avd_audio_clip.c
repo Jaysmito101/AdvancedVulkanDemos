@@ -43,8 +43,6 @@ static bool __avdAudioClipFromDecoder(picoAudioDecoder decoder, AVD_AudioClip *o
         totalSamples,
         &framesRead);
 
-    outAudioData->sampleCount = framesRead;
-
     picoAudioDecoderDestroy(decoder);
     return true;
 }

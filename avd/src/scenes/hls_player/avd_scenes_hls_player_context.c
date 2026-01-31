@@ -155,6 +155,18 @@ static bool __avdVulkanVideoDecoderUpdate(
                 // no more data to decode
                 context->videoHungry = true;
             }
+
+            if (decoder->h264Video->currentChunk.numNalUnitsParsed > 0) {
+                AVD_Float audioTimeMs = 0.0f;
+                avdAudioStreamingPlayerGetTimePlayedMs(
+                    &context->audioPlayer,
+                    &audioTimeMs);
+                AVD_LOG_WARN(
+                    "Video Time: %.3f - Audio Time: %.3f",
+                    decoder->h264Video->currentChunk.timestampSeconds,
+                    audioTimeMs / 1000.0f);
+                context->videoHungry = false;
+            }
         } else {
 
             AVD_CHECK(
