@@ -232,7 +232,7 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
     return true;
 }
 
-static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
     AVD_ASSERT(scene != NULL);
 
@@ -249,88 +249,6 @@ static bool __avdSceneHLSPlayerUpdateDecoders(AVD_AppState *appState, AVD_SceneH
         }
     }
 
-    // AVD_Float time = (AVD_Float)appState->framerate.currentTime;
-
-    // for (AVD_Size i = 0; i < scene->sourceCount; i++) {
-    //     AVD_SceneHLSPlayerSource *source = &scene->sources[i];
-    //     if (!source->active) {
-    //         continue;
-    //     }
-
-    //     if (!source->decoderReady && source->currentSegmentIndex != 0) {
-    //         source->decoderReady   = true;
-    //         source->videoStartTime = time;
-
-    //         picoStream videoSourceStream = avdHLSStreamCreate();
-    //         AVD_CHECK_MSG(videoSourceStream != NULL, "Failed to create HLS video source stream");
-    //         AVD_HLSSegmentSlot *slot = avdHLSSegmentStoreGetSlot(&scene->segmentStore, (AVD_UInt32)i, source->currentSegmentIndex);
-    //         AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->avData.h264Buffer, slot->avData.h264Size));
-    //         AVD_H264VideoLoadParams params = {0};
-    //         AVD_CHECK(avdH264VideoLoadParamsDefault(&appState->vulkan, &params));
-    //         AVD_H264Video *video = NULL;
-    //         AVD_CHECK(avdH264VideoLoadFromStream(videoSourceStream, &params, &video));
-    //         AVD_CHECK(avdVulkanVideoDecoderCreate(&appState->vulkan, &source->videoDecoder, video));
-
-    //         AVD_CHECK(avdAudioStreamingPlayerInit(&appState->audio, &source->audioPlayer, 4));
-    //         AVD_CHECK(avdAudioStreamingPlayerAddChunk(&appState->audio, &source->audioPlayer, slot->avData.aacBuffer, slot->avData.aacSize));
-    //         AVD_CHECK(avdAudioSourcePlay(&appState->audio, source->audioPlayer.source));
-    //     }
-
-    //     source->decodedThisFrame      = false;
-    //     AVD_VulkanVideoDecoder *video = &source->videoDecoder;
-    //     AVD_Float videoTime           = time - source->videoStartTime;
-
-    //     // update decoder frames
-    //     if (source->decoderReady && avdVulkanVideoDecoderGetNumDecodedFrames(video) < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES) {
-    //         // we have room for more decoded frames
-    //         if (!avdVulkanVideoDecoderChunkHasFrames(video) || avdVulkanVideoDecoderIsChunkOutdated(video, videoTime)) {
-    //             AVD_H264VideoLoadParams loadParams = {0};
-    //             AVD_CHECK(avdH264VideoLoadParamsDefault(&appState->vulkan, &loadParams));
-    //             loadParams.targetFramerate = source->currentSegmentFrameCount / source->currentsegmentDuration;
-    //             bool eof                   = false;
-    //             AVD_CHECK(avdVulkanVideoDecoderNextChunk(&appState->vulkan, video, &loadParams, &eof));
-    //             if (video->h264Video->currentChunk.numNalUnitsParsed > 0) {
-    //                 AVD_LOG_WARN(
-    //                     "%u (timestamp: %.3f) at time %.3f seconds [%f %f] [%zu frames/%zu nal units] %s",
-    //                     source->currentSegmentIndex,
-    //                     video->currentChunk.timestampSeconds,
-    //                     videoTime,
-    //                     video->currentChunk.videoChunk->durationSeconds,
-    //                     source->currentsegmentDuration,
-    //                     video->currentChunk.videoChunk->frameInfos.count,
-    //                     video->currentChunk.videoChunk->numNalUnitsParsed,
-    //                     eof ? "(eof)" : "");
-    //                 (void)0;
-    //             } else if (eof) {
-    //                 if (source->currentSegmentIndex > source->lastLoadedSegmentIndex) {
-    //                     // if we have a new segment loaded, add it to the decoder
-    //                     source->lastLoadedSegmentIndex = source->currentSegmentIndex;
-    //                     AVD_HLSSegmentSlot *slot       = avdHLSSegmentStoreGetSlot(&scene->segmentStore, (AVD_UInt32)i, source->currentSegmentIndex);
-    //                     picoStream videoSourceStream   = (picoStream)video->h264Video->bitstream->userData;
-    //                     AVD_CHECK(avdHLSStreamAppendData(videoSourceStream, slot->avData.h264Buffer, slot->avData.h264Size));
-
-    //                     // AVD_CHECK(avdAudioStreamingPlayerAddChunk(&appState->audio, &source->audioPlayer, slot->avData.aacBuffer, slot->avData.aacSize));
-    //                     AVD_LOG_INFO("Switched audio buffer for source %u to segment %u", (AVD_UInt32)i, source->currentSegmentIndex);
-    //                 }
-    //                 // also update the timestamp to be in sync so that even if there is a delay in loading the next segment
-    //                 // we dont go too much out of sync, from the next segment
-    //                 video->currentChunk.timestampSeconds = videoTime;
-    //             }
-    //         } else {
-    //             source->decodedThisFrame = true;
-    //             AVD_CHECK(
-    //                 avdVulkanVideoDecoderDecodeFrame(
-    //                     &appState->vulkan,
-    //                     video,
-    //                     VK_NULL_HANDLE,
-    //                     VK_NULL_HANDLE));
-    //         }
-    //     }
-
-    //     if (source->decoderReady) {
-    //         AVD_CHECK(avdAudioStreamingPlayerUpdate(&appState->audio, &source->audioPlayer));
-    //     }
-    // }
     return true;
 }
 
@@ -525,7 +443,7 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
 
     AVD_CHECK(__avdSceneHLSPlayerUpdateSources(appState, hlsPlayer));
     AVD_CHECK(__avdSceneHLSPlayerReceiveReadySegments(appState, hlsPlayer));
-    AVD_CHECK(__avdSceneHLSPlayerUpdateDecoders(appState, hlsPlayer));
+    AVD_CHECK(__avdSceneHLSPlayerUpdateContexts(appState, hlsPlayer));
 
     return true;
 }
