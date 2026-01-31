@@ -320,7 +320,7 @@ bool avdAudioStreamingPlayerStop(AVD_AudioStreamingPlayer *player)
     AVD_ASSERT(player != NULL);
 
     if (player->stream.stream) {
-        avdAudioStopStream(player->audio, &player->stream);
+        avdAudioAbortStream(player->audio, &player->stream);
         avdAudioStreamDestroy(player->audio, &player->stream);
         player->stream.stream = NULL;
     }

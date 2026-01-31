@@ -71,6 +71,7 @@ bool avdAudioOpenInputStream(
 
 bool avdAudioStartStream(AVD_Audio *audio, AVD_AudioStream *stream);
 bool avdAudioStopStream(AVD_Audio *audio, AVD_AudioStream *stream);
+bool avdAudioAbortStream(AVD_Audio *audio, AVD_AudioStream *stream);
 bool avdAudioCloseStream(AVD_Audio *audio, AVD_AudioStream *stream);
 void avdAudioStreamDestroy(AVD_Audio *audio, AVD_AudioStream *stream);
 

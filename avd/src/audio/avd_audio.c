@@ -271,6 +271,20 @@ bool avdAudioStopStream(AVD_Audio *audio, AVD_AudioStream *stream)
     return true;
 }
 
+bool avdAudioAbortStream(AVD_Audio *audio, AVD_AudioStream *stream)
+{
+    AVD_ASSERT(audio != NULL);
+    AVD_ASSERT(stream != NULL);
+
+    PaError err = Pa_AbortStream((PaStream *)stream->stream);
+    if (err != paNoError) {
+        AVD_LOG_ERROR("Failed to abort audio stream: %s", Pa_GetErrorText(err));
+        return false;
+    }
+
+    return true;
+}
+
 bool avdAudioCloseStream(AVD_Audio *audio, AVD_AudioStream *stream)
 {
     AVD_ASSERT(audio != NULL);
