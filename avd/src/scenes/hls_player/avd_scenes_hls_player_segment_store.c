@@ -96,6 +96,7 @@ bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_Size sourceIndex,
     for (AVD_Size i = 0; i < store->loadedSegmentCount; i++) {
         if (store->loadedSegments[i].source == sourceIndex &&
             store->loadedSegments[i].segmentId == segmentId) {
+            store->loadedSegmentCount -= 1;
             *data                       = store->loadedSegments[i];
             store->segmentAccessTime[i] = (AVD_UInt32)time(NULL);
             memset(&store->loadedSegments[i], 0, sizeof(AVD_HLSSegmentAVData));
