@@ -21,6 +21,7 @@ typedef struct {
     AVD_VulkanImage image;
     AVD_VulkanImageYCbCrSubresource ycbcrSubresource;
 
+    AVD_Size index;
     AVD_Float timestampSeconds;
     AVD_Size chunkDisplayOrder;
     AVD_Size absoluteDisplayOrder;

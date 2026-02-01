@@ -263,11 +263,11 @@ bool avdSceneHLSPlayerContextIsFed(AVD_SceneHLSPlayerContext *context)
 
     AVD_Bool audioFed = avdAudioStreamingPlayerIsFed(&context->audioPlayer);
 
-    if (audioFed == context->videoHungry) {
-        AVD_LOG_ERROR("Audio/Video sync issue in HLS Player context: audioFed=%s videoFed=%s",
-                      audioFed ? "true" : "false",
-                      !context->videoHungry ? "true" : "false");
-    }
+    // if (audioFed == context->videoHungry) {
+    //     AVD_LOG_ERROR("Audio/Video sync issue in HLS Player context: audioFed=%s videoFed=%s",
+    //                   audioFed ? "true" : "false",
+    //                   !context->videoHungry ? "true" : "false");
+    // }
 
     return audioFed && !context->videoHungry;
 }
@@ -286,7 +286,7 @@ bool avdSceneHLSPlayerContextTryAcquireDecodedFrame(AVD_SceneHLSPlayerContext *c
     AVD_CHECK(
         avdVulkanVideoDecoderAcquireDecodedFrame(
             &context->videoPlayer,
-            currentTime,
+            currentTime / 1000.0f,
             outFrame));
 
     return true;

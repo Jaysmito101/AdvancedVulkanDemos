@@ -180,6 +180,7 @@ static bool __avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_V
             numFramesRecreated++;
         }
 
+        frame->index      = i;
         frame->inUse      = false;
         frame->isAcquired = false;
     }
@@ -811,14 +812,41 @@ bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
         avdVulkanVideoDecoderChunkHasFrames(video),
         "No frames available in current chunk to decode");
 
-    // placeholder implementation, just simulating some decoding time
-    static picoPerfTime time = 0;
-    if (picoPerfDurationSeconds(time, picoPerfNow()) > video->h264Video->frameDurationSeconds) {
-        time = picoPerfNow();
-        // AVD_LOG_VERBOSE("Decoding frame %d of current chunk", (int)video->currentChunk.currentSliceIndex);
-        video->decodedFrames[0].inUse = true;
-        video->currentChunk.currentSliceIndex++;
+    // // placeholder implementation, just simulating some decoding time
+    // static picoPerfTime time = 0;
+    // if (picoPerfDurationSeconds(time, picoPerfNow()) > video->h264Video->frameDurationSeconds) {
+    //     time = picoPerfNow();
+    //     // AVD_LOG_VERBOSE("Decoding frame %d of current chunk", (int)video->currentChunk.currentSliceIndex);
+    //     video->decodedFrames[0].inUse = true;
+    // }
+    AVD_VulkanVideoDecodedFrame *decodedFrame = NULL;
+    AVD_VulkanVideoDecodedFrame *oldestFrame  = NULL;
+    AVD_Size oldestFrameOrder                 = UINT64_MAX;
+
+    // find a free decoded frame
+    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
+        if (!video->decodedFrames[i].inUse) {
+            decodedFrame = &video->decodedFrames[i];
+            break;
+        }
+
+        if (!video->decodedFrames[i].isAcquired && video->decodedFrames[i].chunkDisplayOrder < oldestFrameOrder) {
+            oldestFrame      = &video->decodedFrames[i];
+            oldestFrameOrder = video->decodedFrames[i].chunkDisplayOrder;
+        }
     }
+
+    if (decodedFrame == NULL) {
+        decodedFrame = oldestFrame;
+    }
+
+    decodedFrame->chunkDisplayOrder    = video->currentChunk.currentSliceIndex;
+    decodedFrame->absoluteDisplayOrder = video->currentChunk.chunkDisplayOrderOffset +
+                                         video->currentChunk.currentSliceIndex;
+    decodedFrame->timestampSeconds = video->currentChunk.timestampSeconds +
+                                     video->h264Video->frameDurationSeconds * video->currentChunk.currentSliceIndex;
+    decodedFrame->inUse = true;
+    video->currentChunk.currentSliceIndex++;
 
     return true;
 }
@@ -859,6 +887,7 @@ bool avdVulkanVideoDecoderReleaseDecodedFrame(AVD_VulkanVideoDecoder *video, AVD
     // NOTE: Some addition book-keeping might be needed here in the future
     // thus this oneliner function exists for now... :)
     frame->isAcquired = false;
+    frame->inUse      = false;
 
     return true;
 }

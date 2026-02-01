@@ -263,7 +263,7 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
                 AVD_CHECK(avdSceneHLSPlayerContextReleaseDecodedFrame(&source->player, source->currentFrame));
             }
 
-            AVD_LOG_WARN("HLS Player acquired new decoded frame for source %zu at time %.3f seconds", i, time);
+            // AVD_LOG_WARN("HLS Player acquired new decoded frame %zu at time %.3f seconds", frame->index, time);
 
             source->currentFrame = frame;
 
