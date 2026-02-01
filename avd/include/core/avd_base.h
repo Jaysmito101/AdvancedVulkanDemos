@@ -82,32 +82,35 @@
         return false;                         \
     }
 
+#define AVD_VK_CALL(result)                                                                                              \
+    {                                                                                                                    \
+        VkResult localResult = result;                                                                                   \
+        if (localResult != VK_SUCCESS) {                                                                                 \
+            AVD_LOG_ERROR("Check [%s] [%s] failed in %s:%d", #result, string_VkResult(localResult), __FILE__, __LINE__); \
+            return false;                                                                                                \
+        }                                                                                                                \
+    }
+
 #define AVD_CHECK_VK_RESULT(result, log, ...)                                                                            \
     {                                                                                                                    \
         VkResult localResult = result;                                                                                   \
         if (localResult != VK_SUCCESS) {                                                                                 \
-            AVD_LOG_VERBOSE("------------------------------------");                                                     \
             AVD_LOG_ERROR("Check [%s] [%s] failed in %s:%d", #result, string_VkResult(localResult), __FILE__, __LINE__); \
             AVD_LOG_ERROR(log, ##__VA_ARGS__);                                                                           \
-            AVD_LOG_VERBOSE("------------------------------------");                                                     \
             return false;                                                                                                \
         }                                                                                                                \
     }
 
 #define AVD_CHECK_MSG(result, log, ...)                                           \
     if (!(result)) {                                                              \
-        AVD_LOG_VERBOSE("------------------------------------");                  \
         AVD_LOG_ERROR("Check [%s] failed in %s:%d", #result, __FILE__, __LINE__); \
         AVD_LOG_ERROR(log, ##__VA_ARGS__);                                        \
-        AVD_LOG_VERBOSE("------------------------------------");                  \
         return false;                                                             \
     }
 
 #define AVD_CHECK(result)                                                           \
     if (!(result)) {                                                                \
-        AVD_LOG_VERBOSE("------------------------------------");                    \
         AVD_LOG_ERROR("Check [%s] failed in %s:%d\n", #result, __FILE__, __LINE__); \
-        AVD_LOG_VERBOSE("------------------------------------");                    \
         return false;                                                               \
     }
 
