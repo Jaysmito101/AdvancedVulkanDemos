@@ -243,7 +243,7 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
 
         AVD_Float time = (AVD_Float)appState->framerate.currentTime;
 
-        if (source->lastPushedSegment != 0 && !avdSceneHLSPlayerContextIsFed(&source->player) && time - source->lastRefreshed < 1.0f) {
+        if (source->lastPushedSegment != 0 && !avdSceneHLSPlayerContextIsFed(&source->player) && time - source->lastRefreshed >= 1.0f) {
             AVD_LOG_WARN("HLS Player context ran out of data to decode/play!");
             __avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i);
         }
