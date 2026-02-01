@@ -18,8 +18,8 @@ typedef struct {
     AVD_Size chunkNalUnitIndex;
     AVD_Float timestampSeconds;
     AVD_Float durationSeconds;
-    AVD_UInt32 referencePriority;
-    bool isReferenceFrame;
+    AVD_UInt32 nalRefIdc;
+    bool isIdrFrame;
 
     AVD_UInt32 chunkDisplayOrder;
     AVD_UInt32 pictureOrderCount;

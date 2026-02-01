@@ -240,7 +240,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType0(AVD_H264Video *video, 
     AVD_ASSERT(sliceHeader != NULL);
     AVD_ASSERT(outFrameInfo != NULL);
 
-    if (!outFrameInfo->isReferenceFrame) {
+    if (outFrameInfo->isIdrFrame) {
         // reset poc state on IDR frames
         video->currentChunk.pocState.type0.prevPicOrderCntMsb = 0;
         video->currentChunk.pocState.type0.prevPicOrderCntLsb = 0;
@@ -273,7 +273,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType0(AVD_H264Video *video, 
         outFrameInfo->bottomFieldOrderCount = picOrderCntMsb + sliceHeader->picOrderCntLsb;
     }
 
-    if (__avdH264VideoIsMMCO5Present(sliceHeader, (picoH264NALRefIDC)outFrameInfo->referencePriority)) {
+    if (__avdH264VideoIsMMCO5Present(sliceHeader, (picoH264NALRefIDC)outFrameInfo->nalRefIdc)) {
         chunk->pocState.type0.prevPicOrderCntMsb = 0;
         if (!sliceHeader->fieldPicFlag) {
             // set to TopFieldOrderCount after having been reset by mmco 5
@@ -284,7 +284,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType0(AVD_H264Video *video, 
             // therefore we don't have to distinguish between top and bottom fields here
             chunk->pocState.type0.prevPicOrderCntLsb = 0;
         }
-    } else if (outFrameInfo->referencePriority != 0) // reference picture
+    } else if (outFrameInfo->nalRefIdc != 0) // reference picture
     {
         chunk->pocState.type0.prevPicOrderCntMsb = picOrderCntMsb;
         chunk->pocState.type0.prevPicOrderCntLsb = sliceHeader->picOrderCntLsb;
@@ -306,7 +306,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType1(AVD_H264Video *video, 
 
     // FrameNumOffset (8-6)
     AVD_UInt32 frameNumOffset = 0;
-    if (!outFrameInfo->isReferenceFrame) { // (nal_unit_type == 5)
+    if (outFrameInfo->isIdrFrame) { // (nal_unit_type == 5)
         frameNumOffset = 0;
     } else if (chunk->pocState.type1.prevFrameNum > sliceHeader->frameNum) {
         frameNumOffset = chunk->pocState.type1.prevFrameNumOffset + maxFrameNum;
@@ -322,7 +322,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType1(AVD_H264Video *video, 
         absFrameNum = 0;
     }
 
-    if (outFrameInfo->referencePriority == 0 && absFrameNum > 0) {
+    if (outFrameInfo->nalRefIdc == 0 && absFrameNum > 0) {
         absFrameNum = absFrameNum - 1;
     }
 
@@ -345,7 +345,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType1(AVD_H264Video *video, 
         expectedPicOrderCnt = 0;
     }
 
-    if (outFrameInfo->referencePriority == 0) {
+    if (outFrameInfo->nalRefIdc == 0) {
         expectedPicOrderCnt += sps->offsetForNonRefPic;
     }
 
@@ -359,7 +359,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType1(AVD_H264Video *video, 
         outFrameInfo->bottomFieldOrderCount = expectedPicOrderCnt + sps->offsetForTopToBottomField + sliceHeader->deltaPicOrderCnt[0];
     }
 
-    if (__avdH264VideoIsMMCO5Present(sliceHeader, (picoH264NALRefIDC)outFrameInfo->referencePriority)) {
+    if (__avdH264VideoIsMMCO5Present(sliceHeader, (picoH264NALRefIDC)outFrameInfo->nalRefIdc)) {
         chunk->pocState.type1.prevFrameNumOffset = 0;
         chunk->pocState.type1.prevFrameNum       = 0;
     } else {
@@ -383,7 +383,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType2(AVD_H264Video *video, 
 
     // FrameNumOffset (8-12)
     AVD_UInt32 frameNumOffset = 0;
-    if (!outFrameInfo->isReferenceFrame) { // (slh->nal_unit_type == 5)
+    if (outFrameInfo->isIdrFrame) { // (nal_unit_type == 5)
         frameNumOffset = 0;
     } else if (chunk->pocState.type2.prevFrameNum > sliceHeader->frameNum) {
         frameNumOffset = chunk->pocState.type2.prevFrameNumOffset + maxFrameNum;
@@ -393,9 +393,9 @@ static bool __avdH264VideoCalculatePictureOrderCountType2(AVD_H264Video *video, 
 
     // tempPicOrderCnt (8-13)
     AVD_Int32 tempPicOrderCnt = 0;
-    if (!outFrameInfo->isReferenceFrame) { // (slh->nal_unit_type == 5)
+    if (outFrameInfo->isIdrFrame) { // (nal_unit_type == 5)
         tempPicOrderCnt = 0;
-    } else if (outFrameInfo->referencePriority == 0) {
+    } else if (outFrameInfo->nalRefIdc == 0) {
         tempPicOrderCnt = 2 * (frameNumOffset + sliceHeader->frameNum) - 1;
     } else {
         tempPicOrderCnt = 2 * (frameNumOffset + sliceHeader->frameNum);
@@ -411,7 +411,7 @@ static bool __avdH264VideoCalculatePictureOrderCountType2(AVD_H264Video *video, 
         outFrameInfo->topFieldOrderCount = tempPicOrderCnt;
     }
 
-    if (__avdH264VideoIsMMCO5Present(sliceHeader, (picoH264NALRefIDC)outFrameInfo->referencePriority)) {
+    if (__avdH264VideoIsMMCO5Present(sliceHeader, (picoH264NALRefIDC)outFrameInfo->nalRefIdc)) {
         chunk->pocState.type2.prevFrameNumOffset = 0;
         chunk->pocState.type2.prevFrameNum       = 0;
     } else {
@@ -532,9 +532,8 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, AVD_H264VideoLo
         }
         case PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_IDR:
         case PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_NON_IDR: {
-            bool isReferenceFrame = (outNalUnitHeader->nalUnitType != PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_IDR);
-            uint8_t ppsId         = 0;
-            uint8_t spsId         = 0;
+            uint8_t ppsId = 0;
+            uint8_t spsId = 0;
             AVD_CHECK(picoH264SliceHeaderParsePPSId(
                 video->nalUnitPayloadBuffer,
                 nalUnitPayloadSize,
@@ -562,8 +561,8 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, AVD_H264VideoLo
                 .size              = AVD_ALIGN(nalUnitSize, chunk->sliceDataBuffer.alignment),
                 .timestampSeconds  = video->timestampSinceStartSeconds,
                 .durationSeconds   = video->frameDurationSeconds,
-                .referencePriority = outNalUnitHeader->nalRefIDC,
-                .isReferenceFrame  = isReferenceFrame,
+                .nalRefIdc         = outNalUnitHeader->nalRefIDC,
+                .isIdrFrame        = (outNalUnitHeader->nalUnitType == PICO_H264_NAL_UNIT_TYPE_CODED_SLICE_IDR),
                 .chunkNalUnitIndex = video->currentChunk.numNalUnitsParsed,
             };
             AVD_H264VideoFrameInfo *frameInfo = (AVD_H264VideoFrameInfo *)avdListPushBack(
@@ -584,7 +583,7 @@ static bool __avdH264VideoParseNextNalUnit(AVD_H264Video *video, AVD_H264VideoLo
                     &slice.header,
                     frameInfo));
 
-            if (!isReferenceFrame) {
+            if (frameInfoRaw.isIdrFrame) {
                 AVD_H264VideoSeekInfo seekInfo = {
                     .byteOffset       = currentCursor,
                     .timestampSeconds = frameInfo->timestampSeconds,
@@ -773,8 +772,8 @@ void avdH264VideoChunkDebugPrint(AVD_H264VideoChunk *chunk, bool logFrameInfos)
             AVD_LOG_INFO("      Size: %zu", frameInfo->size);
             AVD_LOG_INFO("      Timestamp: %.6f seconds", frameInfo->timestampSeconds);
             AVD_LOG_INFO("      Duration: %.6f seconds", frameInfo->durationSeconds);
-            AVD_LOG_INFO("      Is Reference Frame: %s", frameInfo->isReferenceFrame ? "Yes" : "No");
-            AVD_LOG_INFO("      Reference Priority: %u", frameInfo->referencePriority);
+            AVD_LOG_INFO("      Is Reference Frame: %s", frameInfo->isIdrFrame ? "Yes" : "No");
+            AVD_LOG_INFO("      Reference Priority: %u", frameInfo->nalRefIdc);
             AVD_LOG_INFO("      Picture Order Count: %d", frameInfo->pictureOrderCount);
             AVD_LOG_INFO("      Top Field Order Count: %d", frameInfo->topFieldOrderCount);
             AVD_LOG_INFO("      Bottom Field Order Count: %d", frameInfo->bottomFieldOrderCount);
