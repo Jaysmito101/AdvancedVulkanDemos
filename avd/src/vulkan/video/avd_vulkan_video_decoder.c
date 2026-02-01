@@ -141,8 +141,8 @@ static bool __avdVulkanVideoDecoderUpdateDPB(AVD_Vulkan *vulkan, AVD_VulkanVideo
             avdVulkanVideoDecodeDPBCreate(
                 vulkan,
                 &video->dpb,
-                video->h264Video->width,
-                video->h264Video->height,
+                video->h264Video->paddedWidth,
+                video->h264Video->paddedHeight,
                 dpbLabel));
         AVD_LOG_VERBOSE("Created DPB with %u slots for video decoder", video->dpb.numDPBSlots);
     }
@@ -171,8 +171,8 @@ static bool __avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_V
                 avdVulkanVideoDecodedFrameCreate(
                     vulkan,
                     frame,
-                    video->h264Video->width,
-                    video->h264Video->height,
+                    video->h264Video->paddedWidth,
+                    video->h264Video->paddedHeight,
                     video->dpb.format,
                     frameLabel));
 
