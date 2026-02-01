@@ -60,10 +60,12 @@
 #endif
 
 #define AVD_MALLOC(size) malloc(size)
-#define AVD_FREE(ptr) \
-    {                 \
-        free(ptr);    \
-        ptr = NULL;   \
+#define AVD_FREE(ptr)                                                                  \
+    if (ptr != NULL) {                                                                 \
+        free(ptr);                                                                     \
+        ptr = NULL;                                                                    \
+    } else {                                                                           \
+        AVD_LOG_WARN("Attempted to free a NULL pointer at %s:%d", __FILE__, __LINE__); \
     }
 
 #define AVD_LOG_INIT()            PICO_LOG_INIT()
