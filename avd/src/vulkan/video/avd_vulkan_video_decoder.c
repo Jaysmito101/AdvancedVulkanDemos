@@ -779,7 +779,7 @@ bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *
     return true;
 }
 
-bool avdVulkanVideoDecoderDecodeFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, VkSemaphore signalSemaphore, VkFence signalFence)
+bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);

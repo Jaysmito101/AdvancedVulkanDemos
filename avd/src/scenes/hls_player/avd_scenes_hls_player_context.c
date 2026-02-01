@@ -174,11 +174,9 @@ static bool __avdVulkanVideoDecoderUpdate(
         } else {
 
             AVD_CHECK(
-                avdVulkanVideoDecoderDecodeFrame(
+                avdVulkanVideoDecoderUpdate(
                     vulkan,
-                    decoder,
-                    VK_NULL_HANDLE,
-                    VK_NULL_HANDLE));
+                    decoder));
         }
     }
 

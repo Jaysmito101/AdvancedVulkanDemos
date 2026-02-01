@@ -91,7 +91,7 @@ AVD_Size avdVulkanVideoDecoderGetNumDecodedFrames(AVD_VulkanVideoDecoder *video)
 bool avdVulkanVideoDecoderChunkHasFrames(AVD_VulkanVideoDecoder *video);
 bool avdVulkanVideoDecoderIsChunkOutdated(AVD_VulkanVideoDecoder *video, AVD_Float videoTime);
 bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264VideoLoadParams *chunkLoadParams, bool *eof);
-bool avdVulkanVideoDecoderDecodeFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, VkSemaphore signalSemaphore, VkFence signalFence);
+bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video);
 
 bool avdVulkanVideoDecoderAcquireDecodedFrame(
     AVD_VulkanVideoDecoder *video,
