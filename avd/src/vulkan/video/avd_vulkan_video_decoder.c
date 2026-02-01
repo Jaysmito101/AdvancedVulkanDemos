@@ -4,6 +4,7 @@
 #include "math/avd_math_base.h"
 #include "pico/picoH264.h"
 #include "pico/picoPerf.h"
+#include "vulkan/avd_vulkan_base.h"
 #include "vulkan/avd_vulkan_buffer.h"
 #include "vulkan/avd_vulkan_image.h"
 #include "vulkan/video/avd_vulkan_video_dpb.h"
@@ -673,6 +674,14 @@ bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
         return false;
     }
 
+    VkFenceCreateInfo fenceInfo = {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .flags = VK_FENCE_CREATE_SIGNALED_BIT, // create the fence in signaled state
+    };
+    AVD_CHECK_VK_RESULT(
+        vkCreateFence(vulkan->device, &fenceInfo, NULL, &video->decodeFence),
+        "Failed to create decode fence");
+
     video->h264Video = h264Video;
     AVD_CHECK(__avdVulkanVideoDecoderCreateSession(vulkan, video));
 
@@ -689,6 +698,13 @@ void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vi
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
+
+    avdVulkanWaitIdle(vulkan);
+
+    if (video->decodeFence != VK_NULL_HANDLE) {
+        vkDestroyFence(vulkan->device, video->decodeFence, NULL);
+        video->decodeFence = VK_NULL_HANDLE;
+    }
 
     avdVulkanVideoDecoderSessionDataDestroy(&video->sessionData);
 

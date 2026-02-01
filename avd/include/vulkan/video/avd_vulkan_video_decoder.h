@@ -66,6 +66,8 @@ typedef struct {
     AVD_Size displayOrderOffset;
     AVD_Float timestampSecondsOffset;
 
+    VkFence decodeFence;
+
     char label[64];
 } AVD_VulkanVideoDecoder;
 
