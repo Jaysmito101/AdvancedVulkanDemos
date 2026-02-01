@@ -797,8 +797,49 @@ bool avdVulkanVideoDecoderDecodeFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder
     if (picoPerfDurationSeconds(time, picoPerfNow()) > video->h264Video->frameDurationSeconds) {
         time = picoPerfNow();
         // AVD_LOG_VERBOSE("Decoding frame %d of current chunk", (int)video->currentChunk.currentSliceIndex);
+        video->decodedFrames[0].inUse = true;
         video->currentChunk.currentSliceIndex++;
     }
+
+    return true;
+}
+
+bool avdVulkanVideoDecoderAcquireDecodedFrame(
+    AVD_VulkanVideoDecoder *video,
+    AVD_Float currentTime,
+    AVD_VulkanVideoDecodedFrame **outFrame)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(outFrame != NULL);
+
+    *outFrame = NULL;
+
+    // try to find a decoded frame that is inuse (decoded) but not acquired yet and
+    // whose time range is matching the current time
+    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
+        AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
+        if (frame->inUse && !frame->isAcquired) {
+            AVD_Float frameStartTime = frame->timestampSeconds;
+            AVD_Float frameEndTime   = frame->timestampSeconds + video->h264Video->frameDurationSeconds;
+            if (currentTime >= frameStartTime && currentTime < frameEndTime) {
+                frame->isAcquired = true;
+                *outFrame         = frame;
+                return true;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool avdVulkanVideoDecoderReleaseDecodedFrame(AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *frame)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(frame != NULL);
+
+    // NOTE: Some addition book-keeping might be needed here in the future
+    // thus this oneliner function exists for now... :)
+    frame->isAcquired = false;
 
     return true;
 }

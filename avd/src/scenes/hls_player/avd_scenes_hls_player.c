@@ -11,8 +11,10 @@
 #include "scenes/hls_player/avd_scene_hls_player_context.h"
 #include "scenes/hls_player/avd_scene_hls_player_segment_store.h"
 #include "scenes/hls_player/avd_scene_hls_stream.h"
+#include "vulkan/avd_vulkan_base.h"
 #include "vulkan/avd_vulkan_image.h"
 #include "vulkan/avd_vulkan_video.h"
+#include "vulkan/video/avd_vulkan_video_decoder.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -31,61 +33,6 @@ static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_HLS_PLAYER);
     return &scene->hlsPlayer;
-}
-
-static bool __avdSceneHLSPlayerSetupSourceTextures(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
-{
-    AVD_ASSERT(scene != NULL);
-
-    VkWriteDescriptorSet descriptorSetWrites[AVD_SCENE_HLS_PLAYER_MAX_SOURCES * 2] = {0};
-    VkDescriptorImageInfo storageImageInfos[AVD_SCENE_HLS_PLAYER_MAX_SOURCES]      = {0};
-
-    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_SOURCES; i++) {
-        AVD_CHECK(avdVulkanImageCreate(
-            &appState->vulkan,
-            &scene->soruceTexture[i],
-            avdVulkanImageGetDefaultCreateInfo(
-                1920,
-                1080,
-                VK_FORMAT_R8G8B8A8_UNORM,
-                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT)));
-
-        descriptorSetWrites[i * 2 + 0] = (VkWriteDescriptorSet){
-            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .pNext           = NULL,
-            .dstSet          = appState->vulkan.bindlessDescriptorSet,
-            .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .dstArrayElement = (AVD_UInt32)(i),
-            .descriptorCount = 1,
-            .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo      = &scene->soruceTexture[i].defaultSubresource.descriptorImageInfo,
-        };
-
-        storageImageInfos[i] = (VkDescriptorImageInfo){
-            .imageView   = scene->soruceTexture[i].defaultSubresource.descriptorImageInfo.imageView,
-            .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
-        };
-
-        descriptorSetWrites[i * 2 + 1] = (VkWriteDescriptorSet){
-            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .pNext           = NULL,
-            .dstSet          = appState->vulkan.bindlessDescriptorSet,
-            .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .dstArrayElement = (AVD_UInt32)(i),
-            .descriptorCount = 1,
-            .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
-            .pImageInfo      = &storageImageInfos[i],
-        };
-    }
-
-    vkUpdateDescriptorSets(
-        appState->vulkan.device,
-        (AVD_UInt32)(scene->sourceCount * 2),
-        descriptorSetWrites,
-        0,
-        NULL);
-
-    return true;
 }
 
 static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
@@ -290,18 +237,60 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
 
 static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
+    AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
+
+    AVD_Float time = (AVD_Float)appState->framerate.currentTime;
 
     for (AVD_Size i = 0; i < scene->sourceCount; i++) {
         AVD_SceneHLSPlayerSource *source = &scene->sources[i];
 
-        AVD_CHECK(avdSceneHLSPlayerContextUpdate(&appState->vulkan, &appState->audio, &source->player));
-
-        AVD_Float time = (AVD_Float)appState->framerate.currentTime;
-
         if (source->lastPushedSegment != 0 && !avdSceneHLSPlayerContextIsFed(&source->player) && time - source->lastRefreshed >= 1.0f) {
             AVD_LOG_WARN("HLS Player context ran out of data to decode/play!");
             __avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i);
+        }
+
+        if (!source->player.initialized) {
+            continue;
+        }
+
+        AVD_CHECK(avdSceneHLSPlayerContextUpdate(&appState->vulkan, &appState->audio, &source->player));
+
+        AVD_VulkanVideoDecodedFrame *frame = NULL;
+        AVD_CHECK(avdSceneHLSPlayerContextTryAcquireDecodedFrame(&source->player, &frame));
+        if (frame) {
+            if (source->currentFrame) {
+                AVD_CHECK(avdSceneHLSPlayerContextReleaseDecodedFrame(&source->player, source->currentFrame));
+            }
+
+            AVD_LOG_WARN("HLS Player acquired new decoded frame for source %zu at time %.3f seconds", i, time);
+
+            source->currentFrame = frame;
+
+            AVD_CHECK_MSG(frame->ycbcrSubresource.usingConversionExtension,
+                          "Decoded frame is not using YCbCr conversion extension, cannot be rendered correctly in HLS Player scene");
+
+            VkWriteDescriptorSet descriptorWrite[2] = {
+                {
+                    .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .dstSet          = appState->vulkan.bindlessDescriptorSet,
+                    .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .dstArrayElement = (AVD_UInt32)i * 2 + 0,
+                    .descriptorCount = 1,
+                    .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .pImageInfo      = &frame->ycbcrSubresource.raw.luma.descriptorImageInfo,
+                },
+                {
+                    .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .dstSet          = appState->vulkan.bindlessDescriptorSet,
+                    .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .dstArrayElement = (AVD_UInt32)i * 2 + 1,
+                    .descriptorCount = 1,
+                    .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .pImageInfo      = &frame->ycbcrSubresource.raw.chroma.descriptorImageInfo,
+                },
+            };
+            vkUpdateDescriptorSets(appState->vulkan.device, 2, descriptorWrite, 0, NULL);
         }
     }
 
@@ -325,6 +314,12 @@ static bool avdSceneHLSPlayerCheckIntegrity(struct AVD_AppState *appState, const
         *statusMessage = "HLS Player scene is not supported on this GPU (video decode not supported).";
         return false;
     }
+
+    // we currently not using the conversion variant of the samplers
+    // if (!appState->vulkan.supportedFeatures.ycbcrConversion) {
+    //     *statusMessage = "HLS Player scene is not supported on this GPU (YCbCr conversion not supported).";
+    //     return false;
+    // }
 
     if (!avdCurlIsSupported()) {
         *statusMessage = "HLS Player scene requires curl cli to be installed and available in PATH.";
@@ -365,7 +360,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
 
     memset(hlsPlayer->sources, 0, sizeof(hlsPlayer->sources));
 
-    hlsPlayer->isSupported = appState->vulkan.supportedFeatures.videoDecode;
+    hlsPlayer->isSupported = appState->vulkan.supportedFeatures.videoDecode; // && appState->vulkan.supportedFeatures.ycbcrConversion;
 
     AVD_CHECK(avdRenderableTextCreate(
         &hlsPlayer->title,
@@ -418,9 +413,6 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
     AVD_CHECK(avdHLSMediaCacheInit(&hlsPlayer->mediaCache));
     AVD_CHECK(avdHLSWorkerPoolInit(&hlsPlayer->workerPool, &hlsPlayer->urlPool, &hlsPlayer->mediaCache, hlsPlayer));
 
-    // prepare the textures
-    AVD_CHECK(__avdSceneHLSPlayerSetupSourceTextures(appState, hlsPlayer));
-
     return true;
 }
 
@@ -430,10 +422,6 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
     AVD_ASSERT(scene != NULL);
 
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
-
-    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_SOURCES; i++) {
-        avdVulkanImageDestroy(&appState->vulkan, &hlsPlayer->soruceTexture[i]);
-    }
 
     avdHLSWorkerPoolDestroy(&hlsPlayer->workerPool);
     avdHLSMediaCacheDestroy(&hlsPlayer->mediaCache);

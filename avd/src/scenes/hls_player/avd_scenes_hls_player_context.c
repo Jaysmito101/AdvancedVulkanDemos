@@ -1,6 +1,7 @@
 #include "audio/avd_audio_core.h"
 #include "audio/avd_audio_streaming_player.h"
 #include "core/avd_base.h"
+#include "core/avd_types.h"
 #include "core/avd_utils.h"
 #include "pico/picoStream.h"
 #include "scenes/hls_player/avd_scene_hls_player_context.h"
@@ -271,4 +272,38 @@ bool avdSceneHLSPlayerContextIsFed(AVD_SceneHLSPlayerContext *context)
     }
 
     return audioFed && !context->videoHungry;
+}
+
+bool avdSceneHLSPlayerContextTryAcquireDecodedFrame(AVD_SceneHLSPlayerContext *context, AVD_VulkanVideoDecodedFrame **outFrame)
+{
+    AVD_ASSERT(context != NULL);
+    AVD_ASSERT(outFrame != NULL);
+    AVD_ASSERT(context->initialized);
+    *outFrame = NULL;
+
+    // NOTE: We sync the video with the audio time
+    AVD_Float currentTime = 0.0;
+    avdAudioStreamingPlayerGetTimePlayedMs(&context->audioPlayer, &currentTime);
+
+    AVD_CHECK(
+        avdVulkanVideoDecoderAcquireDecodedFrame(
+            &context->videoPlayer,
+            currentTime,
+            outFrame));
+
+    return true;
+}
+
+bool avdSceneHLSPlayerContextReleaseDecodedFrame(AVD_SceneHLSPlayerContext *context, AVD_VulkanVideoDecodedFrame *frame)
+{
+    AVD_ASSERT(context != NULL);
+    AVD_ASSERT(frame != NULL);
+    AVD_ASSERT(context->initialized);
+
+    AVD_CHECK(
+        avdVulkanVideoDecoderReleaseDecodedFrame(
+            &context->videoPlayer,
+            frame));
+
+    return true;
 }

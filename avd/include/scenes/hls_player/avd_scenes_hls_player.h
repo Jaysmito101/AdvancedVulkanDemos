@@ -26,6 +26,7 @@ typedef struct {
     AVD_Float videoStartTime;
     AVD_UInt32 lastPushedSegment;
 
+    AVD_VulkanVideoDecodedFrame* currentFrame;
     AVD_SceneHLSPlayerContext player;
 } AVD_SceneHLSPlayerSource;
 
@@ -43,7 +44,6 @@ typedef struct AVD_SceneHLSPlayer {
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
 
-    AVD_VulkanImage soruceTexture[AVD_SCENE_HLS_PLAYER_MAX_SOURCES];
     AVD_SceneHLSPlayerSource sources[AVD_SCENE_HLS_PLAYER_MAX_SOURCES];
     AVD_UInt32 sourceCount;
     AVD_UInt32 sourcesHash;

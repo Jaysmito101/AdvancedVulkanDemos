@@ -2,6 +2,7 @@
 #define AVD_VULKAN_VIDEO_DECODER_H
 
 #include "avd_vulkan_video_dpb.h"
+#include "core/avd_types.h"
 #include "vulkan/avd_vulkan_buffer.h"
 #include "vulkan/avd_vulkan_image.h"
 #include "vulkan/video/avd_vulkan_video_core.h"
@@ -12,8 +13,11 @@
 #endif
 
 typedef struct {
-    bool initialized;
-    bool inUse;
+    AVD_Bool initialized;
+
+    
+    AVD_Bool isAcquired;
+    AVD_Bool inUse;
     AVD_VulkanImage image;
     AVD_VulkanImageYCbCrSubresource ycbcrSubresource;
 
@@ -88,5 +92,11 @@ bool avdVulkanVideoDecoderChunkHasFrames(AVD_VulkanVideoDecoder *video);
 bool avdVulkanVideoDecoderIsChunkOutdated(AVD_VulkanVideoDecoder *video, AVD_Float videoTime);
 bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264VideoLoadParams *chunkLoadParams, bool *eof);
 bool avdVulkanVideoDecoderDecodeFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, VkSemaphore signalSemaphore, VkFence signalFence);
+
+bool avdVulkanVideoDecoderAcquireDecodedFrame(
+    AVD_VulkanVideoDecoder *video,
+    AVD_Float currentTime,
+    AVD_VulkanVideoDecodedFrame **outFrame);
+bool avdVulkanVideoDecoderReleaseDecodedFrame(AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *frame);
 
 #endif // AVD_VULKAN_VIDEO_DECODER_H
