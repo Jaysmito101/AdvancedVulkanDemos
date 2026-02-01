@@ -4,7 +4,7 @@
 #include "core/avd_core.h"
 
 typedef struct {
-    void* samples;
+    void *samples;
     AVD_Size sampleCount;
     AVD_UInt32 sampleRate;
     AVD_UInt32 channels;
@@ -37,6 +37,5 @@ bool avdAudioClipSampleAtTimeMs(
     const AVD_AudioClip *audioData,
     AVD_Float timeMs,
     AVD_Float *outSample);
-
 
 #endif // AVD_AUDIO_DATA_H

@@ -16,13 +16,12 @@
 // NOTE: these functions return pointers to static structures, do not free them
 // and use them from a single thread only, therse are kind ahacky convienience functions
 // not a great idea, but usually read-only access is needed
-const VkVideoProfileInfoKHR* avdVulkanVideoGetH264DecodeProfileInfo();
-const VkVideoProfileInfoKHR* avdVulkanVideoGetH264EncodeProfileInfo();
-const VkVideoProfileInfoKHR* avdVulkanVideoGetH264ProfileInfo(AVD_Bool forDecode);
+const VkVideoProfileInfoKHR *avdVulkanVideoGetH264DecodeProfileInfo();
+const VkVideoProfileInfoKHR *avdVulkanVideoGetH264EncodeProfileInfo();
+const VkVideoProfileInfoKHR *avdVulkanVideoGetH264ProfileInfo(AVD_Bool forDecode);
 
-const VkVideoProfileListInfoKHR* avdVulkanVideoGetH264DecodeProfileListInfo();
-const VkVideoProfileListInfoKHR* avdVulkanVideoGetH264EncodeProfileListInfo();
-const VkVideoProfileListInfoKHR* avdVulkanVideoGetH264ProfileListInfo(AVD_Bool forDecode);
-
+const VkVideoProfileListInfoKHR *avdVulkanVideoGetH264DecodeProfileListInfo();
+const VkVideoProfileListInfoKHR *avdVulkanVideoGetH264EncodeProfileListInfo();
+const VkVideoProfileListInfoKHR *avdVulkanVideoGetH264ProfileListInfo(AVD_Bool forDecode);
 
 #endif // AVD_VULKAN_VIDEO_CORE_H

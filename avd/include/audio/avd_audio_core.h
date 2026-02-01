@@ -4,7 +4,6 @@
 #include "core/avd_core.h"
 #include "core/avd_types.h"
 
-
 #define AVD_AUDIO_DEVICE_DEFAULT UINT32_MAX
 
 typedef struct {
@@ -27,7 +26,7 @@ typedef struct {
     AVD_Size index;
 } AVD_AudioDevice;
 
-typedef bool (AVD_AudioCallback)(
+typedef bool(AVD_AudioCallback)(
     const void *inputBuffer,
     void *outputBuffer,
     AVD_Size framesPerBuffer,
@@ -35,13 +34,12 @@ typedef bool (AVD_AudioCallback)(
     void *userData);
 
 typedef struct {
-    AVD_Audio* audio;
-    void* stream;
-    void* userData;
-    AVD_AudioCallback* callback;
+    AVD_Audio *audio;
+    void *stream;
+    void *userData;
+    AVD_AudioCallback *callback;
     AVD_Size device;
 } AVD_AudioStream;
-
 
 bool avdAudioInit(AVD_Audio *audio);
 void avdAudioShutdown(AVD_Audio *audio);
@@ -74,6 +72,5 @@ bool avdAudioStopStream(AVD_Audio *audio, AVD_AudioStream *stream);
 bool avdAudioAbortStream(AVD_Audio *audio, AVD_AudioStream *stream);
 bool avdAudioCloseStream(AVD_Audio *audio, AVD_AudioStream *stream);
 void avdAudioStreamDestroy(AVD_Audio *audio, AVD_AudioStream *stream);
-
 
 #endif // AVD_AUDIO_CORE_H

@@ -150,7 +150,6 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
         .dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT,
     };
 
-
     dependencies[1] = (VkSubpassDependency){
         .srcSubpass      = 0,
         .dstSubpass      = VK_SUBPASS_EXTERNAL,
@@ -170,7 +169,7 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
         .dependencyCount = 2,
         .pDependencies   = dependencies,
     };
-    VkResult result                       = vkCreateRenderPass(device, &renderPassInfo, NULL, &framebuffer->renderPass);
+    VkResult result = vkCreateRenderPass(device, &renderPassInfo, NULL, &framebuffer->renderPass);
     AVD_CHECK_VK_RESULT(result, "Failed to create render pass");
 
     static VkFramebufferAttachmentImageInfo attachmentImageInfos[64] = {0};
@@ -184,10 +183,10 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
     }
 
     VkFramebufferAttachmentsCreateInfo framebufferAttachmentsInfo = {
-        .sType                          = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO,
-        .pNext                          = NULL,
-        .attachmentImageInfoCount       = attachmentCount,
-        .pAttachmentImageInfos          = attachmentImageInfos,
+        .sType                    = VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO,
+        .pNext                    = NULL,
+        .attachmentImageInfoCount = attachmentCount,
+        .pAttachmentImageInfos    = attachmentImageInfos,
     };
 
     VkFramebufferCreateInfo framebufferInfo = {
@@ -201,7 +200,7 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
         .layers          = 1,
         .pNext           = &framebufferAttachmentsInfo,
     };
-    result                                  = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffer->framebuffer);
+    result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffer->framebuffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create framebuffer");
 
     return true;

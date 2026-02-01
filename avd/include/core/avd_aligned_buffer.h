@@ -13,7 +13,7 @@ typedef struct {
 
 AVD_Bool avdAlignedBufferCreate(AVD_AlignedBuffer *buffer, AVD_Size capacity, AVD_Size alignment);
 void avdAlignedBufferDestroy(AVD_AlignedBuffer *buffer);
-AVD_Bool avdAlignedBufferEmplace(AVD_AlignedBuffer *buffer, AVD_Size size, AVD_DataPtr* dataOut); 
+AVD_Bool avdAlignedBufferEmplace(AVD_AlignedBuffer *buffer, AVD_Size size, AVD_DataPtr *dataOut);
 AVD_Bool avdAlignedBufferClear(AVD_AlignedBuffer *buffer);
 AVD_Bool avdAlignedBufferTighten(AVD_AlignedBuffer *buffer);
 

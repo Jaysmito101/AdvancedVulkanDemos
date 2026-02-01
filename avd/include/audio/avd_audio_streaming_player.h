@@ -19,7 +19,7 @@ typedef enum {
 typedef struct {
     AVD_Bool inUse;
     AVD_UInt32 lastUpdated;
-    AVD_AudioClip clip; 
+    AVD_AudioClip clip;
 } AVD_AudioStreamingPlayerBufferChunk;
 
 typedef struct {

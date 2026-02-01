@@ -25,7 +25,7 @@ typedef struct {
     AVD_AudioStreamingPlayer audioPlayer;
 } AVD_SceneHLSPlayerContext;
 
-void avdSceneHLSPlayerContextDestroy(AVD_Vulkan *vulkan, AVD_Audio* audio, AVD_SceneHLSPlayerContext *context);
+void avdSceneHLSPlayerContextDestroy(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_SceneHLSPlayerContext *context);
 bool avdSceneHLSPlayerContextAddSegment(
     AVD_Vulkan *vulkan,
     AVD_Audio *audio,
@@ -33,6 +33,5 @@ bool avdSceneHLSPlayerContextAddSegment(
     AVD_HLSSegmentAVData avData);
 bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_SceneHLSPlayerContext *context);
 bool avdSceneHLSPlayerContextIsFed(AVD_SceneHLSPlayerContext *context);
-
 
 #endif // AVD_SCENE_HLS_PLAYER_CONTEXT_H

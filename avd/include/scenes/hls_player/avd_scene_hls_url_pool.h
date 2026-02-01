@@ -5,7 +5,7 @@
 #include "pico/picoThreads.h"
 
 #define AVD_HLS_URL_POOL_CAPACITY 256
-#define AVD_HLS_URL_MAX_LENGTH   1024
+#define AVD_HLS_URL_MAX_LENGTH    1024
 
 typedef struct {
     char urls[AVD_HLS_URL_POOL_CAPACITY][AVD_HLS_URL_MAX_LENGTH];
@@ -19,7 +19,7 @@ typedef struct {
 bool avdHLSURLPoolInit(AVD_HLSURLPool *pool);
 void avdHLSURLPoolDestroy(AVD_HLSURLPool *pool);
 
-AVD_Bool avdHLSURLPoolInsert(AVD_HLSURLPool *pool, const char *url, AVD_UInt32* outHash);
+AVD_Bool avdHLSURLPoolInsert(AVD_HLSURLPool *pool, const char *url, AVD_UInt32 *outHash);
 const char *avdHLSURLPoolGet(AVD_HLSURLPool *pool, AVD_UInt32 hash);
 
 void avdHLSURLPoolClear(AVD_HLSURLPool *pool);

@@ -151,7 +151,6 @@ bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, deccerCubes->set0Layout, "Scene/DeccerCubes/Set0Layout");
     AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, deccerCubes->set0, "Scene/DeccerCubes/Set0");
 
-
     AVD_CHECK(avdRenderableTextCreate(
         &deccerCubes->title,
         &appState->fontRenderer,

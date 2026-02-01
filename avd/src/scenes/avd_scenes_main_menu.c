@@ -321,7 +321,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     float offsetY        = (frameHeight - allCardsHeight) / 2.0f;
 
     AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/RenderUi");
-    
+
     avdUiBegin(
         commandBuffer,
         &appState->ui,

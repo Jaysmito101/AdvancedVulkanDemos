@@ -4,14 +4,13 @@
 #include "pico/picoH264.h"
 #include "pico/picoStream.h"
 
-#include "vulkan/avd_vulkan_base.h"
 #include "core/avd_aligned_buffer.h"
 #include "core/avd_core.h"
+#include "vulkan/avd_vulkan_base.h"
 
 #ifndef AVD_VULKAN_VIDEO_MAX_NAL_TEMP_BUFFER_SIZE
 #define AVD_VULKAN_VIDEO_MAX_NAL_TEMP_BUFFER_SIZE (1024 * 1024 * 16) // 16 MB
 #endif
-
 
 typedef struct {
     AVD_Size offset;
@@ -30,7 +29,7 @@ typedef struct {
 } AVD_H264VideoFrameInfo;
 
 typedef struct {
-    AVD_Size bufferOffset;    // offset to start parsing from
+    AVD_Size bufferOffset;       // offset to start parsing from
     AVD_Size frameDataAlignment; // alignment for frame data allocations
     AVD_Float targetFramerate;
 } AVD_H264VideoLoadParams;
@@ -56,10 +55,10 @@ typedef struct {
     AVD_List frameInfos;
     AVD_List sliceHeaders;
 
-    picoH264PictureParameterSet* ppsArray;
+    picoH264PictureParameterSet *ppsArray;
     AVD_UInt32 ppsHash;
 
-    picoH264SequenceParameterSet* spsArray;
+    picoH264SequenceParameterSet *spsArray;
     AVD_UInt32 spsHash;
 
     AVD_H264VideoPictureOrderCountState pocState;
@@ -87,8 +86,8 @@ typedef struct {
 
     AVD_H264VideoChunk currentChunk;
 
-    uint8_t* nalUnitBuffer;
-    uint8_t* nalUnitPayloadBuffer;
+    uint8_t *nalUnitBuffer;
+    uint8_t *nalUnitPayloadBuffer;
 
     AVD_UInt32 width;
     AVD_UInt32 height;
@@ -106,7 +105,7 @@ typedef struct {
     picoH264Bitstream bitstream;
 } AVD_H264Video;
 
-bool avdH264VideoLoadParamsDefault(AVD_Vulkan* vulkan, AVD_H264VideoLoadParams *outParams);
+bool avdH264VideoLoadParamsDefault(AVD_Vulkan *vulkan, AVD_H264VideoLoadParams *outParams);
 
 bool avdH264VideoLoadFromStream(picoStream stream, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
 bool avdH264VideoLoadFromBuffer(const uint8_t *buffer, size_t bufferSize, bool bufferOwned, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo);
@@ -117,9 +116,8 @@ void avdH264VideoChunkDebugPrint(AVD_H264VideoChunk *chunk, bool logFrameInfos);
 // load next chunk of NAL units, till the next IDR frame or till end of stream
 // it will be loaded into the internal currentChunk member
 // the current chunk is managed by the video object and will be reset on each call
-bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams* chunkLoadParams, AVD_H264VideoChunk **outChunk, bool *eof);
+bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkLoadParams, AVD_H264VideoChunk **outChunk, bool *eof);
 
 AVD_Size avdH264VideoCountFrames(uint8_t *buffer, size_t bufferSize);
-
 
 #endif // AVD_VULKAN_VIDEO_H264_DATA_H

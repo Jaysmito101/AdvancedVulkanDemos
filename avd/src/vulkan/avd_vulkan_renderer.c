@@ -226,7 +226,7 @@ bool avdVulkanRendererBegin(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AV
     }
 
     AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Core/Renderer/Frame");
-    
+
     return true;
 }
 

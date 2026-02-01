@@ -3,7 +3,6 @@
 
 #include "core/avd_core.h"
 
-
 // Define common constants
 #define AVD_PI 3.14159265358979323846f
 #define AVD_E  2.71828182845904523536f

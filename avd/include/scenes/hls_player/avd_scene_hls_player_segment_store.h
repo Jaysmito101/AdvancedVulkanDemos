@@ -7,7 +7,6 @@
 
 #define AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS 8 * 6
 
-
 typedef struct {
     AVD_Size source;
     AVD_Size segmentId;
@@ -33,8 +32,8 @@ bool avdHLSSegmentStoreClear(AVD_HLSSegmentStore *store);
 
 bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size segmentId);
 bool avdHLSSegmentStoreAdd(AVD_HLSSegmentStore *store, AVD_HLSSegmentAVData data);
-bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size segmentId, AVD_HLSSegmentAVData* data);
-bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size currentSegmentId, AVD_Size* outSegmentId);
+bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size segmentId, AVD_HLSSegmentAVData *data);
+bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size currentSegmentId, AVD_Size *outSegmentId);
 
 void avdHLSSegmentAVDataFree(AVD_HLSSegmentAVData *avData);
 

@@ -9,9 +9,9 @@
 #endif
 
 #ifdef AVD_DEBUG
-#ifndef AVD_BLOOM_LABEL_COLOR 
+#ifndef AVD_BLOOM_LABEL_COLOR
 #define AVD_BLOOM_LABEL_COLOR \
-    (float[]){ 1.0f, 0.5f, 0.0f, 1.0f }
+    (float[]){1.0f, 0.5f, 0.0f, 1.0f}
 #endif
 #endif
 

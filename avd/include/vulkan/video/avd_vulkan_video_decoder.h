@@ -7,11 +7,9 @@
 #include "vulkan/video/avd_vulkan_video_core.h"
 #include "vulkan/video/avd_vulkan_video_h264_data.h"
 
-
-#ifndef AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES 
+#ifndef AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES
 #define AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES 8
 #endif
-
 
 typedef struct {
     bool initialized;
@@ -26,7 +24,7 @@ typedef struct {
 
 typedef struct {
     AVD_Bool ready;
-    AVD_H264VideoChunk* videoChunk;
+    AVD_H264VideoChunk *videoChunk;
     AVD_Float timestampSeconds;
     AVD_Size chunkDisplayOrderOffset;
 
@@ -45,7 +43,7 @@ typedef struct {
 
     AVD_VulkanVideoDecodedFrame decodedFrames[AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES];
 
-    AVD_H264Video* h264Video;
+    AVD_H264Video *h264Video;
     AVD_VulkanVideoDecoderChunk currentChunk;
 
     AVD_Size displayOrderOffset;
@@ -60,17 +58,15 @@ bool avdVulkanVideoDecodedFrameCreate(
     AVD_UInt32 width,
     AVD_UInt32 height,
     VkFormat format,
-    const char* label);
+    const char *label);
 void avdVulkanVideoDecodedFrameDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecodedFrame *frame);
 
-bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video, const char* label);
+bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video, const char *label);
 void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video);
 AVD_Size avdVulkanVideoDecoderGetNumDecodedFrames(AVD_VulkanVideoDecoder *video);
 bool avdVulkanVideoDecoderChunkHasFrames(AVD_VulkanVideoDecoder *video);
 bool avdVulkanVideoDecoderIsChunkOutdated(AVD_VulkanVideoDecoder *video, AVD_Float videoTime);
-bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264VideoLoadParams* chunkLoadParams, bool *eof);
+bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264VideoLoadParams *chunkLoadParams, bool *eof);
 bool avdVulkanVideoDecoderDecodeFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, VkSemaphore signalSemaphore, VkFence signalFence);
-
-
 
 #endif // AVD_VULKAN_VIDEO_DECODER_H

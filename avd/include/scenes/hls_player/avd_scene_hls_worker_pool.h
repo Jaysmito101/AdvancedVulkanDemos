@@ -4,8 +4,8 @@
 #include "core/avd_types.h"
 #include "pico/picoThreads.h"
 #include "scenes/hls_player/avd_scene_hls_media_cache.h"
-#include "scenes/hls_player/avd_scene_hls_url_pool.h"
 #include "scenes/hls_player/avd_scene_hls_player_segment_store.h"
+#include "scenes/hls_player/avd_scene_hls_url_pool.h"
 #include <stdint.h>
 
 #define AVD_HLS_WORKER_NUM_SOURCE_WORKERS         4
@@ -14,8 +14,11 @@
 
 #ifdef AVD_HLS_WORKER_POOL_LOG
 #define AVD_HLS_WORKER_POOL_LOG(...) AVD_LOG_DEBUG("[HLS WORKER] " __VA_ARGS__)
-#else 
-#define AVD_HLS_WORKER_POOL_LOG(...) do { (void)0; } while(0)
+#else
+#define AVD_HLS_WORKER_POOL_LOG(...) \
+    do {                             \
+        (void)0;                     \
+    } while (0)
 #endif
 
 struct AVD_SceneHLSPlayer;
@@ -74,6 +77,5 @@ void avdHLSWorkerPoolFlush(AVD_HLSWorkerPool *pool);
 
 bool avdHLSWorkerPoolSendSourceTask(AVD_HLSWorkerPool *pool, AVD_UInt32 sourceIndex, AVD_UInt32 sourcesHash, const char *sourceUrl);
 bool avdHLSWorkerPoolReceiveReadySegment(AVD_HLSWorkerPool *pool, AVD_HLSReadyPayload *outPayload);
-
 
 #endif // AVD_HLS_WORKER_POOL_H
