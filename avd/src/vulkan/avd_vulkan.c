@@ -44,13 +44,18 @@ static const char *__avd_VulkanVideoEncodeExtensions[] = {
     // VK_KHR_VIDEO_ENCODE_H265_EXTENSION_NAME, // we only deal with h264 for now!
 };
 
+static const char *__avd_VulkanYCbCrConversionExtensions[] = {
+    VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,
+};
+
 static AVD_VulkanFeatures *__avdVulkanFeaturesInit(AVD_VulkanFeatures *features)
 {
     AVD_ASSERT(features != NULL);
-    features->rayTracing  = false;
-    features->videoCore   = false;
-    features->videoDecode = false;
-    features->videoEncode = false;
+    features->rayTracing      = false;
+    features->videoCore       = false;
+    features->videoDecode     = false;
+    features->videoEncode     = false;
+    features->ycbcrConversion = false;
     return features;
 }
 
@@ -97,6 +102,9 @@ static const char **__avdGetVulkanDeviceExtensions(AVD_Vulkan *vulkan, uint32_t 
         if (vulkan->supportedFeatures.videoEncode) {
             __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_VulkanVideoEncodeExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoEncodeExtensions));
         }
+    }
+    if (vulkan->supportedFeatures.ycbcrConversion) {
+        __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_VulkanYCbCrConversionExtensions, AVD_ARRAY_COUNT(__avd_VulkanYCbCrConversionExtensions));
     }
 
     *extensionCount = count;
@@ -206,10 +214,11 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AV
         return false;
     }
 
-    outFeatures->rayTracing  = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanRayTraceExtensions, AVD_ARRAY_COUNT(__avd_VulkanRayTraceExtensions));
-    outFeatures->videoCore   = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions));
-    outFeatures->videoDecode = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoDecodeExtensions));
-    outFeatures->videoEncode = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoEncodeExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoEncodeExtensions));
+    outFeatures->rayTracing      = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanRayTraceExtensions, AVD_ARRAY_COUNT(__avd_VulkanRayTraceExtensions));
+    outFeatures->videoCore       = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions));
+    outFeatures->videoDecode     = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoDecodeExtensions));
+    outFeatures->videoEncode     = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoEncodeExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoEncodeExtensions));
+    outFeatures->ycbcrConversion = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanYCbCrConversionExtensions, AVD_ARRAY_COUNT(__avd_VulkanYCbCrConversionExtensions));
 
     return true;
 }
@@ -420,6 +429,7 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
         .sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
         .uniformAndStorageBuffer16BitAccess = VK_TRUE,
         .storageBuffer16BitAccess           = VK_TRUE,
+        .samplerYcbcrConversion             = vulkan->supportedFeatures.ycbcrConversion ? VK_TRUE : VK_FALSE,
         .pNext                              = &deviceVulkan12Features,
     };
 

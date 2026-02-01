@@ -45,6 +45,7 @@ typedef struct AVD_VulkanFeatures {
     bool videoCore;
     bool videoDecode;
     bool videoEncode;
+    bool ycbcrConversion;
 
     VkVideoCapabilitiesKHR videoCapabilitiesDecode;
     VkVideoDecodeCapabilitiesKHR videoDecodeCapabilities;
