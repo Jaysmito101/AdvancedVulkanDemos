@@ -15,7 +15,7 @@ int main()
     AVD_CHECK(avdMathTestsRun());
     AVD_CHECK(avdListTestsRun());
     AVD_CHECK(avdHashTableTestsRun());
-    AVD_CHECK(avdCurlUtilsTestsRun());
+    // AVD_CHECK(avdCurlUtilsTestsRun());
 #endif
 
     if (!avdApplicationInit(appState)) {

@@ -2,6 +2,7 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <shlobj.h>
 #endif
 
 #include "core/avd_utils.h"
@@ -70,6 +71,17 @@ bool avdPathExists(const char *path)
 #else
     struct stat buffer;
     return (stat(path, &buffer) == 0 && S_ISREG(buffer.st_mode));
+#endif
+}
+
+bool avdDirectoryExists(const char *path)
+{
+#if defined(_WIN32) || defined(__CYGWIN__)
+    DWORD attrs = GetFileAttributesA(path);
+    return (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY));
+#else
+    struct stat st;
+    return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
 #endif
 }
 
@@ -149,13 +161,14 @@ bool avdReadBinaryFile(const char *filename, void **data, size_t *size)
     *size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    *data = malloc(*size);
+    *data = malloc(*size + 1);
     if (*data == NULL) {
         fclose(file);
         return false;
     }
-
+    memset(*data, 0, *size + 1);
     fread(*data, 1, *size, file);
+    ((char *)*data)[*size] = '\0';
     fclose(file);
     return true;
 }
@@ -184,6 +197,38 @@ const char *avdDumpToTmpFile(const void *data, size_t size, const char *extensio
     }
 
     return tmpFilePath;
+}
+
+bool avdWriteBinaryFile(const char *filename, const void *data, size_t size)
+{
+    if (filename == NULL || data == NULL || size == 0) {
+        return false;
+    }
+
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        return false;
+    }
+
+    size_t written = fwrite(data, 1, size, file);
+    fclose(file);
+
+    return written == size;
+}
+
+bool avdCreateDirectoryIfNotExists(const char *path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return false;
+    }
+
+    char command[4096];
+#if defined(_WIN32) || defined(__CYGWIN__)
+    snprintf(command, sizeof(command), "mkdir \"%s\" 2>nul", path);
+#else
+    snprintf(command, sizeof(command), "mkdir -p \"%s\"", path);
+#endif
+    return system(command) == 0 || avdDirectoryExists(path);
 }
 
 // NOTE: These implementations are taken from the meshoptimizer library.
@@ -248,4 +293,79 @@ int avdQuantizeSnorm(float v, int N)
     v = (v <= +1) ? v : +1;
 
     return (int)(v * scale + round);
+}
+
+bool avdIsStringAURL(const char *str)
+{
+    if (str == NULL) {
+        return false;
+    }
+
+    const char *schemes[] = {
+        "http://",
+        "https://",
+        "ftp://",
+        "ftps://",
+        "file://",
+        "ws://",
+        "wss://"};
+
+    size_t schemeCount = sizeof(schemes) / sizeof(schemes[0]);
+    for (size_t i = 0; i < schemeCount; i++) {
+        size_t len = strlen(schemes[i]);
+        if (strncmp(str, schemes[i], len) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void avdResolveRelativeURL(char *buffer, size_t bufferSize, const char *baseURL, const char *segmentURI)
+{
+    AVD_ASSERT(buffer != NULL);
+    AVD_ASSERT(baseURL != NULL);
+    AVD_ASSERT(segmentURI != NULL);
+
+    if (avdIsStringAURL(segmentURI)) {
+        strncpy(buffer, segmentURI, bufferSize);
+        buffer[bufferSize - 1] = '\0';
+        return;
+    }
+
+    const char *lastSlash = strrchr(baseURL, '/');
+    if (!lastSlash) {
+        AVD_LOG_WARN("Base URL does not contain '/', cannot resolve relative segment URI: %s", baseURL);
+        strncpy(buffer, segmentURI, bufferSize);
+        buffer[bufferSize - 1] = '\0';
+        return;
+    }
+
+    size_t basePathLen = lastSlash - baseURL + 1;
+    if (basePathLen >= bufferSize) {
+        basePathLen = bufferSize - 1;
+    }
+    strncpy(buffer, baseURL, basePathLen);
+    buffer[basePathLen] = '\0';
+
+    const char *segment = segmentURI;
+    while (strncmp(segment, "../", 3) == 0) {
+        segment += 3;
+        if (basePathLen > 0) {
+            buffer[basePathLen - 1] = '\0';
+            char *prevSlash         = strrchr(buffer, '/');
+            if (prevSlash) {
+                basePathLen         = prevSlash - buffer + 1;
+                buffer[basePathLen] = '\0';
+            } else {
+                basePathLen = 0;
+                buffer[0]   = '\0';
+            }
+        }
+    }
+
+    size_t remainingSpace = bufferSize - basePathLen - 1;
+    if (remainingSpace > 0) {
+        strncat(buffer, segment, remainingSpace);
+    }
 }

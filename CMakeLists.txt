@@ -57,27 +57,11 @@ ENDIF()
 
 find_package(Python COMPONENTS Interpreter REQUIRED)
 
-set(ASSETS_TIMESTAMP_FILE ${CMAKE_SOURCE_DIR}/avd_assets/generated/.asset_timestamp)
-
 file(GLOB_RECURSE ASSET_SOURCE_FILES
     ${CMAKE_SOURCE_DIR}/avd_assets/*.h
     ${CMAKE_SOURCE_DIR}/avd_assets/*.c
     ${CMAKE_SOURCE_DIR}/assets/*
 )
-
-file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/avd_assets/generated)
-
-add_custom_command(
-    OUTPUT ${ASSETS_TIMESTAMP_FILE}
-    COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/tools/assets.py
-    COMMAND ${CMAKE_COMMAND} -E touch ${ASSETS_TIMESTAMP_FILE}
-    COMMAND ${CMAKE_COMMAND} -S ${CMAKE_SOURCE_DIR} -B ${CMAKE_BINARY_DIR} # Regenerate build files
-    DEPENDS ${ASSET_SOURCE_FILES} ${CMAKE_SOURCE_DIR}/tools/assets.py
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    COMMENT "Generating assets and regenerating build files..."
-)
-
-add_custom_target(generate_assets ALL DEPENDS ${ASSETS_TIMESTAMP_FILE})
 
 
 if (WIN32)
@@ -88,8 +72,17 @@ else()
   set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
 endif()
 
+set(PA_BUILD_SHARED_LIBS OFF)
+
+if(CMAKE_C_COMPILER_ID STREQUAL "Clang" AND WIN32)
+  set(PA_USE_WDMKS OFF CACHE BOOL "Disable WDMKS for Clang" FORCE)
+  set(PA_USE_WDMKS_DEVICE_INFO OFF CACHE BOOL "Disable WDMKS device info for Clang" FORCE)
+  set(PA_USE_WASAPI OFF CACHE BOOL "Disable WASAPI for Clang" FORCE)
+endif()
+
 add_subdirectory(dep/glfw)
 add_subdirectory(dep/volk)
+add_subdirectory(dep/portaudio)
 add_subdirectory(avd_assets)
 add_subdirectory(avd)
 

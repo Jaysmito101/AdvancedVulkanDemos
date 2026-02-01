@@ -3,6 +3,7 @@
 #include "stb_image.h"
 #include "vulkan/avd_vulkan_buffer.h"
 #include "vulkan/avd_vulkan_framebuffer.h"
+#include "vulkan/video/avd_vulkan_video_core.h"
 
 static bool __avdVulkanFramebufferCreateSampler(VkDevice device, AVD_VulkanImage *image)
 {
@@ -33,40 +34,52 @@ static bool __avdVulkanFramebufferCreateSampler(VkDevice device, AVD_VulkanImage
     return true;
 }
 
-bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
+AVD_VulkanImageCreateInfo avdVulkanImageGetDefaultCreateInfo(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage)
+{
+    AVD_VulkanImageCreateInfo info = {0};
+    info.width                     = width;
+    info.height                    = height;
+    info.format                    = format;
+    info.usage                     = usage;
+
+    info.flags       = 0;
+    info.depth       = 1;
+    info.arrayLayers = 1;
+    info.mipLevels   = 1;
+
+    return info;
+}
+
+bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_VulkanImageCreateInfo createInfo)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(image != NULL);
 
-    VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_NONE;
-    if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
-        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    } else if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-        if (avdVulkanFormatIsDepth(format)) {
-            aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        }
-        if (avdVulkanFormatIsStencil(format)) {
-            aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-    } else {
-        // fallback to color if no specific usage is set
-        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-
     VkImageCreateInfo imageInfo = {0};
     imageInfo.sType             = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageInfo.imageType         = VK_IMAGE_TYPE_2D;
-    imageInfo.format            = format;
-    imageInfo.extent.width      = width;
-    imageInfo.extent.height     = height;
-    imageInfo.extent.depth      = 1;
-    imageInfo.mipLevels         = 1;
-    imageInfo.arrayLayers       = 1;
+    imageInfo.format            = createInfo.format;
+    imageInfo.extent.width      = createInfo.width;
+    imageInfo.extent.height     = createInfo.height;
+    imageInfo.extent.depth      = createInfo.depth;
+    imageInfo.mipLevels         = createInfo.mipLevels;
+    imageInfo.arrayLayers       = createInfo.arrayLayers;
     imageInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
-    imageInfo.usage             = usage;
+    imageInfo.usage             = createInfo.usage;
     imageInfo.sharingMode       = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.initialLayout     = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.flags             = createInfo.flags;
+
+    bool isVideoDecodeImage = createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR ||
+                              createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
+                              createInfo.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR;
+    bool isVideoEncodeImage = createInfo.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR ||
+                              createInfo.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR ||
+                              createInfo.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
+    if (isVideoDecodeImage || isVideoEncodeImage) {
+        imageInfo.pNext = avdVulkanVideoGetH264ProfileListInfo(isVideoDecodeImage);
+    }
 
     VkResult result = vkCreateImage(vulkan->device, &imageInfo, NULL, &image->image);
     AVD_CHECK_VK_RESULT(result, "Failed to create image\n");
@@ -85,39 +98,39 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkFormat f
     result = vkBindImageMemory(vulkan->device, image->image, image->memory, 0);
     AVD_CHECK_VK_RESULT(result, "Failed to bind image memory\n");
 
-    VkImageViewCreateInfo viewInfo           = {0};
-    viewInfo.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image                           = image->image;
-    viewInfo.viewType                        = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format                          = format;
-    viewInfo.subresourceRange.aspectMask     = avdVulkanFormatIsDepth(image->format) ? VK_IMAGE_ASPECT_DEPTH_BIT : aspectMask;
-    viewInfo.subresourceRange.baseMipLevel   = 0;
-    viewInfo.subresourceRange.levelCount     = 1;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount     = 1;
-    viewInfo.components.r                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.components.g                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.components.b                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    viewInfo.components.a                    = VK_COMPONENT_SWIZZLE_IDENTITY;
-    result                                   = vkCreateImageView(vulkan->device, &viewInfo, NULL, &image->imageView);
-    AVD_CHECK_VK_RESULT(result, "Failed to create image view\n");
+    VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_NONE;
+    if (createInfo.usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    } else if (createInfo.usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+        if (avdVulkanFormatIsDepth(createInfo.format)) {
+            aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        }
+        if (avdVulkanFormatIsStencil(createInfo.format)) {
+            aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+    } else {
+        // fallback to color if no specific usage is set
+        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
 
-    image->format                          = format;
-    image->subresourceRange.aspectMask     = aspectMask;
-    image->subresourceRange.baseArrayLayer = 0;
-    image->subresourceRange.layerCount     = 1;
-    image->subresourceRange.baseMipLevel   = 0;
-    image->subresourceRange.levelCount     = 1;
+    // store dimensions for upload
+    image->info = createInfo;
 
     AVD_CHECK(__avdVulkanFramebufferCreateSampler(vulkan->device, image));
 
-    image->descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    image->descriptorImageInfo.imageView   = image->imageView;
-    image->descriptorImageInfo.sampler     = image->sampler;
-
-    // store dimensions for upload
-    image->width  = width;
-    image->height = height;
+    AVD_CHECK_MSG(
+        avdVulkanImageSubresourceCreate(
+            vulkan,
+            image,
+            (VkImageSubresourceRange){
+                .aspectMask     = aspectMask,
+                .baseMipLevel   = 0,
+                .levelCount     = createInfo.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = createInfo.arrayLayers,
+            },
+            &image->defaultSubresource),
+        "Failed to create default image subresource\n");
 
     return true;
 }
@@ -127,13 +140,62 @@ void avdVulkanImageDestroy(AVD_Vulkan *vulkan, AVD_VulkanImage *image)
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(image != NULL);
 
-    vkDestroyImageView(vulkan->device, image->imageView, NULL);
+    avdVulkanImageSubresourceDestroy(vulkan, &image->defaultSubresource);
     vkDestroyImage(vulkan->device, image->image, NULL);
     vkDestroySampler(vulkan->device, image->sampler, NULL);
     vkFreeMemory(vulkan->device, image->memory, NULL);
+
+    memset(image, 0, sizeof(AVD_VulkanImage));
 }
 
-bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+bool avdVulkanImageSubresourceCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkImageSubresourceRange subresourceRange, AVD_VulkanImageSubresource *outSubresource)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(image != NULL);
+    AVD_ASSERT(outSubresource != NULL);
+
+    VkImageViewCreateInfo viewInfo = {0};
+    viewInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image                 = image->image;
+    viewInfo.viewType              = subresourceRange.layerCount > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format                = image->info.format;
+    viewInfo.subresourceRange      = subresourceRange;
+    viewInfo.components.r          = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.components.g          = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.components.b          = VK_COMPONENT_SWIZZLE_IDENTITY;
+    viewInfo.components.a          = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+    VkImageViewUsageCreateInfo imageViewUsageInfo = {0};
+    imageViewUsageInfo.sType                      = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
+    bool isVideoDecodeImage                       = image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR ||
+                              image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_SRC_BIT_KHR ||
+                              image->info.usage & VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR;
+    bool isVideoEncodeImage = image->info.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR ||
+                              image->info.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR ||
+                              image->info.usage & VK_IMAGE_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
+    if (isVideoDecodeImage || isVideoEncodeImage) {
+        imageViewUsageInfo.usage = image->info.usage;
+        viewInfo.pNext           = &imageViewUsageInfo;
+    }
+
+    VkResult result = vkCreateImageView(vulkan->device, &viewInfo, NULL, &outSubresource->imageView);
+    AVD_CHECK_VK_RESULT(result, "Failed to create image subresource view\n");
+
+    outSubresource->descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    outSubresource->descriptorImageInfo.imageView   = outSubresource->imageView;
+    outSubresource->descriptorImageInfo.sampler     = image->sampler;
+
+    outSubresource->subresourceRange = subresourceRange;
+
+    return true;
+}
+
+void avdVulkanImageSubresourceDestroy(AVD_Vulkan *vulkan, AVD_VulkanImageSubresource *subresource)
+{
+    vkDestroyImageView(vulkan->device, subresource->imageView, NULL);
+}
+
+bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, AVD_VulkanImageSubresource *subresourceRange)
 {
     AVD_ASSERT(image != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
@@ -145,7 +207,7 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
     barrier.srcQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex  = VK_QUEUE_FAMILY_IGNORED;
     barrier.image                = image->image;
-    barrier.subresourceRange     = image->subresourceRange;
+    barrier.subresourceRange     = subresourceRange ? subresourceRange->subresourceRange : image->defaultSubresource.subresourceRange;
 
     // Source layouts (old)
     // Source access mask controls actions that have to be finished on the old layout
@@ -231,7 +293,10 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
             // Image will be read in a shader (sampler, input attachment)
             // Make sure any writes to the image have been finished
             if (barrier.srcAccessMask == 0) {
-                barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+                if (srcStageMask != VK_PIPELINE_STAGE_ALL_COMMANDS_BIT) {
+                    barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
+                }
+                barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             }
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
             break;
@@ -253,7 +318,7 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
     return true;
 }
 
-bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, AVD_VulkanImageSubresource *subresourceRange)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(image != NULL);
@@ -275,7 +340,7 @@ bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_
     VkResult beginResult = vkBeginCommandBuffer(commandBuffer, &beginInfo);
     AVD_CHECK_VK_RESULT(beginResult, "Failed to begin command buffer for image layout transition");
 
-    bool transitionResult = avdVulkanImageTransitionLayout(image, commandBuffer, oldLayout, newLayout, srcStageMask, dstStageMask);
+    bool transitionResult = avdVulkanImageTransitionLayout(image, commandBuffer, oldLayout, newLayout, srcStageMask, dstStageMask, subresourceRange);
 
     VkResult endResult = vkEndCommandBuffer(commandBuffer);
     AVD_CHECK_VK_RESULT(endResult, "Failed to end command buffer for image layout transition");
@@ -297,13 +362,13 @@ bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_
 }
 
 // simple 2D image upload via staging buffer
-bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, const void *srcData)
+bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, const void *srcData, AVD_VulkanImageSubresource *subresourceRange)
 {
     AVD_ASSERT(vulkan && image && srcData);
 
     // infer bytes per pixel from format
     uint32_t bpp;
-    switch (image->format) {
+    switch (image->info.format) {
         case VK_FORMAT_R8G8B8A8_UNORM:
         case VK_FORMAT_B8G8R8A8_UNORM:
         case VK_FORMAT_R8G8B8A8_SRGB:
@@ -319,16 +384,16 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
             bpp = 3;
             break;
         default:
-            AVD_LOG_ERROR("Unsupported image format for upload: %d", image->format);
+            AVD_LOG_ERROR("Unsupported image format for upload: %d", image->info.format);
             return false;
     }
-    VkDeviceSize imageSize = (VkDeviceSize)image->width * image->height * bpp;
+    VkDeviceSize imageSize = (VkDeviceSize)image->info.width * image->info.height * bpp;
 
     // create and fill staging buffer
     AVD_VulkanBuffer staging = {0};
     if (!avdVulkanBufferCreate(vulkan, &staging, imageSize,
                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) {
+                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Core/Image/UploadImage/Staging")) {
         return false;
     }
     void *mapped = NULL;
@@ -358,22 +423,25 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
                                              VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                             VK_PIPELINE_STAGE_TRANSFER_BIT));
+                                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                             subresourceRange));
+
+    VkImageSubresourceRange subresource = subresourceRange ? subresourceRange->subresourceRange : image->defaultSubresource.subresourceRange;
 
     // copy buffer to image
     VkBufferImageCopy region               = {0};
     region.bufferOffset                    = 0;
     region.bufferRowLength                 = 0;
     region.bufferImageHeight               = 0;
-    region.imageSubresource.aspectMask     = image->subresourceRange.aspectMask;
-    region.imageSubresource.mipLevel       = 0;
-    region.imageSubresource.baseArrayLayer = 0;
-    region.imageSubresource.layerCount     = 1;
-    region.imageExtent.width               = image->width;
-    region.imageExtent.height              = image->height;
-    region.imageExtent.depth               = 1;
+    region.imageSubresource.aspectMask     = subresource.aspectMask;
+    region.imageSubresource.mipLevel       = subresource.baseMipLevel;
+    region.imageSubresource.baseArrayLayer = subresource.baseArrayLayer;
+    region.imageSubresource.layerCount     = subresource.layerCount;
+    region.imageExtent.width               = image->info.width;
+    region.imageExtent.height              = image->info.height;
+    region.imageExtent.depth               = image->info.depth;
     region.imageOffset                     = (VkOffset3D){0, 0, 0};
-    region.imageExtent                     = (VkExtent3D){image->width, image->height, 1};
+    region.imageExtent                     = (VkExtent3D){image->info.width, image->info.height, image->info.depth};
     vkCmdCopyBufferToImage(cmd, staging.buffer, image->image,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
@@ -382,7 +450,8 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                                              VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT));
+                                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                             NULL));
 
     vkEndCommandBuffer(cmd);
 
@@ -431,12 +500,14 @@ bool avdVulkanImageLoadFromFile(AVD_Vulkan *vulkan, const char *filename, AVD_Vu
 
     // create Vulkan image
     AVD_CHECK(avdVulkanImageCreate(
-        vulkan, image, format,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        (uint32_t)width, (uint32_t)height));
+        vulkan, image,
+        avdVulkanImageGetDefaultCreateInfo(
+            (uint32_t)width, (uint32_t)height,
+            format,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)));
 
     // upload pixel data
-    AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels));
+    AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels, NULL));
 
     stbi_image_free(pixels);
     return true;
@@ -467,12 +538,14 @@ bool avdVulkanImageLoadFromMemory(AVD_Vulkan *vulkan, const void *data, size_t d
 
     // create Vulkan image
     AVD_CHECK(avdVulkanImageCreate(
-        vulkan, image, format,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        (uint32_t)width, (uint32_t)height));
+        vulkan, image,
+        avdVulkanImageGetDefaultCreateInfo(
+            (uint32_t)width, (uint32_t)height,
+            format,
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT)));
 
     // upload pixel data
-    AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels));
+    AVD_CHECK(avdVulkanImageUploadSimple(vulkan, image, pixels, NULL));
 
     stbi_image_free(pixels);
     return true;

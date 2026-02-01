@@ -45,7 +45,7 @@ static bool __avdCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout desc
 
     // --- Update Descriptor Set ---
     VkWriteDescriptorSet descriptorWrite = {0};
-    AVD_CHECK(avdWriteImageDescriptorSet(&descriptorWrite, *descriptorSet, 0, &fontImage->descriptorImageInfo));
+    AVD_CHECK(avdWriteImageDescriptorSet(&descriptorWrite, *descriptorSet, 0, &fontImage->defaultSubresource.descriptorImageInfo));
     vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, NULL);
 
     return true;
@@ -283,8 +283,8 @@ bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRendere
         &renderableText->vertexBuffer,
         currentSize,
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT // so that we can map it anc easy ly update it
-        ));
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // so that we can map it anc easy ly update it
+        "Font/RenderableText/VertexBuffer"));
 
     // create the vertex buffer data
     renderableText->vertexBufferData = (AVD_FontRendererVertex *)malloc(currentSize);
@@ -319,8 +319,8 @@ bool avdRenderableTextUpdate(AVD_RenderableText *renderableText, AVD_FontRendere
             &renderableText->vertexBuffer,
             newSize,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT // so that we can map it and easily update it
-            ));
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // so that we can map it and easily update it
+            "Font/RenderableText/VertexBuffer"));
 
         free(renderableText->vertexBufferData);
         renderableText->vertexBufferData = (AVD_FontRendererVertex *)malloc(newSize);

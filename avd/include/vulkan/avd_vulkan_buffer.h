@@ -7,12 +7,18 @@ typedef struct AVD_VulkanBuffer {
     VkBuffer buffer;
     VkDeviceMemory memory;
     VkDescriptorBufferInfo descriptorBufferInfo;
+    VkBufferUsageFlags usage;
+    VkDeviceSize size;
+    AVD_Bool hostVisible;
+    AVD_Bool hostCoherent;
+    char label[64];
 } AVD_VulkanBuffer;
 
-bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const char *label);
 void avdVulkanBufferDestroy(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer);
 bool avdVulkanBufferMap(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, void **data);
 void avdVulkanBufferUnmap(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer);
 bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const void *srcData, VkDeviceSize size);
+bool avdVulkanBufferFlush(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkDeviceSize offset);
 
 #endif // AVD_VULKAN_BUFFER_H

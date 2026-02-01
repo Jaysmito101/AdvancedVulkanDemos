@@ -25,6 +25,8 @@
 #include <windows.h>
 #endif
 
+#include "core/avd_types.h"
+
 #include "pico/picoLog.h"
 
 // common macros
@@ -39,15 +41,38 @@
         b              = temp; \
     }
 #define AVD_OFFSET_OF(type, member) ((size_t)&(((type *)0)->member))
-#define AVD_ASSERT(condition)       assert(condition)
+#define AVD_ALIGN(value, alignment) ((((value) + ((alignment) - 1)) / (alignment)) * (alignment))
+#define AVD_ASSERT(condition)                                                                        \
+    {                                                                                                \
+        if (!(condition)) {                                                                          \
+            AVD_LOG_ERROR("Assertion failed: %s, file %s, line %d", #condition, __FILE__, __LINE__); \
+            assert(condition);                                                                       \
+        }                                                                                            \
+    }
 
-#define AVD_LOG_INIT()              PICO_LOG_INIT()
-#define AVD_LOG_SHUTDOWN()          PICO_LOG_SHUTDOWN()
-#define AVD_LOG_DEBUG(msg, ...)     PICO_DEBUG(msg, ##__VA_ARGS__)
-#define AVD_LOG_VERBOSE(msg, ...)   PICO_VERBOSE(msg, ##__VA_ARGS__)
-#define AVD_LOG_INFO(msg, ...)      PICO_INFO(msg, ##__VA_ARGS__)
-#define AVD_LOG_WARN(msg, ...)      PICO_WARN(msg, ##__VA_ARGS__)
-#define AVD_LOG_ERROR(msg, ...)     PICO_ERROR(msg, ##__VA_ARGS__)
+#if defined(_WIN32) || defined(_WIN64)
+#include <malloc.h>
+#define AVD_ALIGNED_ALLOC(alignment, size) _aligned_malloc(size, alignment)
+#define AVD_ALIGNED_FREE(ptr)              _aligned_free(ptr)
+#else
+#define AVD_ALIGNED_ALLOC(alignment, size) aligned_alloc(alignment, size)
+#define AVD_ALIGNED_FREE(ptr)              free(ptr)
+#endif
+
+#define AVD_MALLOC(size) malloc(size)
+#define AVD_FREE(ptr) \
+    {                 \
+        free(ptr);    \
+        ptr = NULL;   \
+    }
+
+#define AVD_LOG_INIT()            PICO_LOG_INIT()
+#define AVD_LOG_SHUTDOWN()        PICO_LOG_SHUTDOWN()
+#define AVD_LOG_DEBUG(msg, ...)   PICO_DEBUG(msg, ##__VA_ARGS__)
+#define AVD_LOG_VERBOSE(msg, ...) PICO_VERBOSE(msg, ##__VA_ARGS__)
+#define AVD_LOG_INFO(msg, ...)    PICO_INFO(msg, ##__VA_ARGS__)
+#define AVD_LOG_WARN(msg, ...)    PICO_WARN(msg, ##__VA_ARGS__)
+#define AVD_LOG_ERROR(msg, ...)   PICO_ERROR(msg, ##__VA_ARGS__)
 
 #define AVD_CHECK_VK_HANDLE(result, log, ...) \
     if (result == VK_NULL_HANDLE) {           \

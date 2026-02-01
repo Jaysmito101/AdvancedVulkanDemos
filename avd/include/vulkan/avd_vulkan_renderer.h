@@ -4,6 +4,7 @@
 #include "vulkan/avd_vulkan_base.h"
 #include "vulkan/avd_vulkan_framebuffer.h"
 #include "vulkan/avd_vulkan_swapchain.h"
+#include "vulkan/vulkan_core.h"
 
 #ifndef AVD_MAX_IN_FLIGHT_FRAMES
 #define AVD_MAX_IN_FLIGHT_FRAMES 16
@@ -36,5 +37,6 @@ bool avdVulkanRendererRecreateResources(AVD_VulkanRenderer *renderer, AVD_Vulkan
 bool avdVulkanRendererBegin(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain);
 bool avdVulkanRendererEnd(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan, AVD_VulkanSwapchain *swapchain);
 bool avdVulkanRendererCancelFrame(AVD_VulkanRenderer *renderer, AVD_Vulkan *vulkan);
+VkCommandBuffer avdVulkanRendererGetCurrentCmdBuffer(AVD_VulkanRenderer *renderer);
 
 #endif // AVD_VULKAN_RENDERER_H

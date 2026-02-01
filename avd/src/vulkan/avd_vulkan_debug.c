@@ -105,18 +105,32 @@ void avdVulkanDebuggerDestroy(AVD_Vulkan *vulkan)
     }
 }
 
-bool avdVulkanDebuggerCmdBeginLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, const char *labelName, float *colorIn)
+
+// bool avdVulkanDebuggerCmdBeginLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, float* color, const char *labelName, ...);
+// bool avdVulkanDebuggerCmdInsertLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, float* color, const char *labelName, ...);
+// bool avdVulkanDebuggerCmdEndLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer);
+
+// bool avdVulkanDebuggerQueueBeginLabel(AVD_Vulkan *vulkan, VkQueue queue, float* color, const char *labelName, ...);
+// bool avdVulkanDebuggerQueueInsertLabel(AVD_Vulkan *vulkan, VkQueue queue, float* color, const char *labelName, ...);
+
+bool avdVulkanDebuggerCmdBeginLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, float* colorIn, const char *labelName, ...)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
     AVD_ASSERT(labelName != NULL);
     AVD_ASSERT(vulkan->debugger.layersEnabled);
 
+    char labelNameBuffer[256];
+    va_list args;
+    va_start(args, labelName);
+    vsnprintf(labelNameBuffer, sizeof(labelNameBuffer), labelName, args);
+    va_end(args);
+
     float *color = colorIn != NULL ? colorIn : AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR;
 
     VkDebugUtilsLabelEXT labelInfo = {
         .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-        .pLabelName = labelName,
+        .pLabelName = labelNameBuffer,
         .color      = {color[0], color[1], color[2], color[3]},
     };
 
@@ -124,18 +138,24 @@ bool avdVulkanDebuggerCmdBeginLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandB
     return true;
 }
 
-bool avdVulkanDebuggerCmdInsertLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, const char *labelName, float *colorIn)
+bool avdVulkanDebuggerCmdInsertLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuffer, float* colorIn, const char *labelName, ...)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
     AVD_ASSERT(labelName != NULL);
     AVD_ASSERT(vulkan->debugger.layersEnabled);
 
+    char labelNameBuffer[256];
+    va_list args;
+    va_start(args, labelName);
+    vsnprintf(labelNameBuffer, sizeof(labelNameBuffer), labelName, args);
+    va_end(args);
+
     float *color = colorIn != NULL ? colorIn : AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR;
 
     VkDebugUtilsLabelEXT labelInfo = {
         .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-        .pLabelName = labelName,
+        .pLabelName = labelNameBuffer,
         .color      = {color[0], color[1], color[2], color[3]},
     };
 
@@ -153,18 +173,24 @@ bool avdVulkanDebuggerCmdEndLabel(AVD_Vulkan *vulkan, VkCommandBuffer commandBuf
     return true;
 }
 
-bool avdVulkanDebuggerQueueBeginLabel(AVD_Vulkan *vulkan, VkQueue queue, const char *labelName, float *colorIn)
+bool avdVulkanDebuggerQueueBeginLabel(AVD_Vulkan *vulkan, VkQueue queue, float *colorIn, const char *labelName, ...)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(queue != VK_NULL_HANDLE);
     AVD_ASSERT(labelName != NULL);
     AVD_ASSERT(vulkan->debugger.layersEnabled);
 
+    char labelNameBuffer[256];
+    va_list args;
+    va_start(args, labelName);
+    vsnprintf(labelNameBuffer, sizeof(labelNameBuffer), labelName, args);
+    va_end(args);
+
     float *color = colorIn != NULL ? colorIn : AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR;
 
     VkDebugUtilsLabelEXT labelInfo = {
         .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-        .pLabelName = labelName,
+        .pLabelName = labelNameBuffer,
         .color      = {color[0], color[1], color[2], color[3]},
     };
 
@@ -172,18 +198,24 @@ bool avdVulkanDebuggerQueueBeginLabel(AVD_Vulkan *vulkan, VkQueue queue, const c
     return true;
 }
 
-bool avdVulkanDebuggerQueueInsertLabel(AVD_Vulkan *vulkan, VkQueue queue, const char *labelName, float *colorIn)
+bool avdVulkanDebuggerQueueInsertLabel(AVD_Vulkan *vulkan, VkQueue queue, float *colorIn, const char *labelName, ...)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(queue != VK_NULL_HANDLE);
     AVD_ASSERT(labelName != NULL);
     AVD_ASSERT(vulkan->debugger.layersEnabled);
 
+    char labelNameBuffer[256];
+    va_list args;
+    va_start(args, labelName);
+    vsnprintf(labelNameBuffer, sizeof(labelNameBuffer), labelName, args);
+    va_end(args);
+
     float *color = colorIn != NULL ? colorIn : AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR;
 
     VkDebugUtilsLabelEXT labelInfo = {
         .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-        .pLabelName = labelName,
+        .pLabelName = labelNameBuffer,
         .color      = {color[0], color[1], color[2], color[3]},
     };
 
@@ -201,17 +233,24 @@ bool avdVulkanDebuggerQueueEndLabel(AVD_Vulkan *vulkan, VkQueue queue)
     return true;
 }
 
-bool avdVulkanDebuggerSetObjectName(AVD_Vulkan *vulkan, VkObjectType objectType, uint64_t objectHandle, const char *name)
+bool avdVulkanDebuggerSetObjectName(AVD_Vulkan *vulkan, VkObjectType objectType, uint64_t objectHandle, const char *name, ...)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(name != NULL);
     AVD_ASSERT(vulkan->debugger.layersEnabled);
 
+    char nameBuffer[256];
+    va_list args;
+    va_start(args, name);
+    vsnprintf(nameBuffer, sizeof(nameBuffer), name, args);
+    va_end(args);
+    
+
     VkDebugUtilsObjectNameInfoEXT nameInfo = {
         .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
         .objectType   = objectType,
         .objectHandle = objectHandle,
-        .pObjectName  = name,
+        .pObjectName  = nameBuffer,
     };
 
     vkSetDebugUtilsObjectNameEXT(vulkan->device, &nameInfo);

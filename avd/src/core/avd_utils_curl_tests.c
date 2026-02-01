@@ -16,33 +16,29 @@ static bool __avdTestCurlDownloadToFile()
 {
     AVD_LOG_INFO("  Testing curl download to file...");
 
-    if (!avdCurlIsSupported())
-    {
+    if (!avdCurlIsSupported()) {
         AVD_LOG_INFO("    Curl not available, skipping download tests");
         return true;
     }
 
-    const char *testUrl = "https://raw.githubusercontent.com/Jaysmito101/AdvancedVulkanDemos/main/avd/src/core/avd_utils_curl_tests.c";
+    const char *testUrl    = "https://raw.githubusercontent.com/Jaysmito101/AdvancedVulkanDemos/main/avd/src/core/avd_utils_curl_tests.c";
     const char *outputFile = "test_download.tmp";
 
     bool result = avdCurlDownloadToFile(testUrl, outputFile);
-    if (!result)
-    {
+    if (!result) {
         AVD_LOG_ERROR("    Failed to download file from URL");
         return false;
     }
 
-    if (!avdPathExists(outputFile))
-    {
+    if (!avdPathExists(outputFile)) {
         AVD_LOG_ERROR("    Downloaded file does not exist");
         return false;
     }
 
-    void *data = NULL;
+    void *data  = NULL;
     size_t size = 0;
-    result = avdReadBinaryFile(outputFile, &data, &size);
-    if (!result || size == 0)
-    {
+    result      = avdReadBinaryFile(outputFile, &data, &size);
+    if (!result || size == 0) {
         AVD_LOG_ERROR("    Downloaded file is empty or could not be read");
         remove(outputFile);
         return false;
@@ -59,26 +55,23 @@ static bool __avdTestCurlDownloadToMemory()
 {
     AVD_LOG_INFO("  Testing curl download to memory...");
 
-    if (!avdCurlIsSupported())
-    {
+    if (!avdCurlIsSupported()) {
         AVD_LOG_INFO("    Curl not available, skipping download tests");
         return true;
     }
 
     const char *testUrl = "https://raw.githubusercontent.com/Jaysmito101/AdvancedVulkanDemos/main/avd/src/core/avd_utils_curl_tests.c";
 
-    void *data = NULL;
+    void *data  = NULL;
     size_t size = 0;
 
     bool result = avdCurlDownloadToMemory(testUrl, &data, &size);
-    if (!result)
-    {
+    if (!result) {
         AVD_LOG_ERROR("    Failed to download to memory");
         return false;
     }
 
-    if (data == NULL || size == 0)
-    {
+    if (data == NULL || size == 0) {
         AVD_LOG_ERROR("    Downloaded data is NULL or empty");
         if (data)
             free(data);
@@ -95,33 +88,29 @@ static bool __avdTestCurlFetchStringContent()
 {
     AVD_LOG_INFO("  Testing curl fetch string content...");
 
-    if (!avdCurlIsSupported())
-    {
+    if (!avdCurlIsSupported()) {
         AVD_LOG_INFO("    Curl not available, skipping download tests");
         return true;
     }
 
     const char *testUrl = "https://raw.githubusercontent.com/Jaysmito101/AdvancedVulkanDemos/main/avd/src/core/avd_utils_curl_tests.c";
 
-    char *content = NULL;
+    char *content  = NULL;
     int returnCode = 0;
-    bool result = avdCurlFetchStringContent(testUrl, &content, &returnCode);
-    if (!result)
-    {
+    bool result    = avdCurlFetchStringContent(testUrl, &content, &returnCode);
+    if (!result) {
         AVD_LOG_ERROR("    Failed to fetch string content");
         return false;
     }
 
-    if (content == NULL || strlen(content) == 0)
-    {
+    if (content == NULL || strlen(content) == 0) {
         AVD_LOG_ERROR("    Fetched content is NULL or empty");
         if (content)
             free(content);
         return false;
     }
 
-    if (returnCode != 200)
-    {
+    if (returnCode != 200) {
         AVD_LOG_ERROR("    Expected HTTP 200, got %d", returnCode);
         free(content);
         return false;
@@ -138,20 +127,18 @@ static bool __avdTestCurlInvalidUrl()
 {
     AVD_LOG_INFO("  Testing curl with invalid URL...");
 
-    if (!avdCurlIsSupported())
-    {
+    if (!avdCurlIsSupported()) {
         AVD_LOG_INFO("    Curl not available, skipping invalid URL tests");
         return true;
     }
 
     const char *invalidUrl = "https://invalid.example.invalid/nonexistent.file";
 
-    void *data = NULL;
+    void *data  = NULL;
     size_t size = 0;
 
     bool result = avdCurlDownloadToMemory(invalidUrl, &data, &size);
-    if (result)
-    {
+    if (result) {
         AVD_LOG_ERROR("    Expected download to fail for invalid URL");
         if (data)
             free(data);
@@ -174,12 +161,9 @@ bool avdCurlUtilsTestsRun(void)
     allPassed &= __avdTestCurlFetchStringContent();
     allPassed &= __avdTestCurlInvalidUrl();
 
-    if (allPassed)
-    {
+    if (allPassed) {
         AVD_LOG_INFO("All Curl Utils Tests PASSED!");
-    }
-    else
-    {
+    } else {
         AVD_LOG_ERROR("Some Curl Utils Tests FAILED!");
     }
 
