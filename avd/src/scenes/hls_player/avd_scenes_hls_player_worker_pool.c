@@ -5,6 +5,7 @@
 #include "core/avd_utils.h"
 #include "pico/picoM3U8.h"
 #include "pico/picoMpegTS.h"
+#include "scenes/hls_player/avd_scenes_hls_player.h"
 #include "vulkan/avd_vulkan_video.h"
 
 #include <stdlib.h>
@@ -92,6 +93,12 @@ static void __avdHLSSourceDownloadWorker(void *arg)
 
             mediaPayload.segmentId = i + playlist->media.mediaSequence;
             mediaPayload.duration  = segment->duration;
+
+            // an optimization where we avoid downloading segments that are already played
+            if (pool->parentScene->sources[mediaPayload.sourceIndex].lastPushedSegment >= mediaPayload.segmentId) {
+                continue;
+            }
+
             if (!avdHLSURLPoolInsert(pool->urlPool, resolvedUrl, &mediaPayload.urlHash)) {
                 AVD_LOG_ERROR("Failed to intern URL into pool: %s", resolvedUrl);
                 continue;
@@ -288,7 +295,7 @@ static void __avdHLSMediaDemuxWorker(void *arg)
     AVD_LOG_INFO("HLS Media Demux Worker stopping with thread ID: %llu.", picoThreadGetCurrentId());
 }
 
-bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache)
+bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache, AVD_SceneHLSPlayer *parentScene)
 {
     AVD_ASSERT(pool != NULL);
     AVD_ASSERT(urlPool != NULL);
@@ -296,8 +303,9 @@ bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_
 
     memset(pool, 0, sizeof(AVD_HLSWorkerPool));
 
-    pool->urlPool    = urlPool;
-    pool->mediaCache = mediaCache;
+    pool->urlPool     = urlPool;
+    pool->mediaCache  = mediaCache;
+    pool->parentScene = parentScene;
 
     pool->sourceDownloadChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_HLSSourceTaskPayload));
     AVD_CHECK_MSG(pool->sourceDownloadChannel != NULL, "Failed to create source download channel");

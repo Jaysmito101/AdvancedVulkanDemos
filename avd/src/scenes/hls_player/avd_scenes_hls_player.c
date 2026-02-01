@@ -360,7 +360,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
     AVD_CHECK(avdHLSSegmentStoreInit(&hlsPlayer->segmentStore));
     AVD_CHECK(avdHLSURLPoolInit(&hlsPlayer->urlPool));
     AVD_CHECK(avdHLSMediaCacheInit(&hlsPlayer->mediaCache));
-    AVD_CHECK(avdHLSWorkerPoolInit(&hlsPlayer->workerPool, &hlsPlayer->urlPool, &hlsPlayer->mediaCache));
+    AVD_CHECK(avdHLSWorkerPoolInit(&hlsPlayer->workerPool, &hlsPlayer->urlPool, &hlsPlayer->mediaCache, hlsPlayer));
 
     return true;
 }

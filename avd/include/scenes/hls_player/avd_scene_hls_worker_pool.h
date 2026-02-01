@@ -18,6 +18,7 @@
 #define AVD_HLS_WORKER_POOL_LOG(...) do { (void)0; } while(0)
 #endif
 
+struct AVD_SceneHLSPlayer;
 
 typedef struct {
     AVD_UInt32 sourceIndex;
@@ -62,11 +63,12 @@ typedef struct {
     picoThreadChannel mediaDemuxChannel;
     picoThreadChannel mediaReadyChannel;
 
+    struct AVD_SceneHLSPlayer *parentScene;
     AVD_HLSURLPool *urlPool;
     AVD_HLSMediaCache *mediaCache;
 } AVD_HLSWorkerPool;
 
-bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache);
+bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache, struct AVD_SceneHLSPlayer *parentScene);
 void avdHLSWorkerPoolDestroy(AVD_HLSWorkerPool *pool);
 void avdHLSWorkerPoolFlush(AVD_HLSWorkerPool *pool);
 
