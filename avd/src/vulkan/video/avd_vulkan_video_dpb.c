@@ -65,15 +65,6 @@ static bool __avdVulkanVideoDPBCreateImages(AVD_Vulkan *vulkan, AVD_VulkanVideoD
         }
     }
 
-    VkPhysicalDeviceVideoFormatInfoKHR videoFormatInfo = {0};
-    videoFormatInfo.sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR;
-    videoFormatInfo.imageUsage                         = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
-    VkVideoProfileListInfoKHR videoProfileListInfo     = {0};
-    videoProfileListInfo.sType                         = VK_STRUCTURE_TYPE_VIDEO_PROFILE_LIST_INFO_KHR;
-    videoProfileListInfo.pProfiles                     = avdVulkanVideoGetH264DecodeProfileInfo(NULL);
-    videoProfileListInfo.profileCount                  = 1;
-    videoFormatInfo.pNext                              = &videoProfileListInfo;
-
     if (!dpb->decodeOutputCoincideSupported) {
         AVD_VulkanImageCreateInfo decodedOutputImageInfo = (AVD_VulkanImageCreateInfo){
             .width       = width,
@@ -114,6 +105,7 @@ bool avdVulkanVideoDecodeDPBCreate(
 
     dpb->width  = width;
     dpb->height = height;
+    dpb->format = __AVD_VULKAN_VIDEO_DPB_FORMAT;
 
     AVD_CHECK_MSG(
         __avdVulkanVideoDPBLoadSystemFlags(vulkan, dpb),

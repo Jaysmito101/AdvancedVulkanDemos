@@ -11,6 +11,7 @@ typedef struct {
 
     AVD_UInt32 width;
     AVD_UInt32 height;
+    VkFormat format;
 
     AVD_VulkanImage dpb;
     AVD_VulkanImage decodedOutputImage;
