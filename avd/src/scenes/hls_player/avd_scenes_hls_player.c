@@ -224,7 +224,7 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
         AVD_LOG_INFO("received ready segment %u uration: %.3f at %.3f", payload.avData.segmentId, payload.avData.duration, (AVD_Float)appState->framerate.currentTime);
         AVD_CHECK(avdHLSSegmentStoreAdd(&scene->segmentStore, payload.avData));
 
-        if (source->lastPushedSegment == 0 || avdHLSSegmentStoreHasSegment(&scene->segmentStore, payload.avData.source, source->lastPushedSegment + 1)) {
+        if (source->lastPushedSegment == 0 || avdHLSSegmentStoreHasSegment(&scene->segmentStore, payload.avData.source, source->lastPushedSegment + 1) || !avdSceneHLSPlayerContextIsFed(&source->player)) {
             AVD_CHECK(__avdSceneHLSPlayerPushNextSegment(appState, scene, payload.avData.source));
         }
     }
