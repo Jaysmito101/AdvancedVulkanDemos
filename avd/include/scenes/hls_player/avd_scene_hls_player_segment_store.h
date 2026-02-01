@@ -5,7 +5,7 @@
 #include "core/avd_core.h"
 #include "core/avd_types.h"
 
-#define AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS 128
+#define AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS 8 * 6
 
 
 typedef struct {
