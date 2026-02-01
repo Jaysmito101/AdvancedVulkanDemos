@@ -14,8 +14,11 @@
 
 
 typedef struct {
+    bool initialized;
     bool inUse;
     AVD_VulkanImage image;
+    AVD_VulkanImageYCbCrSubresource ycbcrSubresource;
+
     AVD_Float timestampSeconds;
     AVD_Size chunkDisplayOrder;
     AVD_Size absoluteDisplayOrder;
@@ -51,7 +54,14 @@ typedef struct {
     char label[64];
 } AVD_VulkanVideoDecoder;
 
-
+bool avdVulkanVideoDecodedFrameCreate(
+    AVD_Vulkan *vulkan,
+    AVD_VulkanVideoDecodedFrame *frame,
+    AVD_UInt32 width,
+    AVD_UInt32 height,
+    VkFormat format,
+    const char* label);
+void avdVulkanVideoDecodedFrameDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecodedFrame *frame);
 
 bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video, const char* label);
 void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video);

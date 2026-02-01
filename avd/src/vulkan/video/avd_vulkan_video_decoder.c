@@ -3,6 +3,7 @@
 #include "math/avd_math_base.h"
 #include "pico/picoPerf.h"
 #include "vulkan/avd_vulkan_buffer.h"
+#include "vulkan/avd_vulkan_image.h"
 #include "vulkan/video/avd_vulkan_video_dpb.h"
 #include <stdbool.h>
 
@@ -147,20 +148,126 @@ static bool __avdVulkanVideoDecoderUpdateDPB(AVD_Vulkan *vulkan, AVD_VulkanVideo
     return true;
 }
 
+static bool __avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(chunk != NULL);
+
+    AVD_Size numFramesRecreated = 0;
+    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
+        AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
+        if (!frame->initialized || frame->image.info.width != video->h264Video->width || frame->image.info.height != video->h264Video->height) {
+            if (frame->initialized) {
+                avdVulkanVideoDecodedFrameDestroy(vulkan, frame);
+            }
+
+            char frameLabel[64];
+            snprintf(frameLabel, sizeof(frameLabel), "%s/DecodedFrame_%zu", video->label, i);
+
+            AVD_CHECK(
+                avdVulkanVideoDecodedFrameCreate(
+                    vulkan,
+                    frame,
+                    video->h264Video->width,
+                    video->h264Video->height,
+                    video->dpb.format,
+                    frameLabel));
+
+            numFramesRecreated++;
+        }
+    }
+
+    if (numFramesRecreated > 0) {
+        AVD_LOG_VERBOSE("Recreated %zu decoded frames for video decoder", numFramesRecreated);
+    }
+
+    return true;
+}
+
 static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
 {
     AVD_ASSERT(video != NULL);
+    AVD_ASSERT(chunk != NULL);
     AVD_ASSERT(vulkan != NULL);
 
     // reset current slice index
     video->currentChunk.currentSliceIndex = 0;
 
-    // push the data
     AVD_CHECK(__avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(vulkan, video, chunk));
     AVD_CHECK(__avdVulkanVideoDecoderUpdateDPB(vulkan, video, chunk));
+    AVD_CHECK(__avdVulkanVideoDecoderUpdateDecodedFrames(vulkan, video, chunk));
 
     chunk->ready = true;
     return true;
+}
+
+bool avdVulkanVideoDecodedFrameCreate(
+    AVD_Vulkan *vulkan,
+    AVD_VulkanVideoDecodedFrame *frame,
+    AVD_UInt32 width,
+    AVD_UInt32 height,
+    VkFormat format,
+    const char *label)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(frame != NULL);
+    AVD_ASSERT(!frame->initialized);
+
+    memset(frame, 0, sizeof(AVD_VulkanVideoDecodedFrame));
+
+    AVD_VulkanImageCreateInfo createInfo = {
+        .width                          = width,
+        .height                         = height,
+        .format                         = format,
+        .usage                          = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        .flags                          = VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT,
+        .depth                          = 1,
+        .arrayLayers                    = 1,
+        .mipLevels                      = 1,
+        .samplerFilter                  = VK_FILTER_LINEAR,
+        .samplerAddressMode             = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        .skipDefaultSubresourceCreation = true,
+    };
+
+    AVD_CHECK(
+        avdVulkanImageCreate(
+            vulkan,
+            &frame->image,
+            createInfo));
+
+    AVD_CHECK(
+        avdVulkanImageYCbCrSubresourceCreate(
+            vulkan,
+            &frame->image,
+            (VkImageSubresourceRange){
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1,
+            },
+            true,
+            &frame->ycbcrSubresource));
+
+    frame->initialized = true;
+
+    return true;
+}
+
+void avdVulkanVideoDecodedFrameDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecodedFrame *frame)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(frame != NULL);
+
+    if (!frame->initialized) {
+        return;
+    }
+
+    avdVulkanImageYCbCrSubresourceDestroy(vulkan, &frame->ycbcrSubresource);
+    avdVulkanImageDestroy(vulkan, &frame->image);
+
+    memset(frame, 0, sizeof(AVD_VulkanVideoDecodedFrame));
 }
 
 bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264Video *h264Video, const char *label)
@@ -193,6 +300,9 @@ void avdVulkanVideoDecoderDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vi
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
 
+    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
+        avdVulkanVideoDecodedFrameDestroy(vulkan, &video->decodedFrames[i]);
+    }
     avdVulkanBufferDestroy(vulkan, &video->bitstreamBuffer);
     avdVulkanVideoDPBDestroy(vulkan, &video->dpb);
     vkDestroyVideoSessionKHR(vulkan->device, video->session, NULL);
