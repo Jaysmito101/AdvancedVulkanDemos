@@ -179,6 +179,9 @@ static bool __avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_V
 
             numFramesRecreated++;
         }
+
+        frame->inUse      = false;
+        frame->isAcquired = false;
     }
 
     if (numFramesRecreated > 0) {
