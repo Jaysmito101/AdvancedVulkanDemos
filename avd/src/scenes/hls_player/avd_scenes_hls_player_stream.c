@@ -128,6 +128,11 @@ bool avdHLSStreamAppendData(picoStream stream, const AVD_UInt8 *data, AVD_Size d
     AVD_Int64 startOffset  = AVD_MAX(0, (AVD_Int64)hlsStream->readHead - AVD_HLS_STREAM_SEEK_BUFFER_SIZE);
     AVD_Size moveSize      = hlsStream->writeHead - (AVD_Size)startOffset;
 
+    if (dataSize + currentSize > AVD_HLS_STREAM_MAX_CAPACITY) {
+        AVD_LOG_ERROR("Data size %zu exceeds maximum HLS stream capacity %zu", dataSize, (AVD_Size)AVD_HLS_STREAM_MAX_CAPACITY);
+        return false;
+    }
+
     if (dataSize > availableSize) {
         // need to grow the buffer
         AVD_Size newCapacity = hlsStream->capacity;
