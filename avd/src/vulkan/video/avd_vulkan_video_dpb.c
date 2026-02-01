@@ -1,5 +1,6 @@
 #include "vulkan/video/avd_vulkan_video_dpb.h"
 #include "core/avd_base.h"
+#include "core/avd_types.h"
 #include <string.h>
 
 // NOTE: Ideally we should call vkGetPhysicalDeviceVideoFormatPropertiesKHR witht he profile and image usage info
@@ -51,7 +52,7 @@ static bool __avdVulkanVideoDPBCreateImages(AVD_Vulkan *vulkan, AVD_VulkanVideoD
         .format      = __AVD_VULKAN_VIDEO_DPB_FORMAT,
         .usage       = forDecode ? VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR : VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,
         .depth       = 1,
-        .arrayLayers = dpb->numDPBSlots,
+        .arrayLayers = (AVD_UInt32)dpb->numDPBSlots,
         .mipLevels   = 1,
         .flags       = 0,
     };

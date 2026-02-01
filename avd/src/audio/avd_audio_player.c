@@ -1,6 +1,7 @@
 #include "audio/avd_audio_player.h"
 #include "audio/avd_audio_clip.h"
 #include "audio/avd_audio_core.h"
+#include "core/avd_types.h"
 #include "core/avd_utils.h"
 
 static bool __avdAudioPlayerCallback(
@@ -125,7 +126,7 @@ bool avdAudioPlayerPlaySync(AVD_AudioPlayer *player, AVD_AudioClip *clip, AVD_Au
     AVD_CHECK(avdAudioPlayerPlayAsync(player, clip, false, config));
 
     // Wait until the clip has finished playing
-    avdSleep(avdAudioClipDurationMs(clip) + 100);
+    avdSleep((AVD_UInt32)avdAudioClipDurationMs(clip) + 100);
 
     // update player to clean up finished clips
     avdAudioPlayerUpdate(player);
