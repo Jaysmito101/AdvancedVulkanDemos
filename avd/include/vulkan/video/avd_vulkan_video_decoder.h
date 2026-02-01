@@ -3,6 +3,7 @@
 
 #include "avd_vulkan_video_dpb.h"
 #include "vulkan/avd_vulkan_buffer.h"
+#include "vulkan/avd_vulkan_image.h"
 #include "vulkan/video/avd_vulkan_video_core.h"
 #include "vulkan/video/avd_vulkan_video_h264_data.h"
 
@@ -12,6 +13,13 @@
 #endif
 
 
+typedef struct {
+    bool inUse;
+    AVD_VulkanImage image;
+    AVD_Float timestampSeconds;
+    AVD_Size chunkDisplayOrder;
+    AVD_Size absoluteDisplayOrder;
+} AVD_VulkanVideoDecodedFrame;
 
 typedef struct {
     AVD_Bool ready;
@@ -23,14 +31,6 @@ typedef struct {
 } AVD_VulkanVideoDecoderChunk;
 
 typedef struct {
-    bool inUse;
-    AVD_Float timestampSeconds;
-
-    AVD_Size chunkDisplayOrder;
-    AVD_Size absoluteDisplayOrder;
-} AVD_VulkanVideoDecoderFrame;
-
-typedef struct {
     bool initialized;
     VkVideoSessionKHR session;
     VkVideoSessionParametersKHR sessionParameters;
@@ -40,7 +40,7 @@ typedef struct {
     AVD_VulkanBuffer bitstreamBuffer;
     AVD_VulkanVideoDPB dpb;
 
-    AVD_VulkanVideoDecoderFrame decodedFrames[AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES];
+    AVD_VulkanVideoDecodedFrame decodedFrames[AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES];
 
     AVD_H264Video* h264Video;
     AVD_VulkanVideoDecoderChunk currentChunk;
