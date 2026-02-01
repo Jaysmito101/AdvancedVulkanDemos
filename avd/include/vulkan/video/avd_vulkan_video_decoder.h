@@ -32,9 +32,22 @@ typedef struct {
 } AVD_VulkanVideoDecoderChunk;
 
 typedef struct {
+    StdVideoH264PictureParameterSet* ppsArray;
+    StdVideoH264ScalingLists* scalingListsArray;
+    AVD_Size ppsCapacity;
+
+    StdVideoH264SequenceParameterSet* spsArray;
+    StdVideoH264SequenceParameterSetVui* vuiArray;
+    StdVideoH264HrdParameters* hrdArray;
+    AVD_Size spsCapacity;
+} AVD_VulkanVideoDecoderVideoSessionData;
+
+typedef struct {
     bool initialized;
     VkVideoSessionKHR session;
     VkVideoSessionParametersKHR sessionParameters;
+    AVD_VulkanVideoDecoderVideoSessionData sessionData;
+
     VkDeviceMemory memory[128];
     AVD_UInt32 memoryAllocationCount;
 
@@ -51,6 +64,13 @@ typedef struct {
 
     char label[64];
 } AVD_VulkanVideoDecoder;
+
+bool avdVulkanVideoDecoderSessionDataEnsureSize(
+    AVD_VulkanVideoDecoderVideoSessionData *sessionData,
+    AVD_Size ppsCount,
+    AVD_Size spsCount
+);
+void avdVulkanVideoDecoderSessionDataDestroy(AVD_VulkanVideoDecoderVideoSessionData *sessionData);
 
 bool avdVulkanVideoDecodedFrameCreate(
     AVD_Vulkan *vulkan,
