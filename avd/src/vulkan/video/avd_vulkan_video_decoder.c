@@ -131,7 +131,7 @@ static bool __avdVulkanVideoDecoderUpdateDPB(AVD_Vulkan *vulkan, AVD_VulkanVideo
     AVD_ASSERT(chunk != NULL);
     AVD_ASSERT(chunk->videoChunk != NULL);
 
-    if (!video->dpb.initialized || video->dpb.numDPBSlots < video->h264Video->numDPBSlots || video->dpb.numDPBSlots < video->h264Video->numDPBSlots || video->dpb.width != video->h264Video->width || video->dpb.height != video->h264Video->height) {
+    if (!video->dpb.initialized || video->dpb.numDPBSlots < video->h264Video->numDPBSlots || video->dpb.width != video->h264Video->paddedWidth || video->dpb.height != video->h264Video->paddedHeight) {
         if (video->dpb.initialized) {
             avdVulkanVideoDPBDestroy(vulkan, &video->dpb);
         }
@@ -160,7 +160,7 @@ static bool __avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_V
     AVD_Size numFramesRecreated = 0;
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
         AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
-        if (!frame->initialized || frame->image.info.width != video->h264Video->width || frame->image.info.height != video->h264Video->height) {
+        if (!frame->initialized || frame->image.info.width != video->h264Video->paddedWidth || frame->image.info.height != video->h264Video->paddedHeight) {
             if (frame->initialized) {
                 avdVulkanVideoDecodedFrameDestroy(vulkan, frame);
             }
