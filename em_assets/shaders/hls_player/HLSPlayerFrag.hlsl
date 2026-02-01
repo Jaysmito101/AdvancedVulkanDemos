@@ -5,7 +5,7 @@ cbuffer PushConstants {
     UberPushConstantData data;
 };
  
-[[vk::binding(1, 1)]]
+[[vk::binding(1, 0)]]
 SAMPLER2D_TAB(textures, 1);
 
 float sdRoundedBox(float2 p, float2 b, float r) {
@@ -70,5 +70,6 @@ float4 main(VertexShaderOutput input) : SV_Target {
     if (dist > 0.0) return float4(0.0, 0.0, 0.0, 1.0);
 
     float2 quadUV = quadLocalPos / quadSize;
-    return float4(float3(quadUV, 0.5) * fadeFactor, 1.0);
+    float4 texColor = SAMPLE_TEXTURE_TAB(textures, quadUV, quadIndex);
+    return float4(texColor.rgb * fadeFactor, 1.0);
 }
