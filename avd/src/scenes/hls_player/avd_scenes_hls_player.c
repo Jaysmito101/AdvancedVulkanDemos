@@ -11,6 +11,7 @@
 #include "scenes/hls_player/avd_scene_hls_player_context.h"
 #include "scenes/hls_player/avd_scene_hls_player_segment_store.h"
 #include "scenes/hls_player/avd_scene_hls_stream.h"
+#include "vulkan/avd_vulkan_image.h"
 #include "vulkan/avd_vulkan_video.h"
 
 #include <stdbool.h>
@@ -30,6 +31,61 @@ static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_HLS_PLAYER);
     return &scene->hlsPlayer;
+}
+
+static bool __avdSceneHLSPlayerSetupSourceTextures(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+{
+    AVD_ASSERT(scene != NULL);
+
+    VkWriteDescriptorSet descriptorSetWrites[AVD_SCENE_HLS_PLAYER_MAX_SOURCES * 2] = {0};
+    VkDescriptorImageInfo storageImageInfos[AVD_SCENE_HLS_PLAYER_MAX_SOURCES]      = {0};
+
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_SOURCES; i++) {
+        AVD_CHECK(avdVulkanImageCreate(
+            &appState->vulkan,
+            &scene->soruceTexture[i],
+            avdVulkanImageGetDefaultCreateInfo(
+                1920,
+                1080,
+                VK_FORMAT_R8G8B8A8_UNORM,
+                VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT)));
+
+        descriptorSetWrites[i * 2 + 0] = (VkWriteDescriptorSet){
+            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext           = NULL,
+            .dstSet          = appState->vulkan.bindlessDescriptorSet,
+            .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .dstArrayElement = (AVD_UInt32)(i),
+            .descriptorCount = 1,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo      = &scene->soruceTexture[i].defaultSubresource.descriptorImageInfo,
+        };
+
+        storageImageInfos[i] = (VkDescriptorImageInfo){
+            .imageView   = scene->soruceTexture[i].defaultSubresource.descriptorImageInfo.imageView,
+            .imageLayout = VK_IMAGE_LAYOUT_GENERAL,
+        };
+
+        descriptorSetWrites[i * 2 + 1] = (VkWriteDescriptorSet){
+            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext           = NULL,
+            .dstSet          = appState->vulkan.bindlessDescriptorSet,
+            .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .dstArrayElement = (AVD_UInt32)(i),
+            .descriptorCount = 1,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+            .pImageInfo      = &storageImageInfos[i],
+        };
+    }
+
+    vkUpdateDescriptorSets(
+        appState->vulkan.device,
+        (AVD_UInt32)(scene->sourceCount * 2),
+        descriptorSetWrites,
+        0,
+        NULL);
+
+    return true;
 }
 
 static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
@@ -362,6 +418,9 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
     AVD_CHECK(avdHLSMediaCacheInit(&hlsPlayer->mediaCache));
     AVD_CHECK(avdHLSWorkerPoolInit(&hlsPlayer->workerPool, &hlsPlayer->urlPool, &hlsPlayer->mediaCache, hlsPlayer));
 
+    // prepare the textures
+    AVD_CHECK(__avdSceneHLSPlayerSetupSourceTextures(appState, hlsPlayer));
+
     return true;
 }
 
@@ -371,6 +430,10 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
     AVD_ASSERT(scene != NULL);
 
     AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
+
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_SOURCES; i++) {
+        avdVulkanImageDestroy(&appState->vulkan, &hlsPlayer->soruceTexture[i]);
+    }
 
     avdHLSWorkerPoolDestroy(&hlsPlayer->workerPool);
     avdHLSMediaCacheDestroy(&hlsPlayer->mediaCache);

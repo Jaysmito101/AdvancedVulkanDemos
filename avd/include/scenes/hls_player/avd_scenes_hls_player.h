@@ -12,6 +12,7 @@
 
 #include "scenes/hls_player/avd_scene_hls_player_context.h"
 
+#include "vulkan/avd_vulkan_image.h"
 #include "vulkan/avd_vulkan_video.h"
 
 #define AVD_SCENE_HLS_PLAYER_MAX_SOURCES 4
@@ -42,6 +43,7 @@ typedef struct AVD_SceneHLSPlayer {
     VkPipelineLayout pipelineLayout;
     VkPipeline pipeline;
 
+    AVD_VulkanImage soruceTexture[AVD_SCENE_HLS_PLAYER_MAX_SOURCES];
     AVD_SceneHLSPlayerSource sources[AVD_SCENE_HLS_PLAYER_MAX_SOURCES];
     AVD_UInt32 sourceCount;
     AVD_UInt32 sourcesHash;
