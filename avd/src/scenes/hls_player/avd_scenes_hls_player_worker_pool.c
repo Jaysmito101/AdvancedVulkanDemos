@@ -292,7 +292,7 @@ static void __avdHLSMediaDemuxWorker(void *arg)
         }
     }
 
-    AVD_LOG_INFO("HLS Media Demux Worker stopping with thread ID: %llu.", picoThreadGetCurrentId());
+    AVD_HLS_WORKER_POOL_LOG("HLS Media Demux Worker stopping with thread ID: %llu.", picoThreadGetCurrentId());
 }
 
 bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_HLSMediaCache *mediaCache, AVD_SceneHLSPlayer *parentScene)
