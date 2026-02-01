@@ -210,7 +210,7 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
 
         source->refreshIntervalMs = AVD_MIN(source->refreshIntervalMs, payload.avData.duration);
 
-        bool isSegmentOld         = source->lastPushedSegment > payload.avData.segmentId;
+        bool isSegmentOld         = source->lastPushedSegment >= payload.avData.segmentId;
         bool segmentAlreadyLoaded = avdHLSSegmentStoreHasSegment(
             &scene->segmentStore,
             payload.avData.source,
