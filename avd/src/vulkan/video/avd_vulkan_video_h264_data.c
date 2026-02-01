@@ -796,7 +796,7 @@ bool avdH264VideoLoadParamsDefault(AVD_Vulkan *vulkan, AVD_H264VideoLoadParams *
     return true;
 }
 
-bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkLoadParams, AVD_H264VideoChunk **outChunk, bool *eof)
+bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkLoadParams, AVD_H264VideoChunk **outChunk, bool *outSpsDirty, bool *outPpsDirty, bool *eof)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(outChunk != NULL);
@@ -869,6 +869,14 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkL
         video->currentChunk.timestampSeconds   = firstFrameInfo->timestampSeconds;
     }
     video->currentChunk.durationSeconds = video->frameDurationSeconds * (AVD_Float)video->currentChunk.frameInfos.count;
+
+    if (outSpsDirty) {
+        *outSpsDirty = spsDirty;
+    }
+
+    if (outPpsDirty) {
+        *outPpsDirty = ppsDirty;
+    }
 
     *outChunk = &video->currentChunk;
 

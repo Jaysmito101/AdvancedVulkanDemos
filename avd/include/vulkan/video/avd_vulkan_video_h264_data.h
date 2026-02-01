@@ -116,7 +116,7 @@ void avdH264VideoChunkDebugPrint(AVD_H264VideoChunk *chunk, bool logFrameInfos);
 // load next chunk of NAL units, till the next IDR frame or till end of stream
 // it will be loaded into the internal currentChunk member
 // the current chunk is managed by the video object and will be reset on each call
-bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkLoadParams, AVD_H264VideoChunk **outChunk, bool *eof);
+bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkLoadParams, AVD_H264VideoChunk **outChunk, bool *outSpsDirty, bool *outPpsDirty, bool *eof);
 
 AVD_Size avdH264VideoCountFrames(uint8_t *buffer, size_t bufferSize);
 
