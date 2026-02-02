@@ -24,7 +24,7 @@
 typedef struct {
     uint32_t activeSources;
     int32_t indexCount;
-    int32_t pad0;
+    int32_t textureIndices;
     int32_t pad1;
 } AVD_HLSPlayerPushConstants;
 
@@ -458,8 +458,18 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
     avdRenderableTextGetSize(&hlsPlayer->info, &infoWidth, &infoHeight);
 
     if (hlsPlayer->isSupported) {
+        int32_t textureIndices = 0;
+        for (AVD_Size i = 0; i < 4; i++) {
+            int32_t texIdx = 5;
+            if (i < hlsPlayer->sourceCount && hlsPlayer->sources[i].currentFrame != NULL) {
+                texIdx = (int32_t)i;
+            }
+            textureIndices |= (texIdx & 0xFF) << (i * 8);
+        }
+
         AVD_HLSPlayerPushConstants pushConstants = {
             .activeSources = 0,
+            .textureIndices = textureIndices,
         };
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipeline);
         vkCmdPushConstants(commandBuffer, hlsPlayer->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);

@@ -72,9 +72,13 @@ float4 main(VertexShaderOutput input) : SV_Target {
 
     float2 quadUV = quadLocalPos / quadSize;
 
-    float y = SAMPLE_TEXTURE_TAB(textures, quadUV, quadIndex * 2 + 0).r;
-    float2 cbcr = SAMPLE_TEXTURE_TAB(textures, quadUV, quadIndex * 2 + 1).rg;
-    float3 yuv = float3(y, cbcr);
-    float4 texColor = SAMPLE_TEXTURE_TAB(textures, quadUV, quadIndex);
-    return float4(yCbCrToRgbBt601(yuv) * fadeFactor, 1.0);
+    int texIndex = (data.textureIndices >> (quadIndex * 8)) & 0xFF;
+    
+    float4 texColor = float4(1.0, 0.0, 1.0, 1.0);
+    if (texIndex < 5) {
+        float y = SAMPLE_TEXTURE_TAB(textures, quadUV, texIndex * 2 + 0).r;
+        float2 cbcr = SAMPLE_TEXTURE_TAB(textures, quadUV, texIndex * 2 + 1).rg;
+        texColor = float4(yCbCrToRgbBt601(float3(y, cbcr)), 1.0);
+    }
+    return float4(texColor.rgb * fadeFactor, 1.0);
 }

@@ -3,7 +3,7 @@
 struct UberPushConstantData {
     uint activeSources;
     uint vertexCount;
-    uint textureIndex;
+    int textureIndices;
     uint pad1;
 };
 
