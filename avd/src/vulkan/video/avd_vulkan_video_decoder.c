@@ -842,8 +842,6 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     };
     AVD_VK_CALL(vkQueueSubmit(vulkan->videoDecodeQueue, 1, &submitInfo, video->decodeFence));
 
-    AVD_VK_CALL(vkQueueWaitIdle(vulkan->videoDecodeQueue)); // NOTE: This is bad :)
-
     AVD_VK_CALL(vkWaitForFences(vulkan->device, 1, &video->decodeFence, VK_TRUE, UINT64_MAX));
     AVD_VK_CALL(vkResetFences(vulkan->device, 1, &video->decodeFence));
 
@@ -861,10 +859,6 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     decodedFrame->timestampSeconds     = video->currentChunk.timestampSeconds + frame->chunkDisplayOrder * video->h264Video->frameDurationSeconds;
     decodedFrame->status               = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY;
     video->currentChunk.currentSliceIndex++;
-    // AVD_LOG_VERBOSE("Decoded frame with display order %f %f %zu %zu %zu", decodedFrame->timestampSeconds, video->currentChunk.timestampSeconds,
-    //                 decodedFrame->chunkDisplayOrder,
-    //                 decodedFrame->absoluteDisplayOrder,
-    //                 video->currentChunk.currentSliceIndex);
 
     return true;
 }
