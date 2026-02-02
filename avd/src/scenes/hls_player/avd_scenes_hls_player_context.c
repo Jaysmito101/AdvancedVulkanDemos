@@ -128,7 +128,7 @@ static bool __avdSceneHLSPlayerContextSwitchToNextSegment(
         return true;
     }
 
-    AVD_LOG_INFO("HLS Player context switching to next segment %u at time %.3f", nextSegmentId, time);
+    AVD_LOG_INFO("HLS Player context switching to next segment %u at time %.3f", nextSegmentId, context->currentSegmentStartTime + context->currentSegmentPlayTime);
 
     avdHLSSegmentAVDataFree(&context->currentSegment);
 
