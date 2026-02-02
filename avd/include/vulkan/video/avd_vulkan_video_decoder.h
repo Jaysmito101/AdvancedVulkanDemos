@@ -12,12 +12,17 @@
 #define AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES 8
 #endif
 
+typedef enum {
+    AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_FREE = 0,
+    AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_PROCESSING,
+    AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY,
+    AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_ACQUIRED
+} AVD_VulkanVideoDecodedFrameStatus;
+
 typedef struct {
     AVD_Bool initialized;
+    AVD_VulkanVideoDecodedFrameStatus status;
 
-    
-    AVD_Bool isAcquired;
-    AVD_Bool inUse;
     AVD_VulkanImage image;
     AVD_VulkanImageYCbCrSubresource ycbcrSubresource;
 

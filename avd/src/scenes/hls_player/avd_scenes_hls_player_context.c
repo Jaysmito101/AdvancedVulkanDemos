@@ -160,6 +160,9 @@ static bool __avdVulkanVideoDecoderUpdate(
             AVD_CHECK(avdH264VideoLoadParamsDefault(vulkan, &loadParams));
             loadParams.targetFramerate = context->videoFramerate;
             bool eof                   = false;
+
+            decoder->timestampSecondsOffset = audioTimeMs / 1000.0f;
+
             AVD_CHECK(avdVulkanVideoDecoderNextChunk(vulkan, decoder, &loadParams, &eof));
             if (decoder->h264Video->currentChunk.numNalUnitsParsed == 0 && eof) {
                 // no more data to decode
@@ -168,8 +171,7 @@ static bool __avdVulkanVideoDecoderUpdate(
 
             if (decoder->h264Video->currentChunk.numNalUnitsParsed > 0) {
                 // forcefully sync the video to audio
-                decoder->h264Video->currentChunk.timestampSeconds = audioTimeMs / 1000.0f;
-                context->videoHungry                              = false;
+                context->videoHungry = false;
 
                 AVD_LOG_WARN(
                     "Video Time: %.3f/(%.3f) - Audio Time: %.3f",
@@ -184,11 +186,12 @@ static bool __avdVulkanVideoDecoderUpdate(
                     vulkan,
                     decoder));
         }
-    } else if (avdVulkanVideoDecoderIsChunkOutdated(decoder, audioTimeMs / 1000.0f)) {
-        AVD_CHECK(
-            avdVulkanVideoDecoderReleaseAllDecodedFrames(
-                decoder));
     }
+    //  else if (avdVulkanVideoDecoderIsChunkOutdated(decoder, audioTimeMs / 1000.0f)) {
+    //     AVD_CHECK(
+    //         avdVulkanVideoDecoderReleaseAllDecodedFrames(
+    //             decoder));
+    // }
 
     return true;
 }

@@ -181,9 +181,8 @@ static bool __avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_V
             numFramesRecreated++;
         }
 
-        frame->index      = i;
-        frame->inUse      = false;
-        frame->isAcquired = false;
+        frame->index  = i;
+        frame->status = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_FREE;
     }
 
     if (numFramesRecreated > 0) {
@@ -566,13 +565,8 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
         .dpbSlotIndex               = chunk->currentDPBSlotIndex,
     };
 
-    // for now its just sync....
-    static bool firstCall = true;
-    if (firstCall) {
-        firstCall = false;
-        AVD_VK_CALL(vkWaitForFences(vulkan->device, 1, &video->decodeFence, VK_TRUE, UINT64_MAX));
-        AVD_VK_CALL(vkResetFences(vulkan->device, 1, &video->decodeFence));
-    }
+    AVD_VK_CALL(vkWaitForFences(vulkan->device, 1, &video->decodeFence, VK_TRUE, UINT64_MAX));
+    AVD_VK_CALL(vkResetFences(vulkan->device, 1, &video->decodeFence));
 
     AVD_VK_CALL(vkResetCommandPool(vulkan->device, vulkan->videoDecodeCommandPool, 0));
     VkCommandBufferBeginInfo beginInfo = {
@@ -798,7 +792,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     VkImage srcImage = VK_NULL_HANDLE;
     if (video->dpb.decodeOutputCoincideSupported) {
         srcImage                                 = video->dpb.dpb.image;
-        copyRegion.srcSubresource.baseArrayLayer = chunk->currentDPBSlotIndex;
+        copyRegion.srcSubresource.baseArrayLayer = (AVD_UInt32)chunk->currentDPBSlotIndex;
     } else {
         srcImage                                 = video->dpb.decodedOutputImage.image;
         copyRegion.srcSubresource.baseArrayLayer = 0;
@@ -850,9 +844,6 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     };
     AVD_VK_CALL(vkQueueSubmit(vulkan->videoDecodeQueue, 1, &submitInfo, video->decodeFence));
 
-    AVD_VK_CALL(vkWaitForFences(vulkan->device, 1, &video->decodeFence, VK_TRUE, UINT64_MAX));
-    AVD_VK_CALL(vkResetFences(vulkan->device, 1, &video->decodeFence));
-
     // if this is a reference frame, we need to store it in the reference slots
     if (frame->nalRefIdc > 0) {
         // none of these should really happen though....
@@ -861,15 +852,23 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
         chunk->referenceSlotIndex                    = (chunk->referenceSlotIndex + 1) % video->h264Video->numDPBSlots;
     }
 
+    // mark all frames from previous frame as ready
+    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; ++i) {
+        AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
+        if (frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_PROCESSING) {
+            frame->status = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY;
+        }
+    }
+
     decodedFrame->chunkDisplayOrder    = frame->chunkDisplayOrder;
     decodedFrame->absoluteDisplayOrder = video->currentChunk.chunkDisplayOrderOffset + frame->chunkDisplayOrder;
     decodedFrame->timestampSeconds     = video->currentChunk.timestampSeconds + frame->chunkDisplayOrder * video->h264Video->frameDurationSeconds;
-    decodedFrame->inUse                = true;
+    decodedFrame->status               = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_PROCESSING;
     video->currentChunk.currentSliceIndex++;
-    AVD_LOG_VERBOSE("Decoded frame with display order %f %f %zu %zu %zu", decodedFrame->timestampSeconds, video->currentChunk.timestampSeconds,
-                    decodedFrame->chunkDisplayOrder,
-                    decodedFrame->absoluteDisplayOrder,
-                    video->currentChunk.currentSliceIndex);
+    // AVD_LOG_VERBOSE("Decoded frame with display order %f %f %zu %zu %zu", decodedFrame->timestampSeconds, video->currentChunk.timestampSeconds,
+    //                 decodedFrame->chunkDisplayOrder,
+    //                 decodedFrame->absoluteDisplayOrder,
+    //                 video->currentChunk.currentSliceIndex);
 
     return true;
 }
@@ -1091,7 +1090,7 @@ AVD_Size avdVulkanVideoDecoderGetNumDecodedFrames(AVD_VulkanVideoDecoder *video)
 
     AVD_Size count = 0;
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
-        if (video->decodedFrames[i].inUse) {
+        if (video->decodedFrames[i].status != AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_FREE) {
             count++;
         }
     }
@@ -1172,12 +1171,12 @@ bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
 
     // find a free decoded frame
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
-        if (!video->decodedFrames[i].inUse) {
+        if (video->decodedFrames[i].status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_FREE) {
             decodedFrame = &video->decodedFrames[i];
             break;
         }
 
-        if (!video->decodedFrames[i].isAcquired && video->decodedFrames[i].chunkDisplayOrder < oldestFrameOrder) {
+        if (video->decodedFrames[i].status != AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_ACQUIRED && video->decodedFrames[i].chunkDisplayOrder < oldestFrameOrder) {
             oldestFrame      = &video->decodedFrames[i];
             oldestFrameOrder = video->decodedFrames[i].chunkDisplayOrder;
         }
@@ -1207,12 +1206,12 @@ bool avdVulkanVideoDecoderAcquireDecodedFrame(
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
         AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
 
-        if (frame->inUse && !frame->isAcquired) {
+        if (frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY) {
             AVD_Float frameStartTime = frame->timestampSeconds;
             AVD_Float frameEndTime   = frame->timestampSeconds + video->h264Video->frameDurationSeconds;
             if (currentTime >= frameStartTime && currentTime < frameEndTime) {
-                frame->isAcquired = true;
-                *outFrame         = frame;
+                frame->status = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_ACQUIRED;
+                *outFrame     = frame;
                 return true;
             }
         }
@@ -1228,8 +1227,7 @@ bool avdVulkanVideoDecoderReleaseDecodedFrame(AVD_VulkanVideoDecoder *video, AVD
 
     // NOTE: Some addition book-keeping might be needed here in the future
     // thus this oneliner function exists for now... :)
-    frame->isAcquired = false;
-    frame->inUse      = false;
+    frame->status = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_FREE;
 
     return true;
 }
