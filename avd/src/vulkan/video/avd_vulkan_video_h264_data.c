@@ -11,6 +11,11 @@
 #include "pico/picoStream.h"
 #include <stdint.h>
 
+typedef struct {
+    AVD_UInt32 poc;
+    AVD_Size index;
+} __AVD_POCIndexPair;
+
 static size_t __avdH264BitstreamReadCallback(void *userData, uint8_t *buffer, size_t size)
 {
     picoStream stream = (picoStream)userData;
@@ -622,6 +627,50 @@ static bool __avdH264VideoResetChunk(AVD_H264Video *video)
     return true;
 }
 
+static int __avdH264VideoPOCIndexPairCompare(const void *a, const void *b)
+{
+    const __AVD_POCIndexPair *pairA = (const __AVD_POCIndexPair *)a;
+    const __AVD_POCIndexPair *pairB = (const __AVD_POCIndexPair *)b;
+
+    if (pairA->poc < pairB->poc) {
+        return -1;
+    } else if (pairA->poc > pairB->poc) {
+        return 1;
+    }
+    return 0;
+}
+
+static bool __avdH264VideoChunkCalculateDisplayOrder(AVD_H264VideoChunk *chunk)
+{
+    AVD_ASSERT(chunk != NULL);
+
+    AVD_Size frameCount = chunk->frameInfos.count;
+    if (frameCount == 0) {
+        return true;
+    }
+
+    __AVD_POCIndexPair *pairs = (__AVD_POCIndexPair *)AVD_MALLOC(sizeof(__AVD_POCIndexPair) * frameCount);
+    AVD_CHECK_MSG(pairs != NULL, "Failed to allocate memory for POC index pairs");
+
+    for (AVD_Size i = 0; i < frameCount; ++i) {
+        AVD_H264VideoFrameInfo *frameInfo = (AVD_H264VideoFrameInfo *)avdListGet(&chunk->frameInfos, i);
+        pairs[i].poc                      = frameInfo->pictureOrderCount;
+        pairs[i].index                    = i;
+    }
+
+    qsort(pairs, frameCount, sizeof(__AVD_POCIndexPair), __avdH264VideoPOCIndexPairCompare);
+
+    for (AVD_Size displayOrder = 0; displayOrder < frameCount; ++displayOrder) {
+        AVD_Size originalIndex            = pairs[displayOrder].index;
+        AVD_H264VideoFrameInfo *frameInfo = (AVD_H264VideoFrameInfo *)avdListGet(&chunk->frameInfos, originalIndex);
+        frameInfo->chunkDisplayOrder      = (AVD_UInt32)displayOrder;
+    }
+
+    AVD_FREE(pairs);
+
+    return true;
+}
+
 bool avdH264VideoLoadFromStream(picoStream stream, AVD_H264VideoLoadParams *params, AVD_H264Video **outVideo)
 {
     AVD_ASSERT(stream != NULL);
@@ -868,6 +917,8 @@ bool avdH264VideoLoadChunk(AVD_H264Video *video, AVD_H264VideoLoadParams *chunkL
         video->currentChunk.timestampSeconds   = firstFrameInfo->timestampSeconds;
     }
     video->currentChunk.durationSeconds = video->frameDurationSeconds * (AVD_Float)video->currentChunk.frameInfos.count;
+
+    AVD_CHECK(__avdH264VideoChunkCalculateDisplayOrder(&video->currentChunk));
 
     if (outSpsDirty) {
         *outSpsDirty = spsDirty;
