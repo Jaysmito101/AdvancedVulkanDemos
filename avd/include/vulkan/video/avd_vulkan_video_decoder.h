@@ -21,6 +21,8 @@ typedef enum {
 
 typedef struct {
     AVD_Bool initialized;
+
+    AVD_Bool isIdrFrame;
     AVD_VulkanVideoDecodedFrameStatus status;
 
     AVD_VulkanImage image;
@@ -28,6 +30,7 @@ typedef struct {
 
     AVD_Size index;
     AVD_Size sliceIndex;
+
     AVD_Float timestampSeconds;
     AVD_Size chunkDisplayOrder;
     AVD_Size absoluteDisplayOrder;

@@ -857,6 +857,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     decodedFrame->chunkDisplayOrder    = frame->chunkDisplayOrder;
     decodedFrame->absoluteDisplayOrder = video->currentChunk.chunkDisplayOrderOffset + frame->chunkDisplayOrder;
     decodedFrame->timestampSeconds     = video->currentChunk.timestampSeconds + frame->chunkDisplayOrder * video->h264Video->frameDurationSeconds;
+    decodedFrame->isIdrFrame           = frame->isIdrFrame;
     decodedFrame->status               = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY;
     video->currentChunk.currentSliceIndex++;
 
