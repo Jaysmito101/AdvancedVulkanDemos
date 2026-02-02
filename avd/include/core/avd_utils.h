@@ -32,4 +32,8 @@ bool avdCurlPostRequest(const char *url, const char *postData, char **outRespons
 
 bool avdCurlUtilsTestsRun(void);
 
+#ifdef AVD_DEBUG
+void avdPrintBacktrace(void);
+#endif // AVD_DEBUG
+
 #endif // AVD_UTILS_H

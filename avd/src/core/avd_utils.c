@@ -1,8 +1,15 @@
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(_WIN64)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <dbghelp.h>
 #include <shlobj.h>
+#ifdef AVD_DEBUG
+#pragma comment(lib, "dbghelp.lib")
+#endif
+#else
+#include <execinfo.h>
+#include <unistd.h>
 #endif
 
 #include "core/avd_utils.h"
@@ -369,3 +376,103 @@ void avdResolveRelativeURL(char *buffer, size_t bufferSize, const char *baseURL,
         strncat(buffer, segment, remainingSpace);
     }
 }
+
+#ifdef AVD_DEBUG
+void avdPrintBacktrace(void)
+{
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(_WIN64)
+    HANDLE process = GetCurrentProcess();
+    HANDLE thread  = GetCurrentThread();
+
+    SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+    SymInitialize(process, NULL, TRUE);
+
+    CONTEXT context;
+    RtlCaptureContext(&context);
+
+    STACKFRAME64 stackFrame;
+    memset(&stackFrame, 0, sizeof(STACKFRAME64));
+
+#ifdef _M_X64
+    DWORD machineType           = IMAGE_FILE_MACHINE_AMD64;
+    stackFrame.AddrPC.Offset    = context.Rip;
+    stackFrame.AddrPC.Mode      = AddrModeFlat;
+    stackFrame.AddrFrame.Offset = context.Rbp;
+    stackFrame.AddrFrame.Mode   = AddrModeFlat;
+    stackFrame.AddrStack.Offset = context.Rsp;
+    stackFrame.AddrStack.Mode   = AddrModeFlat;
+#elif defined(_M_IX86)
+    DWORD machineType           = IMAGE_FILE_MACHINE_I386;
+    stackFrame.AddrPC.Offset    = context.Eip;
+    stackFrame.AddrPC.Mode      = AddrModeFlat;
+    stackFrame.AddrFrame.Offset = context.Ebp;
+    stackFrame.AddrFrame.Mode   = AddrModeFlat;
+    stackFrame.AddrStack.Offset = context.Esp;
+    stackFrame.AddrStack.Mode   = AddrModeFlat;
+#elif defined(_M_ARM64)
+    DWORD machineType           = IMAGE_FILE_MACHINE_ARM64;
+    stackFrame.AddrPC.Offset    = context.Pc;
+    stackFrame.AddrPC.Mode      = AddrModeFlat;
+    stackFrame.AddrFrame.Offset = context.Fp;
+    stackFrame.AddrFrame.Mode   = AddrModeFlat;
+    stackFrame.AddrStack.Offset = context.Sp;
+    stackFrame.AddrStack.Mode   = AddrModeFlat;
+#endif
+
+    printf("\nBacktrace:\n");
+    printf("+-------+--------------------+--------------------------------+------------------------------------------------------------------+\n");
+    printf("| Frame | Address            | Function                       | Location                                                         |\n");
+    printf("+-------+--------------------+--------------------------------+------------------------------------------------------------------+\n");
+    int frameIndex = 0;
+
+    while (StackWalk64(machineType, process, thread, &stackFrame, &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
+        if (stackFrame.AddrPC.Offset == 0)
+            break;
+
+        char symbolBuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
+        PSYMBOL_INFO symbol  = (PSYMBOL_INFO)symbolBuffer;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        symbol->MaxNameLen   = MAX_SYM_NAME;
+
+        DWORD64 displacement = 0;
+        IMAGEHLP_LINE64 line;
+        line.SizeOfStruct      = sizeof(IMAGEHLP_LINE64);
+        DWORD lineDisplacement = 0;
+
+        if (SymFromAddr(process, stackFrame.AddrPC.Offset, &displacement, symbol)) {
+            if (SymGetLineFromAddr64(process, stackFrame.AddrPC.Offset, &lineDisplacement, &line)) {
+                char location[256];
+                snprintf(location, sizeof(location), "%s:%lu", line.FileName, line.LineNumber);
+                printf("| %-5d | 0x%016llx | %-30.30s | %-64.64s |\n", frameIndex, stackFrame.AddrPC.Offset, symbol->Name, location);
+            } else {
+                printf("| %-5d | 0x%016llx | %-30.30s | + 0x%-57llx |\n", frameIndex, stackFrame.AddrPC.Offset, symbol->Name, displacement);
+            }
+        } else {
+            printf("| %-5d | 0x%016llx | %-30s | %-64s |\n", frameIndex, stackFrame.AddrPC.Offset, "unknown", "unknown");
+        }
+
+        frameIndex++;
+        if (frameIndex >= 64)
+            break;
+    }
+
+    printf("+-------+--------------------+--------------------------------+------------------------------------------------------------------+\n\n");
+    SymCleanup(process);
+#else
+    void *buffer[64];
+    int nframes    = backtrace(buffer, 64);
+    char **symbols = backtrace_symbols(buffer, nframes);
+
+    printf("\nBacktrace:\n");
+    printf("+-------+------------------------------------------------------------------------------------------------------+\n");
+    printf("| Frame | Symbol                                                                                               |\n");
+    printf("+-------+------------------------------------------------------------------------------------------------------+\n");
+    for (int i = 0; i < nframes; i++) {
+        printf("| %-5d | %-100.100s |\n", i, symbols[i]);
+    }
+    printf("+-------+------------------------------------------------------------------------------------------------------+\n\n");
+
+    free(symbols);
+#endif
+}
+#endif
