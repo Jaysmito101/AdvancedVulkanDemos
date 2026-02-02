@@ -214,7 +214,7 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
         if (avdSceneHLSPlayerContextTryAcquireFrame(&source->player, &source->currentFrame)) {
             AVD_VulkanVideoDecodedFrame *frame = source->currentFrame;
 
-            AVD_LOG_WARN("ne decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
+            AVD_LOG_WARN_DEBOUNCED(1000, "ne decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
 
             VkWriteDescriptorSet descriptorWrite[2] = {
                 {
@@ -468,7 +468,7 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
         }
 
         AVD_HLSPlayerPushConstants pushConstants = {
-            .activeSources = 0,
+            .activeSources  = 0,
             .textureIndices = textureIndices,
         };
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipeline);

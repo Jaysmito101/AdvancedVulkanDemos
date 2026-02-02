@@ -3,7 +3,9 @@
 #include "core/avd_base.h"
 #include "core/avd_types.h"
 #include "core/avd_utils.h"
+#include "pico/picoPerf.h"
 #include "pico/picoStream.h"
+#include "pico/picoTime.h"
 #include "scenes/hls_player/avd_scene_hls_player_context.h"
 #include "scenes/hls_player/avd_scene_hls_player_segment_store.h"
 #include "scenes/hls_player/avd_scene_hls_stream.h"
@@ -173,7 +175,7 @@ static bool __avdSceneHLSPlayerContextDecodeVideoFrames(
         bool eof               = false;
         AVD_CHECK(avdVulkanVideoDecoderNextChunk(vulkan, &context->videoPlayer, &params, &eof));
         if (context->videoPlayer.h264Video->currentChunk.numNalUnitsParsed == 0 && eof) {
-            // AVD_LOG_WARN("out of video data, current segtime=%.3f seg dur=%.3f", context->currentSegmentPlayTime, context->currentSegment.duration);
+            AVD_LOG_DEBUG_DEBOUNCED(1000, "out of video data, current segtime=%.3f seg dur=%.3f", context->currentSegmentPlayTime, context->currentSegment.duration);
         }
     }
 
