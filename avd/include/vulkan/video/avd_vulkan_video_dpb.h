@@ -9,6 +9,8 @@
 typedef struct {
     AVD_Bool initialized;
 
+    AVD_Bool layoutInitialized;
+
     AVD_UInt32 width;
     AVD_UInt32 height;
     VkFormat format;
@@ -34,5 +36,19 @@ bool avdVulkanVideoDecodeDPBCreate(
     AVD_UInt32 height,
     const char *label);
 void avdVulkanVideoDPBDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb);
+
+
+bool avdVulkanVideoDPBInitializeLayouts(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb, VkCommandBuffer commandBuffer);
+bool avdVulkanVideoDecodeDPBTransitionImageLayout(
+    AVD_Vulkan *vulkan,
+    AVD_VulkanVideoDPB *dpb,
+    AVD_Size slotIndex,
+    VkImageLayout newLayout,
+    VkCommandBuffer commandBuffer);
+bool avdVulkanVideoDecodeDPBOutputImageTransitionImageLayout(
+    AVD_Vulkan *vulkan,
+    AVD_VulkanVideoDPB *dpb,
+    VkImageLayout newLayout,
+    VkCommandBuffer commandBuffer);
 
 #endif // AVD_VULKAN_VIDEO_DPB_H

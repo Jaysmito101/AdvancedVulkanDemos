@@ -28,10 +28,27 @@ typedef struct {
 } AVD_VulkanVideoDecodedFrame;
 
 typedef struct {
+    AVD_UInt32 bottomFieldFlag;
+    AVD_UInt32 usedForLongerTermReference;
+    AVD_UInt32 frameNum;
+    AVD_UInt32 picOrderCount;
+    AVD_UInt32 topFieldOrderCount;
+    AVD_UInt32 bottomFieldOrderCount;
+
+    AVD_Size dpbSlotIndex;
+} AVD_VulkanVideoDecoderReferenceInfo;
+
+typedef struct {
     AVD_Bool ready;
     AVD_H264VideoChunk *videoChunk;
     AVD_Float timestampSeconds;
     AVD_Size chunkDisplayOrderOffset;
+
+    AVD_VulkanVideoDecoderReferenceInfo referenceInfo[17];
+    AVD_Size currentDPBSlotIndex;
+
+    AVD_Size references[17];
+    AVD_Size referenceSlotIndex;
 
     AVD_Size currentSliceIndex;
 } AVD_VulkanVideoDecoderChunk;
@@ -52,6 +69,8 @@ typedef struct {
     VkVideoSessionKHR session;
     VkVideoSessionParametersKHR sessionParameters;
     AVD_VulkanVideoDecoderVideoSessionData sessionData;
+    VkCommandBuffer commandBuffer;
+    AVD_Bool needsReset;
 
     VkDeviceMemory memory[128];
     AVD_UInt32 memoryAllocationCount;

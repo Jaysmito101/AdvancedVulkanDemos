@@ -1,5 +1,6 @@
 #include "vulkan/video/avd_vulkan_video_decoder.h"
 #include "core/avd_base.h"
+#include "core/avd_list.h"
 #include "core/avd_types.h"
 #include "math/avd_math_base.h"
 #include "pico/picoH264.h"
@@ -428,6 +429,8 @@ static bool __avdVulkanVideoDecoderUpdateSessionParameters(AVD_Vulkan *vulkan, A
             video->sessionParameters = VK_NULL_HANDLE;
         }
 
+        video->needsReset = true;
+
         AVD_Size ppsCount = 0;
         AVD_Size spsCount = 0;
 
@@ -521,7 +524,8 @@ static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_Vu
     AVD_ASSERT(vulkan != NULL);
 
     // reset current slice index
-    video->currentChunk.currentSliceIndex = 0;
+    video->currentChunk.currentSliceIndex   = 0;
+    video->currentChunk.currentDPBSlotIndex = 0;
 
     AVD_CHECK(__avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(vulkan, video, chunk));
     AVD_CHECK(__avdVulkanVideoDecoderUpdateDPB(vulkan, video, chunk));
@@ -529,6 +533,339 @@ static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_Vu
     AVD_CHECK(__avdVulkanVideoDecoderUpdateSessionParameters(vulkan, video, chunk, spsDirty, ppsDirty));
 
     chunk->ready = true;
+    return true;
+}
+
+static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *decodedFrame)
+{
+    AVD_ASSERT(video != NULL);
+    AVD_ASSERT(decodedFrame != NULL);
+    AVD_ASSERT(vulkan != NULL);
+
+    AVD_VulkanVideoDecoderChunk *chunk = &video->currentChunk;
+    AVD_H264VideoFrameInfo *frame      = (AVD_H264VideoFrameInfo *)avdListGet(&chunk->videoChunk->frameInfos, chunk->currentSliceIndex);
+    picoH264SliceHeader sliceHeader    = (picoH264SliceHeader)avdListGet(&chunk->videoChunk->sliceHeaders, chunk->currentSliceIndex);
+    picoH264PictureParameterSet pps    = chunk->videoChunk->ppsArray[sliceHeader->picParameterSetId];
+    AVD_CHECK_MSG(pps != NULL, "PPS with id %u not found", sliceHeader->picParameterSetId);
+    picoH264SequenceParameterSet sps = chunk->videoChunk->spsArray[pps->seqParameterSetId];
+    AVD_CHECK_MSG(sps != NULL, "SPS with id %u not found", pps->seqParameterSetId);
+
+    if (frame->isIdrFrame) {
+        chunk->currentDPBSlotIndex = 0;
+        chunk->referenceSlotIndex  = 0;
+    }
+
+    chunk->referenceInfo[chunk->currentDPBSlotIndex] = (AVD_VulkanVideoDecoderReferenceInfo){
+        .bottomFieldFlag            = sliceHeader->bottomFieldFlag,
+        .usedForLongerTermReference = sliceHeader->decRefPicMarking.longTermReferenceFlag,
+        .frameNum                   = sliceHeader->frameNum,
+        .picOrderCount              = frame->pictureOrderCount,
+        .topFieldOrderCount         = frame->topFieldOrderCount,
+        .bottomFieldOrderCount      = frame->bottomFieldOrderCount,
+        .dpbSlotIndex               = chunk->currentDPBSlotIndex,
+    };
+
+    // for now its just sync....
+    static bool firstCall = true;
+    if (firstCall) {
+        firstCall = false;
+        AVD_VK_CALL(vkWaitForFences(vulkan->device, 1, &video->decodeFence, VK_TRUE, UINT64_MAX));
+        AVD_VK_CALL(vkResetFences(vulkan->device, 1, &video->decodeFence));
+    }
+
+    AVD_VK_CALL(vkResetCommandPool(vulkan->device, vulkan->videoDecodeCommandPool, 0));
+    VkCommandBufferBeginInfo beginInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
+    AVD_VK_CALL(vkBeginCommandBuffer(video->commandBuffer, &beginInfo));
+
+    if (!video->dpb.layoutInitialized) {
+        AVD_CHECK(avdVulkanVideoDPBInitializeLayouts(vulkan, &video->dpb, video->commandBuffer));
+    }
+    if (video->dpb.imageLayouts[chunk->currentDPBSlotIndex] != VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR) {
+        AVD_CHECK(
+            avdVulkanVideoDecodeDPBTransitionImageLayout(
+                vulkan,
+                &video->dpb,
+                chunk->currentDPBSlotIndex,
+                VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+                video->commandBuffer));
+    }
+    if (!video->dpb.decodeOutputCoincideSupported) {
+        AVD_CHECK(
+            avdVulkanVideoDecodeDPBOutputImageTransitionImageLayout(
+                vulkan,
+                &video->dpb,
+                VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
+                video->commandBuffer));
+    }
+
+    StdVideoDecodeH264PictureInfo stdPictureInfoH264  = {};
+    stdPictureInfoH264.pic_parameter_set_id           = sliceHeader->picParameterSetId;
+    stdPictureInfoH264.seq_parameter_set_id           = pps->seqParameterSetId;
+    stdPictureInfoH264.frame_num                      = sliceHeader->frameNum;
+    stdPictureInfoH264.PicOrderCnt[0]                 = frame->pictureOrderCount; // NOTE: maybe try with top/bottom order counts later?
+    stdPictureInfoH264.PicOrderCnt[1]                 = frame->pictureOrderCount;
+    stdPictureInfoH264.idr_pic_id                     = sliceHeader->idrPicId;
+    stdPictureInfoH264.flags.is_intra                 = frame->isIdrFrame ? 1 : 0;
+    stdPictureInfoH264.flags.is_reference             = frame->nalRefIdc > 0 ? 1 : 0;
+    stdPictureInfoH264.flags.IdrPicFlag               = (frame->isIdrFrame && (frame->nalRefIdc > 0)) ? 1 : 0;
+    stdPictureInfoH264.flags.field_pic_flag           = sliceHeader->fieldPicFlag;
+    stdPictureInfoH264.flags.bottom_field_flag        = sliceHeader->bottomFieldFlag;
+    stdPictureInfoH264.flags.complementary_field_pair = 0;
+    // stdPictureInfoH264.flags.complementary_field_pair = frame->complementaryFieldPair; // try this out later?
+
+    VkVideoReferenceSlotInfoKHR referenceSlotInfos[17]      = {};
+    VkVideoPictureResourceInfoKHR referenceSlotPictures[17] = {};
+    VkVideoDecodeH264DpbSlotInfoKHR dpbSlotsH264[17]        = {};
+    StdVideoDecodeH264ReferenceInfo referenceInfosH264[17]  = {};
+    for (uint32_t i = 0; i < video->h264Video->numDPBSlots + 1; ++i) {
+        referenceSlotInfos[i] = (VkVideoReferenceSlotInfoKHR){
+            .sType            = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR,
+            .pPictureResource = &referenceSlotPictures[i],
+            .slotIndex        = i,
+            .pNext            = &dpbSlotsH264[i],
+        };
+
+        referenceSlotPictures[i] = (VkVideoPictureResourceInfoKHR){
+            .sType       = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR,
+            .codedOffset = {
+                .x = 0,
+                .y = 0,
+            },
+            .codedExtent = {
+                .width  = video->h264Video->paddedWidth,
+                .height = video->h264Video->paddedHeight,
+            },
+            .baseArrayLayer   = i,
+            .imageViewBinding = video->dpb.dpb.defaultSubresource.imageView,
+        };
+
+        dpbSlotsH264[i] = (VkVideoDecodeH264DpbSlotInfoKHR){
+            .sType             = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_DPB_SLOT_INFO_KHR,
+            .pStdReferenceInfo = &referenceInfosH264[i],
+        };
+
+        // TODO: try filling out the other fields too...
+        referenceInfosH264[i] = (StdVideoDecodeH264ReferenceInfo){
+            .flags = {
+                .bottom_field_flag            = 0,
+                .top_field_flag               = 0,
+                .is_non_existing              = 0,
+                .used_for_long_term_reference = 0,
+            },
+            .FrameNum       = chunk->referenceInfo[i].frameNum,
+            .PicOrderCnt[0] = chunk->referenceInfo[i].picOrderCount,
+            .PicOrderCnt[1] = chunk->referenceInfo[i].picOrderCount,
+        };
+    }
+
+    VkVideoReferenceSlotInfoKHR referenceSlots[17];
+    for (uint32_t i = 0; i < chunk->referenceSlotIndex; ++i) {
+        AVD_Size refIndex = chunk->references[i];
+        AVD_CHECK_MSG(refIndex != chunk->currentDPBSlotIndex, "Reference index cannot be the same as current DPB slot index");
+        referenceSlots[i] = referenceSlotInfos[refIndex];
+    }
+    referenceSlots[chunk->referenceSlotIndex]           = referenceSlotInfos[chunk->currentDPBSlotIndex];
+    referenceSlots[chunk->referenceSlotIndex].slotIndex = -1;
+
+    VkVideoBeginCodingInfoKHR beginInfoH264 = {
+        .sType                  = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR,
+        .videoSession           = video->session,
+        .videoSessionParameters = video->sessionParameters,
+        .referenceSlotCount     = (AVD_UInt32)(chunk->referenceSlotIndex + 1),
+        .pReferenceSlots        = (AVD_UInt32)(chunk->referenceSlotIndex + 1) > 0 ? referenceSlots : NULL,
+    };
+    vkCmdBeginVideoCodingKHR(video->commandBuffer, &beginInfoH264);
+
+    if (video->needsReset) {
+        VkVideoCodingControlInfoKHR resetInfo = {
+            .sType = VK_STRUCTURE_TYPE_VIDEO_CODING_CONTROL_INFO_KHR,
+            .flags = VK_VIDEO_CODING_CONTROL_RESET_BIT_KHR,
+        };
+        vkCmdControlVideoCodingKHR(video->commandBuffer, &resetInfo);
+        video->needsReset = false;
+    }
+
+    AVD_UInt32 sliceOffset                          = 0;
+    VkVideoDecodeH264PictureInfoKHR pictureInfoH264 = {
+        .sType           = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PICTURE_INFO_KHR,
+        .pStdPictureInfo = &stdPictureInfoH264,
+        .sliceCount      = 1,
+        .pSliceOffsets   = &sliceOffset,
+    };
+
+    VkVideoDecodeInfoKHR decodeInfo = {
+        .sType               = VK_STRUCTURE_TYPE_VIDEO_DECODE_INFO_KHR,
+        .srcBuffer           = video->bitstreamBuffer.buffer,
+        .srcBufferOffset     = frame->offset,
+        .srcBufferRange      = AVD_ALIGN(frame->size, chunk->videoChunk->sliceDataBuffer.alignment),
+        .referenceSlotCount  = (AVD_UInt32)chunk->referenceSlotIndex,
+        .pReferenceSlots     = (AVD_UInt32)chunk->referenceSlotIndex > 0 ? referenceSlots : NULL,
+        .pSetupReferenceSlot = &referenceSlotInfos[chunk->currentDPBSlotIndex],
+        .pNext               = &pictureInfoH264,
+    };
+    if (video->dpb.decodeOutputCoincideSupported) {
+        decodeInfo.dstPictureResource = *referenceSlotInfos[chunk->currentDPBSlotIndex].pPictureResource;
+    } else {
+        decodeInfo.dstPictureResource = (VkVideoPictureResourceInfoKHR){
+            .sType       = VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR,
+            .codedOffset = {
+                .x = 0,
+                .y = 0,
+            },
+            .codedExtent = {
+                .width  = video->h264Video->paddedWidth,
+                .height = video->h264Video->paddedHeight,
+            },
+            .baseArrayLayer   = 0,
+            .imageViewBinding = video->dpb.decodedOutputImage.defaultSubresource.imageView,
+        };
+    }
+
+    vkCmdDecodeVideoKHR(video->commandBuffer, &decodeInfo);
+
+    VkVideoEndCodingInfoKHR endInfoH264 = {
+        .sType = VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR,
+    };
+    vkCmdEndVideoCodingKHR(video->commandBuffer, &endInfoH264);
+
+    if (video->dpb.decodeOutputCoincideSupported) {
+        if (video->dpb.imageLayouts[chunk->currentDPBSlotIndex] != VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+            AVD_CHECK(
+                avdVulkanVideoDecodeDPBTransitionImageLayout(
+                    vulkan,
+                    &video->dpb,
+                    chunk->currentDPBSlotIndex,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    video->commandBuffer));
+        }
+    } else {
+        AVD_CHECK(
+            avdVulkanVideoDecodeDPBOutputImageTransitionImageLayout(
+                vulkan,
+                &video->dpb,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                video->commandBuffer));
+    }
+
+    VkImageMemoryBarrier copyBarrier = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .srcAccessMask       = VK_ACCESS_MEMORY_READ_BIT,
+        .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = decodedFrame->image.image,
+        .subresourceRange    = {
+               .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+               .baseMipLevel   = 0,
+               .levelCount     = VK_REMAINING_MIP_LEVELS,
+               .baseArrayLayer = 0,
+               .layerCount     = VK_REMAINING_ARRAY_LAYERS,
+        },
+    };
+    vkCmdPipelineBarrier(
+        video->commandBuffer,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        0,
+        0,
+        NULL,
+        0,
+        NULL,
+        1,
+        &copyBarrier);
+
+    VkImageCopy copyRegion = {
+        .extent = {
+            .width  = video->h264Video->paddedWidth,
+            .height = video->h264Video->paddedHeight,
+            .depth  = 1,
+        },
+        .srcSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT,
+            .layerCount = 1,
+        },
+        .dstSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT,
+            .layerCount = 1,
+        },
+    };
+    VkImage srcImage = VK_NULL_HANDLE;
+    if (video->dpb.decodeOutputCoincideSupported) {
+        srcImage                                 = video->dpb.dpb.image;
+        copyRegion.srcSubresource.baseArrayLayer = chunk->currentDPBSlotIndex;
+    } else {
+        srcImage                                 = video->dpb.decodedOutputImage.image;
+        copyRegion.srcSubresource.baseArrayLayer = 0;
+    }
+    vkCmdCopyImage(
+        video->commandBuffer,
+        srcImage,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        decodedFrame->image.image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &copyRegion);
+
+    copyRegion.extent.width              = video->h264Video->paddedWidth / 2;
+    copyRegion.extent.height             = video->h264Video->paddedHeight / 2;
+    copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+    copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+    vkCmdCopyImage(
+        video->commandBuffer,
+        srcImage,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        decodedFrame->image.image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &copyRegion);
+
+    copyBarrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    copyBarrier.newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    copyBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    copyBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    vkCmdPipelineBarrier(
+        video->commandBuffer,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        0,
+        0,
+        NULL,
+        0,
+        NULL,
+        1,
+        &copyBarrier);
+
+    AVD_VK_CALL(vkEndCommandBuffer(video->commandBuffer));
+
+    VkSubmitInfo submitInfo = {
+        .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers    = &video->commandBuffer,
+    };
+    AVD_VK_CALL(vkQueueSubmit(vulkan->videoDecodeQueue, 1, &submitInfo, video->decodeFence));
+
+    AVD_VK_CALL(vkWaitForFences(vulkan->device, 1, &video->decodeFence, VK_TRUE, UINT64_MAX));
+    AVD_VK_CALL(vkResetFences(vulkan->device, 1, &video->decodeFence));
+
+    // if this is a reference frame, we need to store it in the reference slots
+    if (frame->nalRefIdc > 0) {
+        // none of these should really happen though....
+        chunk->references[chunk->referenceSlotIndex] = chunk->currentDPBSlotIndex;
+        chunk->currentDPBSlotIndex                   = (chunk->currentDPBSlotIndex + 1) % (video->h264Video->numDPBSlots + 1);
+        chunk->referenceSlotIndex                    = (chunk->referenceSlotIndex + 1) % video->h264Video->numDPBSlots;
+    }
+
+    decodedFrame->chunkDisplayOrder    = frame->chunkDisplayOrder;
+    decodedFrame->absoluteDisplayOrder = video->currentChunk.chunkDisplayOrderOffset + frame->chunkDisplayOrder;
+    decodedFrame->timestampSeconds     = video->currentChunk.timestampSeconds + frame->timestampSeconds;
+    decodedFrame->inUse                = true;
+    video->currentChunk.currentSliceIndex++;
+
     return true;
 }
 
@@ -678,6 +1015,8 @@ bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
         return false;
     }
 
+    video->h264Video = h264Video;
+
     VkFenceCreateInfo fenceInfo = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .flags = VK_FENCE_CREATE_SIGNALED_BIT, // create the fence in signaled state
@@ -686,13 +1025,23 @@ bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
         vkCreateFence(vulkan->device, &fenceInfo, NULL, &video->decodeFence),
         "Failed to create decode fence");
 
-    video->h264Video = h264Video;
+    VkCommandBufferAllocateInfo cmdBufAllocInfo = {
+        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool        = vulkan->videoDecodeCommandPool,
+        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = 1,
+    };
+    AVD_CHECK_VK_RESULT(
+        vkAllocateCommandBuffers(vulkan->device, &cmdBufAllocInfo, &video->commandBuffer),
+        "Failed to allocate video decode command buffer");
+
     AVD_CHECK(__avdVulkanVideoDecoderCreateSession(vulkan, video));
 
     strncpy(video->label, label, sizeof(video->label) - 1);
     video->label[sizeof(video->label) - 1] = '\0';
 
     video->currentChunk.ready = false;
+    video->needsReset         = true;
     video->initialized        = true;
 
     return true;
@@ -809,16 +1158,9 @@ bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
         "Video decoder not initialized");
 
     AVD_CHECK_MSG(
-        avdVulkanVideoDecoderChunkHasFrames(video),
+        avdVulkanVideoDecoderChunkHasFrames(video) && video->currentChunk.ready,
         "No frames available in current chunk to decode");
 
-    // // placeholder implementation, just simulating some decoding time
-    // static picoPerfTime time = 0;
-    // if (picoPerfDurationSeconds(time, picoPerfNow()) > video->h264Video->frameDurationSeconds) {
-    //     time = picoPerfNow();
-    //     // AVD_LOG_VERBOSE("Decoding frame %d of current chunk", (int)video->currentChunk.currentSliceIndex);
-    //     video->decodedFrames[0].inUse = true;
-    // }
     AVD_VulkanVideoDecodedFrame *decodedFrame = NULL;
     AVD_VulkanVideoDecodedFrame *oldestFrame  = NULL;
     AVD_Size oldestFrameOrder                 = UINT64_MAX;
@@ -840,13 +1182,7 @@ bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
         decodedFrame = oldestFrame;
     }
 
-    decodedFrame->chunkDisplayOrder    = video->currentChunk.currentSliceIndex;
-    decodedFrame->absoluteDisplayOrder = video->currentChunk.chunkDisplayOrderOffset +
-                                         video->currentChunk.currentSliceIndex;
-    decodedFrame->timestampSeconds = video->currentChunk.timestampSeconds +
-                                     video->h264Video->frameDurationSeconds * video->currentChunk.currentSliceIndex;
-    decodedFrame->inUse = true;
-    video->currentChunk.currentSliceIndex++;
+    AVD_CHECK(__avdVulkanVideoDecoderDecodeCurrentFrame(vulkan, video, decodedFrame));
 
     return true;
 }

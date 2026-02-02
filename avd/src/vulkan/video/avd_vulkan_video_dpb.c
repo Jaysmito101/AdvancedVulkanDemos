@@ -65,6 +65,10 @@ static bool __avdVulkanVideoDPBCreateImages(AVD_Vulkan *vulkan, AVD_VulkanVideoD
             dpbImageInfo.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         }
     }
+    AVD_CHECK_MSG(
+        avdVulkanImageCreate(vulkan, &dpb->dpb, dpbImageInfo),
+        "Failed to create DPB image for video DPB %s",
+        dpb->label);
 
     if (!dpb->decodeOutputCoincideSupported) {
         AVD_VulkanImageCreateInfo decodedOutputImageInfo = (AVD_VulkanImageCreateInfo){
@@ -118,6 +122,10 @@ bool avdVulkanVideoDecodeDPBCreate(
         "Failed to create images for video DPB %s",
         dpb->label);
 
+    for (AVD_Size i = 0; i < dpb->numDPBSlots + 1; ++i) {
+        dpb->imageLayouts[i] = VK_IMAGE_LAYOUT_UNDEFINED;
+    }
+
     dpb->initialized = true;
 
     return true;
@@ -137,4 +145,124 @@ void avdVulkanVideoDPBDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb)
     }
 
     memset(dpb, 0, sizeof(AVD_VulkanVideoDPB));
+}
+
+bool avdVulkanVideoDPBInitializeLayouts(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb, VkCommandBuffer commandBuffer)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(dpb != NULL);
+
+    VkImageMemoryBarrier barrier = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout           = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = dpb->dpb.image,
+        .srcAccessMask       = VK_ACCESS_NONE,
+        .dstAccessMask       = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+        .subresourceRange    = dpb->dpb.defaultSubresource.subresourceRange,
+    };
+
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT,
+        0,
+        NULL,
+        0,
+        NULL,
+        1,
+        &barrier);
+
+    for (AVD_Size i = 0; i < dpb->numDPBSlots; ++i) {
+        dpb->imageLayouts[i] = VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
+    }
+
+    dpb->layoutInitialized = true;
+
+    return true;
+}
+
+bool avdVulkanVideoDecodeDPBTransitionImageLayout(
+    AVD_Vulkan *vulkan,
+    AVD_VulkanVideoDPB *dpb,
+    AVD_Size slotIndex,
+    VkImageLayout newLayout,
+    VkCommandBuffer commandBuffer)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(dpb != NULL);
+    AVD_ASSERT(slotIndex < dpb->numDPBSlots);
+    AVD_ASSERT(dpb->initialized);
+
+    VkImageMemoryBarrier barrier = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .oldLayout           = dpb->imageLayouts[slotIndex],
+        .newLayout           = newLayout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = dpb->dpb.image,
+        .srcAccessMask       = VK_ACCESS_MEMORY_WRITE_BIT,
+        .dstAccessMask       = VK_ACCESS_MEMORY_READ_BIT,
+        .subresourceRange    = {
+               .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+               .baseMipLevel   = 0,
+               .levelCount     = VK_REMAINING_MIP_LEVELS,
+               .baseArrayLayer = slotIndex,
+               .layerCount     = 1,
+        },
+    };
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT,
+        0,
+        NULL,
+        0,
+        NULL,
+        1,
+        &barrier);
+
+    dpb->imageLayouts[slotIndex] = newLayout;
+
+    return true;
+}
+
+bool avdVulkanVideoDecodeDPBOutputImageTransitionImageLayout(
+    AVD_Vulkan *vulkan,
+    AVD_VulkanVideoDPB *dpb,
+    VkImageLayout newLayout,
+    VkCommandBuffer commandBuffer)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(dpb != NULL);
+    AVD_ASSERT(dpb->initialized);
+
+    VkImageMemoryBarrier barrier = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout           = newLayout,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = dpb->decodedOutputImage.image,
+        .srcAccessMask       = VK_ACCESS_MEMORY_WRITE_BIT,
+        .dstAccessMask       = VK_ACCESS_MEMORY_READ_BIT,
+        .subresourceRange    = dpb->decodedOutputImage.defaultSubresource.subresourceRange,
+    };
+    vkCmdPipelineBarrier(
+        commandBuffer,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_DEPENDENCY_BY_REGION_BIT,
+        0,
+        NULL,
+        0,
+        NULL,
+        1,
+        &barrier);
+
+    return true;
 }
