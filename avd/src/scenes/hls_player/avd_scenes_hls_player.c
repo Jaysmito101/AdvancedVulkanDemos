@@ -254,44 +254,41 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
             continue;
         }
 
-        AVD_CHECK(avdSceneHLSPlayerContextUpdate(&appState->vulkan, &appState->audio, &source->player));
+        AVD_VulkanVideoDecodedFrame *currentFrame = source->currentFrame;
+        if (avdSceneHLSPlayerContextTryAcquireFrame(&source->player, &source->currentFrame)) {
+            AVD_VulkanVideoDecodedFrame *frame = source->currentFrame;
+            if (frame != currentFrame) {
 
-        AVD_VulkanVideoDecodedFrame *frame = NULL;
-        AVD_CHECK(avdSceneHLSPlayerContextTryAcquireDecodedFrame(&source->player, &frame));
-        if (frame) {
-            if (source->currentFrame) {
-                AVD_CHECK(avdSceneHLSPlayerContextReleaseDecodedFrame(&source->player, source->currentFrame));
+                AVD_LOG_WARN("ne decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
+
+                VkWriteDescriptorSet descriptorWrite[2] = {
+                    {
+                        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                        .dstSet          = appState->vulkan.bindlessDescriptorSet,
+                        .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        .dstArrayElement = (AVD_UInt32)i * 2 + 0,
+                        .descriptorCount = 1,
+                        .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        .pImageInfo      = &frame->ycbcrSubresource.raw.luma.descriptorImageInfo,
+                    },
+                    {
+                        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                        .dstSet          = appState->vulkan.bindlessDescriptorSet,
+                        .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        .dstArrayElement = (AVD_UInt32)i * 2 + 1,
+                        .descriptorCount = 1,
+                        .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        .pImageInfo      = &frame->ycbcrSubresource.raw.chroma.descriptorImageInfo,
+                    },
+                };
+                vkUpdateDescriptorSets(appState->vulkan.device, 2, descriptorWrite, 0, NULL);
             }
-
-            // AVD_LOG_WARN("HLS Player acquired new decoded frame %zu at time %.3f seconds", frame->index, time);
-
-            source->currentFrame = frame;
-
-            AVD_CHECK_MSG(frame->ycbcrSubresource.usingConversionExtension,
-                          "Decoded frame is not using YCbCr conversion extension, cannot be rendered correctly in HLS Player scene");
-
-            VkWriteDescriptorSet descriptorWrite[2] = {
-                {
-                    .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet          = appState->vulkan.bindlessDescriptorSet,
-                    .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .dstArrayElement = (AVD_UInt32)i * 2 + 0,
-                    .descriptorCount = 1,
-                    .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .pImageInfo      = &frame->ycbcrSubresource.raw.luma.descriptorImageInfo,
-                },
-                {
-                    .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet          = appState->vulkan.bindlessDescriptorSet,
-                    .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .dstArrayElement = (AVD_UInt32)i * 2 + 1,
-                    .descriptorCount = 1,
-                    .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .pImageInfo      = &frame->ycbcrSubresource.raw.chroma.descriptorImageInfo,
-                },
-            };
-            vkUpdateDescriptorSets(appState->vulkan.device, 2, descriptorWrite, 0, NULL);
+        } else {
+            // if we have vailed to get the frames, we need to decoder
+            AVD_CHECK(avdSceneHLSPlayerContextTryDecodeFrames(&appState->vulkan, &source->player));
         }
+
+        AVD_CHECK(avdSceneHLSPlayerContextUpdate(&appState->vulkan, &appState->audio, &source->player));
     }
 
     return true;

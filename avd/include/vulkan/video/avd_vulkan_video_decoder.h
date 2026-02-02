@@ -27,6 +27,7 @@ typedef struct {
     AVD_VulkanImageYCbCrSubresource ycbcrSubresource;
 
     AVD_Size index;
+    AVD_Size sliceIndex;
     AVD_Float timestampSeconds;
     AVD_Size chunkDisplayOrder;
     AVD_Size absoluteDisplayOrder;
@@ -120,11 +121,12 @@ bool avdVulkanVideoDecoderIsChunkOutdated(AVD_VulkanVideoDecoder *video, AVD_Flo
 bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264VideoLoadParams *chunkLoadParams, bool *eof);
 bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video);
 
-bool avdVulkanVideoDecoderAcquireDecodedFrame(
+bool avdVulkanVideoDecoderTryAcquireFrame(
     AVD_VulkanVideoDecoder *video,
     AVD_Float currentTime,
     AVD_VulkanVideoDecodedFrame **outFrame);
-bool avdVulkanVideoDecoderReleaseDecodedFrame(AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *frame);
-bool avdVulkanVideoDecoderReleaseAllDecodedFrames(AVD_VulkanVideoDecoder *video);
+bool avdVulkanVideoDecoderTryDecodeFrames(
+    AVD_Vulkan *vulkan,
+    AVD_VulkanVideoDecoder *video);
 
 #endif // AVD_VULKAN_VIDEO_DECODER_H

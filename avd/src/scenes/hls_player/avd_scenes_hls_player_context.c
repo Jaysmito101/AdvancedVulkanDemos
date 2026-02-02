@@ -9,6 +9,7 @@
 #include "scenes/hls_player/avd_scene_hls_worker_pool.h"
 #include "vulkan/avd_vulkan_video.h"
 #include "vulkan/video/avd_vulkan_video_decoder.h"
+#include "vulkan/video/avd_vulkan_video_h264_data.h"
 #include <math.h>
 
 static bool __avdSceneHLSPlayerContextInitVideo(
@@ -135,67 +136,6 @@ static bool __avdSceneHLSPlayerContextAddSegmentVideo(
     return true;
 }
 
-static bool __avdVulkanVideoDecoderUpdate(
-    AVD_SceneHLSPlayerContext *context,
-    AVD_Vulkan *vulkan,
-    AVD_VulkanVideoDecoder *decoder)
-{
-    AVD_ASSERT(vulkan != NULL);
-    AVD_ASSERT(decoder != NULL);
-
-    if (!decoder->initialized) {
-        return true;
-    }
-
-    AVD_Float audioTimeMs = 0.0f;
-    avdAudioStreamingPlayerGetTimePlayedMs(
-        &context->audioPlayer,
-        &audioTimeMs);
-    if (avdVulkanVideoDecoderGetNumDecodedFrames(decoder) < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES) {
-
-        // we have room for more decoded frames
-        if (!avdVulkanVideoDecoderChunkHasFrames(decoder)) {
-            // try to decode more frames
-            AVD_H264VideoLoadParams loadParams = {0};
-            AVD_CHECK(avdH264VideoLoadParamsDefault(vulkan, &loadParams));
-            loadParams.targetFramerate = context->videoFramerate;
-            bool eof                   = false;
-
-            decoder->timestampSecondsOffset = audioTimeMs / 1000.0f;
-
-            AVD_CHECK(avdVulkanVideoDecoderNextChunk(vulkan, decoder, &loadParams, &eof));
-            if (decoder->h264Video->currentChunk.numNalUnitsParsed == 0 && eof) {
-                // no more data to decode
-                context->videoHungry = true;
-            }
-
-            if (decoder->h264Video->currentChunk.numNalUnitsParsed > 0) {
-                // forcefully sync the video to audio
-                context->videoHungry = false;
-
-                AVD_LOG_WARN(
-                    "Video Time: %.3f/(%.3f) - Audio Time: %.3f",
-                    decoder->h264Video->currentChunk.timestampSeconds,
-                    decoder->h264Video->currentChunk.durationSeconds,
-                    audioTimeMs / 1000.0f);
-            }
-        } else {
-
-            AVD_CHECK(
-                avdVulkanVideoDecoderUpdate(
-                    vulkan,
-                    decoder));
-        }
-    }
-    //  else if (avdVulkanVideoDecoderIsChunkOutdated(decoder, audioTimeMs / 1000.0f)) {
-    //     AVD_CHECK(
-    //         avdVulkanVideoDecoderReleaseAllDecodedFrames(
-    //             decoder));
-    // }
-
-    return true;
-}
-
 void avdSceneHLSPlayerContextDestroy(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_SceneHLSPlayerContext *context)
 {
     AVD_ASSERT(vulkan != NULL);
@@ -260,7 +200,7 @@ bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_Sc
     }
 
     AVD_CHECK(avdAudioStreamingPlayerUpdate(&context->audioPlayer));
-    AVD_CHECK(__avdVulkanVideoDecoderUpdate(context, vulkan, &context->videoPlayer));
+    AVD_CHECK(avdVulkanVideoDecoderUpdate(vulkan, &context->videoPlayer));
 
     return true;
 }
@@ -275,45 +215,71 @@ bool avdSceneHLSPlayerContextIsFed(AVD_SceneHLSPlayerContext *context)
 
     AVD_Bool audioFed = avdAudioStreamingPlayerIsFed(&context->audioPlayer);
 
-    // if (audioFed == context->videoHungry) {
-    //     AVD_LOG_ERROR("Audio/Video sync issue in HLS Player context: audioFed=%s videoFed=%s",
-    //                   audioFed ? "true" : "false",
-    //                   !context->videoHungry ? "true" : "false");
-    // }
+    if (audioFed == context->videoHungry) {
+        AVD_LOG_ERROR("Audio/Video sync issue in HLS Player context: audioFed=%s videoFed=%s",
+                      audioFed ? "true" : "false",
+                      !context->videoHungry ? "true" : "false");
+    }
 
     return audioFed && !context->videoHungry;
 }
 
-bool avdSceneHLSPlayerContextTryAcquireDecodedFrame(AVD_SceneHLSPlayerContext *context, AVD_VulkanVideoDecodedFrame **outFrame)
+bool avdSceneHLSPlayerContextTryAcquireFrame(
+    AVD_SceneHLSPlayerContext *context,
+    AVD_VulkanVideoDecodedFrame **outFrame)
 {
     AVD_ASSERT(context != NULL);
     AVD_ASSERT(outFrame != NULL);
-    AVD_ASSERT(context->initialized);
-    *outFrame = NULL;
 
-    // NOTE: We sync the video with the audio time
-    AVD_Float currentTime = 0.0;
-    avdAudioStreamingPlayerGetTimePlayedMs(&context->audioPlayer, &currentTime);
+    return avdVulkanVideoDecoderTryAcquireFrame(
+        &context->videoPlayer,
+        avdSceneHLSPlayerContextGetTime(context),
+        outFrame);
+}
 
-    AVD_CHECK(
-        avdVulkanVideoDecoderAcquireDecodedFrame(
+bool avdSceneHLSPlayerContextTryDecodeFrames(
+    AVD_Vulkan *vulkan,
+    AVD_SceneHLSPlayerContext *context)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(context != NULL);
+
+    if (!avdVulkanVideoDecoderChunkHasFrames(&context->videoPlayer)) {
+        AVD_H264VideoLoadParams loadParams = {0};
+        avdH264VideoLoadParamsDefault(vulkan, &loadParams);
+        loadParams.targetFramerate = context->videoFramerate;
+        bool eof                   = false;
+
+        // force sync audio/video by updating timestamp offset
+        context->videoPlayer.timestampSecondsOffset = avdSceneHLSPlayerContextGetTime(context);
+
+        AVD_CHECK(avdVulkanVideoDecoderNextChunk(
+            vulkan,
             &context->videoPlayer,
-            currentTime / 1000.0f,
-            outFrame));
+            &loadParams,
+            &eof));
+        if (context->videoPlayer.h264Video->currentChunk.numNalUnitsParsed == 0 && eof) {
+            context->videoHungry = true;
+            return true;
+        } else if (context->videoPlayer.h264Video->currentChunk.numNalUnitsParsed > 0) {
+            context->videoHungry = false;
+        }
+    } else {
+        AVD_CHECK(avdVulkanVideoDecoderTryDecodeFrames(vulkan, &context->videoPlayer));
+    }
 
     return true;
 }
 
-bool avdSceneHLSPlayerContextReleaseDecodedFrame(AVD_SceneHLSPlayerContext *context, AVD_VulkanVideoDecodedFrame *frame)
+AVD_Float avdSceneHLSPlayerContextGetTime(AVD_SceneHLSPlayerContext *context)
 {
     AVD_ASSERT(context != NULL);
-    AVD_ASSERT(frame != NULL);
-    AVD_ASSERT(context->initialized);
 
-    AVD_CHECK(
-        avdVulkanVideoDecoderReleaseDecodedFrame(
-            &context->videoPlayer,
-            frame));
+    if (!context->initialized) {
+        return 0.0f;
+    }
 
-    return true;
+    AVD_Float time = 0.0f;
+    AVD_CHECK(avdAudioStreamingPlayerGetTimePlayedMs(&context->audioPlayer, &time));
+    return time / 1000.0f;
 }
