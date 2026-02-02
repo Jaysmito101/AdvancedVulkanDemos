@@ -526,6 +526,7 @@ static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_Vu
     // reset current slice index
     video->currentChunk.currentSliceIndex   = 0;
     video->currentChunk.currentDPBSlotIndex = 0;
+    video->currentChunk.referenceSlotIndex  = 0;
 
     AVD_CHECK(__avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(vulkan, video, chunk));
     AVD_CHECK(__avdVulkanVideoDecoderUpdateDPB(vulkan, video, chunk));
@@ -862,9 +863,13 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
 
     decodedFrame->chunkDisplayOrder    = frame->chunkDisplayOrder;
     decodedFrame->absoluteDisplayOrder = video->currentChunk.chunkDisplayOrderOffset + frame->chunkDisplayOrder;
-    decodedFrame->timestampSeconds     = video->currentChunk.timestampSeconds + frame->timestampSeconds;
+    decodedFrame->timestampSeconds     = video->currentChunk.timestampSeconds + frame->chunkDisplayOrder * video->h264Video->frameDurationSeconds;
     decodedFrame->inUse                = true;
     video->currentChunk.currentSliceIndex++;
+    AVD_LOG_VERBOSE("Decoded frame with display order %f %f %zu %zu %zu", decodedFrame->timestampSeconds, video->currentChunk.timestampSeconds,
+                    decodedFrame->chunkDisplayOrder,
+                    decodedFrame->absoluteDisplayOrder,
+                    video->currentChunk.currentSliceIndex);
 
     return true;
 }
@@ -1201,6 +1206,7 @@ bool avdVulkanVideoDecoderAcquireDecodedFrame(
     // whose time range is matching the current time
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
         AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
+
         if (frame->inUse && !frame->isAcquired) {
             AVD_Float frameStartTime = frame->timestampSeconds;
             AVD_Float frameEndTime   = frame->timestampSeconds + video->h264Video->frameDurationSeconds;
@@ -1224,6 +1230,17 @@ bool avdVulkanVideoDecoderReleaseDecodedFrame(AVD_VulkanVideoDecoder *video, AVD
     // thus this oneliner function exists for now... :)
     frame->isAcquired = false;
     frame->inUse      = false;
+
+    return true;
+}
+
+bool avdVulkanVideoDecoderReleaseAllDecodedFrames(AVD_VulkanVideoDecoder *video)
+{
+    AVD_ASSERT(video != NULL);
+
+    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
+        avdVulkanVideoDecoderReleaseDecodedFrame(video, &video->decodedFrames[i]);
+    }
 
     return true;
 }
