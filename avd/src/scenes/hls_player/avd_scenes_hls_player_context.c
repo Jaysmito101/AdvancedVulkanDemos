@@ -100,6 +100,7 @@ static bool __avdSceneHLSPlayerContextInit(
     AVD_CHECK(__avdSceneHLSPlayerContextInitVideo(vulkan, audio, context, avData));
     AVD_CHECK(__avdSceneHLSPlayerContextInitAudio(vulkan, audio, context, avData));
 
+    context->sourceIndex             = avData.source;
     context->currentSegment          = avData;
     context->currentSegmentPlayTime  = 0.0f;
     context->currentSegmentStartTime = -100000.0f;
@@ -135,7 +136,7 @@ static bool __avdSceneHLSPlayerContextSwitchToNextSegment(
     AVD_HLSSegmentAVData nextSegment = {0};
     AVD_CHECK(avdHLSSegmentStoreAcquire(
         &context->segmentStore,
-        context->currentSegment.source,
+        context->sourceIndex,
         nextSegmentId,
         &nextSegment));
     context->currentSegment                = nextSegment;
@@ -149,6 +150,7 @@ static bool __avdSceneHLSPlayerContextSwitchToNextSegment(
         context->videoDataStream,
         nextSegment.h264Buffer,
         nextSegment.h264Size));
+    AVD_LOG_DEBUG("Appended %.3f seconds of video data to stream", nextSegment.duration);
 
     return true;
 }
@@ -170,6 +172,9 @@ static bool __avdSceneHLSPlayerContextDecodeVideoFrames(
         params.targetFramerate = context->currentSegmentTargetFramerate;
         bool eof               = false;
         AVD_CHECK(avdVulkanVideoDecoderNextChunk(vulkan, &context->videoPlayer, &params, &eof));
+        if (context->videoPlayer.h264Video->currentChunk.numNalUnitsParsed == 0 && eof) {
+            // AVD_LOG_WARN("out of video data, current segtime=%.3f seg dur=%.3f", context->currentSegmentPlayTime, context->currentSegment.duration);
+        }
     }
 
     return true;
@@ -214,6 +219,12 @@ bool avdSceneHLSPlayerContextAddSegment(
         AVD_CHECK(__avdSceneHLSPlayerContextInit(vulkan, audio, context, avData));
         return true;
     }
+
+    AVD_CHECK_MSG(
+        avData.source == context->sourceIndex,
+        "HLS Player context: segment source index %zu does not match context source index %zu",
+        avData.source,
+        context->sourceIndex);
 
     bool isSegmentOld  = avData.segmentId <= context->currentSegment.segmentId;
     bool segmentExists = avdHLSSegmentStoreHasSegment(&context->segmentStore, avData.source, avData.segmentId);

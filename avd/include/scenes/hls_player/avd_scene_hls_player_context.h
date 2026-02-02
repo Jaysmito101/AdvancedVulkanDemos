@@ -14,6 +14,8 @@
 typedef struct {
     bool initialized;
 
+    AVD_Size sourceIndex;
+
     AVD_HLSSegmentStore segmentStore;
 
     AVD_HLSSegmentAVData currentSegment;
