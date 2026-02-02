@@ -28,6 +28,7 @@
 #include "core/avd_types.h"
 
 #include "pico/picoLog.h"
+#include "pico/picoPerf.h"
 
 // common macros
 #define AVD_ARRAY_COUNT(arr)       (sizeof(arr) / sizeof((arr)[0]))
@@ -68,6 +69,22 @@
         AVD_LOG_WARN("Attempted to free a NULL pointer at %s:%d", __FILE__, __LINE__); \
     }
 
+#define AVD_EXECUTE_DEBOUNCED(intervalMs, codeBlock)                                                         \
+    do {                                                                                                     \
+        static picoPerfTime __avdDebouncedExecutorLastTime = {0};                                            \
+        static AVD_Size __avdNumSkippedCalls               = 0;                                              \
+        picoPerfTime __avdDebouncedExecutorCurrentTime     = picoPerfNow();                                  \
+        AVD_Double __avdDebouncedExecutorElapsed =                                                           \
+            picoPerfDurationMilliseconds(__avdDebouncedExecutorLastTime, __avdDebouncedExecutorCurrentTime); \
+        if (__avdDebouncedExecutorElapsed >= (AVD_Double)(intervalMs)) {                                     \
+            __avdDebouncedExecutorLastTime = __avdDebouncedExecutorCurrentTime;                              \
+            codeBlock;                                                                                       \
+            __avdNumSkippedCalls = 0;                                                                        \
+        } else {                                                                                             \
+            __avdNumSkippedCalls++;                                                                          \
+        }                                                                                                    \
+    } while (0)
+
 #define AVD_LOG_INIT()            PICO_LOG_INIT()
 #define AVD_LOG_SHUTDOWN()        PICO_LOG_SHUTDOWN()
 #define AVD_LOG_DEBUG(msg, ...)   PICO_DEBUG(msg, ##__VA_ARGS__)
@@ -75,6 +92,22 @@
 #define AVD_LOG_INFO(msg, ...)    PICO_INFO(msg, ##__VA_ARGS__)
 #define AVD_LOG_WARN(msg, ...)    PICO_WARN(msg, ##__VA_ARGS__)
 #define AVD_LOG_ERROR(msg, ...)   PICO_ERROR(msg, ##__VA_ARGS__)
+
+#define __AVD_LOG_DEBOUNCED(intervalMs, logFunc, msg, ...)                                      \
+    AVD_EXECUTE_DEBOUNCED(intervalMs, {                                                         \
+        logFunc("[Debounced] " msg " (skipped %d calls)", ##__VA_ARGS__, __avdNumSkippedCalls); \
+    })
+
+#define AVD_LOG_DEBUG_DEBOUNCED(intervalMs, msg, ...) \
+    __AVD_LOG_DEBOUNCED(intervalMs, AVD_LOG_DEBUG, msg, ##__VA_ARGS__)
+#define AVD_LOG_VERBOSE_DEBOUNCED(intervalMs, msg, ...) \
+    __AVD_LOG_DEBOUNCED(intervalMs, AVD_LOG_VERBOSE, msg, ##__VA_ARGS__)
+#define AVD_LOG_INFO_DEBOUNCED(intervalMs, msg, ...) \
+    __AVD_LOG_DEBOUNCED(intervalMs, AVD_LOG_INFO, msg, ##__VA_ARGS__)
+#define AVD_LOG_WARN_DEBOUNCED(intervalMs, msg, ...) \
+    __AVD_LOG_DEBOUNCED(intervalMs, AVD_LOG_WARN, msg, ##__VA_ARGS__)
+#define AVD_LOG_ERROR_DEBOUNCED(intervalMs, msg, ...) \
+    __AVD_LOG_DEBOUNCED(intervalMs, AVD_LOG_ERROR, msg, ##__VA_ARGS__)
 
 #define AVD_CHECK_VK_HANDLE(result, log, ...) \
     if (result == VK_NULL_HANDLE) {           \
