@@ -8,6 +8,7 @@
 #include "scenes/hls_player/avd_scene_hls_stream.h"
 #include "scenes/hls_player/avd_scene_hls_worker_pool.h"
 #include "vulkan/avd_vulkan_video.h"
+#include "vulkan/video/avd_vulkan_video_decoder.h"
 #include <math.h>
 
 static bool __avdSceneHLSPlayerContextInitVideo(
@@ -146,7 +147,12 @@ static bool __avdVulkanVideoDecoderUpdate(
         return true;
     }
 
+    AVD_Float audioTimeMs = 0.0f;
+    avdAudioStreamingPlayerGetTimePlayedMs(
+        &context->audioPlayer,
+        &audioTimeMs);
     if (avdVulkanVideoDecoderGetNumDecodedFrames(decoder) < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES) {
+
         // we have room for more decoded frames
         if (!avdVulkanVideoDecoderChunkHasFrames(decoder)) {
             // try to decode more frames
@@ -161,15 +167,15 @@ static bool __avdVulkanVideoDecoderUpdate(
             }
 
             if (decoder->h264Video->currentChunk.numNalUnitsParsed > 0) {
-                AVD_Float audioTimeMs = 0.0f;
-                avdAudioStreamingPlayerGetTimePlayedMs(
-                    &context->audioPlayer,
-                    &audioTimeMs);
+                // forcefully sync the video to audio
+                decoder->h264Video->currentChunk.timestampSeconds = audioTimeMs / 1000.0f;
+                context->videoHungry                              = false;
+
                 AVD_LOG_WARN(
-                    "Video Time: %.3f - Audio Time: %.3f",
+                    "Video Time: %.3f/(%.3f) - Audio Time: %.3f",
                     decoder->h264Video->currentChunk.timestampSeconds,
+                    decoder->h264Video->currentChunk.durationSeconds,
                     audioTimeMs / 1000.0f);
-                context->videoHungry = false;
             }
         } else {
 
@@ -178,6 +184,10 @@ static bool __avdVulkanVideoDecoderUpdate(
                     vulkan,
                     decoder));
         }
+    } else if (avdVulkanVideoDecoderIsChunkOutdated(decoder, audioTimeMs / 1000.0f)) {
+        AVD_CHECK(
+            avdVulkanVideoDecoderReleaseAllDecodedFrames(
+                decoder));
     }
 
     return true;
@@ -227,7 +237,6 @@ bool avdSceneHLSPlayerContextAddSegment(
         return true;
     }
 
-    // this part is temporary
     AVD_CHECK(__avdSceneHLSPlayerContextAddSegmentAudio(audio, context, avData));
     AVD_CHECK(__avdSceneHLSPlayerContextAddSegmentVideo(vulkan, context, avData));
 
