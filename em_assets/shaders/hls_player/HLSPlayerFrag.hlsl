@@ -1,4 +1,5 @@
 #include "HLSPlayerCommon"
+#include "ColorUtils"
 
 [[vk::push_constant]]
 cbuffer PushConstants {
@@ -70,6 +71,10 @@ float4 main(VertexShaderOutput input) : SV_Target {
     if (dist > 0.0) return float4(0.0, 0.0, 0.0, 1.0);
 
     float2 quadUV = quadLocalPos / quadSize;
+
+    float y = SAMPLE_TEXTURE_TAB(textures, quadUV, quadIndex * 2 + 0).r;
+    float2 cbcr = SAMPLE_TEXTURE_TAB(textures, quadUV, quadIndex * 2 + 1).rg;
+    float3 yuv = float3(y, cbcr);
     float4 texColor = SAMPLE_TEXTURE_TAB(textures, quadUV, quadIndex);
-    return float4(texColor.rgb * fadeFactor, 1.0);
+    return float4(yCbCrToRgbBt601(yuv) * fadeFactor, 1.0);
 }
