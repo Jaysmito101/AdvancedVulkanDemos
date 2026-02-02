@@ -443,12 +443,12 @@ void avdPrintBacktrace(void)
             if (SymGetLineFromAddr64(process, stackFrame.AddrPC.Offset, &lineDisplacement, &line)) {
                 char location[256];
                 snprintf(location, sizeof(location), "%s:%lu", line.FileName, line.LineNumber);
-                printf("| %-5d | 0x%016llx | %-30.30s | %-64.64s |\n", frameIndex, stackFrame.AddrPC.Offset, symbol->Name, location);
+                printf("| %-5d | 0x%016llx | %-30.40s | %-64.128s |\n", frameIndex, stackFrame.AddrPC.Offset, symbol->Name, location);
             } else {
-                printf("| %-5d | 0x%016llx | %-30.30s | + 0x%-57llx |\n", frameIndex, stackFrame.AddrPC.Offset, symbol->Name, displacement);
+                printf("| %-5d | 0x%016llx | %-30.40s | + 0x%-57llx |\n", frameIndex, stackFrame.AddrPC.Offset, symbol->Name, displacement);
             }
         } else {
-            printf("| %-5d | 0x%016llx | %-30s | %-64s |\n", frameIndex, stackFrame.AddrPC.Offset, "unknown", "unknown");
+            printf("| %-5d | 0x%016llx | %-30.40s | %-64.128s |\n", frameIndex, stackFrame.AddrPC.Offset, "unknown", "unknown");
         }
 
         frameIndex++;
