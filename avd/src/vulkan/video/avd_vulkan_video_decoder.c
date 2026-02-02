@@ -537,6 +537,104 @@ static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_Vu
     return true;
 }
 
+static bool __avdVulkanVideoDecoderCopyToDecodedFrame(
+    VkCommandBuffer commandBuffer,
+    AVD_VulkanVideoDecoder *video,
+    AVD_VulkanVideoDecodedFrame *decodedFrame)
+{
+    VkImageMemoryBarrier copyBarrier = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .srcAccessMask       = VK_ACCESS_MEMORY_READ_BIT,
+        .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = decodedFrame->image.image,
+        .subresourceRange    = {
+               .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+               .baseMipLevel   = 0,
+               .levelCount     = VK_REMAINING_MIP_LEVELS,
+               .baseArrayLayer = 0,
+               .layerCount     = VK_REMAINING_ARRAY_LAYERS,
+        },
+    };
+    vkCmdPipelineBarrier(
+        video->commandBuffer,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        0,
+        0,
+        NULL,
+        0,
+        NULL,
+        1,
+        &copyBarrier);
+
+    VkImageCopy copyRegion = {
+        .extent = {
+            .width  = video->h264Video->paddedWidth,
+            .height = video->h264Video->paddedHeight,
+            .depth  = 1,
+        },
+        .srcSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT,
+            .layerCount = 1,
+        },
+        .dstSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT,
+            .layerCount = 1,
+        },
+    };
+    VkImage srcImage = VK_NULL_HANDLE;
+    if (video->dpb.decodeOutputCoincideSupported) {
+        srcImage                                 = video->dpb.dpb.image;
+        copyRegion.srcSubresource.baseArrayLayer = (AVD_UInt32)video->currentChunk.currentDPBSlotIndex;
+    } else {
+        srcImage                                 = video->dpb.decodedOutputImage.image;
+        copyRegion.srcSubresource.baseArrayLayer = 0;
+    }
+
+    vkCmdCopyImage(
+        video->commandBuffer,
+        srcImage,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        decodedFrame->image.image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &copyRegion);
+
+    copyRegion.extent.width              = video->h264Video->paddedWidth / 2;
+    copyRegion.extent.height             = video->h264Video->paddedHeight / 2;
+    copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+    copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+    vkCmdCopyImage(
+        video->commandBuffer,
+        srcImage,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        decodedFrame->image.image,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &copyRegion);
+
+    copyBarrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    copyBarrier.newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    copyBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    copyBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    vkCmdPipelineBarrier(
+        video->commandBuffer,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        0,
+        0,
+        NULL,
+        0,
+        NULL,
+        1,
+        &copyBarrier);
+    return true;
+}
+
 static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *decodedFrame)
 {
     AVD_ASSERT(video != NULL);
@@ -743,95 +841,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
                 video->commandBuffer));
     }
 
-    VkImageMemoryBarrier copyBarrier = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcAccessMask       = VK_ACCESS_MEMORY_READ_BIT,
-        .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-        .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = decodedFrame->image.image,
-        .subresourceRange    = {
-               .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-               .baseMipLevel   = 0,
-               .levelCount     = VK_REMAINING_MIP_LEVELS,
-               .baseArrayLayer = 0,
-               .layerCount     = VK_REMAINING_ARRAY_LAYERS,
-        },
-    };
-    vkCmdPipelineBarrier(
-        video->commandBuffer,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        0,
-        0,
-        NULL,
-        0,
-        NULL,
-        1,
-        &copyBarrier);
-
-    VkImageCopy copyRegion = {
-        .extent = {
-            .width  = video->h264Video->paddedWidth,
-            .height = video->h264Video->paddedHeight,
-            .depth  = 1,
-        },
-        .srcSubresource = {
-            .aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT,
-            .layerCount = 1,
-        },
-        .dstSubresource = {
-            .aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT,
-            .layerCount = 1,
-        },
-    };
-    VkImage srcImage = VK_NULL_HANDLE;
-    if (video->dpb.decodeOutputCoincideSupported) {
-        srcImage                                 = video->dpb.dpb.image;
-        copyRegion.srcSubresource.baseArrayLayer = (AVD_UInt32)chunk->currentDPBSlotIndex;
-    } else {
-        srcImage                                 = video->dpb.decodedOutputImage.image;
-        copyRegion.srcSubresource.baseArrayLayer = 0;
-    }
-    vkCmdCopyImage(
-        video->commandBuffer,
-        srcImage,
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        decodedFrame->image.image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &copyRegion);
-
-    copyRegion.extent.width              = video->h264Video->paddedWidth / 2;
-    copyRegion.extent.height             = video->h264Video->paddedHeight / 2;
-    copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
-    copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
-    vkCmdCopyImage(
-        video->commandBuffer,
-        srcImage,
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        decodedFrame->image.image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        1,
-        &copyRegion);
-
-    copyBarrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    copyBarrier.newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    copyBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    copyBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    vkCmdPipelineBarrier(
-        video->commandBuffer,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        0,
-        0,
-        NULL,
-        0,
-        NULL,
-        1,
-        &copyBarrier);
+    AVD_CHECK(__avdVulkanVideoDecoderCopyToDecodedFrame(video->commandBuffer, video, decodedFrame));
 
     AVD_VK_CALL(vkEndCommandBuffer(video->commandBuffer));
 
