@@ -25,7 +25,7 @@ bool avdHLSSegmentStoreClear(AVD_HLSSegmentStore *store)
 {
     AVD_ASSERT(store);
 
-    for (AVD_Size i = 0; i < store->loadedSegmentCount; i++) {
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS; i++) {
         avdHLSSegmentAVDataFree(&store->loadedSegments[i]);
     }
 
@@ -37,7 +37,7 @@ bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_Size sourceInd
 {
     AVD_ASSERT(store != NULL);
 
-    for (AVD_Size i = 0; i < store->loadedSegmentCount; i++) {
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS; i++) {
         if (store->loadedSegments[i].source == sourceIndex &&
             store->loadedSegments[i].segmentId == segmentId) {
             return true;
@@ -56,7 +56,7 @@ bool avdHLSSegmentStoreAdd(AVD_HLSSegmentStore *store, AVD_HLSSegmentAVData data
     AVD_Size oldestSegmentIndex = 0;
 
     AVD_UInt32 oldestAccessTime = UINT32_MAX;
-    for (AVD_Size i = 0; i < store->loadedSegmentCount; i++) {
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS; i++) {
         if (store->loadedSegments[i].source == data.source &&
             store->loadedSegments[i].segmentId == data.segmentId) {
             AVD_LOG_WARN("HLS Segment Store: segment %u for source %u already exists in store", data.segmentId, data.source);
@@ -93,7 +93,7 @@ bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_Size sourceIndex,
     AVD_ASSERT(store != NULL);
     AVD_ASSERT(data != NULL);
 
-    for (AVD_Size i = 0; i < store->loadedSegmentCount; i++) {
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS; i++) {
         if (store->loadedSegments[i].source == sourceIndex &&
             store->loadedSegments[i].segmentId == segmentId) {
             store->loadedSegmentCount -= 1;
@@ -112,7 +112,7 @@ bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_Size sour
     AVD_ASSERT(store != NULL);
 
     AVD_Size nextSegmentId = UINT32_MAX;
-    for (AVD_Size i = 0; i < store->loadedSegmentCount; i++) {
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS; i++) {
         if (store->loadedSegments[i].source == sourceIndex &&
             store->loadedSegments[i].segmentId > currentSegmentId &&
             store->loadedSegments[i].segmentId < nextSegmentId) {
@@ -124,6 +124,31 @@ bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_Size sour
     }
     *outSegmentId = nextSegmentId;
     return true;
+}
+
+AVD_Size avdHLSSegmentStoreGetLoadedSegmentCount(AVD_HLSSegmentStore *store, AVD_Size sourceIndex)
+{
+    AVD_ASSERT(store != NULL);
+
+    AVD_Size count = 0;
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS; i++) {
+        if (store->loadedSegments[i].source == sourceIndex) {
+            count++;
+        }
+    }
+    return count;
+}
+
+void avdHLSSegmentStoreLogSegmentsInStore(AVD_HLSSegmentStore *store, AVD_Size sourceIndex)
+{
+    AVD_ASSERT(store != NULL);
+
+    AVD_LOG_INFO("HLS Segment Store: Loaded segments for source %u:", sourceIndex);
+    for (AVD_Size i = 0; i < AVD_SCENE_HLS_PLAYER_MAX_LOADED_SEGMENTS; i++) {
+        if (store->loadedSegments[i].source == sourceIndex && store->loadedSegments[i].segmentId != 0) {
+            AVD_LOG_INFO("  Segment ID: %u, Duration: %.3f seconds", store->loadedSegments[i].segmentId, store->loadedSegments[i].duration);
+        }
+    }
 }
 
 void avdHLSSegmentAVDataFree(AVD_HLSSegmentAVData *avData)

@@ -5,6 +5,7 @@
 #include "core/avd_utils.h"
 #include "pico/picoStream.h"
 #include "scenes/hls_player/avd_scene_hls_player_context.h"
+#include "scenes/hls_player/avd_scene_hls_player_segment_store.h"
 #include "scenes/hls_player/avd_scene_hls_stream.h"
 #include "scenes/hls_player/avd_scene_hls_worker_pool.h"
 #include "vulkan/avd_vulkan_video.h"
@@ -53,8 +54,6 @@ static bool __avdSceneHLSPlayerContextInitVideo(
         return false;
     }
 
-    context->videoHungry = false;
-
     return true;
 }
 
@@ -97,40 +96,80 @@ static bool __avdSceneHLSPlayerContextInit(
 
     memset(context, 0, sizeof(AVD_SceneHLSPlayerContext));
 
+    AVD_CHECK(avdHLSSegmentStoreInit(&context->segmentStore));
     AVD_CHECK(__avdSceneHLSPlayerContextInitVideo(vulkan, audio, context, avData));
     AVD_CHECK(__avdSceneHLSPlayerContextInitAudio(vulkan, audio, context, avData));
+
+    context->currentSegment          = avData;
+    context->currentSegmentPlayTime  = 0.0f;
+    context->currentSegmentStartTime = -100000.0f;
 
     context->initialized = true;
     return true;
 }
 
-static bool __avdSceneHLSPlayerContextAddSegmentAudio(
+static bool __avdSceneHLSPlayerContextSwitchToNextSegment(
+    AVD_Vulkan *vulkan,
     AVD_Audio *audio,
-    AVD_SceneHLSPlayerContext *context,
-    AVD_HLSSegmentAVData avData)
+    AVD_SceneHLSPlayerContext *context)
 {
+    AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(audio != NULL);
     AVD_ASSERT(context != NULL);
 
-    if (!avdAudioStreamingPlayerAddChunk(&context->audioPlayer, avData.aacBuffer, avData.aacSize)) {
-        AVD_LOG_ERROR("Failed to add audio chunk to streaming player in HLS player context");
-        return false;
+    // move to next segment
+    AVD_Size nextSegmentId = {0};
+    if (!avdHLSSegmentStoreFindNextSegment(
+            &context->segmentStore,
+            context->currentSegment.source,
+            context->currentSegment.segmentId,
+            &nextSegmentId)) {
+        // no next segment yet, just wait
+        return true;
     }
+
+    AVD_LOG_INFO("HLS Player context switching to next segment %u at time %.3f", nextSegmentId, time);
+
+    avdHLSSegmentAVDataFree(&context->currentSegment);
+
+    AVD_HLSSegmentAVData nextSegment = {0};
+    AVD_CHECK(avdHLSSegmentStoreAcquire(
+        &context->segmentStore,
+        context->currentSegment.source,
+        nextSegmentId,
+        &nextSegment));
+    context->currentSegment                = nextSegment;
+    context->currentSegmentTargetFramerate = avdH264VideoCountFrames(nextSegment.h264Buffer, nextSegment.h264Size) / nextSegment.duration;
+
+    AVD_CHECK(avdAudioStreamingPlayerClearBuffers(&context->audioPlayer)); // NOTE: this isnt really needed
+    AVD_CHECK(avdAudioStreamingPlayerAddChunk(&context->audioPlayer, nextSegment.aacBuffer, nextSegment.aacSize));
+
+    // maybe clear here??
+    AVD_CHECK(avdHLSStreamAppendData(
+        context->videoDataStream,
+        nextSegment.h264Buffer,
+        nextSegment.h264Size));
 
     return true;
 }
 
-static bool __avdSceneHLSPlayerContextAddSegmentVideo(
+static bool __avdSceneHLSPlayerContextDecodeVideoFrames(
     AVD_Vulkan *vulkan,
-    AVD_SceneHLSPlayerContext *context,
-    AVD_HLSSegmentAVData avData)
+    AVD_Audio *audio,
+    AVD_SceneHLSPlayerContext *context)
 {
     AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(audio != NULL);
     AVD_ASSERT(context != NULL);
 
-    if (!avdHLSStreamAppendData(context->videoDataStream, avData.h264Buffer, avData.h264Size)) {
-        AVD_LOG_ERROR("Failed to append data to HLS stream for HLS player context");
-        return false;
+    if (avdVulkanVideoDecoderChunkHasFrames(&context->videoPlayer)) {
+        AVD_CHECK(avdVulkanVideoDecoderTryDecodeFrames(vulkan, &context->videoPlayer));
+    } else {
+        AVD_H264VideoLoadParams params = {0};
+        AVD_CHECK(avdH264VideoLoadParamsDefault(vulkan, &params));
+        params.targetFramerate = context->currentSegmentTargetFramerate;
+        bool eof               = false;
+        AVD_CHECK(avdVulkanVideoDecoderNextChunk(vulkan, &context->videoPlayer, &params, &eof));
     }
 
     return true;
@@ -146,6 +185,10 @@ void avdSceneHLSPlayerContextDestroy(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_S
         memset(context, 0, sizeof(AVD_SceneHLSPlayerContext));
         return;
     }
+
+    avdHLSSegmentAVDataFree(&context->currentSegment);
+
+    avdHLSSegmentStoreDestroy(&context->segmentStore);
 
     if (context->videoPlayer.initialized) {
         avdVulkanVideoDecoderDestroy(vulkan, &context->videoPlayer);
@@ -166,41 +209,21 @@ bool avdSceneHLSPlayerContextAddSegment(
     AVD_ASSERT(audio != NULL);
     AVD_ASSERT(context != NULL);
 
-    AVD_Float videoFramerate = (AVD_Float)avdH264VideoCountFrames(avData.h264Buffer, avData.h264Size) / avData.duration;
-    if (fabsf(context->videoFramerate - videoFramerate) > 0.01f) {
-        AVD_LOG_WARN(
-            "HLS Player context video framerate changed from %.3f to %.3f fps",
-            context->videoFramerate,
-            videoFramerate);
-        context->videoFramerate = videoFramerate;
-    }
-
     if (!context->initialized) {
+        // for first segment, just init
         AVD_CHECK(__avdSceneHLSPlayerContextInit(vulkan, audio, context, avData));
         return true;
     }
 
-    AVD_CHECK(__avdSceneHLSPlayerContextAddSegmentAudio(audio, context, avData));
-    AVD_CHECK(__avdSceneHLSPlayerContextAddSegmentVideo(vulkan, context, avData));
-
-    AVD_LOG_VERBOSE("new segment: src=%zu seg=%zu duration=%.3f", avData.source, avData.segmentId, avData.duration);
-
-    avdHLSSegmentAVDataFree(&avData);
-    return true;
-}
-
-bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_SceneHLSPlayerContext *context)
-{
-    AVD_ASSERT(vulkan != NULL);
-    AVD_ASSERT(audio != NULL);
-    AVD_ASSERT(context != NULL);
-
-    if (!context->initialized) {
+    bool isSegmentOld  = avData.segmentId <= context->currentSegment.segmentId;
+    bool segmentExists = avdHLSSegmentStoreHasSegment(&context->segmentStore, avData.source, avData.segmentId);
+    if (isSegmentOld || segmentExists) {
+        avdHLSSegmentAVDataFree(&avData);
         return true;
     }
 
-    AVD_CHECK(avdAudioStreamingPlayerUpdate(&context->audioPlayer));
-    AVD_CHECK(avdVulkanVideoDecoderUpdate(vulkan, &context->videoPlayer));
+    AVD_LOG_VERBOSE("new segment: src=%zu seg=%zu duration=%.3f now playing: %zu", avData.source, avData.segmentId, avData.duration, context->currentSegment.segmentId);
+    AVD_CHECK(avdHLSSegmentStoreAdd(&context->segmentStore, avData));
 
     return true;
 }
@@ -213,15 +236,7 @@ bool avdSceneHLSPlayerContextIsFed(AVD_SceneHLSPlayerContext *context)
         return false;
     }
 
-    AVD_Bool audioFed = avdAudioStreamingPlayerIsFed(&context->audioPlayer);
-
-    if (audioFed == context->videoHungry) {
-        AVD_LOG_ERROR("Audio/Video sync issue in HLS Player context: audioFed=%s videoFed=%s",
-                      audioFed ? "true" : "false",
-                      !context->videoHungry ? "true" : "false");
-    }
-
-    return audioFed && !context->videoHungry;
+    return avdHLSSegmentStoreGetLoadedSegmentCount(&context->segmentStore, context->currentSegment.source) > 0;
 }
 
 bool avdSceneHLSPlayerContextTryAcquireFrame(
@@ -231,44 +246,13 @@ bool avdSceneHLSPlayerContextTryAcquireFrame(
     AVD_ASSERT(context != NULL);
     AVD_ASSERT(outFrame != NULL);
 
-    return avdVulkanVideoDecoderTryAcquireFrame(
+    AVD_VulkanVideoDecodedFrame *oldFrame = *outFrame;
+    (void)avdVulkanVideoDecoderTryAcquireFrame(
         &context->videoPlayer,
-        avdSceneHLSPlayerContextGetTime(context),
+        context->currentSegmentStartTime + context->currentSegmentPlayTime,
         outFrame);
-}
 
-bool avdSceneHLSPlayerContextTryDecodeFrames(
-    AVD_Vulkan *vulkan,
-    AVD_SceneHLSPlayerContext *context)
-{
-    AVD_ASSERT(vulkan != NULL);
-    AVD_ASSERT(context != NULL);
-
-    if (!avdVulkanVideoDecoderChunkHasFrames(&context->videoPlayer)) {
-        AVD_H264VideoLoadParams loadParams = {0};
-        avdH264VideoLoadParamsDefault(vulkan, &loadParams);
-        loadParams.targetFramerate = context->videoFramerate;
-        bool eof                   = false;
-
-        // force sync audio/video by updating timestamp offset
-        context->videoPlayer.timestampSecondsOffset = avdSceneHLSPlayerContextGetTime(context);
-
-        AVD_CHECK(avdVulkanVideoDecoderNextChunk(
-            vulkan,
-            &context->videoPlayer,
-            &loadParams,
-            &eof));
-        if (context->videoPlayer.h264Video->currentChunk.numNalUnitsParsed == 0 && eof) {
-            context->videoHungry = true;
-            return true;
-        } else if (context->videoPlayer.h264Video->currentChunk.numNalUnitsParsed > 0) {
-            context->videoHungry = false;
-        }
-    } else {
-        AVD_CHECK(avdVulkanVideoDecoderTryDecodeFrames(vulkan, &context->videoPlayer));
-    }
-
-    return true;
+    return oldFrame != *outFrame;
 }
 
 AVD_Float avdSceneHLSPlayerContextGetTime(AVD_SceneHLSPlayerContext *context)
@@ -279,7 +263,45 @@ AVD_Float avdSceneHLSPlayerContextGetTime(AVD_SceneHLSPlayerContext *context)
         return 0.0f;
     }
 
-    AVD_Float time = 0.0f;
-    AVD_CHECK(avdAudioStreamingPlayerGetTimePlayedMs(&context->audioPlayer, &time));
-    return time / 1000.0f;
+    return context->currentSegmentStartTime + context->currentSegmentPlayTime;
+}
+
+bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_SceneHLSPlayerContext *context, AVD_Float time)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(audio != NULL);
+    AVD_ASSERT(context != NULL);
+
+    if (!context->initialized) {
+        return true;
+    }
+
+    // check if current chunk is still playing, else switch to next (with some leeway)
+    if (time - context->currentSegmentStartTime > context->currentSegment.duration) {
+        AVD_CHECK(__avdSceneHLSPlayerContextSwitchToNextSegment(vulkan, audio, context));
+        context->currentSegmentPlayTime             = 0.0f;
+        context->currentSegmentStartTime            = time;
+        context->videoPlayer.timestampSecondsOffset = time; // NOTE: I know that this is kinda messy, I will clean it up later...
+    } else {
+        context->currentSegmentPlayTime = time - context->currentSegmentStartTime;
+        if (!avdVulkanVideoDecoderHasFrameForTime(&context->videoPlayer, time)) {
+            AVD_CHECK(__avdSceneHLSPlayerContextDecodeVideoFrames(vulkan, audio, context));
+        }
+    }
+
+    AVD_CHECK(avdAudioStreamingPlayerUpdate(&context->audioPlayer));
+    AVD_CHECK(avdVulkanVideoDecoderUpdate(vulkan, &context->videoPlayer));
+
+    return true;
+}
+
+AVD_Size avdSceneHLSPlayerContextGetCurrentlyPlayingSegmentId(AVD_SceneHLSPlayerContext *context)
+{
+    AVD_ASSERT(context != NULL);
+
+    if (!context->initialized) {
+        return 0;
+    }
+
+    return context->currentSegment.segmentId;
 }

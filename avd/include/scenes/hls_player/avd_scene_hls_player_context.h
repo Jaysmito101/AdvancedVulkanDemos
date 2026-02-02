@@ -3,6 +3,7 @@
 
 #include "audio/avd_audio_core.h"
 #include "audio/avd_audio_streaming_player.h"
+#include "avd_scene_hls_player_segment_store.h"
 #include "core/avd_core.h"
 #include "core/avd_types.h"
 #include "pico/picoStream.h"
@@ -13,12 +14,12 @@
 typedef struct {
     bool initialized;
 
-    AVD_Float startTime;
-    AVD_Float lastUpdateTime;
+    AVD_HLSSegmentStore segmentStore;
 
-    AVD_Float videoFramerate;
-
-    AVD_Bool videoHungry;
+    AVD_HLSSegmentAVData currentSegment;
+    AVD_Float currentSegmentPlayTime;
+    AVD_Float currentSegmentStartTime;
+    AVD_Float currentSegmentTargetFramerate;
 
     picoStream videoDataStream;
     AVD_VulkanVideoDecoder videoPlayer;
@@ -31,16 +32,13 @@ bool avdSceneHLSPlayerContextAddSegment(
     AVD_Audio *audio,
     AVD_SceneHLSPlayerContext *context,
     AVD_HLSSegmentAVData avData);
-bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_SceneHLSPlayerContext *context);
+bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_SceneHLSPlayerContext *context, AVD_Float time);
 bool avdSceneHLSPlayerContextIsFed(AVD_SceneHLSPlayerContext *context);
 
 bool avdSceneHLSPlayerContextTryAcquireFrame(
     AVD_SceneHLSPlayerContext *context,
     AVD_VulkanVideoDecodedFrame **outFrame);
-bool avdSceneHLSPlayerContextTryDecodeFrames(
-    AVD_Vulkan *vulkan,
-    AVD_SceneHLSPlayerContext *context);
-
+AVD_Size avdSceneHLSPlayerContextGetCurrentlyPlayingSegmentId(AVD_SceneHLSPlayerContext *context);
 AVD_Float avdSceneHLSPlayerContextGetTime(AVD_SceneHLSPlayerContext *context);
 
 #endif // AVD_SCENE_HLS_PLAYER_CONTEXT_H

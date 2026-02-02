@@ -34,6 +34,8 @@ bool avdHLSSegmentStoreHasSegment(AVD_HLSSegmentStore *store, AVD_Size sourceInd
 bool avdHLSSegmentStoreAdd(AVD_HLSSegmentStore *store, AVD_HLSSegmentAVData data);
 bool avdHLSSegmentStoreAcquire(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size segmentId, AVD_HLSSegmentAVData *data);
 bool avdHLSSegmentStoreFindNextSegment(AVD_HLSSegmentStore *store, AVD_Size sourceIndex, AVD_Size currentSegmentId, AVD_Size *outSegmentId);
+AVD_Size avdHLSSegmentStoreGetLoadedSegmentCount(AVD_HLSSegmentStore *store, AVD_Size sourceIndex);
+void avdHLSSegmentStoreLogSegmentsInStore(AVD_HLSSegmentStore *store, AVD_Size sourceIndex);
 
 void avdHLSSegmentAVDataFree(AVD_HLSSegmentAVData *avData);
 

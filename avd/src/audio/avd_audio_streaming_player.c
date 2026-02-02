@@ -351,6 +351,23 @@ bool avdAudioStreamingPlayerIsPlaying(AVD_AudioStreamingPlayer *player)
     return player->state == AVD_AUDIO_STREAMING_PLAYER_STATE_PLAYING;
 }
 
+bool avdAudioStreamingPlayerClearBuffers(AVD_AudioStreamingPlayer *player)
+{
+    AVD_ASSERT(player != NULL);
+
+    for (AVD_Size i = 0; i < player->bufferCount; i++) {
+        player->chunks[i].inUse = false;
+    }
+
+    player->chunkCount          = 0;
+    player->currentChunkIndex   = AVD_AUDIO_STREAMING_PLAYER_MAX_BUFFERS;
+    player->sampleOffsetInChunk = 0;
+    player->totalSamplesWritten = 0;
+    player->buffersProcessed    = 0;
+
+    return true;
+}
+
 AVD_Size avdAudioStreamingPlayerGetQueuedChunks(AVD_AudioStreamingPlayer *player)
 {
     AVD_ASSERT(player != NULL);
@@ -420,20 +437,43 @@ bool avdAudioStreamingPlayerGetBufferedDurationMs(AVD_AudioStreamingPlayer *play
     return true;
 }
 
-bool avdAudioStreamingPlayerGetTimePlayedMs(AVD_AudioStreamingPlayer *player, AVD_Float *outTimeMs)
+AVD_Float avdAudioStreamingPlayerGetTimePlayed(AVD_AudioStreamingPlayer *player)
 {
     AVD_ASSERT(player != NULL);
-    AVD_ASSERT(outTimeMs != NULL);
 
     if (!player->formatInitialized || player->sampleRate == 0 || player->channels == 0) {
-        *outTimeMs = 0.0f;
-        return false;
+        return 0.0f;
     }
 
     AVD_Size totalFrames = player->totalSamplesWritten / player->channels;
-    *outTimeMs           = ((AVD_Float)totalFrames / (AVD_Float)player->sampleRate) * 1000.0f;
+    return ((AVD_Float)totalFrames / (AVD_Float)player->sampleRate);
+}
 
-    return true;
+AVD_Float avdAudioStreamingPlayerGetTimeOffsetInChunk(AVD_AudioStreamingPlayer *player)
+{
+    AVD_ASSERT(player != NULL);
+
+    if (!player->formatInitialized || player->sampleRate == 0 || player->channels == 0) {
+        return 0.0f;
+    }
+
+    if (player->currentChunkIndex >= AVD_AUDIO_STREAMING_PLAYER_MAX_BUFFERS) {
+        return 0.0f;
+    }
+
+    AVD_AudioStreamingPlayerBufferChunk *chunk = &player->chunks[player->currentChunkIndex];
+    if (!chunk->inUse || !chunk->clip.samples) {
+        return 0.0f;
+    }
+
+    AVD_Size samplesInChunk = chunk->clip.sampleCount;
+    if (samplesInChunk == 0) {
+        return 0.0f;
+    }
+
+    AVD_Size currentFrame = player->sampleOffsetInChunk / player->channels;
+
+    return ((AVD_Float)currentFrame / (AVD_Float)player->sampleRate);
 }
 
 bool avdAudioStreamingPlayerUpdate(AVD_AudioStreamingPlayer *player)

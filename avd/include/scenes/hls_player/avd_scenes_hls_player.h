@@ -24,7 +24,7 @@ typedef struct {
     AVD_Float refreshIntervalMs;
     AVD_Float lastRefreshed;
     AVD_Float videoStartTime;
-    AVD_UInt32 lastPushedSegment;
+    AVD_Size currentlyPlayingSegmentId;
 
     AVD_VulkanVideoDecodedFrame* currentFrame;
     AVD_SceneHLSPlayerContext player;
@@ -51,7 +51,6 @@ typedef struct AVD_SceneHLSPlayer {
     AVD_HLSURLPool urlPool;
     AVD_HLSMediaCache mediaCache;
     AVD_HLSWorkerPool workerPool;
-    AVD_HLSSegmentStore segmentStore;
 
     bool isSupported;
     AVD_Vulkan *vulkan;

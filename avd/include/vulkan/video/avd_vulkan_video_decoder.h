@@ -121,6 +121,9 @@ bool avdVulkanVideoDecoderIsChunkOutdated(AVD_VulkanVideoDecoder *video, AVD_Flo
 bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_H264VideoLoadParams *chunkLoadParams, bool *eof);
 bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video);
 
+bool avdVulkanVideoDecoderHasFrameForTime(
+    AVD_VulkanVideoDecoder *video,
+    AVD_Float currentTime);
 bool avdVulkanVideoDecoderTryAcquireFrame(
     AVD_VulkanVideoDecoder *video,
     AVD_Float currentTime,

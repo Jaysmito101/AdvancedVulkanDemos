@@ -162,6 +162,7 @@ static bool __avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_V
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
         AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
         if (!frame->initialized || frame->image.info.width != video->h264Video->paddedWidth || frame->image.info.height != video->h264Video->paddedHeight) {
+            avdVulkanWaitIdle(vulkan);
             if (frame->initialized) {
                 avdVulkanVideoDecodedFrameDestroy(vulkan, frame);
             }
@@ -854,19 +855,11 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
         chunk->referenceSlotIndex                    = (chunk->referenceSlotIndex + 1) % video->h264Video->numDPBSlots;
     }
 
-    // mark all frames from previous frame as ready
-    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; ++i) {
-        AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
-        if (frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_PROCESSING) {
-            frame->status = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY;
-        }
-    }
-
     decodedFrame->sliceIndex           = video->currentChunk.currentSliceIndex;
     decodedFrame->chunkDisplayOrder    = frame->chunkDisplayOrder;
     decodedFrame->absoluteDisplayOrder = video->currentChunk.chunkDisplayOrderOffset + frame->chunkDisplayOrder;
     decodedFrame->timestampSeconds     = video->currentChunk.timestampSeconds + frame->chunkDisplayOrder * video->h264Video->frameDurationSeconds;
-    decodedFrame->status               = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_PROCESSING;
+    decodedFrame->status               = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY;
     video->currentChunk.currentSliceIndex++;
     // AVD_LOG_VERBOSE("Decoded frame with display order %f %f %zu %zu %zu", decodedFrame->timestampSeconds, video->currentChunk.timestampSeconds,
     //                 decodedFrame->chunkDisplayOrder,
@@ -1170,9 +1163,9 @@ bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
 
-    AVD_CHECK_MSG(
-        video->initialized && video->currentChunk.ready,
-        "Video decoder not initialized");
+    if (!video->initialized || !video->currentChunk.ready) {
+        return true; // nothing to do
+    }
 
     return true;
 }
@@ -1240,6 +1233,25 @@ bool avdVulkanVideoDecoderTryAcquireFrame(
                 }
                 // found a frame that is in time
                 *outFrame = frame;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool avdVulkanVideoDecoderHasFrameForTime(
+    AVD_VulkanVideoDecoder *video,
+    AVD_Float currentTime)
+{
+    AVD_ASSERT(video != NULL);
+
+    // try to find a frame that is in time
+    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
+        AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
+        if (frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY) {
+            if (__avdVulkanVideoDecoderIsFrameInTime(video, frame, currentTime)) {
                 return true;
             }
         }

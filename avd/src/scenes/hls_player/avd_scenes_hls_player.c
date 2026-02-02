@@ -138,46 +138,6 @@ static bool __avdSceneHLSPlayerSaveSegmentToDisk(AVD_HLSSegmentAVData *avData)
     return true;
 }
 
-static bool __avdSceneHLSPlayerPushNextSegment(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, AVD_Size sourceIndex)
-{
-    AVD_ASSERT(scene != NULL);
-    AVD_ASSERT(sourceIndex < scene->sourceCount);
-
-    AVD_Float time                   = (AVD_Float)appState->framerate.currentTime;
-    AVD_SceneHLSPlayerSource *source = &scene->sources[sourceIndex];
-    AVD_Size currentSegmentId        = source->lastPushedSegment;
-
-    AVD_Size nextSegmentId = 0;
-    AVD_CHECK(avdHLSSegmentStoreFindNextSegment(
-        &scene->segmentStore,
-        sourceIndex,
-        currentSegmentId,
-        &nextSegmentId));
-
-    AVD_HLSSegmentAVData segmentData = {0};
-    AVD_CHECK(avdHLSSegmentStoreAcquire(
-        &scene->segmentStore,
-        sourceIndex,
-        (AVD_UInt32)nextSegmentId,
-        &segmentData));
-
-#ifdef AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
-    AVD_CHECK(__avdSceneHLSPlayerSaveSegmentToDisk(&segmentData));
-#endif
-
-    AVD_CHECK(avdSceneHLSPlayerContextAddSegment(
-        &appState->vulkan,
-        &appState->audio,
-        &source->player,
-        segmentData));
-
-    source->lastPushedSegment = (AVD_UInt32)nextSegmentId;
-
-    // AVD_LOG_VERBOSE("loaded segment %u (size: %zu bytes, frames: %zu, duration: %.3f) at time %.3f seconds", nextSegmentId, dataSize, frameCount, slot->duration, time - source->videoStartTime);
-
-    return true;
-}
-
 static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
     AVD_Float time = (AVD_Float)appState->framerate.currentTime;
@@ -213,23 +173,17 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
 
         source->refreshIntervalMs = AVD_MIN(source->refreshIntervalMs, payload.avData.duration);
 
-        bool isSegmentOld         = source->lastPushedSegment >= payload.avData.segmentId;
-        bool segmentAlreadyLoaded = avdHLSSegmentStoreHasSegment(
-            &scene->segmentStore,
-            payload.avData.source,
-            payload.avData.segmentId);
-
-        if (isSegmentOld || segmentAlreadyLoaded) {
-            avdHLSSegmentAVDataFree(&payload.avData);
-            continue;
-        }
+#ifdef AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
+        __avdSceneHLSPlayerSaveSegmentToDisk(&payload.avData);
+#endif
 
         AVD_LOG_INFO("received ready segment %u uration: %.3f at %.3f", payload.avData.segmentId, payload.avData.duration, (AVD_Float)appState->framerate.currentTime);
-        AVD_CHECK(avdHLSSegmentStoreAdd(&scene->segmentStore, payload.avData));
-
-        if (source->lastPushedSegment == 0 || avdHLSSegmentStoreHasSegment(&scene->segmentStore, payload.avData.source, source->lastPushedSegment + 1) || !avdSceneHLSPlayerContextIsFed(&source->player)) {
-            AVD_CHECK(__avdSceneHLSPlayerPushNextSegment(appState, scene, payload.avData.source));
-        }
+        AVD_CHECK(
+            avdSceneHLSPlayerContextAddSegment(
+                &appState->vulkan,
+                &appState->audio,
+                &source->player,
+                payload.avData));
     }
 
     return true;
@@ -245,7 +199,7 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
     for (AVD_Size i = 0; i < scene->sourceCount; i++) {
         AVD_SceneHLSPlayerSource *source = &scene->sources[i];
 
-        if (source->lastPushedSegment != 0 && !avdSceneHLSPlayerContextIsFed(&source->player) && time - source->lastRefreshed >= 1.0f) {
+        if (source->currentlyPlayingSegmentId != 0 && !avdSceneHLSPlayerContextIsFed(&source->player) && time - source->lastRefreshed >= 1.0f) {
             AVD_LOG_WARN("HLS Player context ran out of data to decode/play!");
             __avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i);
         }
@@ -254,41 +208,36 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
             continue;
         }
 
-        AVD_VulkanVideoDecodedFrame *currentFrame = source->currentFrame;
+        AVD_CHECK(avdSceneHLSPlayerContextUpdate(&appState->vulkan, &appState->audio, &source->player, time));
+
+        source->currentlyPlayingSegmentId = avdSceneHLSPlayerContextGetCurrentlyPlayingSegmentId(&source->player);
         if (avdSceneHLSPlayerContextTryAcquireFrame(&source->player, &source->currentFrame)) {
             AVD_VulkanVideoDecodedFrame *frame = source->currentFrame;
-            if (frame != currentFrame) {
 
-                AVD_LOG_WARN("ne decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
+            AVD_LOG_WARN("ne decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
 
-                VkWriteDescriptorSet descriptorWrite[2] = {
-                    {
-                        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                        .dstSet          = appState->vulkan.bindlessDescriptorSet,
-                        .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                        .dstArrayElement = (AVD_UInt32)i * 2 + 0,
-                        .descriptorCount = 1,
-                        .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                        .pImageInfo      = &frame->ycbcrSubresource.raw.luma.descriptorImageInfo,
-                    },
-                    {
-                        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                        .dstSet          = appState->vulkan.bindlessDescriptorSet,
-                        .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                        .dstArrayElement = (AVD_UInt32)i * 2 + 1,
-                        .descriptorCount = 1,
-                        .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                        .pImageInfo      = &frame->ycbcrSubresource.raw.chroma.descriptorImageInfo,
-                    },
-                };
-                vkUpdateDescriptorSets(appState->vulkan.device, 2, descriptorWrite, 0, NULL);
-            }
-        } else {
-            // if we have vailed to get the frames, we need to decoder
-            AVD_CHECK(avdSceneHLSPlayerContextTryDecodeFrames(&appState->vulkan, &source->player));
+            VkWriteDescriptorSet descriptorWrite[2] = {
+                {
+                    .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .dstSet          = appState->vulkan.bindlessDescriptorSet,
+                    .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .dstArrayElement = (AVD_UInt32)i * 2 + 0,
+                    .descriptorCount = 1,
+                    .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .pImageInfo      = &frame->ycbcrSubresource.raw.luma.descriptorImageInfo,
+                },
+                {
+                    .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .dstSet          = appState->vulkan.bindlessDescriptorSet,
+                    .dstBinding      = (AVD_UInt32)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .dstArrayElement = (AVD_UInt32)i * 2 + 1,
+                    .descriptorCount = 1,
+                    .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .pImageInfo      = &frame->ycbcrSubresource.raw.chroma.descriptorImageInfo,
+                },
+            };
+            vkUpdateDescriptorSets(appState->vulkan.device, 2, descriptorWrite, 0, NULL);
         }
-
-        AVD_CHECK(avdSceneHLSPlayerContextUpdate(&appState->vulkan, &appState->audio, &source->player));
     }
 
     return true;
@@ -405,7 +354,6 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
 
     hlsPlayer->vulkan = &appState->vulkan;
 
-    AVD_CHECK(avdHLSSegmentStoreInit(&hlsPlayer->segmentStore));
     AVD_CHECK(avdHLSURLPoolInit(&hlsPlayer->urlPool));
     AVD_CHECK(avdHLSMediaCacheInit(&hlsPlayer->mediaCache));
     AVD_CHECK(avdHLSWorkerPoolInit(&hlsPlayer->workerPool, &hlsPlayer->urlPool, &hlsPlayer->mediaCache, hlsPlayer));
@@ -423,7 +371,6 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
     avdHLSWorkerPoolDestroy(&hlsPlayer->workerPool);
     avdHLSMediaCacheDestroy(&hlsPlayer->mediaCache);
     avdHLSURLPoolDestroy(&hlsPlayer->urlPool);
-    avdHLSSegmentStoreDestroy(&hlsPlayer->segmentStore);
 
     __avdSceneHLSPlayerFreeSources(appState, hlsPlayer);
 
@@ -471,7 +418,6 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
             AVD_LOG_INFO("Trying to load sources from: %s", event->dragNDrop.paths[0]);
 
             avdHLSWorkerPoolFlush(&hlsPlayer->workerPool);
-            avdHLSSegmentStoreClear(&hlsPlayer->segmentStore);
             avdHLSURLPoolClear(&hlsPlayer->urlPool);
             __avdSceneHLSPlayerLoadSourcesFromPath(appState, hlsPlayer, event->dragNDrop.paths[0]);
         }

@@ -776,6 +776,12 @@ void avdVulkanWaitIdle(AVD_Vulkan *vulkan)
     vkDeviceWaitIdle(vulkan->device);
     vkQueueWaitIdle(vulkan->graphicsQueue);
     vkQueueWaitIdle(vulkan->computeQueue);
+    if (vulkan->supportedFeatures.videoDecode) {
+        vkQueueWaitIdle(vulkan->videoDecodeQueue);
+    }
+    if (vulkan->supportedFeatures.videoEncode) {
+        vkQueueWaitIdle(vulkan->videoEncodeQueue);
+    }
 }
 
 void avdVulkanDestroySurface(AVD_Vulkan *vulkan, VkSurfaceKHR surface)

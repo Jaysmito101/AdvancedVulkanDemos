@@ -72,7 +72,10 @@ AVD_Size avdAudioStreamingPlayerGetQueuedBytes(AVD_AudioStreamingPlayer *player)
 bool avdAudioStreamingPlayerIsFed(AVD_AudioStreamingPlayer *player);
 
 bool avdAudioStreamingPlayerGetBufferedDurationMs(AVD_AudioStreamingPlayer *player, AVD_Float *outDurationMs);
-bool avdAudioStreamingPlayerGetTimePlayedMs(AVD_AudioStreamingPlayer *player, AVD_Float *outTimeMs);
+AVD_Float avdAudioStreamingPlayerGetTimePlayed(AVD_AudioStreamingPlayer *player);
+AVD_Float avdAudioStreamingPlayerGetTimeOffsetInChunk(AVD_AudioStreamingPlayer *player);
+
+bool avdAudioStreamingPlayerClearBuffers(AVD_AudioStreamingPlayer *player);
 
 bool avdAudioStreamingPlayerUpdate(AVD_AudioStreamingPlayer *player);
 

@@ -95,7 +95,7 @@ static void __avdHLSSourceDownloadWorker(void *arg)
             mediaPayload.duration  = segment->duration;
 
             // an optimization where we avoid downloading segments that are already played
-            if (pool->parentScene->sources[mediaPayload.sourceIndex].lastPushedSegment >= mediaPayload.segmentId) {
+            if (pool->parentScene->sources[mediaPayload.sourceIndex].currentlyPlayingSegmentId >= mediaPayload.segmentId) {
                 continue;
             }
 
