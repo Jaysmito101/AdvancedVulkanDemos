@@ -120,5 +120,6 @@ bool avdVulkanVideoDecoderAcquireDecodedFrame(
     AVD_Float currentTime,
     AVD_VulkanVideoDecodedFrame **outFrame);
 bool avdVulkanVideoDecoderReleaseDecodedFrame(AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *frame);
+bool avdVulkanVideoDecoderReleaseAllDecodedFrames(AVD_VulkanVideoDecoder *video);
 
 #endif // AVD_VULKAN_VIDEO_DECODER_H
