@@ -461,7 +461,7 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
         int32_t textureIndices = 0;
         for (AVD_Size i = 0; i < 4; i++) {
             int32_t texIdx = 5;
-            if (i < hlsPlayer->sourceCount && hlsPlayer->sources[i].player.currentFrame != NULL) {
+            if (i < hlsPlayer->sourceCount) {
                 texIdx = (int32_t)i;
             }
             textureIndices |= (texIdx & 0xFF) << (i * 8);
