@@ -174,8 +174,9 @@ static bool __avdSceneHLSPlayerContextDecodeVideoFrames(
         params.targetFramerate = context->currentSegmentTargetFramerate;
         bool eof               = false;
         AVD_CHECK(avdVulkanVideoDecoderNextChunk(vulkan, &context->videoPlayer, &params, &eof));
+        context->currentFrame = NULL;
         if (context->videoPlayer.h264Video->currentChunk.numNalUnitsParsed == 0 && eof) {
-            AVD_LOG_DEBUG_DEBOUNCED(1000, "out of video data, current segtime=%.3f seg dur=%.3f", context->currentSegmentPlayTime, context->currentSegment.duration);
+            AVD_LOG_DEBUG_DEBOUNCED(1000, "out of video data, segtime=%.3f seg dur=%.3f, currTime: %.3f", context->currentSegmentPlayTime, context->currentSegment.duration, context->currentSegmentStartTime + context->currentSegmentPlayTime);
         }
     }
 
@@ -259,13 +260,15 @@ bool avdSceneHLSPlayerContextTryAcquireFrame(
     AVD_ASSERT(context != NULL);
     AVD_ASSERT(outFrame != NULL);
 
-    AVD_VulkanVideoDecodedFrame *oldFrame = *outFrame;
+    AVD_VulkanVideoDecodedFrame *oldFrame = context->currentFrame;
+
     (void)avdVulkanVideoDecoderTryAcquireFrame(
         &context->videoPlayer,
         context->currentSegmentStartTime + context->currentSegmentPlayTime,
-        outFrame);
+        &context->currentFrame);
 
-    return oldFrame != *outFrame;
+    *outFrame = context->currentFrame;
+    return oldFrame != context->currentFrame;
 }
 
 AVD_Float avdSceneHLSPlayerContextGetTime(AVD_SceneHLSPlayerContext *context)

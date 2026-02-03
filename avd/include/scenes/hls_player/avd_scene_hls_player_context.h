@@ -23,6 +23,8 @@ typedef struct {
     AVD_Float currentSegmentStartTime;
     AVD_Float currentSegmentTargetFramerate;
 
+    AVD_VulkanVideoDecodedFrame* currentFrame;
+
     picoStream videoDataStream;
     AVD_VulkanVideoDecoder videoPlayer;
     AVD_AudioStreamingPlayer audioPlayer;

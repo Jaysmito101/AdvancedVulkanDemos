@@ -211,10 +211,10 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
         AVD_CHECK(avdSceneHLSPlayerContextUpdate(&appState->vulkan, &appState->audio, &source->player, time));
 
         source->currentlyPlayingSegmentId = avdSceneHLSPlayerContextGetCurrentlyPlayingSegmentId(&source->player);
-        if (avdSceneHLSPlayerContextTryAcquireFrame(&source->player, &source->currentFrame)) {
-            AVD_VulkanVideoDecodedFrame *frame = source->currentFrame;
 
-            AVD_LOG_WARN_DEBOUNCED(1000, "ne decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
+        AVD_VulkanVideoDecodedFrame *frame = NULL;
+        if (avdSceneHLSPlayerContextTryAcquireFrame(&source->player, &frame)) {
+            AVD_LOG_WARN("decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
 
             VkWriteDescriptorSet descriptorWrite[2] = {
                 {
@@ -461,7 +461,7 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
         int32_t textureIndices = 0;
         for (AVD_Size i = 0; i < 4; i++) {
             int32_t texIdx = 5;
-            if (i < hlsPlayer->sourceCount && hlsPlayer->sources[i].currentFrame != NULL) {
+            if (i < hlsPlayer->sourceCount && hlsPlayer->sources[i].player.currentFrame != NULL) {
                 texIdx = (int32_t)i;
             }
             textureIndices |= (texIdx & 0xFF) << (i * 8);

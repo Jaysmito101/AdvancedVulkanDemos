@@ -1190,6 +1190,15 @@ bool avdVulkanVideoDecoderTryDecodeFrames(
     AVD_VulkanVideoDecodedFrame *oldestFrame  = NULL;
     AVD_Size oldestFrameOrder                 = UINT64_MAX;
 
+    AVD_Size acquiredFrameDisplayOrder = UINT64_MAX;
+    // find the display order of the acquired frame (if any)
+    for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
+        if (video->decodedFrames[i].status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_ACQUIRED) {
+            acquiredFrameDisplayOrder = video->decodedFrames[i].chunkDisplayOrder;
+            break;
+        }
+    }
+
     // find a free decoded frame
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
         if (video->decodedFrames[i].status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_FREE) {
@@ -1197,7 +1206,8 @@ bool avdVulkanVideoDecoderTryDecodeFrames(
             break;
         }
 
-        if (video->decodedFrames[i].status != AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_ACQUIRED && video->decodedFrames[i].chunkDisplayOrder < oldestFrameOrder) {
+        // we can also reuse the oldest frame that is not outdated (with respect to the acquired frame)
+        if (video->decodedFrames[i].chunkDisplayOrder < acquiredFrameDisplayOrder && video->decodedFrames[i].chunkDisplayOrder < oldestFrameOrder) {
             oldestFrame      = &video->decodedFrames[i];
             oldestFrameOrder = video->decodedFrames[i].chunkDisplayOrder;
         }
@@ -1236,8 +1246,10 @@ bool avdVulkanVideoDecoderTryAcquireFrame(
                     // release previous frame
                     currentFrame->status = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_FREE;
                 }
+
                 // found a frame that is in time
-                *outFrame = frame;
+                frame->status = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_ACQUIRED;
+                *outFrame     = frame;
                 return true;
             }
         }
@@ -1255,7 +1267,7 @@ bool avdVulkanVideoDecoderHasFrameForTime(
     // try to find a frame that is in time
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
         AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
-        if (frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY) {
+        if (frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY || frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_ACQUIRED) {
             if (__avdVulkanVideoDecoderIsFrameInTime(video, frame, currentTime)) {
                 return true;
             }
