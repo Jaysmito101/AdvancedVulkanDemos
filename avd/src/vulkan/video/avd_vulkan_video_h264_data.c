@@ -683,6 +683,8 @@ bool avdH264VideoLoadFromStream(picoStream stream, AVD_H264VideoLoadParams *para
 
     memset(video, 0, sizeof(AVD_H264Video));
 
+    video->numDPBSlots = 1;
+
     avdAlignedBufferCreate(&video->currentChunk.sliceDataBuffer, 256, params->frameDataAlignment);
     avdListCreate(&video->currentChunk.frameInfos, sizeof(AVD_H264VideoFrameInfo));
     avdListCreate(&video->currentChunk.sliceHeaders, sizeof(picoH264SliceHeader_t));
