@@ -214,7 +214,7 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
 
         AVD_VulkanVideoDecodedFrame *frame = NULL;
         if (avdSceneHLSPlayerContextTryAcquireFrame(&source->player, &frame)) {
-            AVD_LOG_WARN("decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
+            AVD_LOG_WARN_DEBOUNCED(1000, "decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
 
             VkWriteDescriptorSet descriptorWrite[2] = {
                 {
