@@ -700,7 +700,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
                 video->commandBuffer));
     }
 
-    StdVideoDecodeH264PictureInfo stdPictureInfoH264  = {};
+    StdVideoDecodeH264PictureInfo stdPictureInfoH264  = {0};
     stdPictureInfoH264.pic_parameter_set_id           = sliceHeader->picParameterSetId;
     stdPictureInfoH264.seq_parameter_set_id           = pps->seqParameterSetId;
     stdPictureInfoH264.frame_num                      = sliceHeader->frameNum;
@@ -715,10 +715,10 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     stdPictureInfoH264.flags.complementary_field_pair = 0;
     // stdPictureInfoH264.flags.complementary_field_pair = frame->complementaryFieldPair; // try this out later?
 
-    VkVideoReferenceSlotInfoKHR referenceSlotInfos[17]      = {};
-    VkVideoPictureResourceInfoKHR referenceSlotPictures[17] = {};
-    VkVideoDecodeH264DpbSlotInfoKHR dpbSlotsH264[17]        = {};
-    StdVideoDecodeH264ReferenceInfo referenceInfosH264[17]  = {};
+    VkVideoReferenceSlotInfoKHR referenceSlotInfos[17]      = {0};
+    VkVideoPictureResourceInfoKHR referenceSlotPictures[17] = {0};
+    VkVideoDecodeH264DpbSlotInfoKHR dpbSlotsH264[17]        = {0};
+    StdVideoDecodeH264ReferenceInfo referenceInfosH264[17]  = {0};
     for (uint32_t i = 0; i < video->h264Video->numDPBSlots; ++i) {
         referenceSlotInfos[i] = (VkVideoReferenceSlotInfoKHR){
             .sType            = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR,
@@ -867,7 +867,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
         chunk->references[chunk->referenceSlotIndex++] = chunk->currentDPBSlotIndex;
         chunk->referencesCount                         = AVD_MAX(chunk->referencesCount, chunk->referenceSlotIndex);
         chunk->currentDPBSlotIndex                     = (chunk->currentDPBSlotIndex + 1) % video->h264Video->numDPBSlots;
-        chunk->referenceSlotIndex                      = (chunk->referenceSlotIndex + 1) % (video->h264Video->numDPBSlots - 1);
+        chunk->referenceSlotIndex                      = chunk->referenceSlotIndex % (video->h264Video->numDPBSlots - 1);
     }
 
     decodedFrame->sliceIndex           = video->currentChunk.currentSliceIndex;
