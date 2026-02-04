@@ -760,7 +760,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
         referenceSlots[i] = referenceSlotInfos[refIndex];
     }
     referenceSlots[chunk->referenceSlotIndex]           = referenceSlotInfos[chunk->currentDPBSlotIndex];
-    referenceSlots[chunk->referenceSlotIndex].slotIndex = -1;
+    referenceSlots[chunk->referenceSlotIndex].slotIndex = chunk->currentDPBSlotIndex;
 
     VkVideoBeginCodingInfoKHR beginInfoH264 = {
         .sType                  = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR,
@@ -860,7 +860,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     if (frame->nalRefIdc > 0) {
         // none of these should really happen though....
         chunk->references[chunk->referenceSlotIndex] = chunk->currentDPBSlotIndex;
-        chunk->currentDPBSlotIndex                   = (chunk->currentDPBSlotIndex + 1) % (video->h264Video->numDPBSlots + 1);
+        chunk->currentDPBSlotIndex                   = (chunk->currentDPBSlotIndex + 1) % video->h264Video->numDPBSlots;
         chunk->referenceSlotIndex                    = (chunk->referenceSlotIndex + 1) % video->h264Video->numDPBSlots;
     }
 
