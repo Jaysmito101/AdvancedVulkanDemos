@@ -1210,7 +1210,7 @@ bool avdVulkanVideoDecoderTryDecodeFrames(
 
         // we can also reuse the oldest frame that is not outdated
         AVD_Bool isOutdated   = video->decodedFrames[i].chunkDisplayOrder < acquiredFrameDisplayOrder;
-        AVD_Bool frameAllowed = isOutdated || allowOverrideUnacquiredFrames;
+        AVD_Bool frameAllowed = (isOutdated || allowOverrideUnacquiredFrames) && video->decodedFrames[i].status != AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_ACQUIRED;
 
         if (frameAllowed && video->decodedFrames[i].chunkDisplayOrder < oldestFrameOrder) {
             oldestFrame      = &video->decodedFrames[i];
