@@ -133,6 +133,7 @@ bool avdVulkanVideoDecoderTryAcquireFrame(
     AVD_VulkanVideoDecodedFrame **outFrame);
 bool avdVulkanVideoDecoderTryDecodeFrames(
     AVD_Vulkan *vulkan,
-    AVD_VulkanVideoDecoder *video);
+    AVD_VulkanVideoDecoder *video,
+    AVD_Bool allowOverrideUnacquiredFrames);
 
 #endif // AVD_VULKAN_VIDEO_DECODER_H

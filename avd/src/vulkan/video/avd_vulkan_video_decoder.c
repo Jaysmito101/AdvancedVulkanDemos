@@ -145,6 +145,7 @@ static bool __avdVulkanVideoDecoderUpdateDPB(AVD_Vulkan *vulkan, AVD_VulkanVideo
                 &video->dpb,
                 video->h264Video->paddedWidth,
                 video->h264Video->paddedHeight,
+                video->h264Video->numDPBSlots,
                 dpbLabel));
         AVD_LOG_VERBOSE("Created DPB with %u slots for video decoder", video->dpb.numDPBSlots);
     }
@@ -1177,7 +1178,8 @@ bool avdVulkanVideoDecoderUpdate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
 
 bool avdVulkanVideoDecoderTryDecodeFrames(
     AVD_Vulkan *vulkan,
-    AVD_VulkanVideoDecoder *video)
+    AVD_VulkanVideoDecoder *video,
+    AVD_Bool allowOverrideUnacquiredFrames)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -1206,8 +1208,11 @@ bool avdVulkanVideoDecoderTryDecodeFrames(
             break;
         }
 
-        // we can also reuse the oldest frame that is not outdated (with respect to the acquired frame)
-        if (video->decodedFrames[i].chunkDisplayOrder < acquiredFrameDisplayOrder && video->decodedFrames[i].chunkDisplayOrder < oldestFrameOrder) {
+        // we can also reuse the oldest frame that is not outdated
+        AVD_Bool isOutdated   = video->decodedFrames[i].chunkDisplayOrder < acquiredFrameDisplayOrder;
+        AVD_Bool frameAllowed = isOutdated || allowOverrideUnacquiredFrames;
+
+        if (frameAllowed && video->decodedFrames[i].chunkDisplayOrder < oldestFrameOrder) {
             oldestFrame      = &video->decodedFrames[i];
             oldestFrameOrder = video->decodedFrames[i].chunkDisplayOrder;
         }

@@ -167,7 +167,7 @@ static bool __avdSceneHLSPlayerContextDecodeVideoFrames(
     AVD_ASSERT(context != NULL);
 
     if (avdVulkanVideoDecoderChunkHasFrames(&context->videoPlayer)) {
-        AVD_CHECK(avdVulkanVideoDecoderTryDecodeFrames(vulkan, &context->videoPlayer));
+        AVD_CHECK(avdVulkanVideoDecoderTryDecodeFrames(vulkan, &context->videoPlayer, true));
     } else {
         AVD_H264VideoLoadParams params = {0};
         AVD_CHECK(avdH264VideoLoadParamsDefault(vulkan, &params));
