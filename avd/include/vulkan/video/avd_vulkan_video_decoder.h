@@ -58,6 +58,7 @@ typedef struct {
 
     AVD_Size references[17];
     AVD_Size referenceSlotIndex;
+    AVD_Size referencesCount;
 
     AVD_Size currentSliceIndex;
 } AVD_VulkanVideoDecoderChunk;

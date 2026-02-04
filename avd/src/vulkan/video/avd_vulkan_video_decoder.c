@@ -529,6 +529,7 @@ static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_Vu
     video->currentChunk.currentSliceIndex   = 0;
     video->currentChunk.currentDPBSlotIndex = 0;
     video->currentChunk.referenceSlotIndex  = 0;
+    video->currentChunk.referencesCount     = 0;
     memset(video->currentChunk.referenceInfo, 0, sizeof(video->currentChunk.referenceInfo));
     memset(video->currentChunk.references, 0, sizeof(video->currentChunk.references));
 
@@ -656,6 +657,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     if (frame->isIdrFrame) {
         chunk->currentDPBSlotIndex = 0;
         chunk->referenceSlotIndex  = 0;
+        chunk->referencesCount     = 0;
         memset(chunk->referenceInfo, 0, sizeof(chunk->referenceInfo));
         memset(chunk->references, 0, sizeof(chunk->references));
     }
@@ -759,20 +761,20 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     }
 
     VkVideoReferenceSlotInfoKHR referenceSlots[17];
-    for (uint32_t i = 0; i < chunk->referenceSlotIndex; ++i) {
+    for (uint32_t i = 0; i < chunk->referencesCount; ++i) {
         AVD_Size refIndex = chunk->references[i];
         AVD_CHECK_MSG(refIndex != chunk->currentDPBSlotIndex, "Reference index cannot be the same as current DPB slot index");
         referenceSlots[i] = referenceSlotInfos[refIndex];
     }
-    referenceSlots[chunk->referenceSlotIndex]           = referenceSlotInfos[chunk->currentDPBSlotIndex];
-    referenceSlots[chunk->referenceSlotIndex].slotIndex = -1;
+    referenceSlots[chunk->referencesCount]           = referenceSlotInfos[chunk->currentDPBSlotIndex];
+    referenceSlots[chunk->referencesCount].slotIndex = -1;
 
     VkVideoBeginCodingInfoKHR beginInfoH264 = {
         .sType                  = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR,
         .videoSession           = video->session,
         .videoSessionParameters = video->sessionParameters,
-        .referenceSlotCount     = (AVD_UInt32)(chunk->referenceSlotIndex + 1),
-        .pReferenceSlots        = (AVD_UInt32)(chunk->referenceSlotIndex + 1) > 0 ? referenceSlots : NULL,
+        .referenceSlotCount     = (AVD_UInt32)(chunk->referencesCount + 1),
+        .pReferenceSlots        = (AVD_UInt32)(chunk->referencesCount + 1) > 0 ? referenceSlots : NULL,
     };
     vkCmdBeginVideoCodingKHR(video->commandBuffer, &beginInfoH264);
 
@@ -798,8 +800,8 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
         .srcBuffer           = video->bitstreamBuffer.buffer,
         .srcBufferOffset     = frame->offset,
         .srcBufferRange      = AVD_ALIGN(frame->size, chunk->videoChunk->sliceDataBuffer.alignment),
-        .referenceSlotCount  = (AVD_UInt32)chunk->referenceSlotIndex,
-        .pReferenceSlots     = (AVD_UInt32)chunk->referenceSlotIndex > 0 ? referenceSlots : NULL,
+        .referenceSlotCount  = (AVD_UInt32)chunk->referencesCount,
+        .pReferenceSlots     = (AVD_UInt32)chunk->referencesCount > 0 ? referenceSlots : NULL,
         .pSetupReferenceSlot = &referenceSlotInfos[chunk->currentDPBSlotIndex],
         .pNext               = &pictureInfoH264,
     };
@@ -862,14 +864,10 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     AVD_VK_CALL(vkResetFences(vulkan->device, 1, &video->decodeFence));
 
     if (frame->nalRefIdc > 0 && video->h264Video->numDPBSlots > 1) {
-        AVD_Size maxRefs              = video->h264Video->numDPBSlots - 1;
-        AVD_Size writeIndex           = chunk->referenceSlotIndex % maxRefs;
-        chunk->references[writeIndex] = chunk->currentDPBSlotIndex;
-        chunk->currentDPBSlotIndex    = (chunk->currentDPBSlotIndex + 1) % video->h264Video->numDPBSlots;
-        chunk->referenceSlotIndex++;
-        if (chunk->referenceSlotIndex > maxRefs) {
-            chunk->referenceSlotIndex = maxRefs;
-        }
+        chunk->references[chunk->referenceSlotIndex++] = chunk->currentDPBSlotIndex;
+        chunk->referencesCount                         = AVD_MAX(chunk->referencesCount, chunk->referenceSlotIndex);
+        chunk->currentDPBSlotIndex                     = (chunk->currentDPBSlotIndex + 1) % video->h264Video->numDPBSlots;
+        chunk->referenceSlotIndex                      = (chunk->referenceSlotIndex + 1) % (video->h264Video->numDPBSlots - 1);
     }
 
     decodedFrame->sliceIndex           = video->currentChunk.currentSliceIndex;
