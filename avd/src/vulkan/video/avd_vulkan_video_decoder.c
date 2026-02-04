@@ -528,6 +528,8 @@ static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_Vu
     video->currentChunk.currentSliceIndex   = 0;
     video->currentChunk.currentDPBSlotIndex = 0;
     video->currentChunk.referenceSlotIndex  = 0;
+    memset(video->currentChunk.referenceInfo, 0, sizeof(video->currentChunk.referenceInfo));
+    memset(video->currentChunk.references, 0, sizeof(video->currentChunk.references));
 
     AVD_CHECK(__avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(vulkan, video, chunk));
     AVD_CHECK(__avdVulkanVideoDecoderUpdateDPB(vulkan, video, chunk));
