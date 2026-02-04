@@ -53,7 +53,7 @@ static bool __avdVulkanVideoDPBCreateImages(AVD_Vulkan *vulkan, AVD_VulkanVideoD
         .format      = __AVD_VULKAN_VIDEO_DPB_FORMAT,
         .usage       = forDecode ? VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR : VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,
         .depth       = 1,
-        .arrayLayers = (AVD_UInt32)dpb->numDPBSlots + 1,
+        .arrayLayers = (AVD_UInt32)dpb->numDPBSlots,
         .mipLevels   = 1,
         .flags       = 0,
     };
@@ -124,7 +124,7 @@ bool avdVulkanVideoDecodeDPBCreate(
         "Failed to create images for video DPB %s",
         dpb->label);
 
-    for (AVD_Size i = 0; i < dpb->numDPBSlots + 1; ++i) {
+    for (AVD_Size i = 0; i < dpb->numDPBSlots; ++i) {
         dpb->imageLayouts[i] = VK_IMAGE_LAYOUT_UNDEFINED;
     }
 
@@ -196,7 +196,7 @@ bool avdVulkanVideoDecodeDPBTransitionImageLayout(
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(dpb != NULL);
-    AVD_ASSERT(slotIndex < dpb->numDPBSlots + 1);
+    AVD_ASSERT(slotIndex < dpb->numDPBSlots);
     AVD_ASSERT(dpb->initialized);
 
     VkImageMemoryBarrier barrier = {
