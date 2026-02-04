@@ -655,6 +655,8 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     if (frame->isIdrFrame) {
         chunk->currentDPBSlotIndex = 0;
         chunk->referenceSlotIndex  = 0;
+        memset(chunk->referenceInfo, 0, sizeof(chunk->referenceInfo));
+        memset(chunk->references, 0, sizeof(chunk->references));
     }
 
     chunk->referenceInfo[chunk->currentDPBSlotIndex] = (AVD_VulkanVideoDecoderReferenceInfo){
