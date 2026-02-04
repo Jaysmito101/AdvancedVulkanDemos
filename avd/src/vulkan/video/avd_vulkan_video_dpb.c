@@ -39,12 +39,13 @@ static bool __avdVulkanVideoDPBCreateFreeResources(AVD_Vulkan *vulkan, AVD_Vulka
     return true;
 }
 
-static bool __avdVulkanVideoDPBCreateImages(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb, bool forDecode, AVD_UInt32 width, AVD_UInt32 height)
+static bool __avdVulkanVideoDPBCreateImages(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb, bool forDecode, AVD_UInt32 width, AVD_UInt32 height, AVD_UInt32 numDPBSlots)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(dpb != NULL);
+    AVD_ASSERT(numDPBSlots < vulkan->supportedFeatures.videoCapabilitiesDecode.maxDpbSlots);
 
-    dpb->numDPBSlots = AVD_MIN(AVD_VULKAN_VIDEO_DPB_MAX_SLOTS, vulkan->supportedFeatures.videoCapabilitiesDecode.maxDpbSlots);
+    dpb->numDPBSlots = numDPBSlots;
 
     AVD_VulkanImageCreateInfo dpbImageInfo = (AVD_VulkanImageCreateInfo){
         .width       = width,
@@ -52,7 +53,7 @@ static bool __avdVulkanVideoDPBCreateImages(AVD_Vulkan *vulkan, AVD_VulkanVideoD
         .format      = __AVD_VULKAN_VIDEO_DPB_FORMAT,
         .usage       = forDecode ? VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR : VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR,
         .depth       = 1,
-        .arrayLayers = (AVD_UInt32)dpb->numDPBSlots,
+        .arrayLayers = (AVD_UInt32)dpb->numDPBSlots + 1,
         .mipLevels   = 1,
         .flags       = 0,
     };
@@ -96,6 +97,7 @@ bool avdVulkanVideoDecodeDPBCreate(
     AVD_VulkanVideoDPB *dpb,
     AVD_UInt32 width,
     AVD_UInt32 height,
+    AVD_UInt32 numDPBSlots,
     const char *label)
 {
     AVD_ASSERT(vulkan != NULL);
@@ -118,7 +120,7 @@ bool avdVulkanVideoDecodeDPBCreate(
         dpb->label);
 
     AVD_CHECK_MSG(
-        __avdVulkanVideoDPBCreateImages(vulkan, dpb, true, width, height),
+        __avdVulkanVideoDPBCreateImages(vulkan, dpb, true, width, height, numDPBSlots),
         "Failed to create images for video DPB %s",
         dpb->label);
 
@@ -194,7 +196,7 @@ bool avdVulkanVideoDecodeDPBTransitionImageLayout(
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(dpb != NULL);
-    AVD_ASSERT(slotIndex < dpb->numDPBSlots);
+    AVD_ASSERT(slotIndex < dpb->numDPBSlots + 1);
     AVD_ASSERT(dpb->initialized);
 
     VkImageMemoryBarrier barrier = {

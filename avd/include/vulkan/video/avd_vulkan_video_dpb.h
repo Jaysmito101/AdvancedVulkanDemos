@@ -1,6 +1,7 @@
 #ifndef AVD_VULKAN_VIDEO_DPB_H
 #define AVD_VULKAN_VIDEO_DPB_H
 
+#include "core/avd_types.h"
 #include "vulkan/avd_vulkan_image.h"
 #include "vulkan/video/avd_vulkan_video_core.h"
 
@@ -34,6 +35,7 @@ bool avdVulkanVideoDecodeDPBCreate(
     AVD_VulkanVideoDPB *dpb,
     AVD_UInt32 width,
     AVD_UInt32 height,
+    AVD_UInt32 numDPBSlots,
     const char *label);
 void avdVulkanVideoDPBDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb);
 
