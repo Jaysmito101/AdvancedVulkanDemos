@@ -6,13 +6,13 @@
 #include "ShaderAdapter"
 
 static const float3 screenPositions[4] = {
+    float3(-40.0, 12.0,  15.0),
     float3(-20.0, 12.0, -8.0),
     float3( 20.0, 12.0, -5.0),
-    float3(-18.0, 12.0,  15.0),
-    float3( 22.0, 12.0,  18.0)
+    float3( 40.0, 12.0,  18.0)
 };
     
-static const float screenRotations[4] = { 0.2, -0.25, 0.15, -0.18 };
+static const float screenRotations[4] = { 0.45, 0.3, -0.3, -0.45 };
 
 
 float3 sdRetroTV(float3 p, int tvIndex) {
