@@ -32,6 +32,8 @@ typedef struct {
     AVD_Vector4 cameraDirection;
 } AVD_HLSPlayerPushConstants;
 
+// TODO: a better way would be to acutally feed these to the shader via
+// push constants
 static AVD_Vector3 __avdHLSSceneSourcePositions[] = {
     {-40.0, 12.0, 15.0},
     {-20.0, 12.0, -8.0},
