@@ -226,7 +226,7 @@ float4 main(VertexShaderOutput input) : SV_Target {
         color = getSkyColor(rd);
     }
 
-    float fogIdx = 1.0 - exp(-dist * 0.02);
+    float fogIdx = 1.0 - exp(-saturate(dist / 100.0) * 2.0);
     float3 fogCol = float3(0.01, 0.01, 0.02);
     color = lerp(color, fogCol, fogIdx);
     
