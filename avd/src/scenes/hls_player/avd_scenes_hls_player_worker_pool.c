@@ -66,9 +66,10 @@ static void __avdHLSSourceDownloadWorker(void *arg)
             goto cleanup;
         }
 
-        playlist = NULL;
-        if (picoM3U8PlaylistParse(data, (uint32_t)strlen(data), &playlist) != PICO_M3U8_RESULT_SUCCESS) {
-            AVD_LOG_ERROR("Failed to parse HLS playlist for source: %s", sourceUrl);
+        playlist              = NULL;
+        picoM3U8Result result = picoM3U8PlaylistParse(data, (uint32_t)strlen(data), &playlist);
+        if (result != PICO_M3U8_RESULT_SUCCESS) {
+            AVD_LOG_ERROR("Failed to parse HLS playlist for source[%s]: %s", picoM3U8ResultToString(result), sourceUrl);
             goto cleanup;
         }
 
