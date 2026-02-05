@@ -27,6 +27,8 @@ typedef struct {
     AVD_Audio *audio;
     AVD_AudioStream stream;
 
+    AVD_Float volume;
+
     AVD_UInt32 sampleRate;
     AVD_UInt32 channels;
     AVD_UInt32 bitsPerSample;

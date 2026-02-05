@@ -74,7 +74,7 @@ static bool __avdAudioStreamingPlayerCallback(
         for (AVD_Size i = 0; i < samplesToRead; i++) {
             AVD_Float sample = 0.0f;
             avdAudioClipSampleAtIndex(clip, player->sampleOffsetInChunk + i, &sample);
-            out[samplesWritten + i] = sample;
+            out[samplesWritten + i] = sample * player->volume;
         }
 
         player->sampleOffsetInChunk += samplesToRead;
