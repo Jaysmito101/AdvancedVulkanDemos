@@ -329,7 +329,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
 
     hlsPlayer->sceneWidth      = (float)appState->renderer.sceneFramebuffer.width;
     hlsPlayer->sceneHeight     = (float)appState->renderer.sceneFramebuffer.height;
-    hlsPlayer->cameraPosition  = avdVec3(0.0f, 2.0f, 5.0f);
+    hlsPlayer->cameraPosition  = avdVec3(0.0f, 15.0f, 30.0f);
     hlsPlayer->cameraYaw       = AVD_PI; // looking toward -Z
     hlsPlayer->cameraPitch     = 0.0f;
     hlsPlayer->cameraDirection = avdVec3(
