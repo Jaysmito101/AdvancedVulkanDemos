@@ -32,6 +32,12 @@ typedef struct {
     AVD_Vector4 cameraDirection;
 } AVD_HLSPlayerPushConstants;
 
+static AVD_Vector3 __avdHLSSceneSourcePositions[] = {
+    {-40.0, 12.0, 15.0},
+    {-20.0, 12.0, -8.0},
+    {20.0, 12.0, -5.0},
+    {40.0, 12.0, 18.0}};
+
 static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
@@ -119,6 +125,7 @@ static bool __avdSceneHLSPlayerRequestSourceUpdate(AVD_AppState *appState, AVD_S
     return true;
 }
 
+#ifdef AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
 static bool __avdSceneHLSPlayerSaveSegmentToDisk(AVD_HLSSegmentAVData *avData)
 {
     AVD_ASSERT(avData != NULL);
@@ -141,6 +148,7 @@ static bool __avdSceneHLSPlayerSaveSegmentToDisk(AVD_HLSSegmentAVData *avData)
 
     return true;
 }
+#endif // AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
 
 static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
@@ -243,6 +251,9 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
             };
             vkUpdateDescriptorSets(appState->vulkan.device, 2, descriptorWrite, 0, NULL);
         }
+
+        AVD_Float distanceFromCamera      = avdVec3Length(avdVec3Subtract(__avdHLSSceneSourcePositions[i], scene->cameraPosition));
+        source->player.audioPlayer.volume = 10.0f / (distanceFromCamera * distanceFromCamera);
     }
 
     return true;
@@ -460,7 +471,7 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_CHECK(__avdSceneHLSPlayerUpdateContexts(appState, hlsPlayer));
 
     {
-        const float moveSpeed = 10.0f * appState->framerate.deltaTime;
+        const float moveSpeed = 10.0f * (AVD_Float)appState->framerate.deltaTime;
         AVD_Vector3 forward   = hlsPlayer->cameraDirection;
         AVD_Vector3 up        = avdVec3(0.0f, 1.0f, 0.0f);
         AVD_Vector3 right     = avdVec3Normalize(avdVec3Cross(forward, up));
