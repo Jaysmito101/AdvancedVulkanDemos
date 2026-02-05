@@ -8,8 +8,8 @@
 #include "scenes/hls_player/avd_scene_hls_url_pool.h"
 #include <stdint.h>
 
-#define AVD_HLS_WORKER_NUM_SOURCE_WORKERS         8
-#define AVD_HLS_WORKER_NUM_MEDIA_DOWNLOAD_WORKERS 16
+#define AVD_HLS_WORKER_NUM_SOURCE_WORKERS         2
+#define AVD_HLS_WORKER_NUM_MEDIA_DOWNLOAD_WORKERS 8
 #define AVD_HLS_WORKER_NUM_MEDIA_DEMUX_WORKERS    2
 
 #ifdef AVD_HLS_WORKER_POOL_LOG
