@@ -209,7 +209,7 @@ float4 main(VertexShaderOutput input) : SV_Target {
     float3 right = normalize(cross(forward, up));
     up = cross(right, forward);
     
-    float fov = 1.2;
+    float fov = 2.0;
     float3 rd = normalize(forward * fov + right * uv.x + up * uv.y);
     
     float2 result = rayMarch(ro, rd);
