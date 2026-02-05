@@ -301,7 +301,7 @@ bool avdSceneHLSPlayerRegisterApi(AVD_SceneAPI *api)
     api->load           = avdSceneHLSPlayerLoad;
     api->inputEvent     = avdSceneHLSPlayerInputEvent;
 
-    api->displayName = "HLS Player";
+    api->displayName = "Live TV/HLS Player";
     api->id          = "Bloom";
 
     return true;
@@ -323,7 +323,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
         &appState->fontRenderer,
         &appState->vulkan,
         "ShantellSansBold",
-        hlsPlayer->isSupported ? "HLS Player" : "HLS Player (Not Supported on this GPU)",
+        hlsPlayer->isSupported ? "Live TV/Livestreams Player" : "Live TV/Livestreams Player (Not Supported on this GPU)",
         64.0f));
     AVD_CHECK(avdRenderableTextCreate(
         &hlsPlayer->info,
