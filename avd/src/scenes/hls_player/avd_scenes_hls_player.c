@@ -526,7 +526,6 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
             .cameraPosition  = avdVec4FromVec3(hlsPlayer->cameraPosition, 1.0f),
             .cameraDirection = avdVec4FromVec3(hlsPlayer->cameraDirection, 0.0f),
         };
-        // AVD_LOG_INFO("Camera Position: %f, %f, %f", hlsPlayer->cameraPosition.x, hlsPlayer->cameraPosition.y, hlsPlayer->cameraPosition.z);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipeline);
         vkCmdPushConstants(commandBuffer, hlsPlayer->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);
