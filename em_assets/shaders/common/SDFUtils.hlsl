@@ -148,6 +148,13 @@ float sdCurvedRect(float3 p, float3 size, float curvature)
     return sdBox(curvedP, size);
 }
 
+float sdCappedCylinder(float3 p, float h, float r) {
+    float2 d = abs(float2(length(p.xz), p.y)) - float2(r, h);
+    return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
+}
+
+
+
 float opUnion(float d1, float d2)
 {
     return min(d1, d2);
