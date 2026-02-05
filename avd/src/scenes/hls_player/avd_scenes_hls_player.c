@@ -479,15 +479,19 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
         AVD_Vector3 right     = avdVec3Normalize(avdVec3Cross(forward, up));
 
         if (appState->input.keyState[GLFW_KEY_W]) {
+            forward.y                 = 0.0f;
             hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(forward, moveSpeed));
         }
         if (appState->input.keyState[GLFW_KEY_S]) {
+            forward.y                 = 0.0f;
             hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(forward, -moveSpeed));
         }
         if (appState->input.keyState[GLFW_KEY_A]) {
+            forward.y                 = 0.0f;
             hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(right, -moveSpeed));
         }
         if (appState->input.keyState[GLFW_KEY_D]) {
+            forward.y                 = 0.0f;
             hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(right, moveSpeed));
         }
         if (appState->input.keyState[GLFW_KEY_Q]) {
