@@ -1,5 +1,5 @@
-#ifndef COLOR_UTILS_H
-#define COLOR_UTILS_H
+#ifndef COLOR_CONVERTER_HLSL
+#define COLOR_CONVERTER_HLSL
 
 float3 yuvToRgbBt601(float3 yuv)
 {
@@ -93,4 +93,4 @@ float3 yCbCrToRgbBt709(float3 ycbcr)
 }
 
 
-#endif // COLOR_UTILS_H
+#endif // COLOR_CONVERTER_HLSL
