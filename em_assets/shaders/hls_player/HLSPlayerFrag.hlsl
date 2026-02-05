@@ -89,6 +89,7 @@ float3 getScreenColor(float3 p, float3 normal, float3 rd, int tvIndex) {
         float y = SAMPLE_TEXTURE_TAB(textures, screenUV, texIndex * 2 + 0).r;
         float2 cbcr = SAMPLE_TEXTURE_TAB(textures, screenUV, texIndex * 2 + 1).rg;
         screenColor = yCbCrToRgbBt601(float3(y, cbcr));
+        screenColor = pow(screenColor, float3(2.2));
     } else {
         float noise = frac(sin(dot(screenUV * 100.0, float2(12.9898, 78.233))) * 43758.5453);
         screenColor = float3(noise * 0.05);
@@ -230,5 +231,6 @@ float4 main(VertexShaderOutput input) : SV_Target {
     float3 fogCol = float3(0.01, 0.01, 0.02);
     color = lerp(color, fogCol, fogIdx);
     
+
     return float4(color, 1.0);
 }
