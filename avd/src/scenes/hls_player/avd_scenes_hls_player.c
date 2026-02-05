@@ -302,7 +302,7 @@ bool avdSceneHLSPlayerRegisterApi(AVD_SceneAPI *api)
     api->inputEvent     = avdSceneHLSPlayerInputEvent;
 
     api->displayName = "Live TV/HLS Player";
-    api->id          = "Bloom";
+    api->id          = "HLSPlayer";
 
     return true;
 }
