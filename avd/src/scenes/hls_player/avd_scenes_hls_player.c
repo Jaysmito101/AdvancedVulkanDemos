@@ -445,7 +445,7 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
 
         hlsPlayer->cameraDirection = avdVec3Normalize(hlsPlayer->cameraDirection);
     } else if (event->type == AVD_INPUT_EVENT_MOUSE_SCROLL) {
-        hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(hlsPlayer->cameraDirection, 0.1f * event->mouseScroll.y));
+        hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(hlsPlayer->cameraDirection, 0.5f * event->mouseScroll.y));
     } else if (event->type == AVD_INPUT_EVENT_DRAG_N_DROP) {
         if (event->dragNDrop.count > 0) {
             AVD_LOG_INFO("Trying to load sources from: %s", event->dragNDrop.paths[0]);
@@ -473,7 +473,7 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_CHECK(__avdSceneHLSPlayerUpdateContexts(appState, hlsPlayer));
 
     {
-        const float moveSpeed = 10.0f * (AVD_Float)appState->framerate.deltaTime;
+        const float moveSpeed = 40.0f * (AVD_Float)appState->framerate.deltaTime;
         AVD_Vector3 forward   = hlsPlayer->cameraDirection;
         AVD_Vector3 up        = avdVec3(0.0f, 1.0f, 0.0f);
         AVD_Vector3 right     = avdVec3Normalize(avdVec3Cross(forward, up));
