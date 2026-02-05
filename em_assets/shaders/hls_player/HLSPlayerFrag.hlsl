@@ -107,19 +107,30 @@ float3 getScreenColor(float3 p, float3 normal, float3 rd, int tvIndex) {
 
 float3 shade(float3 p, float3 normal, float3 rd, float materialId) {
     float3 sunDir = normalize(float3(0.6, 0.8, -0.4));
-    float3 sunCol = float3(1.0, 0.95, 0.9);
+    float3 sunCol = float3(2.5, 2.2, 1.8);
+    
     float3 skyDir = float3(0.0, 1.0, 0.0);
-    float3 skyCol = float3(0.05, 0.05, 0.08); 
+    float3 skyCol = float3(0.4, 0.45, 0.6);  // Cool blue ambient
+    
     float3 bounceDir = float3(0.0, -1.0, 0.0);
-    float3 bounceCol = float3(0.02, 0.02, 0.02); 
+    float3 bounceCol = float3(0.15, 0.12, 0.08);  // Warm bounce
+    
+    float3 fillDir = normalize(float3(-0.4, 0.3, 0.8));
+    float3 fillCol = float3(0.3, 0.35, 0.5);  // Cool fill
+    
+    float3 rimDir = normalize(float3(-0.5, 0.2, -0.7));
+    float3 rimCol = float3(0.6, 0.5, 0.4);
 
     float sunDiff = clamp(dot(normal, sunDir), 0.0, 1.0);
     float skyDiff = clamp(0.5 + 0.5 * dot(normal, skyDir), 0.0, 1.0);
     float bounceDiff = clamp(0.5 + 0.5 * dot(normal, bounceDir), 0.0, 1.0);
+    float fillDiff = clamp(dot(normal, fillDir), 0.0, 1.0);
+    float rimDiff = pow(clamp(1.0 - dot(normal, -rd), 0.0, 1.0), 3.0) * clamp(dot(normal, rimDir) + 0.5, 0.0, 1.0);
     
     float shadow = 1.0;
     if (sunDiff > 0.001) {
         shadow = calcSoftShadow(p + normal * 0.01, sunDir, 0.02, 20.0, 8.0);
+        shadow = shadow * 0.7 + 0.3;  
     }
     
     float3 baseColor;
@@ -128,63 +139,74 @@ float3 shade(float3 p, float3 normal, float3 rd, float materialId) {
     float specIntensity = 0.0;
     
     if (materialId < 1.5) {
-        baseColor = float3(0.05, 0.05, 0.05);
+        baseColor = float3(0.08, 0.08, 0.09);
         float2 grid = abs(frac(p.xz * 0.5) - 0.5) / fwidth(p.xz * 0.5);
         float lineVal = min(grid.x, grid.y);
         float gridIntensity = 1.0 - smoothstep(0.0, 1.0, lineVal);
-        baseColor += float3(0.05, 0.05, 0.05) * gridIntensity * 0.5;
-        specIntensity = 0.2;
+        baseColor += float3(0.08, 0.1, 0.12) * gridIntensity * 0.5;
+        specIntensity = 0.3;
     } else if (materialId < 3.5) {
-        baseColor = float3(0.45, 0.28, 0.15);
+        baseColor = float3(0.55, 0.35, 0.18);
         float grain = sin(p.x * 50.0 + p.y * 20.0) * 0.08 + sin(p.y * 80.0) * 0.04;
         baseColor *= 1.0 + grain;
-        specIntensity = 0.1;
+        specIntensity = 0.15;
     } else if (materialId < 4.5) {
-        baseColor = float3(0.32, 0.20, 0.10);
+        baseColor = float3(0.42, 0.26, 0.14);
         float grain = sin(p.y * 60.0) * 0.06;
         baseColor *= 1.0 + grain;
-        specIntensity = 0.05;
+        specIntensity = 0.08;
     } else if (materialId < 5.5) {
-        baseColor = float3(0.12, 0.08, 0.05);
-        specIntensity = 0.2;
+        baseColor = float3(0.18, 0.12, 0.08);
+        specIntensity = 0.25;
         specPower = 32.0;
     } else if (materialId < 6.5) {
-        baseColor = float3(0.03, 0.03, 0.035);
-        specIntensity = 0.05;
+        baseColor = float3(0.05, 0.05, 0.06);
+        specIntensity = 0.08;
     } else if (materialId < 7.5) {
         float h = saturate((p.y + 10.0) / 40.0);
-        baseColor = lerp(float3(0.0, 0.0, 0.0), float3(0.05, 0.05, 0.06), h);
+        baseColor = lerp(float3(0.02, 0.02, 0.025), float3(0.08, 0.08, 0.1), h);
         specIntensity = 0.0;
     } else if (materialId < 8.5) {
-        baseColor = float3(0.06, 0.05, 0.045);
-        specIntensity = 0.05;
+        baseColor = float3(0.1, 0.08, 0.07);
+        specIntensity = 0.08;
     } else if (materialId < 9.5) {
-        baseColor = float3(0.85, 0.65, 0.35);
-        specIntensity = 1.2;
+        baseColor = float3(0.9, 0.7, 0.4);
+        specIntensity = 1.5;
         specPower = 64.0;
     } else if (materialId >= 10.0) {
         int tvIndex = (int)(materialId - 10.0);
         float3 screenColor = getScreenColor(p, normal, rd, tvIndex);
         
-        float3 emission = screenColor * 0.8;
+        float3 emission = screenColor * 1.2;
+        
+        float glow = 0.15;
+        emission += screenColor * glow;
         
         float3 r = reflect(-sunDir, normal);
         float sunSpec = pow(max(dot(r, -rd), 0.0), 32.0);
         
-        return emission + sunSpec * 0.2;
+        return emission + sunSpec * 0.25;
     } else {
         baseColor = float3(0.5, 0.5, 0.5);
     }
     
     float3 lin = float3(0.0, 0.0, 0.0);
     lin += sunCol * sunDiff * shadow;
-    lin += skyCol * skyDiff;
+    lin += skyCol * skyDiff * 0.5;
     lin += bounceCol * bounceDiff;
+    lin += fillCol * fillDiff * 0.4;
+    lin += rimCol * rimDiff * 0.5;
+    
+    lin += float3(0.08, 0.08, 0.1);
     
     if (specIntensity > 0.0) {
         float3 r = reflect(-sunDir, normal);
         float spe = pow(max(dot(r, -rd), 0.0), specPower);
         specColor = sunCol * spe * specIntensity * shadow;
+        
+        r = reflect(-fillDir, normal);
+        spe = pow(max(dot(r, -rd), 0.0), specPower * 0.5);
+        specColor += fillCol * spe * specIntensity * 0.3;
     }
     
     return baseColor * lin + specColor;
