@@ -15,7 +15,7 @@ Here are some of the demos currently implemented in the project. It is to be not
 
 ### Live TV / HLS Player
 
-So I had the idea, that I wanted to play some sort of multimedia content in this engine, and I had been playing around with Vulkan Video once in a while this it gave me the idea to build something that gives me the excuse of implementing the Vulka Video infrastructure in this engine as well as be a fum project, soon after that I read a bit about the inner workings of TV channels(DVB) and I got curious and started building this. Just to challenge myself I gave myself a constraint, that I cannot use any existing library for the media work, and I ended up implementing [picoM3U8](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoM3U8.h), [picoMpegTS](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoMpegTS.h) and finally [picoH264](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoMpegTS.h) and then integrated all of them here along with the infra for Vulka Video.
+So I had the idea, that I wanted to play some sort of multimedia content in this engine, and I had been playing around with Vulkan Video once in a while this it gave me the idea to build something that gives me the excuse of implementing the Vulka Video infrastructure in this engine as well as be a fum project, soon after that I read a bit about the inner workings of TV channels(DVB) and I got curious and started building this. Just to challenge myself I gave myself a constraint, that I cannot use any existing library for the media work, and I ended up implementing [picoM3U8](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoM3U8.h), [picoMpegTS](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoMpegTS.h), [picoH264](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoMpegTS.h) and finally , [picoAudio](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoAudio.h) and then integrated all of them here along with the infra for Vulka Video.
 
 <img src="em_assets/scenes/main_menu/05_HLSPlayer.png" alt="HLS Player" width="600"/>
 
@@ -108,5 +108,6 @@ MIT License
 ## Author
 
 **Jaysmito Mukherjee** — [GitHub](https://github.com/Jaysmito101) · [LinkedIn](https://linkedin.com/in/jaysmito) · [Twitter](https://twitter.com/Jaysmito101)
+
 
 
