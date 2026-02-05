@@ -1,218 +1,112 @@
 # Advanced Vulkan Demos (AVD)
 
-> **AI-Generated Placeholder Notice**  
-> This README is an AI-generated placeholder and will be replaced with a proper, human-authored README once the project becomes presentable and ready for public showcase. Right now it is in a highly WIP state and serves as a basic structure for the project documentation.
-
-This is a comprehensive portfolio project that demonstrates advanced Vulkan rendering techniques through interactive real-time demonstrations. The collection showcases modern graphics programming concepts including subsurface scattering, bloom effects, radiance cascades, and other cutting-edge rendering technologies.
-
-![Build Status](https://img.shields.io/badge/build-in%20development-yellow)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
 ![Vulkan](https://img.shields.io/badge/Vulkan-1.2%2B-red)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-## Project Overview
+AVD is a set of real-time rendering demos built from scratch in C on top of the Vulkan API. The primary goal of this project for me is to explore the more complex and advanced topics in Computer Graphics, Media Coding, Color Sciences, and GPGPU programming, while building a modular and reusable Vulkan engine architecture. I have designed this project as a powerfull Vulkan Engine, with a plugin based scene mangement system to create a variety of unrelated demos while still being able to build on top of a solid common base.
 
-Advanced Vulkan Demos is a curated collection of real-time graphics demonstrations built from scratch using the modern Vulkan API. Each demonstration focuses on a specific advanced rendering technique, serving both as a learning resource and a showcase of technical capabilities.
+This project also acts as my personal portfolio and a code reference for myself and to any interested internet stranger. I tried my best to keep all parts of the project clean and well documented, and also for every demo/scene part of this project I have heavily docummented all the resources I have used and the research I have done in the process of building that demo, in the form of a markdown file with all the links to papers, articles, and other resources I have used. You can find those files in the `resources/` folder.
 
-### Key Features
+## Demos
 
-- **Modern Vulkan Architecture**: Built with Vulkan 1.4+ using industry best practices
-- **Cross-Platform Support**: Full compatibility with Windows and Linux operating systems
-- **Educational Value**: Well-documented codebase serving as comprehensive learning material
-- **Real-Time Performance**: Optimized for smooth 60+ FPS performance across target hardware
-- **Interactive Demonstrations**: User-controllable parameters and comprehensive camera systems
-- **Custom Engine**: Lightweight, purpose-built rendering framework designed for optimal performance
+Here are some of the demos currently implemented in the project. It is to be noted that they are not necessarily built in a particular order, they are just ideas and experiments I had in mind and wanted to try out, so they are all built independently of each other.
 
-## Available Demonstrations
 
-### 1. Subsurface Scattering
-Demonstrates realistic skin and translucent material rendering using screen-space techniques.
+### Live TV / HLS Player
 
-### 2. Bloom Effects
-Advanced high dynamic range bloom implementation with customizable parameters.
-- **Features**: Multi-pass gaussian blur, tone mapping, bloom intensity controls
+So I had the idea, that I wanted to play some sort of multimedia content in this engine, and I had been playing around with Vulkan Video once in a while this it gave me the idea to build something that gives me the excuse of implementing the Vulka Video infrastructure in this engine as well as be a fum project, soon after that I read a bit about the inner workings of TV channels(DVB) and I got curious and started building this. Just to challenge myself I gave myself a constraint, that I cannot use any existing library for the media work, and I ended up implementing [picoM3U8](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoM3U8.h), [picoMpegTS](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoMpegTS.h) and finally [picoH264](https://github.com/Jaysmito101/libpico/blob/main/include/pico/picoMpegTS.h) and then integrated all of them here along with the infra for Vulka Video.
 
-### 3. Eyeball Rendering (WIP)
-Specialized rendering for realistic eye materials with subsurface scattering.
-- **Features**: Cornea refraction, iris detail, sclera translucency
+<img src="em_assets/scenes/main_menu/05_HLSPlayer.png" alt="HLS Player" width="600"/>
 
-### 4. 2D Radiance Cascades
-TODO
+### Subsurface Scattering
 
-## Technical Architecture
+Multi-pass deferred renderer with multiple realtime subsurface scattering techniques. The pipeline runs through G-buffer generation, SSAO, PBR lighting, screen-space irradiance diffusion, and a final composite pass with some additional hybrid translucency techniques. Three 3D models (alien, buddha, stanford dragon) can be cycled through, each with tweakable material parameters — roughness, metallic, translucency scale/distortion/power, and irradiance radius. Bloom is integrated as a post process step.
 
-### Core Systems
+<img src="em_assets/scenes/main_menu/03_StaticSubsurfaceScattering.png" alt="Subsurface Scattering" width="600"/>
 
-- **Vulkan Abstraction Layer**: Modern wrapper around raw Vulkan API
-- **Scene Management**: Plugin-based architecture for demonstrations
-- **Asset Pipeline**: Build-time asset processing and embedding
-- **Font Rendering**: Multi-channel signed distance field based text rendering system
-- **Math Library**: Custom linear algebra implementation
-- **Shader System**: Integrated HLSL & GLSL compilation includes and auto caching and invalidation
-### Rendering Features
+### Deccer Cubes
 
-- **High Dynamic Range Pipeline**: Linear color space with tone mapping
-- **Deferred Rendering**: G-buffer based lighting system
-- **Post-Processing Stack**: Bloom, tone mapping, gamma correction
-- **Dynamic Loading**: Asynchronous scene initialization
+This (most readers of this doc will probably know) is my solution to the [deccer-cubes](https://github.com/GraphicsProgramming/deccer-cubes) challenge from the Graphics Programming community and a nice testcase for my gltf loader and transform systems.
 
-### Dependencies
+<img src="em_assets/scenes/main_menu/04_DeccerCubes.png" alt="Deccer Cubes" width="600"/>
 
-**Minimal External Dependencies:**
-- **GLFW**: Window management and input handling
-- **Volk**: Dynamic Vulkan loader for optimal performance
-- **STB**: Image loading utilities
-- **cgltf**: glTF model loading support
-- **TinyObjLoader**: OBJ model support
+### Bloom
 
-## Building and Running
+Configurable bloom post-processing effect. Supports multiple prefilter types (threshold, soft knee), adjustable intensity and threshold, quality toggle between full and half resolution, gamma correction, and switchable tonemapping operators (ACES, Reinhard, etc.). This implementation is based off of my old implementation of bloom for one of my OpenGL libraries [CGL](https://github.com/Jaysmito101/cgl) which in itself was built based on Unity's bloom implementation.
+
+<img src="em_assets/scenes/main_menu/01_Bloom.png" alt="Bloom" width="600"/>
+
+
+
+
+## Engine Components
+
+This should give any newcomer a good idea of where you can find what in the engine.
+
+| Module | Description |
+|---|---|
+| **Vulkan Abstraction** | Device, swapchain, framebuffers, images, buffers, pipelines, debug labels, and synchronization |
+| **Scene Manager** | Plugin like architecture each demo registers init, load, update, render, destroy, and input event callbacks |
+| **Shader System** | HLSL and GLSL compilation to SPIR-V via shaderc at build time, with Slang support(disabled) and shared include libraries |
+| **Vulkan Video** | H.264 decode session management, DPB (decoded picture buffer) handling, bitstream parsing via libpico |
+| **Font Rendering** | MSDF-based text rendering with multiple font support, built on atlases generated by msdf-atlas-gen |
+| **Audio** | PortAudio based audio system with clip playback and streaming support |
+| **Math** | Custom matrix, quaternion, and vector types with non-SIMD reference implementations |
+| **Model Loading** | OBJ loading via tinyobjloader-c, glTF 2.0 loading via cgltf, with mesh generation utilities |
+| **Asset Pipeline** | Python based build time processing shaders, fonts, images, and scene data are embedded as assets in the binary |
+| **UI** | Lightweight immediate-mode style UI for parameter tweaking and debug overlays |
+
+
+## Building
 
 ### Prerequisites
 
+- **CMake 3.12+**
+- **Vulkan SDK** (with shaderc libraries)
+- **Python 3.x** (asset processing)
 - **Visual Studio 2019+** (Windows) or **GCC/Clang** (Linux)
-- **Vulkan SDK 1.2+** installed and configured
-- **Python 3.x** for asset processing
-- **CMake 3.12+** for build configuration
 
-### Quick Start
+### Build
 
 ```bash
-# Clone the repository
-git clone https://github.com/Jaysmito101/AdvancedVulkanDemos.git
+git clone --recursive https://github.com/Jaysmito101/AdvancedVulkanDemos.git
 cd AdvancedVulkanDemos
-
-# Configure build system
 mkdir build && cd build
 cmake ..
-
-# Build the project
 cmake --build . --config Release
-
-# Run the demos
-./avd  # Linux
-# or
-avd.exe  # Windows
 ```
 
-### Build Configuration
+Or if you are on windows we have a really nice  `run.bat` file in the root of the project that will do all of this for you + more like choosing between msvc, clang, etc, shader lib updation, etc.
 
-The project uses CMake with automatic asset generation and dependency management:
+``
+run.bat --ninja
+``
 
-```cmake
-# Core configuration
-cmake_minimum_required(VERSION 3.12)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_STANDARD 11)
+### Dependencies
 
-# Vulkan detection for cross-platform support
-find_package(Vulkan REQUIRED)
+All third-party libraries are included as git submodules under `dep/`:
 
-# Automatic asset generation
-add_custom_target(generate_assets ALL DEPENDS ${ASSETS_TIMESTAMP_FILE})
-```
+| Library | Purpose |
+|---|---|
+| [GLFW](https://github.com/glfw/glfw) | Windowing and input |
+| [Volk](https://github.com/zeux/volk) | Dynamic Vulkan function loader |
+| [STB](https://github.com/nothings/stb) | Image loading |
+| [cgltf](https://github.com/jkuhlmann/cgltf) | glTF 2.0 parsing |
+| [tinyobjloader-c](https://github.com/syoyo/tinyobjloader-c) | OBJ model loading |
+| [PortAudio](https://github.com/PortAudio/portaudio) | Cross-platform audio I/O |
+| [libpico](https://github.com/Jaysmito101/libpico) | Bunch of tiny single-header libraries |
 
-The build system automatically:
-- Detects and configures Vulkan SDK
-- Processes embedded assets during build
-- Handles cross-platform compilation differences
-- Manages third-party dependencies through git submodules
+Shader compilation requires **shaderc** from the Vulkan SDK.
 
-## Asset Pipeline
-
-The project uses a sophisticated build-time asset processing system:
-
-### Asset Organization
-- **em_assets/**: Embedded assets (shaders, fonts, images, scenes) that are compiled into the executable
-- **assets/**: External runtime assets (3D models, textures) loaded at runtime
-- **avd_assets/generated/**: Auto-generated C code from the embedded assets
-
-### Asset Processing Workflow
-1. **Asset Detection**: CMake monitors changes in asset directories
-2. **Python Processing**: `tools/assets.py` processes various asset types:
-   - Shaders are compiled to SPIR-V bytecode
-   - Fonts are converted to multi-channel signed distance field atlases
-   - Images are processed and embedded as byte arrays
-   - Scene files are parsed and optimized
-3. **Code Generation**: Assets are embedded as C arrays in `avd_assets/generated/`
-4. **Build Integration**: Generated code is compiled into the final executable
-
-### Supported Asset Types
-- **Shaders**: HLSL and GLSL source files compiled to SPIR-V
-- **Fonts**: TTF files converted to MSDF atlases using msdf-atlas-gen
-- **Images**: PNG, JPG, HDR textures
-- **3D Models**: OBJ and glTF 2.0 format support
-- **Scenes**: Custom scene description files
-
-### External Tool Dependencies
-- **msdf-atlas-gen**: Automatically downloaded for font atlas generation
-- **Python 3.x**: Required for asset processing scripts
-- **Vulkan SDK**: Required for shader compilation to SPIR-V
-
-## Controls and Usage
-
-### General Controls
-- **Mouse**: Camera rotation (when applicable)
-- **Scroll**: Zoom in/out
-- **ESC**: Return to main menu
-- **F1**: Toggle UI panels
-
-### Demonstration-Specific Controls
-Each demonstration includes its own parameter controls accessible through the UI system.
-
-## Project Structure
-
-```
-AdvancedVulkanDemos/
-├── avd/                     # Core engine code
-│   ├── include/            # Public headers
-│   │   ├── core/          # Core systems
-│   │   ├── vulkan/        # Vulkan abstraction
-│   │   ├── scenes/        # Scene management
-│   │   ├── math/          # Linear algebra
-│   │   └── font/          # Text rendering
-│   └── src/               # Implementation files
-├── assets/                # External demonstration assets
-├── em_assets/             # Embedded assets (shaders, fonts)
-├── dep/                   # Third-party dependencies
-├── tools/                 # Build and asset tools
-├── resources/             # Documentation and references
-└── build/                 # Generated build files
-```
-
-## Development
-
-### Code Style
-
-The project follows a consistent C-style coding standard:
-- **Naming**: `avdFunctionName()`, `AVD_StructName`, `AVD_CONSTANT_NAME`
-- **Error Handling**: Consistent return codes with `AVD_CHECK()` macros
-- **Memory Management**: RAII-style patterns with init/destroy pairs
-- **Documentation**: Comprehensive header documentation
-
-### Adding New Demonstrations
-
-1. Create scene directory in `avd/src/scenes/`
-2. Implement scene API functions
-3. Register scene in scene manager
-4. Add assets to appropriate directories
-5. Update build configuration
-
-## Known Limitations
-
-As this is a portfolio project in development:
-- Some features may be incomplete or experimental
-- Performance optimizations are ongoing
-- Documentation is being continuously improved
-- Platform support may vary
+---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License
 
 ## Author
 
-**Jaysmito Mukherjee**
-- Portfolio: [Jaysmito101](https://github.com/Jaysmito101)
-- LinkedIn: [Connect on LinkedIn](https://linkedin.com/in/jaysmito)
-- Twitter: [@Jaysmito101](https://twitter.com/Jaysmito101)
+**Jaysmito Mukherjee** — [GitHub](https://github.com/Jaysmito101) · [LinkedIn](https://linkedin.com/in/jaysmito) · [Twitter](https://twitter.com/Jaysmito101)
+
 
