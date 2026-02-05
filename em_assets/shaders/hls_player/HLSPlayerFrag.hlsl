@@ -263,10 +263,6 @@ float4 main(VertexShaderOutput input) : SV_Target {
     } else {
         color = getSkyColor(rd);
     }
-
-    
-    
-  
     
     return float4(postProcess(color, dist), 1.0);
 }
