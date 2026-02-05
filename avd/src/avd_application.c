@@ -76,7 +76,6 @@ void avdApplicationUpdate(AVD_AppState *appState)
 
     avdInputNewFrame(&appState->input);
     avdWindowPollEvents();
-    avdInputCalculateDeltas(&appState->input);
     avdApplicationUpdateWithoutPolling(appState);
 
     // update the title of window with stats
