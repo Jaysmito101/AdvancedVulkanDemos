@@ -67,6 +67,7 @@ void __avdGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos)
     event.type        = AVD_INPUT_EVENT_MOUSE_MOVE;
     event.mouseMove.x = appState->input.mouseX;
     event.mouseMove.y = appState->input.mouseY;
+    avdInputCalculateMouseDeltas(&appState->input);
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
@@ -105,7 +106,7 @@ void __avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height)
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 
     appState->swapchain.swapchainRecreateRequired = true;
-    avdInputCalculateDeltas(&appState->input);
+    avdInputCalculateMouseDeltas(&appState->input);
     avdApplicationUpdateWithoutPolling(appState);
 }
 
