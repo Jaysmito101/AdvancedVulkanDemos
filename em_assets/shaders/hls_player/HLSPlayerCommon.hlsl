@@ -5,6 +5,8 @@ struct UberPushConstantData {
     uint vertexCount;
     int textureIndices;
     uint pad1;
+    float4 cameraPosition;
+    float4 cameraDirection;
 };
 
 static const float3 positions[6] = {
