@@ -25,6 +25,7 @@ bool avdApplicationInit(AVD_AppState *appState)
     appState->running = true;
 
     AVD_CHECK(avdShaderManagerInit(&appState->shaderManager));
+    AVD_CHECK(avdAudioInit(&appState->audio));
     AVD_CHECK(avdWindowInit(&appState->window, appState));
     AVD_CHECK(avdVulkanInit(&appState->vulkan, &appState->window, &appState->surface));
     AVD_CHECK(avdVulkanSwapchainCreate(&appState->swapchain, &appState->vulkan, appState->surface, &appState->window));
@@ -59,6 +60,7 @@ void avdApplicationShutdown(AVD_AppState *appState)
     avdVulkanDestroySurface(&appState->vulkan, appState->surface);
     avdVulkanShutdown(&appState->vulkan);
     avdWindowShutdown(&appState->window);
+    avdAudioShutdown(&appState->audio);
     avdShaderManagerDestroy(&appState->shaderManager);
 }
 
@@ -74,7 +76,6 @@ void avdApplicationUpdate(AVD_AppState *appState)
 
     avdInputNewFrame(&appState->input);
     avdWindowPollEvents();
-    avdInputCalculateDeltas(&appState->input);
     avdApplicationUpdateWithoutPolling(appState);
 
     // update the title of window with stats

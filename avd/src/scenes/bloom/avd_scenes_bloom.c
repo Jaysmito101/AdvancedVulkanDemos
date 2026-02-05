@@ -1,5 +1,6 @@
 #include "avd_application.h"
 #include "scenes/avd_scenes.h"
+#include "vulkan/vulkan_core.h"
 
 static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
 {
@@ -77,7 +78,8 @@ bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
         &appState->vulkan,
         appState->renderer.sceneFramebuffer.renderPass,
         appState->renderer.sceneFramebuffer.width,
-        appState->renderer.sceneFramebuffer.height));
+        appState->renderer.sceneFramebuffer.height,
+        "CustomBloom"));
 
     AVD_CHECK(__avdSetupDescriptors(&bloom->descriptorSetLayout, &appState->vulkan));
 
@@ -203,8 +205,7 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
     AVD_Vulkan *vulkan           = &appState->vulkan;
     AVD_VulkanRenderer *renderer = &appState->renderer;
 
-    uint32_t currentFrameIndex    = renderer->currentFrameIndex;
-    VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
+    VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     float frameWidth  = (float)renderer->sceneFramebuffer.width;
     float frameHeight = (float)renderer->sceneFramebuffer.height;
@@ -216,7 +217,7 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
     avdRenderableTextGetSize(&bloom->uiInfoText, &uiInfoTextWidth, &uiInfoTextHeight);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/Bloom/Render", NULL);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/Bloom/Render");
 
     avdRenderText(
         vulkan,

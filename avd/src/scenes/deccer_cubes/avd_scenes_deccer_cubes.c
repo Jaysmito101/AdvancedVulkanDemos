@@ -32,7 +32,8 @@ static bool __avdSetupBuffer(
         buffer,
         size,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        "Scene/DeccerCubes/Buffer"));
     AVD_CHECK(avdVulkanBufferUpload(
         vulkan,
         buffer,
@@ -149,7 +150,6 @@ bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *sce
         &deccerCubes->set0));
     AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, deccerCubes->set0Layout, "Scene/DeccerCubes/Set0Layout");
     AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, deccerCubes->set0, "Scene/DeccerCubes/Set0");
-
 
     AVD_CHECK(avdRenderableTextCreate(
         &deccerCubes->title,
@@ -273,7 +273,7 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 write->dstBinding           = (uint32_t)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 write->descriptorType       = avdVulkanToVkDescriptorType(AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 write->dstArrayElement      = deccerCubes->imagesCount + 1;
-                write->pImageInfo           = &deccerCubes->images[deccerCubes->imagesCount].descriptorImageInfo;
+                write->pImageInfo           = &deccerCubes->images[deccerCubes->imagesCount].defaultSubresource.descriptorImageInfo;
 
                 deccerCubes->imagesCount += 1;
             }
@@ -332,10 +332,10 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
 
     AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
 
-    VkCommandBuffer commandBuffer = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
+    VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/DeccerCubes/Render", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/DeccerCubes/Render");
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipeline);
     VkDescriptorSet descriptorSets[] = {

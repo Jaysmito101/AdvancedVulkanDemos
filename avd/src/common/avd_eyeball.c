@@ -38,7 +38,7 @@ bool __avdEyeballSetupDescriptors(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
     AVD_CHECK(avdWriteImageDescriptorSet(&descriptorSetWrite[1],
                                          eyeball->descriptorSet,
                                          1,
-                                         &eyeball->veinsTexture.descriptorImageInfo));
+                                         &eyeball->veinsTexture.defaultSubresource.descriptorImageInfo));
     AVD_CHECK(avdWriteBufferDescriptorSet(&descriptorSetWrite[2],
                                           eyeball->descriptorSet,
                                           2,
@@ -116,25 +116,29 @@ bool avdEyeballCreate(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
         &eyeball->configBuffer,
         sizeof(AVD_EyeballUniforms),
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        "Scene/Eyeball/ConfigBuffer"));
     AVD_CHECK(avdVulkanBufferCreate(
         vulkan,
         &eyeball->vertexBuffer,
         sizeof(AVD_ModelVertexPacked) * AVD_EYEBALL_MAX_VERTICES,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        "Scene/Eyeball/VertexBuffer"));
     AVD_CHECK(avdVulkanBufferCreate(
         vulkan,
         &eyeball->indexBuffer,
         sizeof(uint32_t) * AVD_EYEBALL_MAX_VERTICES,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        "Scene/Eyeball/IndexBuffer"));
     AVD_CHECK(avdVulkanImageCreate(
         vulkan,
         &eyeball->veinsTexture,
-        VK_FORMAT_R8G8B8A8_UNORM,
-        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        512, 512));
+        avdVulkanImageGetDefaultCreateInfo(
+            512, 512,
+            VK_FORMAT_R8G8B8A8_UNORM,
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)));
     AVD_CHECK(__avdEyeballSetupDescriptors(eyeball, vulkan));
     AVD_CHECK(__avdEyeballSetupDefaults(eyeball));
     AVD_CHECK(__avdEyeballSetupMesh(eyeball, vulkan));

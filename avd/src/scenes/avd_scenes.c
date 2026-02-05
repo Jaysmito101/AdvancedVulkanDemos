@@ -41,6 +41,7 @@ static bool __avdRegisterSceneApis(AVD_SceneManager *sceneManager)
     avdSceneSubsurfaceScatteringRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_SUBSURFACE_SCATTERING]);
     avdSceneEyeballsRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_EYEBALLS]);
     avdSceneRealisticHeadRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_REALISTIC_HEAD]);
+    avdSceneHLSPlayerRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_HLS_PLAYER]);
     return true;
 }
 

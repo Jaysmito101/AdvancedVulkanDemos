@@ -8,6 +8,13 @@
 #define AVD_BLOOM_PASS_COUNT 5
 #endif
 
+#ifdef AVD_DEBUG
+#ifndef AVD_BLOOM_LABEL_COLOR
+#define AVD_BLOOM_LABEL_COLOR \
+    (float[]){1.0f, 0.5f, 0.0f, 1.0f}
+#endif
+#endif
+
 typedef enum AVD_BloomPassType {
     AVD_BLOOM_PASS_TYPE_PREFILTER            = 0,
     AVD_BLOOM_PASS_TYPE_DOWNSAMPLE           = 1,
@@ -62,11 +69,13 @@ typedef struct AVD_Bloom {
 
     uint32_t width;
     uint32_t height;
+
+    char label[64];
 } AVD_Bloom;
 
 const char *avdBloomPassTypeToString(AVD_BloomPassType type);
 const char *avdBloomPrefilterTypeToString(AVD_BloomPrefilterType type);
-bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass compositeRenderPass, uint32_t width, uint32_t height);
+bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass compositeRenderPass, uint32_t width, uint32_t height, const char *label);
 void avdBloomDestroy(AVD_Bloom *bloom, AVD_Vulkan *vulkan);
 
 bool avdBloomApplyInplace(

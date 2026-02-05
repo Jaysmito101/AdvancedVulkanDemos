@@ -1,7 +1,15 @@
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(_WIN64)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <dbghelp.h>
+#include <shlobj.h>
+#ifdef AVD_DEBUG
+#pragma comment(lib, "dbghelp.lib")
+#endif
+#else
+#include <execinfo.h>
+#include <unistd.h>
 #endif
 
 #include "core/avd_utils.h"
@@ -70,6 +78,17 @@ bool avdPathExists(const char *path)
 #else
     struct stat buffer;
     return (stat(path, &buffer) == 0 && S_ISREG(buffer.st_mode));
+#endif
+}
+
+bool avdDirectoryExists(const char *path)
+{
+#if defined(_WIN32) || defined(__CYGWIN__)
+    DWORD attrs = GetFileAttributesA(path);
+    return (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY));
+#else
+    struct stat st;
+    return (stat(path, &st) == 0 && S_ISDIR(st.st_mode));
 #endif
 }
 
@@ -149,13 +168,14 @@ bool avdReadBinaryFile(const char *filename, void **data, size_t *size)
     *size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    *data = malloc(*size);
+    *data = malloc(*size + 1);
     if (*data == NULL) {
         fclose(file);
         return false;
     }
-
+    memset(*data, 0, *size + 1);
     fread(*data, 1, *size, file);
+    ((char *)*data)[*size] = '\0';
     fclose(file);
     return true;
 }
@@ -184,6 +204,38 @@ const char *avdDumpToTmpFile(const void *data, size_t size, const char *extensio
     }
 
     return tmpFilePath;
+}
+
+bool avdWriteBinaryFile(const char *filename, const void *data, size_t size)
+{
+    if (filename == NULL || data == NULL || size == 0) {
+        return false;
+    }
+
+    FILE *file = fopen(filename, "wb");
+    if (file == NULL) {
+        return false;
+    }
+
+    size_t written = fwrite(data, 1, size, file);
+    fclose(file);
+
+    return written == size;
+}
+
+bool avdCreateDirectoryIfNotExists(const char *path)
+{
+    if (path == NULL || path[0] == '\0') {
+        return false;
+    }
+
+    char command[4096];
+#if defined(_WIN32) || defined(__CYGWIN__)
+    snprintf(command, sizeof(command), "mkdir \"%s\" 2>nul", path);
+#else
+    snprintf(command, sizeof(command), "mkdir -p \"%s\"", path);
+#endif
+    return system(command) == 0 || avdDirectoryExists(path);
 }
 
 // NOTE: These implementations are taken from the meshoptimizer library.
@@ -249,3 +301,178 @@ int avdQuantizeSnorm(float v, int N)
 
     return (int)(v * scale + round);
 }
+
+bool avdIsStringAURL(const char *str)
+{
+    if (str == NULL) {
+        return false;
+    }
+
+    const char *schemes[] = {
+        "http://",
+        "https://",
+        "ftp://",
+        "ftps://",
+        "file://",
+        "ws://",
+        "wss://"};
+
+    size_t schemeCount = sizeof(schemes) / sizeof(schemes[0]);
+    for (size_t i = 0; i < schemeCount; i++) {
+        size_t len = strlen(schemes[i]);
+        if (strncmp(str, schemes[i], len) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void avdResolveRelativeURL(char *buffer, size_t bufferSize, const char *baseURL, const char *segmentURI)
+{
+    AVD_ASSERT(buffer != NULL);
+    AVD_ASSERT(baseURL != NULL);
+    AVD_ASSERT(segmentURI != NULL);
+
+    if (avdIsStringAURL(segmentURI)) {
+        strncpy(buffer, segmentURI, bufferSize);
+        buffer[bufferSize - 1] = '\0';
+        return;
+    }
+
+    const char *lastSlash = strrchr(baseURL, '/');
+    if (!lastSlash) {
+        AVD_LOG_WARN("Base URL does not contain '/', cannot resolve relative segment URI: %s", baseURL);
+        strncpy(buffer, segmentURI, bufferSize);
+        buffer[bufferSize - 1] = '\0';
+        return;
+    }
+
+    size_t basePathLen = lastSlash - baseURL + 1;
+    if (basePathLen >= bufferSize) {
+        basePathLen = bufferSize - 1;
+    }
+    strncpy(buffer, baseURL, basePathLen);
+    buffer[basePathLen] = '\0';
+
+    const char *segment = segmentURI;
+    while (strncmp(segment, "../", 3) == 0) {
+        segment += 3;
+        if (basePathLen > 0) {
+            buffer[basePathLen - 1] = '\0';
+            char *prevSlash         = strrchr(buffer, '/');
+            if (prevSlash) {
+                basePathLen         = prevSlash - buffer + 1;
+                buffer[basePathLen] = '\0';
+            } else {
+                basePathLen = 0;
+                buffer[0]   = '\0';
+            }
+        }
+    }
+
+    size_t remainingSpace = bufferSize - basePathLen - 1;
+    if (remainingSpace > 0) {
+        strncat(buffer, segment, remainingSpace);
+    }
+}
+
+#ifdef AVD_DEBUG
+void avdPrintBacktrace(void)
+{
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(_WIN64)
+    HANDLE process = GetCurrentProcess();
+    HANDLE thread  = GetCurrentThread();
+
+    SymSetOptions(SYMOPT_LOAD_LINES | SYMOPT_UNDNAME);
+    SymInitialize(process, NULL, TRUE);
+
+    CONTEXT context;
+    RtlCaptureContext(&context);
+
+    STACKFRAME64 stackFrame;
+    memset(&stackFrame, 0, sizeof(STACKFRAME64));
+
+#ifdef _M_X64
+    DWORD machineType           = IMAGE_FILE_MACHINE_AMD64;
+    stackFrame.AddrPC.Offset    = context.Rip;
+    stackFrame.AddrPC.Mode      = AddrModeFlat;
+    stackFrame.AddrFrame.Offset = context.Rbp;
+    stackFrame.AddrFrame.Mode   = AddrModeFlat;
+    stackFrame.AddrStack.Offset = context.Rsp;
+    stackFrame.AddrStack.Mode   = AddrModeFlat;
+#elif defined(_M_IX86)
+    DWORD machineType           = IMAGE_FILE_MACHINE_I386;
+    stackFrame.AddrPC.Offset    = context.Eip;
+    stackFrame.AddrPC.Mode      = AddrModeFlat;
+    stackFrame.AddrFrame.Offset = context.Ebp;
+    stackFrame.AddrFrame.Mode   = AddrModeFlat;
+    stackFrame.AddrStack.Offset = context.Esp;
+    stackFrame.AddrStack.Mode   = AddrModeFlat;
+#elif defined(_M_ARM64)
+    DWORD machineType           = IMAGE_FILE_MACHINE_ARM64;
+    stackFrame.AddrPC.Offset    = context.Pc;
+    stackFrame.AddrPC.Mode      = AddrModeFlat;
+    stackFrame.AddrFrame.Offset = context.Fp;
+    stackFrame.AddrFrame.Mode   = AddrModeFlat;
+    stackFrame.AddrStack.Offset = context.Sp;
+    stackFrame.AddrStack.Mode   = AddrModeFlat;
+#endif
+
+    printf("\nBacktrace:\n");
+    printf("+-------+--------------------+--------------------------------+------------------------------------------------------------------+\n");
+    printf("| Frame | Address            | Function                       | Location                                                         |\n");
+    printf("+-------+--------------------+--------------------------------+------------------------------------------------------------------+\n");
+    int frameIndex = 0;
+
+    while (StackWalk64(machineType, process, thread, &stackFrame, &context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL)) {
+        if (stackFrame.AddrPC.Offset == 0)
+            break;
+
+        char symbolBuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
+        PSYMBOL_INFO symbol  = (PSYMBOL_INFO)symbolBuffer;
+        symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+        symbol->MaxNameLen   = MAX_SYM_NAME;
+
+        DWORD64 displacement = 0;
+        IMAGEHLP_LINE64 line;
+        line.SizeOfStruct      = sizeof(IMAGEHLP_LINE64);
+        DWORD lineDisplacement = 0;
+
+        if (SymFromAddr(process, stackFrame.AddrPC.Offset, &displacement, symbol)) {
+            if (SymGetLineFromAddr64(process, stackFrame.AddrPC.Offset, &lineDisplacement, &line)) {
+                char location[256];
+                snprintf(location, sizeof(location), "%s:%lu", line.FileName, line.LineNumber);
+                printf("| %-5d | 0x%016llx | %-30.40s | %-64.128s |\n", frameIndex, stackFrame.AddrPC.Offset, symbol->Name, location);
+            } else {
+                printf("| %-5d | 0x%016llx | %-30.40s | + 0x%-57llx |\n", frameIndex, stackFrame.AddrPC.Offset, symbol->Name, displacement);
+            }
+        } else {
+            printf("| %-5d | 0x%016llx | %-30.40s | %-64.128s |\n", frameIndex, stackFrame.AddrPC.Offset, "unknown", "unknown");
+        }
+
+        frameIndex++;
+        if (frameIndex >= 64)
+            break;
+    }
+
+    printf("+-------+--------------------+--------------------------------+------------------------------------------------------------------+\n\n");
+    SymCleanup(process);
+#else
+    void *buffer[64];
+    int nframes    = backtrace(buffer, 64);
+    char **symbols = backtrace_symbols(buffer, nframes);
+
+    printf("\nBacktrace:\n");
+    printf("+-------+------------------------------------------------------------------------------------------------------+\n");
+    printf("| Frame | Symbol                                                                                               |\n");
+    printf("+-------+------------------------------------------------------------------------------------------------------+\n");
+    for (int i = 0; i < nframes; i++) {
+        printf("| %-5d | %-100.100s |\n", i, symbols[i]);
+    }
+    printf("+-------+------------------------------------------------------------------------------------------------------+\n\n");
+
+    free(symbols);
+#endif
+}
+#endif

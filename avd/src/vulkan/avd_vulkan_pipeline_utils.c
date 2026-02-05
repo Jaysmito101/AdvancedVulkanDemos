@@ -8,12 +8,12 @@ bool avdPipelineUtilsShaderStage(VkPipelineShaderStageCreateInfo *shaderStageInf
     AVD_ASSERT(shaderModule != VK_NULL_HANDLE);
 
     *shaderStageInfo = (VkPipelineShaderStageCreateInfo){
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
-        .stage = stageFlags,
-        .module = shaderModule,
-        .pName = "main",
+        .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        .pNext               = NULL,
+        .flags               = 0,
+        .stage               = stageFlags,
+        .module              = shaderModule,
+        .pName               = "main",
         .pSpecializationInfo = NULL,
     };
 
@@ -29,10 +29,10 @@ bool avdPipelineUtilsDynamicState(VkPipelineDynamicStateCreateInfo *dynamicState
     dynamicStates[1]                       = VK_DYNAMIC_STATE_SCISSOR;
 
     *dynamicStateInfo = (VkPipelineDynamicStateCreateInfo){
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
-        .pDynamicStates = dynamicStates,
+        .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext             = NULL,
+        .flags             = 0,
+        .pDynamicStates    = dynamicStates,
         .dynamicStateCount = AVD_ARRAY_COUNT(dynamicStates),
     };
 
@@ -42,10 +42,10 @@ bool avdPipelineUtilsDynamicState(VkPipelineDynamicStateCreateInfo *dynamicState
 bool avdPipelineUtilsInputAssemblyState(VkPipelineInputAssemblyStateCreateInfo *inputAssemblyInfo)
 {
     *inputAssemblyInfo = (VkPipelineInputAssemblyStateCreateInfo){
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
-        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .pNext                  = NULL,
+        .flags                  = 0,
+        .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .primitiveRestartEnable = VK_FALSE,
     };
 
@@ -57,10 +57,10 @@ bool avdPipelineUtilsViewportScissor(VkViewport *viewport, VkRect2D *scissor)
     AVD_ASSERT(viewport != NULL);
     AVD_ASSERT(scissor != NULL);
     *viewport = (VkViewport){
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = 1024.0f,
-        .height = 1024.0f,
+        .x        = 0.0f,
+        .y        = 0.0f,
+        .width    = 1024.0f,
+        .height   = 1024.0f,
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };
@@ -80,13 +80,13 @@ bool avdPipelineUtilsViewportState(VkPipelineViewportStateCreateInfo *viewportSt
     AVD_ASSERT(scissor != NULL);
 
     *viewportStateInfo = (VkPipelineViewportStateCreateInfo){
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
+        .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .pNext         = NULL,
+        .flags         = 0,
         .viewportCount = 1,
-        .pViewports = viewport,
-        .scissorCount = 1,
-        .pScissors = scissor,
+        .pViewports    = viewport,
+        .scissorCount  = 1,
+        .pScissors     = scissor,
     };
 
     return true;
@@ -96,23 +96,23 @@ bool avdPipelineUtilsRasterizationState(VkPipelineRasterizationStateCreateInfo *
 {
     AVD_ASSERT(rasterizerInfo != NULL);
     VkPolygonMode polygonMode = creationInfo ? creationInfo->polygonMode : VK_POLYGON_MODE_FILL;
-    VkCullModeFlags cullMode = creationInfo ? creationInfo->cullMode : VK_CULL_MODE_NONE;
-    VkFrontFace frontFace = creationInfo ? creationInfo->frontFace : VK_FRONT_FACE_CLOCKWISE;
+    VkCullModeFlags cullMode  = creationInfo ? creationInfo->cullMode : VK_CULL_MODE_NONE;
+    VkFrontFace frontFace     = creationInfo ? creationInfo->frontFace : VK_FRONT_FACE_CLOCKWISE;
 
     *rasterizerInfo = (VkPipelineRasterizationStateCreateInfo){
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
-        .depthClampEnable = VK_FALSE,
+        .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .pNext                   = NULL,
+        .flags                   = 0,
+        .depthClampEnable        = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
-        .polygonMode = polygonMode,
-        .cullMode = cullMode,
-        .frontFace = frontFace,
-        .depthBiasEnable = VK_FALSE,
+        .polygonMode             = polygonMode,
+        .cullMode                = cullMode,
+        .frontFace               = frontFace,
+        .depthBiasEnable         = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,
-        .depthBiasClamp = 0.0f,
-        .depthBiasSlopeFactor = 0.0f,
-        .lineWidth = 1.0f,
+        .depthBiasClamp          = 0.0f,
+        .depthBiasSlopeFactor    = 0.0f,
+        .lineWidth               = 1.0f,
     };
 
     return true;
@@ -122,15 +122,15 @@ bool avdPipelineUtilsMultisampleState(VkPipelineMultisampleStateCreateInfo *mult
 {
     AVD_ASSERT(multisampleInfo != NULL);
     *multisampleInfo = (VkPipelineMultisampleStateCreateInfo){
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
-        .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-        .sampleShadingEnable = VK_FALSE,
-        .minSampleShading = 1.0f,
-        .pSampleMask = NULL,
+        .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .pNext                 = NULL,
+        .flags                 = 0,
+        .rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
+        .sampleShadingEnable   = VK_FALSE,
+        .minSampleShading      = 1.0f,
+        .pSampleMask           = NULL,
         .alphaToCoverageEnable = VK_FALSE,
-        .alphaToOneEnable = VK_FALSE,
+        .alphaToOneEnable      = VK_FALSE,
     };
 
     return true;
@@ -140,16 +140,16 @@ bool avdPipelineUtilsDepthStencilState(VkPipelineDepthStencilStateCreateInfo *de
 {
     AVD_ASSERT(depthStencilInfo != NULL);
     *depthStencilInfo = (VkPipelineDepthStencilStateCreateInfo){
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
-        .depthTestEnable = enableDepthTest ? VK_TRUE : VK_FALSE,
-        .depthWriteEnable = enableDepthTest ? VK_TRUE : VK_FALSE,
-        .depthCompareOp = VK_COMPARE_OP_LESS,
+        .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .pNext                 = NULL,
+        .flags                 = 0,
+        .depthTestEnable       = enableDepthTest ? VK_TRUE : VK_FALSE,
+        .depthWriteEnable      = enableDepthTest ? VK_TRUE : VK_FALSE,
+        .depthCompareOp        = VK_COMPARE_OP_LESS,
         .depthBoundsTestEnable = VK_FALSE,
-        .stencilTestEnable = VK_FALSE,
-        .front = {0},
-        .back = {0},
+        .stencilTestEnable     = VK_FALSE,
+        .front                 = {0},
+        .back                  = {0},
     };
 
     return true;
@@ -159,14 +159,14 @@ bool avdPipelineUtilsBlendAttachment(VkPipelineColorBlendAttachmentState *blendA
 {
     AVD_ASSERT(blendAttachment != NULL);
     *blendAttachment = (VkPipelineColorBlendAttachmentState){
-        .blendEnable = enableBlend ? VK_TRUE : VK_FALSE,
+        .blendEnable         = enableBlend ? VK_TRUE : VK_FALSE,
         .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
         .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-        .colorBlendOp = VK_BLEND_OP_ADD,
+        .colorBlendOp        = VK_BLEND_OP_ADD,
         .srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
         .dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-        .alphaBlendOp = VK_BLEND_OP_ADD,
-        .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+        .alphaBlendOp        = VK_BLEND_OP_ADD,
+        .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
     return true;
@@ -177,14 +177,14 @@ bool avdPipelineUtilsColorBlendState(VkPipelineColorBlendStateCreateInfo *colorB
     AVD_ASSERT(colorBlendStateInfo != NULL);
     AVD_ASSERT(blendAttachments != NULL);
     *colorBlendStateInfo = (VkPipelineColorBlendStateCreateInfo){
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        .pNext = NULL,
-        .flags = 0,
-        .logicOpEnable = VK_FALSE,
-        .logicOp = VK_LOGIC_OP_COPY,
+        .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext           = NULL,
+        .flags           = 0,
+        .logicOpEnable   = VK_FALSE,
+        .logicOp         = VK_LOGIC_OP_COPY,
         .attachmentCount = (uint32_t)attachmentCount,
-        .pAttachments = blendAttachments,
-        .blendConstants = {0.0f, 0.0f, 0.0f, 0.0f},
+        .pAttachments    = blendAttachments,
+        .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f},
     };
 
     return true;
@@ -195,11 +195,11 @@ void avdPipelineUtilsPipelineCreationInfoInit(AVD_VulkanPipelineCreationInfo *in
     AVD_ASSERT(info != NULL);
 
     *info = (AVD_VulkanPipelineCreationInfo){
-        .enableBlend = false,
+        .enableBlend     = false,
         .enableDepthTest = false,
-        .polygonMode = VK_POLYGON_MODE_FILL,
-        .cullMode = VK_CULL_MODE_NONE,
-        .frontFace = VK_FRONT_FACE_CLOCKWISE,
+        .polygonMode     = VK_POLYGON_MODE_FILL,
+        .cullMode        = VK_CULL_MODE_NONE,
+        .frontFace       = VK_FRONT_FACE_CLOCKWISE,
     };
 }
 
@@ -215,15 +215,15 @@ bool avdPipelineUtilsCreateGraphicsPipelineLayout(
 
     VkPushConstantRange pushConstantRanges[1] = {
         [0] = {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-               .offset = 0,
-               .size = pushConstantSize},
+               .offset     = 0,
+               .size       = pushConstantSize},
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = (uint32_t)descriptorSetLayoutCount,
-        .pSetLayouts = descriptorSetLayouts,
-        .pPushConstantRanges = pushConstantRanges,
+        .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        .setLayoutCount         = (uint32_t)descriptorSetLayoutCount,
+        .pSetLayouts            = descriptorSetLayouts,
+        .pPushConstantRanges    = pushConstantRanges,
         .pushConstantRangeCount = AVD_ARRAY_COUNT(pushConstantRanges),
     };
 
@@ -290,28 +290,28 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(
     AVD_CHECK(avdPipelineUtilsColorBlendState(&colorBlendStateInfo, colorBlendAttachment, attachmentCount));
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount = 0,
+        .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount   = 0,
         .vertexAttributeDescriptionCount = 0,
     };
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {
-        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .stageCount = AVD_ARRAY_COUNT(shaderStages),
-        .pStages = shaderStages,
-        .layout = layout,
-        .renderPass = renderPass,
-        .subpass = 0,
-        .pVertexInputState = &vertexInputInfo,
+        .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .stageCount          = AVD_ARRAY_COUNT(shaderStages),
+        .pStages             = shaderStages,
+        .layout              = layout,
+        .renderPass          = renderPass,
+        .subpass             = 0,
+        .pVertexInputState   = &vertexInputInfo,
         .pInputAssemblyState = &inputAssemblyInfo,
-        .pViewportState = &viewportStateInfo,
+        .pViewportState      = &viewportStateInfo,
         .pRasterizationState = &rasterizerInfo,
-        .pMultisampleState = &multisampleInfo,
-        .pDepthStencilState = &depthStencilInfo,
-        .pColorBlendState = &colorBlendStateInfo,
-        .pDynamicState = &dynamicStateInfo,
-        .basePipelineHandle = VK_NULL_HANDLE,
-        .basePipelineIndex = -1,
+        .pMultisampleState   = &multisampleInfo,
+        .pDepthStencilState  = &depthStencilInfo,
+        .pColorBlendState    = &colorBlendStateInfo,
+        .pDynamicState       = &dynamicStateInfo,
+        .basePipelineHandle  = VK_NULL_HANDLE,
+        .basePipelineIndex   = -1,
     };
 
     VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, pipeline);
@@ -370,15 +370,15 @@ bool avdWriteImageDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDesc
     AVD_ASSERT(descriptorSet != VK_NULL_HANDLE);
     AVD_ASSERT(imageInfo != NULL);
     *writeDescriptorSet = (VkWriteDescriptorSet){
-        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .pNext = NULL,
-        .dstSet = descriptorSet,
-        .dstBinding = binding,
-        .dstArrayElement = 0,
-        .descriptorCount = 1,
-        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .pImageInfo = imageInfo,
-        .pBufferInfo = NULL,
+        .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext            = NULL,
+        .dstSet           = descriptorSet,
+        .dstBinding       = binding,
+        .dstArrayElement  = 0,
+        .descriptorCount  = 1,
+        .descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .pImageInfo       = imageInfo,
+        .pBufferInfo      = NULL,
         .pTexelBufferView = NULL,
     };
 
@@ -427,10 +427,10 @@ bool avdAllocateDescriptorSet(
     VkDescriptorSet *descriptorSet)
 {
     VkDescriptorSetAllocateInfo allocateInfo = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        .descriptorPool = descriptorPool,
+        .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool     = descriptorPool,
         .descriptorSetCount = 1,
-        .pSetLayouts = &descriptorSetLayout,
+        .pSetLayouts        = &descriptorSetLayout,
     };
     AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(
                             device,
@@ -446,15 +446,15 @@ bool avdWriteBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet, VkDes
     AVD_ASSERT(descriptorSet != VK_NULL_HANDLE);
     AVD_ASSERT(bufferInfo != NULL);
     *writeDescriptorSet = (VkWriteDescriptorSet){
-        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .pNext = NULL,
-        .dstSet = descriptorSet,
-        .dstBinding = binding,
-        .dstArrayElement = 0,
-        .descriptorCount = 1,
-        .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-        .pImageInfo = NULL,
-        .pBufferInfo = bufferInfo,
+        .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext            = NULL,
+        .dstSet           = descriptorSet,
+        .dstBinding       = binding,
+        .dstArrayElement  = 0,
+        .descriptorCount  = 1,
+        .descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        .pImageInfo       = NULL,
+        .pBufferInfo      = bufferInfo,
         .pTexelBufferView = NULL,
     };
 
@@ -467,15 +467,15 @@ bool avdWriteUniformBufferDescriptorSet(VkWriteDescriptorSet *writeDescriptorSet
     AVD_ASSERT(descriptorSet != VK_NULL_HANDLE);
     AVD_ASSERT(bufferInfo != NULL);
     *writeDescriptorSet = (VkWriteDescriptorSet){
-        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .pNext = NULL,
-        .dstSet = descriptorSet,
-        .dstBinding = binding,
-        .dstArrayElement = 0,
-        .descriptorCount = 1,
-        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .pImageInfo = NULL,
-        .pBufferInfo = bufferInfo,
+        .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext            = NULL,
+        .dstSet           = descriptorSet,
+        .dstBinding       = binding,
+        .dstArrayElement  = 0,
+        .descriptorCount  = 1,
+        .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .pImageInfo       = NULL,
+        .pBufferInfo      = bufferInfo,
         .pTexelBufferView = NULL,
     };
 
@@ -506,28 +506,28 @@ bool avdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, 
     }
 
     VkRenderPassAttachmentBeginInfo attachmentBeginInfo = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,
         .attachmentCount = (uint32_t)attachmentCount,
-        .pAttachments = attachments,
+        .pAttachments    = attachments,
     };
 
     VkRenderPassBeginInfo renderPassInfo = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = renderPass,
-        .framebuffer = framebuffer,
-        .renderArea = {.offset = {0, 0}, .extent = {framebufferWidth, framebufferHeight}},
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass      = renderPass,
+        .framebuffer     = framebuffer,
+        .renderArea      = {.offset = {0, 0}, .extent = {framebufferWidth, framebufferHeight}},
         .clearValueCount = (uint32_t)clearValueCount,
-        .pClearValues = clearValues,
-        .pNext = &attachmentBeginInfo,
+        .pClearValues    = clearValues,
+        .pNext           = &attachmentBeginInfo,
     };
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkViewport viewport = {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = (float)framebufferWidth,
-        .height = (float)framebufferHeight,
+        .x        = 0.0f,
+        .y        = 0.0f,
+        .width    = (float)framebufferWidth,
+        .height   = (float)framebufferHeight,
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };

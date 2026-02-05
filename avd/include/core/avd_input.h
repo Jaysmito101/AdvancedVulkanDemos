@@ -100,7 +100,7 @@ typedef union AVD_InputEvent {
 
 const char *avdInputEventTypeToString(AVD_InputEventType type);
 void avdInputCalculateMousePositionFromRaw(AVD_Input *input, struct AVD_Window *window, double x, double y);
-void avdInputCalculateDeltas(AVD_Input *input);
+void avdInputCalculateMouseDeltas(AVD_Input *input);
 void avdInputNewFrame(AVD_Input *input);
 
 #endif // AVD_INPUT_H

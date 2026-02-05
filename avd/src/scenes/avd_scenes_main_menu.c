@@ -1,5 +1,6 @@
 #include "avd_application.h"
 #include "scenes/avd_scenes.h"
+#include "vulkan/avd_vulkan_renderer.h"
 
 static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
 {
@@ -19,7 +20,7 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
 
     VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, layout);
     AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, (uint64_t)layout, "Scene/MainMenu/DescriptorSetLayout");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, *layout, "Scene/MainMenu/DescriptorSetLayout");
     return true;
 }
 
@@ -46,11 +47,12 @@ static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AV
     allocateInfo.pSetLayouts                 = &layout;
     AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(vulkan->device, &allocateInfo, &card->descriptorSet), "Failed to allocate descriptor set");
 
+    char debugName[128];
     snprintf(debugName, sizeof(debugName), "Scene/MainMenu/Card/%s/DescriptorSet", title);
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, (uint64_t)card->descriptorSet, debugName);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, card->descriptorSet, debugName);
 
     VkWriteDescriptorSet writeDescriptorSet = {0};
-    AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, card->descriptorSet, 0, &card->thumbnailImage.descriptorImageInfo));
+    AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, card->descriptorSet, 0, &card->thumbnailImage.defaultSubresource.descriptorImageInfo));
     vkUpdateDescriptorSets(vulkan->device, 1, &writeDescriptorSet, 0, NULL);
 
     return true;
@@ -257,15 +259,14 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     AVD_Vulkan *vulkan           = &appState->vulkan;
     AVD_VulkanRenderer *renderer = &appState->renderer;
 
-    uint32_t currentFrameIndex    = renderer->currentFrameIndex;
-    VkCommandBuffer commandBuffer = renderer->resources[currentFrameIndex].commandBuffer;
+    VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/MainMenu/Render", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/Render");
 
     // AVD_LOG_VERBOSE("Rendering main menu scene");
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/MainMenu/RenderTitle", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/RenderTitle");
     float titleWidth, titleHeight;
     float creditsWidth, creditsHeight;
     float githubLinkWidth, githubLinkHeight;
@@ -319,8 +320,8 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     float offsetX        = (frameWidth - allCardsWidth) / 2.0f;
     float offsetY        = (frameHeight - allCardsHeight) / 2.0f;
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, "Scene/MainMenu/RenderUi", AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR);
-    
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/RenderUi");
+
     avdUiBegin(
         commandBuffer,
         &appState->ui,
@@ -358,7 +359,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
                 x - 15.0f, y - 15.0f,
                 cardWidth + 30.0f, cardHeight + 30.0f,
                 1.0f, 1.0f, 1.0f, 1.0f,
-                card->descriptorSet, image->width, image->height);
+                card->descriptorSet, image->info.width, image->info.height);
         } else {
             avdUiDrawRect(
                 commandBuffer,
@@ -367,7 +368,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
                 x, y,
                 cardWidth, cardHeight,
                 0.3f, 0.3f, 0.3f, 1.0f,
-                card->descriptorSet, image->width, image->height);
+                card->descriptorSet, image->info.width, image->info.height);
         }
 
         float cardTitleWidth, cardTitleHeight;
