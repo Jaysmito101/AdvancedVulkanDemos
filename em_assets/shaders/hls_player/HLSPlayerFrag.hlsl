@@ -1,6 +1,7 @@
 #include "HLSPlayerCommon"
 #include "HLSPlayerSDFFunctions"
 #include "ColorConverters"
+#include "TonemapUtils"
 
 [[vk::push_constant]]
 cbuffer PushConstants {
@@ -212,12 +213,26 @@ float3 shade(float3 p, float3 normal, float3 rd, float materialId) {
     return baseColor * lin + specColor;
 }
 
-
 float3 getSkyColor(float3 rd) {
     float t = rd.y * 0.5 + 0.5;
-    float3 topColor = float3(0.05, 0.05, 0.05); 
-    float3 bottomColor = float3(0.0, 0.0, 0.0);
+    float3 topColor = float3(0.08, 0.08, 0.1); 
+    float3 bottomColor = float3(0.02, 0.02, 0.03);
     return lerp(bottomColor, topColor, t);
+}
+
+float3 postProcess(float3 color, float dist) {
+    color = acesFilm(color * 1.3);
+    color = color + float3(0.02, 0.01, 0.0) * (1.0 - color);
+    color = pow(max(color, 0.0), 1.0 / float3(1.0, 0.98, 0.95));
+    color = color * float3(1.0, 1.02, 1.08);
+    color = smoothstep(0.0, 1.0, color);
+    color = lerp(color, smoothstep(0.0, 1.0, color), 0.15);
+    float luma = dot(color, float3(0.2126, 0.7152, 0.0722));
+    color = lerp(float3(luma, luma, luma), color, 1.15);
+    float fogIdx = 1.0 - exp(-saturate(dist / 100.0) * 2.0);
+    float3 fogCol = float3(0.01, 0.01, 0.06);
+    color = lerp(color, fogCol, fogIdx);
+    return saturate(color);
 }
 
 float4 main(VertexShaderOutput input) : SV_Target {
@@ -249,10 +264,9 @@ float4 main(VertexShaderOutput input) : SV_Target {
         color = getSkyColor(rd);
     }
 
-    float fogIdx = 1.0 - exp(-saturate(dist / 100.0) * 2.0);
-    float3 fogCol = float3(0.01, 0.01, 0.02);
-    color = lerp(color, fogCol, fogIdx);
     
-
-    return float4(color, 1.0);
+    
+  
+    
+    return float4(postProcess(color, dist), 1.0);
 }
