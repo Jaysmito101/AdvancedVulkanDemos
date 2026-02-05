@@ -218,6 +218,7 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
 
         AVD_VulkanVideoDecodedFrame *frame = NULL;
         if (avdSceneHLSPlayerContextTryAcquireFrame(&source->player, &frame)) {
+            source->firstBound = true;
             AVD_LOG_WARN_DEBOUNCED(1000, "decoded frame %zu at time (time: %.3f/%zu, curren time: %.3f) %.3f seconds", frame->index, frame->timestampSeconds, frame->absoluteDisplayOrder, avdSceneHLSPlayerContextGetTime(&source->player), time);
 
             VkWriteDescriptorSet descriptorWrite[2] = {
@@ -245,14 +246,6 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
     }
 
     return true;
-}
-
-static void printBinary(AVD_UInt32 n)
-{
-    for (int i = sizeof(n) * 8 - 1; i >= 0; i--) {
-        putchar((n & (1 << i)) ? '1' : '0');
-    }
-    putchar('\n');
 }
 
 static bool avdSceneHLSPlayerCheckIntegrity(struct AVD_AppState *appState, const char **statusMessage)
@@ -514,7 +507,7 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
         int32_t textureIndices = 0;
         for (AVD_Size i = 0; i < 4; i++) {
             int32_t texIdx = 5;
-            if (i < hlsPlayer->sourceCount) {
+            if (i < hlsPlayer->sourceCount && hlsPlayer->sources[i].firstBound) {
                 texIdx = (int32_t)i;
             }
             textureIndices |= (texIdx & 0xFF) << (i * 8);

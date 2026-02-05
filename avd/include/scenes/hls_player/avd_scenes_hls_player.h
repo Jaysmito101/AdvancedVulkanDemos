@@ -27,6 +27,7 @@ typedef struct {
     AVD_Float videoStartTime;
     AVD_Size currentlyPlayingSegmentId;
 
+    AVD_Bool firstBound;
     AVD_SceneHLSPlayerContext player;
 } AVD_SceneHLSPlayerSource;
 
