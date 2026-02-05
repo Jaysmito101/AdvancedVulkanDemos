@@ -1,11 +1,13 @@
 #include "scenes/hls_player/avd_scenes_hls_player.h"
 
+#include "GLFW/glfw3.h"
 #include "audio/avd_audio.h"
 #include "audio/avd_audio_core.h"
 #include "avd_application.h"
 #include "core/avd_base.h"
 #include "core/avd_types.h"
 #include "core/avd_utils.h"
+#include "math/avd_vector_non_simd.h"
 #include "pico/picoStream.h"
 #include "scenes/avd_scenes.h"
 #include "scenes/hls_player/avd_scene_hls_player_context.h"
@@ -26,6 +28,8 @@ typedef struct {
     int32_t indexCount;
     int32_t textureIndices;
     int32_t pad1;
+    AVD_Vector4 cameraPosition;
+    AVD_Vector4 cameraDirection;
 } AVD_HLSPlayerPushConstants;
 
 static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
@@ -320,11 +324,18 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
         &appState->fontRenderer,
         &appState->vulkan,
         "RobotoCondensedRegular",
-        "Copy a url to a HLS stream and click the window and press P.",
+        "Move around enjoy the shows!",
         24.0f));
 
-    hlsPlayer->sceneWidth  = (float)appState->renderer.sceneFramebuffer.width;
-    hlsPlayer->sceneHeight = (float)appState->renderer.sceneFramebuffer.height;
+    hlsPlayer->sceneWidth      = (float)appState->renderer.sceneFramebuffer.width;
+    hlsPlayer->sceneHeight     = (float)appState->renderer.sceneFramebuffer.height;
+    hlsPlayer->cameraPosition  = avdVec3(0.0f, 2.0f, 5.0f);
+    hlsPlayer->cameraYaw       = AVD_PI; // looking toward -Z
+    hlsPlayer->cameraPitch     = 0.0f;
+    hlsPlayer->cameraDirection = avdVec3(
+        cosf(hlsPlayer->cameraPitch) * sinf(hlsPlayer->cameraYaw),
+        sinf(hlsPlayer->cameraPitch),
+        cosf(hlsPlayer->cameraPitch) * cosf(hlsPlayer->cameraYaw));
 
     if (!hlsPlayer->isSupported) {
         return true;
@@ -403,18 +414,34 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(event != NULL);
 
+    AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
+
     if (event->type == AVD_INPUT_EVENT_KEY) {
         if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS) {
             avdSceneManagerSwitchToScene(
                 &appState->sceneManager,
                 AVD_SCENE_TYPE_MAIN_MENU,
                 appState);
-        } else if (event->key.key == GLFW_KEY_P && event->key.action == GLFW_PRESS) {
-            AVD_LOG_INFO("P pressed - would start playing HLS stream if implemented %s.", glfwGetClipboardString(appState->window.window));
         }
+    } else if (event->type == AVD_INPUT_EVENT_MOUSE_MOVE && appState->input.mouseButtonState[GLFW_MOUSE_BUTTON_LEFT]) {
+        float deltaX = appState->input.mouseDeltaX;
+        float deltaY = appState->input.mouseDeltaY;
+
+        const float sensitivity = 0.6f;
+        hlsPlayer->cameraYaw += deltaX * sensitivity;
+        hlsPlayer->cameraPitch -= deltaY * sensitivity;
+
+        hlsPlayer->cameraPitch = AVD_CLAMP(hlsPlayer->cameraPitch, -AVD_PI * 0.45f, AVD_PI * 0.45f);
+
+        hlsPlayer->cameraDirection.x = cosf(hlsPlayer->cameraPitch) * sinf(hlsPlayer->cameraYaw);
+        hlsPlayer->cameraDirection.y = sinf(hlsPlayer->cameraPitch);
+        hlsPlayer->cameraDirection.z = cosf(hlsPlayer->cameraPitch) * cosf(hlsPlayer->cameraYaw);
+
+        hlsPlayer->cameraDirection = avdVec3Normalize(hlsPlayer->cameraDirection);
+    } else if (event->type == AVD_INPUT_EVENT_MOUSE_SCROLL) {
+        hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(hlsPlayer->cameraDirection, 0.1f * event->mouseScroll.y));
     } else if (event->type == AVD_INPUT_EVENT_DRAG_N_DROP) {
         if (event->dragNDrop.count > 0) {
-            AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
             AVD_LOG_INFO("Trying to load sources from: %s", event->dragNDrop.paths[0]);
 
             avdHLSWorkerPoolFlush(&hlsPlayer->workerPool);
@@ -438,6 +465,32 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_CHECK(__avdSceneHLSPlayerUpdateSources(appState, hlsPlayer));
     AVD_CHECK(__avdSceneHLSPlayerReceiveReadySegments(appState, hlsPlayer));
     AVD_CHECK(__avdSceneHLSPlayerUpdateContexts(appState, hlsPlayer));
+
+    {
+        const float moveSpeed = 10.0f * appState->framerate.deltaTime;
+        AVD_Vector3 forward   = hlsPlayer->cameraDirection;
+        AVD_Vector3 up        = avdVec3(0.0f, 1.0f, 0.0f);
+        AVD_Vector3 right     = avdVec3Normalize(avdVec3Cross(forward, up));
+
+        if (appState->input.keyState[GLFW_KEY_W]) {
+            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(forward, moveSpeed));
+        }
+        if (appState->input.keyState[GLFW_KEY_S]) {
+            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(forward, -moveSpeed));
+        }
+        if (appState->input.keyState[GLFW_KEY_A]) {
+            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(right, -moveSpeed));
+        }
+        if (appState->input.keyState[GLFW_KEY_D]) {
+            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(right, moveSpeed));
+        }
+        if (appState->input.keyState[GLFW_KEY_Q]) {
+            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(up, moveSpeed));
+        }
+        if (appState->input.keyState[GLFW_KEY_E]) {
+            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(up, -moveSpeed));
+        }
+    }
 
     return true;
 }
@@ -468,9 +521,12 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
         }
 
         AVD_HLSPlayerPushConstants pushConstants = {
-            .activeSources  = 0,
-            .textureIndices = textureIndices,
+            .activeSources   = 0,
+            .textureIndices  = textureIndices,
+            .cameraPosition  = avdVec4FromVec3(hlsPlayer->cameraPosition, 1.0f),
+            .cameraDirection = avdVec4FromVec3(hlsPlayer->cameraDirection, 0.0f),
         };
+        // AVD_LOG_INFO("Camera Position: %f, %f, %f", hlsPlayer->cameraPosition.x, hlsPlayer->cameraPosition.y, hlsPlayer->cameraPosition.z);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipeline);
         vkCmdPushConstants(commandBuffer, hlsPlayer->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipelineLayout, 0, 1, &appState->vulkan.bindlessDescriptorSet, 0, NULL);

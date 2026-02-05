@@ -5,6 +5,7 @@
 #include "avd_scene_hls_player_segment_store.h"
 #include "avd_scene_hls_worker_pool.h"
 #include "core/avd_types.h"
+#include "math/avd_vector_non_simd.h"
 #include "scenes/avd_scenes_base.h"
 #include "scenes/hls_player/avd_scene_hls_media_cache.h"
 #include "scenes/hls_player/avd_scene_hls_url_pool.h"
@@ -50,6 +51,11 @@ typedef struct AVD_SceneHLSPlayer {
     AVD_HLSURLPool urlPool;
     AVD_HLSMediaCache mediaCache;
     AVD_HLSWorkerPool workerPool;
+
+    AVD_Vector3 cameraPosition;
+    AVD_Vector3 cameraDirection;
+    AVD_Float cameraYaw;
+    AVD_Float cameraPitch;
 
     bool isSupported;
     AVD_Vulkan *vulkan;
