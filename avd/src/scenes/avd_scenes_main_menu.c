@@ -196,13 +196,12 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
     AVD_ASSERT(progress != NULL);
 
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
-    AVD_LOG_INFO("Loading main menu scene");
     // nothing to load really here but some busy waiting
+    // just as an example of how to use the loading progress and status message
     if (mainMenu->loadingCount < 4) {
         mainMenu->loadingCount++;
         static char buffer[256];
         snprintf(buffer, sizeof(buffer), "Loading main menu scene: %d%%", mainMenu->loadingCount * 100 / 4);
-        AVD_LOG_INFO("%s", buffer);
         *statusMessage = buffer;
         *progress      = (float)mainMenu->loadingCount / 4.0f;
         avdSleep(100);
