@@ -22,6 +22,7 @@ target_include_directories(avd_assets
     PRIVATE ./generated/include
     PRIVATE ../avd/include
     PRIVATE ../dep/glfw/include
+    PRIVATE ../dep/libpico/include
 )
 
 target_compile_definitions(avd_assets PRIVATE
@@ -33,4 +34,8 @@ if (WIN32)
     target_compile_definitions(avd_assets
         PUBLIC _CRT_SECURE_NO_WARNINGS
     )
+endif()
+
+if (MSVC)
+    target_compile_options(avd_assets PRIVATE /MP /FS)
 endif()

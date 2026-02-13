@@ -4,12 +4,12 @@
 bool avdWindowInit(AVD_Window *window, AVD_AppState *appState)
 {
     if (!glfwInit()) {
-        AVD_LOG("Failed to initialize GLFW\n");
+        AVD_LOG_ERROR("Failed to initialize GLFW");
         return false;
     }
 
     if (!glfwVulkanSupported()) {
-        AVD_LOG("Vulkan is not supported\n");
+        AVD_LOG_ERROR("Vulkan is not supported");
         return false;
     }
 
@@ -18,7 +18,7 @@ bool avdWindowInit(AVD_Window *window, AVD_AppState *appState)
 
     window->window = glfwCreateWindow(1280, 720, "Advanced Vulkan Demos", NULL, NULL);
     if (!window->window) {
-        AVD_LOG("Failed to create GLFW window\n");
+        AVD_LOG_ERROR("Failed to create GLFW window");
         glfwTerminate(); // Terminate GLFW if window creation fails
         return false;
     }

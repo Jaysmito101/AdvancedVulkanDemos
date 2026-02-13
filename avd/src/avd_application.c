@@ -25,6 +25,7 @@ bool avdApplicationInit(AVD_AppState *appState)
     appState->running = true;
 
     AVD_CHECK(avdShaderManagerInit(&appState->shaderManager));
+    AVD_CHECK(avdAudioInit(&appState->audio));
     AVD_CHECK(avdWindowInit(&appState->window, appState));
     AVD_CHECK(avdVulkanInit(&appState->vulkan, &appState->window, &appState->surface));
     AVD_CHECK(avdVulkanSwapchainCreate(&appState->swapchain, &appState->vulkan, appState->surface, &appState->window));
@@ -59,6 +60,7 @@ void avdApplicationShutdown(AVD_AppState *appState)
     avdVulkanDestroySurface(&appState->vulkan, appState->surface);
     avdVulkanShutdown(&appState->vulkan);
     avdWindowShutdown(&appState->window);
+    avdAudioShutdown(&appState->audio);
     avdShaderManagerDestroy(&appState->shaderManager);
 }
 
@@ -72,11 +74,8 @@ void avdApplicationUpdate(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
 
-    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
-
     avdInputNewFrame(&appState->input);
     avdWindowPollEvents();
-    avdInputCalculateDeltas(&appState->input);
     avdApplicationUpdateWithoutPolling(appState);
 
     // update the title of window with stats
@@ -89,6 +88,7 @@ void avdApplicationUpdate(AVD_AppState *appState)
 void avdApplicationUpdateWithoutPolling(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
+    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
     avdSceneManagerUpdate(&appState->sceneManager, appState);
     avdApplicationRender(appState);
 }
@@ -104,26 +104,26 @@ void avdApplicationRender(AVD_AppState *appState)
     }
 
     if (avdVulkanSwapchainRecreateIfNeeded(&appState->swapchain, &appState->vulkan, &appState->window)) {
-        if (!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain))
-            AVD_LOG("Failed to recreate Vulkan renderer resources\n");
-        return; // skip this frame
+        if (!avdVulkanRendererRecreateResources(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
+            AVD_LOG_ERROR("Failed to recreate Vulkan renderer resources");
+        }
     }
 
     if (!avdVulkanRendererBegin(&appState->renderer, &appState->vulkan, &appState->swapchain)) {
-        AVD_LOG("Failed to begin Vulkan renderer\n");
+        AVD_LOG_ERROR("Failed to begin Vulkan renderer");
         return; // do not render this frame
     }
 
     if (!avdSceneManagerRender(&appState->sceneManager, appState)) {
-        AVD_LOG("Failed to render scene\n");
+        AVD_LOG_ERROR("Failed to render scene");
         if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
-            AVD_LOG("Failed to cancel Vulkan renderer frame\n");
+            AVD_LOG_ERROR("Failed to cancel Vulkan renderer frame");
         return; // do not render this frame
     }
 
     if (!avdVulkanPresentationRender(&appState->presentation, &appState->vulkan, &appState->renderer, &appState->swapchain, &appState->sceneManager, appState->renderer.currentImageIndex)) {
         if (!avdVulkanRendererCancelFrame(&appState->renderer, &appState->vulkan))
-            AVD_LOG("Failed to cancel Vulkan renderer frame\n");
+            AVD_LOG_ERROR("Failed to cancel Vulkan renderer frame");
         return; // do not render this frame
     }
 

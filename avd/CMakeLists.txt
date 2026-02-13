@@ -5,9 +5,17 @@ file(GLOB_RECURSE avd_headers
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 
+# By default we want to keep Vulkan Video disabled as enabling this will not
+# let use debug the application in a lot of Graphics Debuggers like RenderDoc and Nsight, 
+# which do not support Vulkan Video.
+option(AVD_ENABLE_VULKAN_VIDEO "Enable Vulkan Video support" OFF)
+
+
 add_executable(avd
     ${avd_headers}
     ./src/core/avd_utils.c
+    ./src/core/avd_utils_curl.c
+    ./src/core/avd_utils_curl_tests.c
     ./src/core/avd_window.c
     ./src/core/avd_window_cb.c
     ./src/core/avd_list.c
@@ -15,6 +23,7 @@ add_executable(avd
     ./src/core/avd_hashtable.c
     ./src/core/avd_hashtable_tests.c
     ./src/core/avd_input.c
+    ./src/core/avd_aligned_buffer.c
 
     ./src/avd_main.c
     ./src/avd_application.c
@@ -39,6 +48,16 @@ add_executable(avd
     ./src/vulkan/avd_vulkan_framebuffer.c
     ./src/vulkan/avd_vulkan_image.c
     ./src/vulkan/avd_vulkan_buffer.c
+    ./src/vulkan/avd_vulkan_debug.c
+    ./src/vulkan/video/avd_vulkan_video.c
+    ./src/vulkan/video/avd_vulkan_video_decoder.c
+    ./src/vulkan/video/avd_vulkan_video_dpb.c
+    ./src/vulkan/video/avd_vulkan_video_h264_data.c
+
+    ./src/audio/avd_audio.c
+    ./src/audio/avd_audio_clip.c
+    ./src/audio/avd_audio_player.c
+    ./src/audio/avd_audio_streaming_player.c
 
     ./src/ui/avd_ui.c
 
@@ -57,27 +76,49 @@ add_executable(avd
     ./src/model/avd_meshgen.c
 
     ./src/scenes/avd_scenes.c
+    
     ./src/scenes/avd_scenes_main_menu.c
+    
     ./src/scenes/bloom/avd_scenes_bloom.c
+    
     ./src/scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.c
+    
     ./src/scenes/deccer_cubes/avd_scenes_deccer_cubes.c
+    
     ./src/scenes/subsurface_scattering/avd_scenes_subsurface_scattering.c
+    
     ./src/scenes/eyeballs/avd_scenes_eyeballs.c
+    
     ./src/scenes/realistic_head/avd_scenes_realistic_head.c
+    
+    ./src/scenes/hls_player/avd_scenes_hls_player.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_segment_store.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_url_pool.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_stream.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_media_cache.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_worker_pool.c
+    ./src/scenes/hls_player/avd_scenes_hls_player_context.c
 )
 
 include_directories(avd
     ./
     ./include
     ../dep/glfw/include
+    ../dep/libpico/include
     ../dep/stb
     ../dep/cgltf
     ../dep/cute_headers
     ../dep/volk
     ../dep/tinyobjloader-c
+    ../dep/portaudio/include
     ../avd_assets/generated/include
     ${Vulkan_INCLUDE_DIRS}
 )
+
+if (AVD_ENABLE_VULKAN_VIDEO)
+    target_compile_definitions(avd PRIVATE AVD_ENABLE_VULKAN_VIDEO)
+endif()
+
 
 # Ensure the Vulkan SDK path is set properly
 if(DEFINED ENV{VULKAN_SDK})
@@ -95,6 +136,7 @@ target_link_libraries(avd
     avd_assets
     glfw
     volk
+    portaudio
     debug ${VULKAN_SDK_PATH}/Lib/shaderc_combinedd.lib
     optimized ${VULKAN_SDK_PATH}/Lib/shaderc_combined.lib
 )
@@ -105,9 +147,17 @@ if (MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
 endif()
 
-add_dependencies(avd generate_assets)
-
 target_compile_definitions(avd PRIVATE
     $<$<CONFIG:Debug>:AVD_DEBUG>          # Define AVD_DEBUG for Debug builds
     $<$<NOT:$<CONFIG:Debug>>:AVD_RELEASE> # Define AVD_RELEASE for non-Debug builds
 )
+target_compile_definitions(avd PRIVATE AL_LIBTYPE_STATIC)
+
+
+if (MSVC OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_link_options(avd PRIVATE /IGNORE:4099)
+    target_compile_options(avd PRIVATE /MP /FS)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND WIN32)
+    # Clang must pass MSVC-style flags via -Xlinker
+    target_link_options(avd PRIVATE -Xlinker /IGNORE:4099)
+endif()

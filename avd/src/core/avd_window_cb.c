@@ -4,7 +4,7 @@
 
 void __avdGLFWErrorCallback(int error, const char *description)
 {
-    AVD_LOG("GLFW Error: %d - %s\n", error, description);
+    AVD_LOG_ERROR("GLFW Error: %d - %s", error, description);
 }
 
 void __avdGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -67,6 +67,7 @@ void __avdGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos)
     event.type        = AVD_INPUT_EVENT_MOUSE_MOVE;
     event.mouseMove.x = appState->input.mouseX;
     event.mouseMove.y = appState->input.mouseY;
+    avdInputCalculateMouseDeltas(&appState->input);
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
@@ -101,7 +102,12 @@ void __avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height)
     event.type                = AVD_INPUT_EVENT_WINDOW_RESIZE;
     event.windowResize.width  = width;
     event.windowResize.height = height;
+
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
+
+    appState->swapchain.swapchainRecreateRequired = true;
+    avdInputCalculateMouseDeltas(&appState->input);
+    avdApplicationUpdateWithoutPolling(appState);
 }
 
 void __avdGLFWCursorEnterCallback(GLFWwindow *window, int entered)

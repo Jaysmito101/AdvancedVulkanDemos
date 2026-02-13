@@ -1,28 +1,54 @@
 #include "vulkan/avd_vulkan_buffer.h"
+#include "vulkan/avd_vulkan_base.h"
+#include "vulkan/video/avd_vulkan_video_core.h"
 
-bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const char *label)
 {
-    VkBufferCreateInfo bufferInfo = {0};
-    bufferInfo.sType              = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size               = size;
-    bufferInfo.usage              = usage;
-    bufferInfo.sharingMode        = VK_SHARING_MODE_EXCLUSIVE; // Assuming exclusive for simplicity
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(buffer != NULL);
+    AVD_ASSERT(size > 0);
+
+    snprintf(buffer->label, sizeof(buffer->label), "%s/%zu", label ? label : "Unnamed", size);
+
+    VkBufferCreateInfo bufferInfo = {
+        .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size        = size,
+        .usage       = usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // Assuming exclusive for simplicity
+    };
+
+    bool isVideoDecodeBuffer = usage & VK_BUFFER_USAGE_VIDEO_DECODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_DECODE_DST_BIT_KHR;
+    bool isVideoEncodeBuffer = usage & VK_BUFFER_USAGE_VIDEO_ENCODE_SRC_BIT_KHR || usage & VK_BUFFER_USAGE_VIDEO_ENCODE_DST_BIT_KHR;
+    if (isVideoDecodeBuffer || isVideoEncodeBuffer) {
+        if (properties & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+            AVD_LOG_WARN("Forcing HOST_VISIBLE memory property for video decode/encode buffers");
+        }
+        // This is a workaround for nvidia video bitstream buffer which, when used for video decode and not mapped,
+        // gives incorrect decoding results.
+        properties       = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        bufferInfo.pNext = avdVulkanVideoGetH264ProfileListInfo(isVideoDecodeBuffer);
+    } else {
+        bufferInfo.pNext = NULL;
+    }
 
     VkResult result = vkCreateBuffer(vulkan->device, &bufferInfo, NULL, &buffer->buffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create buffer!");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_BUFFER, buffer->buffer, "[Buffer][Core]:Vulkan/%s", buffer->label);
 
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(vulkan->device, buffer->buffer, &memRequirements);
 
-    VkMemoryAllocateInfo allocInfo = {0};
-    allocInfo.sType                = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize       = memRequirements.size;
-    allocInfo.memoryTypeIndex      = avdVulkanFindMemoryType(vulkan, memRequirements.memoryTypeBits, properties);
+    VkMemoryAllocateInfo allocInfo = {
+        .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize  = memRequirements.size,
+        .memoryTypeIndex = avdVulkanFindMemoryType(vulkan, memRequirements.memoryTypeBits, properties),
+    };
 
     AVD_CHECK_MSG(allocInfo.memoryTypeIndex != UINT32_MAX, "Failed to find suitable memory type for buffer!");
 
     result = vkAllocateMemory(vulkan->device, &allocInfo, NULL, &buffer->memory);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate buffer memory!");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DEVICE_MEMORY, buffer->memory, "[Buffer/Memory][Core]:Vulkan/%s/Memory", buffer->label);
 
     result = vkBindBufferMemory(vulkan->device, buffer->buffer, buffer->memory, 0);
     AVD_CHECK_VK_RESULT(result, "Failed to bind buffer memory!");
@@ -30,14 +56,23 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     buffer->descriptorBufferInfo.buffer = buffer->buffer;
     buffer->descriptorBufferInfo.offset = 0;
     buffer->descriptorBufferInfo.range  = size;
+    buffer->usage                       = usage;
+    buffer->size                        = size;
+    buffer->hostVisible                 = (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
+    buffer->hostCoherent                = (properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
 
     return true;
 }
 
 void avdVulkanBufferDestroy(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer)
 {
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(buffer != NULL);
+
     vkDestroyBuffer(vulkan->device, buffer->buffer, NULL);
     vkFreeMemory(vulkan->device, buffer->memory, NULL);
+
+    memset(buffer, 0, sizeof(AVD_VulkanBuffer));
 }
 
 bool avdVulkanBufferMap(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, void **data)
@@ -49,15 +84,35 @@ bool avdVulkanBufferMap(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, void **dat
 
 void avdVulkanBufferUnmap(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer)
 {
+    // auto flush if not host coherent
+    if (!buffer->hostCoherent) {
+        avdVulkanBufferFlush(vulkan, buffer, buffer->size, 0);
+    }
+
     vkUnmapMemory(vulkan->device, buffer->memory);
 }
 
 bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const void *srcData, VkDeviceSize size)
 {
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(buffer != NULL);
+    AVD_ASSERT(srcData != NULL);
+
+    if (buffer->hostVisible) {
+        void *mapped = NULL;
+        if (!avdVulkanBufferMap(vulkan, buffer, &mapped)) {
+            return false;
+        }
+        memcpy(mapped, srcData, size);
+        avdVulkanBufferUnmap(vulkan, buffer);
+        return true;
+    }
+
     AVD_VulkanBuffer staging = {0};
     AVD_CHECK(avdVulkanBufferCreate(vulkan, &staging, size,
                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                    "Core/Buffer/Upload/Staging"));
 
     void *mapped = NULL;
     if (!avdVulkanBufferMap(vulkan, &staging, &mapped)) {
@@ -67,34 +122,72 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
     memcpy(mapped, srcData, size);
     avdVulkanBufferUnmap(vulkan, &staging);
 
-    VkCommandBufferAllocateInfo allocInfo = {0};
-    allocInfo.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool                 = vulkan->graphicsCommandPool;
-    allocInfo.commandBufferCount          = 1;
+    VkCommandBufferAllocateInfo allocInfo = {
+        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandPool        = vulkan->graphicsCommandPool,
+        .commandBufferCount = 1,
+    };
 
     VkCommandBuffer cmd;
     vkAllocateCommandBuffers(vulkan->device, &allocInfo, &cmd);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_COMMAND_BUFFER, cmd, "[CommandBuffer][Core]:Vulkan/Buffer/Upload");
 
-    VkCommandBufferBeginInfo beginInfo = {0};
-    beginInfo.sType                    = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags                    = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    VkCommandBufferBeginInfo beginInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+    };
     vkBeginCommandBuffer(cmd, &beginInfo);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmd, NULL, "[Cmd][Core]:Vulkan/Buffer/Upload");
 
-    VkBufferCopy copyRegion = {0};
-    copyRegion.size         = size;
+    VkBufferCopy copyRegion = {
+        .srcOffset = 0,
+        .dstOffset = 0,
+        .size      = size,
+    };
     vkCmdCopyBuffer(cmd, staging.buffer, buffer->buffer, 1, &copyRegion);
 
+    AVD_DEBUG_VK_CMD_END_LABEL(cmd);
     vkEndCommandBuffer(cmd);
 
-    VkSubmitInfo submitInfo       = {0};
-    submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers    = &cmd;
+    VkSubmitInfo submitInfo = {
+        .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers    = &cmd,
+    };
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "[Queue][Core]:Vulkan/Queue/BufferUpload");
     vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
     vkQueueWaitIdle(vulkan->graphicsQueue);
 
     vkFreeCommandBuffers(vulkan->device, vulkan->graphicsCommandPool, 1, &cmd);
     avdVulkanBufferDestroy(vulkan, &staging);
+    return true;
+}
+
+bool avdVulkanBufferFlush(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkDeviceSize offset)
+{
+    AVD_ASSERT(vulkan != NULL);
+    AVD_ASSERT(buffer != NULL);
+
+    if (!buffer->hostVisible) {
+        AVD_LOG_ERROR("Cannot flush a non-host-visible buffer");
+        return false;
+    }
+
+    if (buffer->hostCoherent) {
+        return true;
+    }
+
+    VkMappedMemoryRange mappedRange = {
+        .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = buffer->memory,
+        .offset = offset,
+        .size   = size,
+    };
+
+    VkResult result = vkFlushMappedMemoryRanges(vulkan->device, 1, &mappedRange);
+    AVD_CHECK_VK_RESULT(result, "Failed to flush mapped memory ranges!");
+
     return true;
 }

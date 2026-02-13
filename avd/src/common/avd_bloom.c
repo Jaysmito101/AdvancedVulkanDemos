@@ -26,7 +26,7 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
     for (uint32_t i = 0; i < bloom->passCount - 1; ++i) {
         uint32_t framebufferWidth  = width >> (i + 1);
         uint32_t framebufferHeight = height >> (i + 1);
-        // AVD_LOG("Down Pass %d: %dx%d\n", i, framebufferWidth, framebufferHeight);
+        // AVD_LOG_DEBUG("Down Pass %d: %dx%d", i, framebufferWidth, framebufferHeight);
         AVD_VulkanFramebuffer *framebuffer = &bloom->bloomPasses[i];
         AVD_CHECK(avdVulkanFramebufferCreate(
             vulkan,
@@ -43,7 +43,7 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
     for (uint32_t i = bloom->passCount - 1; i < bloom->passCount * 2 - 2; ++i) {
         uint32_t framebufferWidth  = width >> (2 * bloom->passCount - 3 - i);
         uint32_t framebufferHeight = height >> (2 * bloom->passCount - 3 - i);
-        // AVD_LOG("Up Pass %d: %dx%d\n", i, framebufferWidth, framebufferHeight);
+        // AVD_LOG_DEBUG("Up Pass %d: %dx%d", i, framebufferWidth, framebufferHeight);
         AVD_VulkanFramebuffer *framebuffer = &bloom->bloomPasses[i];
         AVD_CHECK(avdVulkanFramebufferCreate(
             vulkan,
@@ -59,7 +59,7 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
     // // print the width and height of all the framebuffers
     // for (uint32_t i = 0; i < bloom->passCount * 2 - 2; ++i) {
     //     AVD_VulkanFramebuffer *framebuffer = &bloom->bloomPasses[i];
-    //     AVD_LOG("Framebuffer %d: %dx%d\n", i, framebuffer->width, framebuffer->height);
+    //     AVD_LOG_DEBUG("Framebuffer %d: %dx%d", i, framebuffer->width, framebuffer->height);
     // }
 
     return true;
@@ -124,6 +124,13 @@ static bool __avdBloomPass(
         attachments,
         &attachmentCount));
 
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(
+        commandBuffer,
+        AVD_BLOOM_LABEL_COLOR,
+        "[Cmd][Common]:Bloom/%s/%s",
+        bloom->label,
+        avdBloomPassTypeToString(passType));
+
     AVD_CHECK(avdBeginRenderPass(
         commandBuffer,
         targetFramebuffer->renderPass,
@@ -155,10 +162,13 @@ static bool __avdBloomPass(
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
+
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
+
     return true;
 }
 
-bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass compositeRenderPass, uint32_t width, uint32_t height)
+bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass compositeRenderPass, uint32_t width, uint32_t height, const char *label)
 {
     // build the framebuffers
     bloom->width     = width;
@@ -167,11 +177,18 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
 
     AVD_CHECK(__avdBloomCreateFramebuffers(bloom, vulkan, width, height));
 
+    snprintf(bloom->label, sizeof(bloom->label), "%s", label ? label : "Unnamed");
+
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &bloom->bloomDescriptorSetLayout,
         vulkan->device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
+        bloom->bloomDescriptorSetLayout,
+        "[DescriptorSetLayout][Common]:Bloom/%s",
+        bloom->label);
     AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
         &bloom->pipelineLayout,
         vulkan->device,
@@ -180,6 +197,11 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
             bloom->bloomDescriptorSetLayout},
         2,
         sizeof(AVD_BloomUberPushConstants)));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE_LAYOUT,
+        bloom->pipelineLayout,
+        "[PipelineLayout][Common]:Bloom/%s",
+        bloom->label);
     AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         &bloom->pipeline,
         bloom->pipelineLayout,
@@ -190,6 +212,11 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         "BloomFrag",
         NULL,
         NULL));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE,
+        bloom->pipeline,
+        "[Pipeline][Common]:Bloom/%s/Main",
+        bloom->label);
 
     AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         &bloom->pipelineComposite,
@@ -201,6 +228,11 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         "BloomFrag",
         NULL,
         NULL));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE,
+        bloom->pipelineComposite,
+        "[Pipeline][Common]:Bloom/%s/Composite",
+        bloom->label);
 
     return true;
 }
@@ -230,6 +262,12 @@ bool avdBloomApplyInplace(
     AVD_ASSERT(inputFramebuffer != NULL);
     AVD_ASSERT(vulkan != NULL);
 
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(
+        commandBuffer,
+        AVD_BLOOM_LABEL_COLOR,
+        "[Cmd][Common]:Bloom/%s/ApplyInplace",
+        bloom->label);
+
     AVD_CHECK(__avdBloomPass(
         commandBuffer,
         AVD_BLOOM_PASS_TYPE_DOWNSAMPLE_PREFILTER,
@@ -240,7 +278,7 @@ bool avdBloomApplyInplace(
         params));
 
     for (uint32_t i = 0; i < bloom->passCount - 2; ++i) {
-        // AVD_LOG("Downsampling pass %d -> %d\n", i, i + 1);
+        // AVD_LOG_DEBUG("Downsampling pass %d -> %d", i, i + 1);
         AVD_CHECK(__avdBloomPass(
             commandBuffer,
             AVD_BLOOM_PASS_TYPE_DOWNSAMPLE,
@@ -252,7 +290,7 @@ bool avdBloomApplyInplace(
     }
 
     for (uint32_t i = bloom->passCount - 2; i < bloom->passCount * 2 - 4; i++) {
-        // AVD_LOG("Upsampling pass %d -> %d\n", i, i + 1);
+        // AVD_LOG_DEBUG("Upsampling pass %d -> %d", i, i + 1);
         AVD_CHECK(__avdBloomPass(
             commandBuffer,
             AVD_BLOOM_PASS_TYPE_UPSAMPLE,
@@ -282,6 +320,8 @@ bool avdBloomApplyInplace(
         0, // source index
         0, // target index
         params));
+
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
 
     return true;
 }

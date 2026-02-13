@@ -181,7 +181,7 @@ bool avdSceneEyeballsRender(struct AVD_AppState *appState, union AVD_Scene *scen
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    VkCommandBuffer commandBuffer = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
+    VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
     AVD_SceneEyeballs *eyeballs   = __avdSceneGetTypePtr(scene);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));

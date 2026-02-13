@@ -18,7 +18,7 @@ static bool __avdVulkanSwapchainChooseSurfaceformat(AVD_VulkanSwapchain *swapcha
         }
     }
 
-    AVD_LOG("Preferred surface format not found, using the first available format\n");
+    AVD_LOG_WARN("Preferred surface format not found, using the first available format");
     swapchain->surfaceFormat = surfaceFormats[0];
 
     return true;
@@ -43,7 +43,7 @@ static bool __avdVulkanSwapchainChoosePresentMode(AVD_VulkanSwapchain *swapchain
         }
     }
 
-    AVD_LOG("Preferred present mode not found, using FIFO mode\n");
+    AVD_LOG_WARN("Preferred present mode not found, using FIFO mode");
     swapchain->presentMode = VK_PRESENT_MODE_FIFO_KHR;
 
     return true;
@@ -120,6 +120,10 @@ static bool __avdVulkanSwapchainQueryImages(AVD_VulkanSwapchain *swapchain, AVD_
     AVD_CHECK_MSG(imageCount == swapchain->imageCount, "Swapchain image count mismatch\n");
     vkGetSwapchainImagesKHR(vulkan->device, swapchain->swapchain, &imageCount, swapchain->images);
 
+    for (uint32_t i = 0; i < imageCount; ++i) {
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_IMAGE, swapchain->images[i], "[Image][Core]:Vulkan/Swapchain/Image/%u", i);
+    }
+
     return true;
 }
 
@@ -146,6 +150,7 @@ static bool __avdVulkanSwapchainCreateImageViews(AVD_VulkanSwapchain *swapchain,
 
         VkResult result = vkCreateImageView(vulkan->device, &viewInfo, NULL, &swapchain->imageViews[i]);
         AVD_CHECK_VK_RESULT(result, "Failed to create image view for image %d\n", i);
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_IMAGE_VIEW, swapchain->imageViews[i], "[ImageView][Core]:Vulkan/Swapchain/ImageView/%u", i);
     }
     return true;
 }
@@ -185,6 +190,7 @@ static bool __avdVulkanSwapchainCreateFramebuffer(AVD_VulkanSwapchain *swapchain
 
     VkResult result = vkCreateFramebuffer(vulkan->device, &framebufferInfo, NULL, &swapchain->framebuffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create framebuffer!\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_FRAMEBUFFER, swapchain->framebuffer, "[Framebuffer][Core]:Vulkan/Swapchain/Framebuffer");
     return true;
 }
 
@@ -215,11 +221,12 @@ static bool __avdVulkanSwapchainKHRCreate(AVD_VulkanSwapchain *swapchain, AVD_Vu
 
     VkResult result = vkCreateSwapchainKHR(vulkan->device, &swapchainInfo, NULL, &swapchain->swapchain);
     AVD_CHECK_VK_RESULT(result, "Failed to create swapchain\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SWAPCHAIN_KHR, swapchain->swapchain, "[Swapchain][Core]:Vulkan/Swapchain/Main");
 
     if (oldSwapchain != VK_NULL_HANDLE) {
         vkDestroySwapchainKHR(vulkan->device, oldSwapchain, NULL);
     }
-    AVD_LOG("Swapchain created successfully\n");
+    AVD_LOG_INFO("Swapchain created successfully");
 
     return true;
 }
@@ -267,6 +274,7 @@ static bool __avdVulkanSwapchainCreateRenderPass(AVD_VulkanSwapchain *swapchain,
 
     VkResult result = vkCreateRenderPass(vulkan->device, &renderPassInfo, NULL, &swapchain->renderPass);
     AVD_CHECK_VK_RESULT(result, "Failed to create render pass\n");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_RENDER_PASS, swapchain->renderPass, "[RenderPass][Core]:Vulkan/Swapchain/RenderPass");
 
     return true;
 }
@@ -352,17 +360,23 @@ VkResult avdVulkanSwapchainAcquireNextImage(AVD_VulkanSwapchain *swapchain, AVD_
 
     VkResult result = vkAcquireNextImageKHR(vulkan->device, swapchain->swapchain, UINT64_MAX, semaphore, fence, imageIndex);
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to acquire next image from swapchain\n");
+        AVD_LOG_ERROR("Failed to acquire next image from swapchain");
         return result;
     }
 
     return VK_SUCCESS;
 }
 
-VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t imageIndex, VkSemaphore waitSemaphore)
+VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t imageIndex, VkSemaphore waitSemaphore, VkFence fence)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(swapchain != NULL);
+
+    VkSwapchainPresentFenceInfoEXT presentFenceInfo = {0};
+    presentFenceInfo.sType                          = VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT;
+    presentFenceInfo.pNext                          = NULL;
+    presentFenceInfo.swapchainCount                 = 1;
+    presentFenceInfo.pFences                        = &fence;
 
     VkPresentInfoKHR presentInfo   = {0};
     presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -371,10 +385,14 @@ VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *v
     presentInfo.swapchainCount     = 1;
     presentInfo.pSwapchains        = &swapchain->swapchain;
     presentInfo.pImageIndices      = &imageIndex;
+    presentInfo.pNext              = &presentFenceInfo;
 
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "[Queue][Core]:Vulkan/Queue/Present/Image/%u", imageIndex);
     VkResult result = vkQueuePresentKHR(vulkan->graphicsQueue, &presentInfo);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
+
     if (result != VK_SUCCESS) {
-        AVD_LOG("Failed to present image to swapchain\n");
+        AVD_LOG_ERROR("Failed to present image to swapchain");
         return result;
     }
 
@@ -386,7 +404,7 @@ bool avdVulkanSwapchainRecreateIfNeeded(AVD_VulkanSwapchain *swapchain, AVD_Vulk
     AVD_ASSERT(swapchain != NULL);
 
     if (swapchain->swapchainRecreateRequired) {
-        AVD_LOG("Swapchain recreate required\n");
+        AVD_LOG_INFO("Swapchain recreate required");
         avdVulkanSwapchainRecreate(swapchain, vulkan, window);
         return true;
     }

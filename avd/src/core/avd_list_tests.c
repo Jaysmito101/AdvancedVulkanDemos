@@ -3,7 +3,7 @@
 
 static bool __avdTestListInit()
 {
-    AVD_LOG("  Testing List initialization...\n");
+    AVD_LOG_DEBUG("  Testing List initialization...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -12,19 +12,19 @@ static bool __avdTestListInit()
         list.count != 0 ||
         list.capacity != AVD_LIST_INITIAL_CAPACITY ||
         list.items == NULL) {
-        AVD_LOG("    FAILED: List initialization\n");
+        AVD_LOG_ERROR("    FAILED: List initialization");
         avdListDestroy(&list);
         return false;
     }
 
     avdListDestroy(&list);
-    AVD_LOG("    List initialization PASSED\n");
+    AVD_LOG_DEBUG("    List initialization PASSED");
     return true;
 }
 
 static bool __avdTestListPushBack()
 {
-    AVD_LOG("  Testing List push back operations...\n");
+    AVD_LOG_DEBUG("  Testing List push back operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -34,14 +34,14 @@ static bool __avdTestListPushBack()
     void *result = avdListPushBack(&list, &value1);
 
     if (list.count != 1 || result == NULL) {
-        AVD_LOG("    FAILED: Push back single element\n");
+        AVD_LOG_ERROR("    FAILED: Push back single element");
         avdListDestroy(&list);
         return false;
     }
 
     int *storedValue = (int *)avdListGet(&list, 0);
     if (storedValue == NULL || *storedValue != 42) {
-        AVD_LOG("    FAILED: Push back value verification\n");
+        AVD_LOG_ERROR("    FAILED: Push back value verification");
         avdListDestroy(&list);
         return false;
     }
@@ -53,7 +53,7 @@ static bool __avdTestListPushBack()
     }
 
     if (list.count != 20 || list.capacity < 20) {
-        AVD_LOG("    FAILED: Push back capacity growth\n");
+        AVD_LOG_ERROR("    FAILED: Push back capacity growth");
         avdListDestroy(&list);
         return false;
     }
@@ -63,20 +63,20 @@ static bool __avdTestListPushBack()
         int *value   = (int *)avdListGet(&list, i);
         int expected = (i == 0) ? 42 : i * 10;
         if (value == NULL || *value != expected) {
-            AVD_LOG("    FAILED: Push back value verification at index %d\n", i);
+            AVD_LOG_ERROR("    FAILED: Push back value verification at index %d\n", i);
             avdListDestroy(&list);
             return false;
         }
     }
 
     avdListDestroy(&list);
-    AVD_LOG("    List push back PASSED\n");
+    AVD_LOG_DEBUG("    List push back PASSED");
     return true;
 }
 
 static bool __avdTestListPushFront()
 {
-    AVD_LOG("  Testing List push front operations...\n");
+    AVD_LOG_DEBUG("  Testing List push front operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -88,7 +88,7 @@ static bool __avdTestListPushFront()
     }
 
     if (list.count != 5) {
-        AVD_LOG("    FAILED: Push front count\n");
+        AVD_LOG_ERROR("    FAILED: Push front count");
         avdListDestroy(&list);
         return false;
     }
@@ -98,20 +98,20 @@ static bool __avdTestListPushFront()
         int *value   = (int *)avdListGet(&list, i);
         int expected = 5 - i;
         if (value == NULL || *value != expected) {
-            AVD_LOG("    FAILED: Push front order verification\n");
+            AVD_LOG_ERROR("    FAILED: Push front order verification");
             avdListDestroy(&list);
             return false;
         }
     }
 
     avdListDestroy(&list);
-    AVD_LOG("    List push front PASSED\n");
+    AVD_LOG_DEBUG("    List push front PASSED");
     return true;
 }
 
 static bool __avdTestListPopOperations()
 {
-    AVD_LOG("  Testing List pop operations...\n");
+    AVD_LOG_DEBUG("  Testing List pop operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -119,14 +119,14 @@ static bool __avdTestListPopOperations()
     // Test pop on empty list
     void *result = avdListPopBack(&list);
     if (result != NULL) {
-        AVD_LOG("    FAILED: Pop back on empty list should return NULL\n");
+        AVD_LOG_ERROR("    FAILED: Pop back on empty list should return NULL");
         avdListDestroy(&list);
         return false;
     }
 
     result = avdListPopFront(&list);
     if (result != NULL) {
-        AVD_LOG("    FAILED: Pop front on empty list should return NULL\n");
+        AVD_LOG_ERROR("    FAILED: Pop front on empty list should return NULL");
         avdListDestroy(&list);
         return false;
     }
@@ -139,7 +139,7 @@ static bool __avdTestListPopOperations()
     // Test pop back
     result = avdListPopBack(&list);
     if (result == NULL || list.count != 4) {
-        AVD_LOG("    FAILED: Pop back operation\n");
+        AVD_LOG_ERROR("    FAILED: Pop back operation");
         avdListDestroy(&list);
         return false;
     }
@@ -147,7 +147,7 @@ static bool __avdTestListPopOperations()
     // Test pop front
     result = avdListPopFront(&list);
     if (result == NULL || list.count != 3) {
-        AVD_LOG("    FAILED: Pop front operation\n");
+        AVD_LOG_ERROR("    FAILED: Pop front operation");
         avdListDestroy(&list);
         return false;
     }
@@ -157,20 +157,20 @@ static bool __avdTestListPopOperations()
         int *value   = (int *)avdListGet(&list, i);
         int expected = i + 2;
         if (value == NULL || *value != expected) {
-            AVD_LOG("    FAILED: Pop operations verification\n");
+            AVD_LOG_ERROR("    FAILED: Pop operations verification");
             avdListDestroy(&list);
             return false;
         }
     }
 
     avdListDestroy(&list);
-    AVD_LOG("    List pop operations PASSED\n");
+    AVD_LOG_DEBUG("    List pop operations PASSED");
     return true;
 }
 
 static bool __avdTestListInsertRemove()
 {
-    AVD_LOG("  Testing List insert/remove operations...\n");
+    AVD_LOG_DEBUG("  Testing List insert/remove operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -184,7 +184,7 @@ static bool __avdTestListInsertRemove()
     int value = 0;
     avdListInsert(&list, 0, &value);
     if (list.count != 6) {
-        AVD_LOG("    FAILED: Insert at beginning count\n");
+        AVD_LOG_ERROR("    FAILED: Insert at beginning count");
         avdListDestroy(&list);
         return false;
     }
@@ -193,7 +193,7 @@ static bool __avdTestListInsertRemove()
     value = 99;
     avdListInsert(&list, 3, &value);
     if (list.count != 7) {
-        AVD_LOG("    FAILED: Insert at middle count\n");
+        AVD_LOG_ERROR("    FAILED: Insert at middle count");
         avdListDestroy(&list);
         return false;
     }
@@ -202,7 +202,7 @@ static bool __avdTestListInsertRemove()
     value = 100;
     avdListInsert(&list, 1000, &value);
     if (list.count != 8) {
-        AVD_LOG("    FAILED: Insert beyond end count\n");
+        AVD_LOG_ERROR("    FAILED: Insert beyond end count");
         avdListDestroy(&list);
         return false;
     }
@@ -212,7 +212,7 @@ static bool __avdTestListInsertRemove()
     for (int i = 0; i < 8; i++) {
         int *value = (int *)avdListGet(&list, i);
         if (value == NULL || *value != expected[i]) {
-            AVD_LOG("    FAILED: Insert verification at index %d\n", i);
+            AVD_LOG_ERROR("    FAILED: Insert verification at index %d\n", i);
             avdListDestroy(&list);
             return false;
         }
@@ -224,7 +224,7 @@ static bool __avdTestListInsertRemove()
     avdListRemove(&list, 1000); // Remove beyond bounds (should do nothing)
 
     if (list.count != 6) {
-        AVD_LOG("    FAILED: Remove operations count\n");
+        AVD_LOG_ERROR("    FAILED: Remove operations count");
         avdListDestroy(&list);
         return false;
     }
@@ -234,14 +234,14 @@ static bool __avdTestListInsertRemove()
     for (int i = 0; i < 6; i++) {
         int *value = (int *)avdListGet(&list, i);
         if (value == NULL || *value != expectedAfterRemove[i]) {
-            AVD_LOG("    FAILED: Remove verification at index %d\n", i);
+            AVD_LOG_ERROR("    FAILED: Remove verification at index %d\n", i);
             avdListDestroy(&list);
             return false;
         }
     }
 
     avdListDestroy(&list);
-    AVD_LOG("    List insert/remove operations PASSED\n");
+    AVD_LOG_DEBUG("    List insert/remove operations PASSED");
     return true;
 }
 
@@ -254,7 +254,7 @@ static int __compareInts(const void *a, const void *b)
 
 static bool __avdTestListSort()
 {
-    AVD_LOG("  Testing List sort operations...\n");
+    AVD_LOG_DEBUG("  Testing List sort operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -262,7 +262,7 @@ static bool __avdTestListSort()
     // Test sort on empty list
     avdListSort(&list, __compareInts);
     if (list.count != 0) {
-        AVD_LOG("    FAILED: Sort empty list\n");
+        AVD_LOG_ERROR("    FAILED: Sort empty list");
         avdListDestroy(&list);
         return false;
     }
@@ -272,7 +272,7 @@ static bool __avdTestListSort()
     avdListPushBack(&list, &value);
     avdListSort(&list, __compareInts);
     if (list.count != 1 || *(int *)avdListGet(&list, 0) != 42) {
-        AVD_LOG("    FAILED: Sort single element\n");
+        AVD_LOG_ERROR("    FAILED: Sort single element");
         avdListDestroy(&list);
         return false;
     }
@@ -292,27 +292,27 @@ static bool __avdTestListSort()
     for (int i = 0; i < 6; i++) {
         int *value = (int *)avdListGet(&list, i);
         if (value == NULL || *value != sorted[i]) {
-            AVD_LOG("    FAILED: Sort verification at index %d\n", i);
+            AVD_LOG_ERROR("    FAILED: Sort verification at index %d\n", i);
             avdListDestroy(&list);
             return false;
         }
     }
 
     avdListDestroy(&list);
-    AVD_LOG("    List sort operations PASSED\n");
+    AVD_LOG_DEBUG("    List sort operations PASSED");
     return true;
 }
 
 static bool __avdTestListUtilities()
 {
-    AVD_LOG("  Testing List utility functions...\n");
+    AVD_LOG_DEBUG("  Testing List utility functions...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
 
     // Test isEmpty on empty list
     if (!avdListIsEmpty(&list)) {
-        AVD_LOG("    FAILED: isEmpty on empty list\n");
+        AVD_LOG_ERROR("    FAILED: isEmpty on empty list");
         avdListDestroy(&list);
         return false;
     }
@@ -321,7 +321,7 @@ static bool __avdTestListUtilities()
     int value = 1;
     avdListPushBack(&list, &value);
     if (avdListIsEmpty(&list)) {
-        AVD_LOG("    FAILED: isEmpty on non-empty list\n");
+        AVD_LOG_ERROR("    FAILED: isEmpty on non-empty list");
         avdListDestroy(&list);
         return false;
     }
@@ -329,7 +329,7 @@ static bool __avdTestListUtilities()
     // Test clear
     avdListClear(&list);
     if (list.count != 0 || !avdListIsEmpty(&list)) {
-        AVD_LOG("    FAILED: Clear operation\n");
+        AVD_LOG_ERROR("    FAILED: Clear operation");
         avdListDestroy(&list);
         return false;
     }
@@ -337,7 +337,7 @@ static bool __avdTestListUtilities()
     // Test resize - grow
     avdListResize(&list, 10);
     if (list.count != 10 || list.capacity < 10) {
-        AVD_LOG("    FAILED: Resize grow operation\n");
+        AVD_LOG_ERROR("    FAILED: Resize grow operation");
         avdListDestroy(&list);
         return false;
     }
@@ -346,7 +346,7 @@ static bool __avdTestListUtilities()
     for (int i = 0; i < 10; i++) {
         int *value = (int *)avdListGet(&list, i);
         if (value == NULL || *value != 0) {
-            AVD_LOG("    FAILED: Resize zero initialization\n");
+            AVD_LOG_ERROR("    FAILED: Resize zero initialization");
             avdListDestroy(&list);
             return false;
         }
@@ -355,7 +355,7 @@ static bool __avdTestListUtilities()
     // Test resize - shrink
     avdListResize(&list, 5);
     if (list.count != 5) {
-        AVD_LOG("    FAILED: Resize shrink operation\n");
+        AVD_LOG_ERROR("    FAILED: Resize shrink operation");
         avdListDestroy(&list);
         return false;
     }
@@ -364,7 +364,7 @@ static bool __avdTestListUtilities()
     size_t oldCapacity = list.capacity;
     bool tightenResult = avdListTighten(&list);
     if (!tightenResult || list.capacity != list.count) {
-        AVD_LOG("    FAILED: Tighten operation\n");
+        AVD_LOG_ERROR("    FAILED: Tighten operation");
         avdListDestroy(&list);
         return false;
     }
@@ -373,19 +373,19 @@ static bool __avdTestListUtilities()
     avdListClear(&list);
     tightenResult = avdListTighten(&list);
     if (!tightenResult || list.capacity != 0 || list.items != NULL) {
-        AVD_LOG("    FAILED: Tighten empty list operation\n");
+        AVD_LOG_ERROR("    FAILED: Tighten empty list operation");
         avdListDestroy(&list);
         return false;
     }
 
     avdListDestroy(&list);
-    AVD_LOG("    List utility functions PASSED\n");
+    AVD_LOG_DEBUG("    List utility functions PASSED");
     return true;
 }
 
 static bool __avdTestListWithStrings()
 {
-    AVD_LOG("  Testing List with string data...\n");
+    AVD_LOG_DEBUG("  Testing List with string data...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(char[32]));
@@ -400,7 +400,7 @@ static bool __avdTestListWithStrings()
     avdListPushBack(&list, str3);
 
     if (list.count != 3) {
-        AVD_LOG("    FAILED: String list count\n");
+        AVD_LOG_ERROR("    FAILED: String list count");
         avdListDestroy(&list);
         return false;
     }
@@ -413,19 +413,19 @@ static bool __avdTestListWithStrings()
     if (strcmp(stored1, "Hello") != 0 ||
         strcmp(stored2, "World") != 0 ||
         strcmp(stored3, "Test") != 0) {
-        AVD_LOG("    FAILED: String data verification\n");
+        AVD_LOG_ERROR("    FAILED: String data verification");
         avdListDestroy(&list);
         return false;
     }
 
     avdListDestroy(&list);
-    AVD_LOG("    List with string data PASSED\n");
+    AVD_LOG_DEBUG("    List with string data PASSED");
     return true;
 }
 
 static bool __avdTestListEdgeCases()
 {
-    AVD_LOG("  Testing List edge cases...\n");
+    AVD_LOG_DEBUG("  Testing List edge cases...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -433,7 +433,7 @@ static bool __avdTestListEdgeCases()
     // Test get with invalid index
     void *result = avdListGet(&list, 0);
     if (result != NULL) {
-        AVD_LOG("    FAILED: Get invalid index on empty list\n");
+        AVD_LOG_ERROR("    FAILED: Get invalid index on empty list");
         avdListDestroy(&list);
         return false;
     }
@@ -444,14 +444,14 @@ static bool __avdTestListEdgeCases()
 
     result = avdListGet(&list, 1);
     if (result != NULL) {
-        AVD_LOG("    FAILED: Get invalid index beyond bounds\n");
+        AVD_LOG_ERROR("    FAILED: Get invalid index beyond bounds");
         avdListDestroy(&list);
         return false;
     }
 
     result = avdListGet(&list, SIZE_MAX);
     if (result != NULL) {
-        AVD_LOG("    FAILED: Get with very large index\n");
+        AVD_LOG_ERROR("    FAILED: Get with very large index");
         avdListDestroy(&list);
         return false;
     }
@@ -460,13 +460,13 @@ static bool __avdTestListEdgeCases()
     size_t oldCount = list.count;
     avdListRemove(&list, 100);
     if (list.count != oldCount) {
-        AVD_LOG("    FAILED: Remove invalid index should not change count\n");
+        AVD_LOG_ERROR("    FAILED: Remove invalid index should not change count");
         avdListDestroy(&list);
         return false;
     }
 
     avdListDestroy(&list);
-    AVD_LOG("    List edge cases PASSED\n");
+    AVD_LOG_DEBUG("    List edge cases PASSED");
     return true;
 }
 
@@ -491,7 +491,7 @@ static void __testDestructor(void *item, void *context)
     destructorCallCount++;
 
     if (expectedContext != NULL && *expectedContext != 42) {
-        AVD_LOG("    WARNING: Destructor context mismatch\n");
+        AVD_LOG_DEBUG("    WARNING: Destructor context mismatch");
     }
 }
 
@@ -507,7 +507,7 @@ static void __resetDestructorTracking()
 
 static bool __avdTestListDestructor()
 {
-    AVD_LOG("  Testing List destructor functionality...\n");
+    AVD_LOG_DEBUG("  Testing List destructor functionality...");
 
     __resetDestructorTracking();
 
@@ -520,7 +520,7 @@ static bool __avdTestListDestructor()
     // Test destructor is not called when list is empty
     avdListDestroy(&list);
     if (destructorCallCount != 0) {
-        AVD_LOG("    FAILED: Destructor called on empty list\n");
+        AVD_LOG_ERROR("    FAILED: Destructor called on empty list");
         __resetDestructorTracking();
         return false;
     }
@@ -537,7 +537,7 @@ static bool __avdTestListDestructor()
     avdListDestroy(&list);
 
     if (destructorCallCount != 5) {
-        AVD_LOG("    FAILED: Destructor call count on destroy (expected 5, got %d)\n", destructorCallCount);
+        AVD_LOG_ERROR("    FAILED: Destructor call count on destroy (expected 5, got %d)\n", destructorCallCount);
         __resetDestructorTracking();
         return false;
     }
@@ -546,7 +546,7 @@ static bool __avdTestListDestructor()
     for (size_t i = 0; i < destructorCalledValuesSize; i++) {
         int expectedValue = (int)(i + 1);
         if (destructorCalledValues[i] != expectedValue) {
-            AVD_LOG("    FAILED: Destructor called with wrong value at index %zu\n", i);
+            AVD_LOG_ERROR("    FAILED: Destructor called with wrong value at index %zu\n", i);
             __resetDestructorTracking();
             return false;
         }
@@ -565,7 +565,7 @@ static bool __avdTestListDestructor()
     avdListClear(&list);
 
     if (destructorCallCount != 4) {
-        AVD_LOG("    FAILED: Destructor call count on clear (expected 4, got %d)\n", destructorCallCount);
+        AVD_LOG_ERROR("    FAILED: Destructor call count on clear (expected 4, got %d)\n", destructorCallCount);
         avdListDestroy(&list);
         __resetDestructorTracking();
         return false;
@@ -581,14 +581,14 @@ static bool __avdTestListDestructor()
     avdListRemove(&list, 1); // Remove middle element (21)
 
     if (destructorCallCount != 1) {
-        AVD_LOG("    FAILED: Destructor call count on remove (expected 1, got %d)\n", destructorCallCount);
+        AVD_LOG_ERROR("    FAILED: Destructor call count on remove (expected 1, got %d)\n", destructorCallCount);
         avdListDestroy(&list);
         __resetDestructorTracking();
         return false;
     }
 
     if (destructorCalledValues[0] != 21) {
-        AVD_LOG("    FAILED: Destructor called with wrong value on remove\n");
+        AVD_LOG_ERROR("    FAILED: Destructor called with wrong value on remove");
         avdListDestroy(&list);
         __resetDestructorTracking();
         return false;
@@ -599,7 +599,7 @@ static bool __avdTestListDestructor()
     // Test that destructor is NOT called on pop operations
     void *popped = avdListPopBack(&list);
     if (destructorCallCount != 0 || popped == NULL) {
-        AVD_LOG("    FAILED: Destructor should not be called on pop operations\n");
+        AVD_LOG_ERROR("    FAILED: Destructor should not be called on pop operations");
         avdListDestroy(&list);
         __resetDestructorTracking();
         return false;
@@ -607,7 +607,7 @@ static bool __avdTestListDestructor()
 
     popped = avdListPopFront(&list);
     if (destructorCallCount != 0 || popped == NULL) {
-        AVD_LOG("    FAILED: Destructor should not be called on pop front operations\n");
+        AVD_LOG_ERROR("    FAILED: Destructor should not be called on pop front operations");
         avdListDestroy(&list);
         __resetDestructorTracking();
         return false;
@@ -620,7 +620,7 @@ static bool __avdTestListDestructor()
     avdListClear(&list);
 
     if (destructorCallCount != 1) {
-        AVD_LOG("    FAILED: Destructor with NULL context\n");
+        AVD_LOG_ERROR("    FAILED: Destructor with NULL context");
         avdListDestroy(&list);
         __resetDestructorTracking();
         return false;
@@ -629,13 +629,13 @@ static bool __avdTestListDestructor()
     avdListDestroy(&list);
     __resetDestructorTracking();
 
-    AVD_LOG("    List destructor functionality PASSED\n");
+    AVD_LOG_DEBUG("    List destructor functionality PASSED");
     return true;
 }
 
 bool avdListTestsRun(void)
 {
-    AVD_LOG("Running AVD List Tests...\n");
+    AVD_LOG_DEBUG("Running AVD List Tests...");
 
     AVD_CHECK(__avdTestListInit());
     AVD_CHECK(__avdTestListPushBack());
@@ -648,6 +648,6 @@ bool avdListTestsRun(void)
     AVD_CHECK(__avdTestListEdgeCases());
     AVD_CHECK(__avdTestListDestructor());
 
-    AVD_LOG("All AVD List Tests passed successfully!\n");
+    AVD_LOG_DEBUG("All AVD List Tests passed successfully!");
     return true;
 }

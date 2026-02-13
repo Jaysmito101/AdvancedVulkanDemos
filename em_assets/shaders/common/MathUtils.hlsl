@@ -40,4 +40,10 @@ float3 hashToColor(uint seed) {
 }
 
 
+float2 rotateXZ(float2 p, float angle) {
+    float c = cos(angle);
+    float s = sin(angle);
+    return float2(c * p.x - s * p.y, s * p.x + c * p.y);
+}
+
 #endif 

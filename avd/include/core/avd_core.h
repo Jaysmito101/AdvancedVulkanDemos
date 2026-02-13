@@ -2,9 +2,10 @@
 #define AVD_CORE_H
 
 #include "core/avd_base.h"
+#include "core/avd_hashtable.h"
 #include "core/avd_input.h"
 #include "core/avd_list.h"
-#include "core/avd_hashtable.h"
+#include "core/avd_types.h"
 #include "core/avd_utils.h"
 #include "core/avd_window.h"
 

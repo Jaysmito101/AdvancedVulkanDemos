@@ -32,7 +32,8 @@ static bool __avdSetupBuffer(
         buffer,
         size,
         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        "Scene/DeccerCubes/Buffer"));
     AVD_CHECK(avdVulkanBufferUpload(
         vulkan,
         buffer,
@@ -147,6 +148,8 @@ bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *sce
         appState->vulkan.descriptorPool,
         deccerCubes->set0Layout,
         &deccerCubes->set0));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, deccerCubes->set0Layout, "[DescriptorSetLayout][Scene]:DeccerCubes/Set0");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, deccerCubes->set0, "[DescriptorSet][Scene]:DeccerCubes/Set0");
 
     AVD_CHECK(avdRenderableTextCreate(
         &deccerCubes->title,
@@ -257,11 +260,11 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 if (!mesh->material.albedoTexture.hasTexture)
                     continue;
                 deccerCubes->imagesHashes[deccerCubes->imagesCount] = mesh->material.albedoTexture.id;
-                AVD_LOG("Loading image: %s (hash: %u)\n", mesh->material.albedoTexture.path, mesh->material.albedoTexture.id);
+                AVD_LOG_INFO("Loading image: %s (hash: %u)", mesh->material.albedoTexture.path, mesh->material.albedoTexture.id);
                 AVD_CHECK(avdVulkanImageLoadFromFile(
                     &appState->vulkan,
                     mesh->material.albedoTexture.path,
-                    &deccerCubes->images[deccerCubes->imagesCount]));
+                    &deccerCubes->images[deccerCubes->imagesCount], NULL));
 
                 VkWriteDescriptorSet *write = &descriptorSetWrites[deccerCubes->imagesCount];
                 write->sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -270,18 +273,18 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 write->dstBinding           = (uint32_t)AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 write->descriptorType       = avdVulkanToVkDescriptorType(AVD_VULKAN_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 write->dstArrayElement      = deccerCubes->imagesCount + 1;
-                write->pImageInfo           = &deccerCubes->images[deccerCubes->imagesCount].descriptorImageInfo;
+                write->pImageInfo           = &deccerCubes->images[deccerCubes->imagesCount].defaultSubresource.descriptorImageInfo;
 
                 deccerCubes->imagesCount += 1;
             }
             vkUpdateDescriptorSets(appState->vulkan.device, deccerCubes->imagesCount, descriptorSetWrites, 0, NULL);
-            AVD_LOG("Loaded all %d textures\n", deccerCubes->imagesCount);
+            AVD_LOG_INFO("Loaded all %d textures", deccerCubes->imagesCount);
         case 5:
             *statusMessage = "Done loading...";
             avd3DSceneDebugLog(&deccerCubes->scene, "Deccer Cubes");
             break;
         default:
-            AVD_LOG("Deccer Cubes scene invalid load stage");
+            AVD_LOG_ERROR("Deccer Cubes scene invalid load stage");
             return false;
     }
 
@@ -329,9 +332,10 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
 
     AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
 
-    VkCommandBuffer commandBuffer = appState->renderer.resources[appState->renderer.currentFrameIndex].commandBuffer;
+    VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:DeccerCubes/Render");
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipeline);
     VkDescriptorSet descriptorSets[] = {
@@ -368,6 +372,7 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
         appState->renderer.sceneFramebuffer.width,
         appState->renderer.sceneFramebuffer.height);
 
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
 
     return true;

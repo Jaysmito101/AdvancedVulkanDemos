@@ -1,6 +1,7 @@
 #ifndef AVD_APPLICATION_H
 #define AVD_APPLICATION_H
 
+#include "audio/avd_audio.h"
 #include "core/avd_core.h"
 #include "font/avd_font_renderer.h"
 #include "scenes/avd_scenes.h"
@@ -23,6 +24,7 @@ typedef struct AVD_AppState {
     AVD_Window window;                   // The window handle
     AVD_Input input;                     // Input manager
     AVD_Frametime framerate;             // The general statistics tracker
+    AVD_Audio audio;                     // The audio system
     AVD_Vulkan vulkan;                   // The Vulkan device and context
     AVD_VulkanSwapchain swapchain;       // The Vulkan swapchain
     AVD_VulkanRenderer renderer;         // The Vulkan renderer

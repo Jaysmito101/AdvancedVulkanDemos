@@ -7,7 +7,7 @@ static shaderc_include_result *__avdIncludeResolver(void *userData, const char *
 
     shaderc_include_result *result = (shaderc_include_result *)malloc(sizeof(*result));
     if (!result) {
-        AVD_LOG("Failed to allocate memory for include result\n");
+        AVD_LOG_ERROR("Failed to allocate memory for include result");
         return NULL;
     }
 
@@ -74,7 +74,7 @@ bool avdShaderShaderCCompile(
     }
     shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_zero + inOptions->optimize);
     if (inOptions->warningsAsErrors) {
-        AVD_LOG("Compiling shader: %s with warnings as errors enabled\n", inputShaderName);
+        AVD_LOG_INFO("Compiling shader: %s with warnings as errors enabled", inputShaderName);
         shaderc_compile_options_set_warnings_as_errors(options);
     }
     shaderc_compile_options_set_include_callbacks(options, __avdIncludeResolver, __avdIncludeResultReleaser, NULL);
@@ -101,7 +101,7 @@ bool avdShaderShaderCCompile(
     shaderc_compile_options_set_target_spirv(options, shaderc_spirv_version_1_4);
 
     if (inOptions->debugSymbols) {
-        AVD_LOG("Compiling shader: %s with debug info enabled\n", inputShaderName);
+        AVD_LOG_INFO("Compiling shader: %s with debug info enabled", inputShaderName);
         shaderc_compile_options_set_generate_debug_info(options);
         shaderc_compile_options_add_macro_definition(options, "AVD_SHADER_DEBUG", strlen("AVD_SHADER_DEBUG"), NULL, 0);
     }
@@ -133,20 +133,20 @@ bool avdShaderShaderCCompile(
         size_t numDependencies    = 0;
         const char **dependencies = avdAssetShaderGetDependencies(inputShaderName, &numDependencies);
 
-        AVD_LOG("----------------------- SHADER COMPILATION ERROR -----------------------\n");
+        AVD_LOG_ERROR("----------------------- SHADER COMPILATION ERROR -----------------------");
         avdPrintShaderWithLineNumbers(avdAssetShader(inputShaderName), inputShaderName);
         for (size_t i = 0; i < numDependencies; ++i) {
-            AVD_LOG("------------------------ DEPENDENCY %zu -----------------------\n", i);
-            AVD_LOG("Dependency %zu: %s\n", i, dependencies[i]);
+            AVD_LOG_ERROR("------------------------ DEPENDENCY %zu -----------------------", i);
+            AVD_LOG_ERROR("Dependency %zu: %s", i, dependencies[i]);
             avdPrintShaderWithLineNumbers(avdAssetShader(dependencies[i]), dependencies[i]);
         }
-        AVD_LOG("Shader compilation failed: %s\n", shaderc_result_get_error_message(result));
+        AVD_LOG_ERROR("Shader compilation failed: %s", shaderc_result_get_error_message(result));
         return false;
     }
 
     size_t size = shaderc_result_get_length(result);
     if (size % 4 != 0) {
-        AVD_LOG("Shader compilation result size is not a multiple of 4\n");
+        AVD_LOG_ERROR("Shader compilation result size is not a multiple of 4");
         shaderc_result_release(result);
         shaderc_compile_options_release(options);
         shaderc_compiler_release(compiler);
@@ -155,7 +155,7 @@ bool avdShaderShaderCCompile(
 
     uint32_t *compiledCode = (uint32_t *)malloc(size);
     if (!compiledCode) {
-        AVD_LOG("Failed to allocate memory for compiled shader\n");
+        AVD_LOG_ERROR("Failed to allocate memory for compiled shader");
         shaderc_result_release(result);
         shaderc_compile_options_release(options);
         shaderc_compiler_release(compiler);

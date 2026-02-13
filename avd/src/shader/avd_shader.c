@@ -2,6 +2,7 @@
 #include "avd_asset.h"
 #include "shader/avd_shader_shaderc.h"
 #include "shader/avd_shader_slang.h"
+#include "vulkan/avd_vulkan_base.h"
 
 // Since this would be needed in a lot of places in code, its much
 // easier to have it be like a global singleton here,
@@ -62,6 +63,7 @@ bool avdShaderModuleCreateWithoutCache(
 
     AVD_CHECK_VK_RESULT(vkCreateShaderModule(device, &createInfo, NULL, outModule),
                         "Failed to create shader module from asset: %s", shaderName);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SHADER_MODULE, *outModule, "ShaderModule/%s", shaderName);
     return true;
 }
 
@@ -89,6 +91,7 @@ bool avdShaderModuleCreate(
 
     AVD_CHECK_VK_RESULT(vkCreateShaderModule(device, &createInfo, NULL, outModule),
                         "Failed to create shader module from asset: %s", shaderName);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SHADER_MODULE, *outModule, "ShaderModule/%s", shaderName);
     return true;
 }
 
@@ -126,7 +129,7 @@ bool __avdShaderLoadCached(
     AVD_ASSERT(inputShaderName != NULL);
     AVD_ASSERT(outResult != NULL);
 
-    AVD_LOG("Using cached shader: %s\n", cachedShaderPath);
+    AVD_LOG_INFO("Using cached shader: %s", cachedShaderPath);
     FILE *file = fopen(cachedShaderPath, "rb");
     AVD_CHECK_MSG(file != NULL, "Failed to open cached shader file: %s", cachedShaderPath);
 
@@ -161,14 +164,14 @@ bool __avdShaderSaveCached(
 
     FILE *file = fopen(cachedShaderPath, "wb");
     if (file == NULL) {
-        AVD_LOG("Failed to open cached shader file for writing: %s\n", cachedShaderPath);
+        AVD_LOG_ERROR("Failed to open cached shader file for writing: %s", cachedShaderPath);
         return false;
     }
 
     fwrite(outResult->compiledCode, sizeof(uint32_t), outResult->size, file);
     fclose(file);
 
-    AVD_LOG("Cached shader saved: %s\n", cachedShaderPath);
+    AVD_LOG_INFO("Cached shader saved: %s", cachedShaderPath);
     return true;
 }
 

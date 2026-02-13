@@ -3,13 +3,6 @@
 
 #include "core/avd_core.h"
 
-// Redefine common types used in the math module
-typedef float AVD_Float;
-typedef double AVD_Double;
-typedef int32_t AVD_Int32;
-typedef uint32_t AVD_UInt32;
-typedef size_t AVD_Size;
-
 // Define common constants
 #define AVD_PI 3.14159265358979323846f
 #define AVD_E  2.71828182845904523536f

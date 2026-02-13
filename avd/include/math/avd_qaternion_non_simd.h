@@ -41,7 +41,7 @@ typedef union {
     (axis).z *avdSin((angle) * 0.5f),              \
     avdCos((angle) * 0.5f))
 #define avdQuatFromEuler(pitch, yaw, roll) avdQuatFromEulerAngles((pitch), (yaw), (roll))
-#define avdQuatLog(q)                      AVD_LOG("Quat[x: %.2f, y: %.2f, z: %.2f, w: %.2f]", (q).x, (q).y, (q).z, (q).w)
+#define avdQuatLog(q)                      AVD_LOG_INFO("Quat[x: %.2f, y: %.2f, z: %.2f, w: %.2f]", (q).x, (q).y, (q).z, (q).w)
 
 AVD_Quaternion avdQuatNormalize(const AVD_Quaternion q);
 AVD_Quaternion avdQuatMultiply(const AVD_Quaternion a, const AVD_Quaternion b);

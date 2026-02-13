@@ -7,6 +7,7 @@ import zipfile
 import urllib.request
 import json
 import subprocess
+import datetime
 
 AVD_FONT_MAX_GLYPHS_PY = 4096
 
@@ -208,8 +209,6 @@ def generate_c_code_for_avd_font_atlas(font_metrics_data, name):
     return '\n'.join(lines)
 
 def create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root):
-    print(f"Generating font asset for {file_path} in {output_dir}")
-
     with open(file_path, "rb") as f:
         font_bytes = f.read()
     font_hash = hashlib.sha256(font_bytes).hexdigest()
@@ -220,7 +219,6 @@ def create_font_asset(file_path, output_dir, temp_dir, msdf_exe_path, git_root):
     header_exists = any(f"avd_asset_font_{font_name}_{font_hash}" in file for file in all_files if file.endswith(".h"))
     source_exists = any(f"avd_asset_font_{font_name}_{font_hash}" in file for file in all_files if file.endswith(".c"))
     if header_exists and source_exists:
-        print(f"Asset {font_name} already exists with same hash, skipping generation.")
         return
 
     for file in all_files:
@@ -390,7 +388,6 @@ def create_font_assets_common_header(output_dir):
         source_file.write("\n".join(source_source))
         source_file.write("\n")
 
-    print(f"Generated common font header file: {common_header_file_path}")
 
 def create_font_assets(git_root, output_dir, temp_dir, msdf_exe_path):
     asset_dir = os.path.join(git_root, "em_assets")
@@ -409,8 +406,6 @@ def create_font_assets(git_root, output_dir, temp_dir, msdf_exe_path):
     create_font_assets_common_header(output_dir)
 
 def create_image_asset(file_path, output_dir):
-    print(f"Generating image asset for {file_path} in {output_dir}")
-
     image_bytes = open(file_path, "rb").read()
     image_hash = hashlib.sha256(image_bytes).hexdigest()
     base_name_without_ext = os.path.splitext(os.path.basename(file_path))[0]
@@ -421,7 +416,6 @@ def create_image_asset(file_path, output_dir):
     header_exists = any(f"avd_asset_image_{image_name}_{image_hash}" in file for file in all_files if file.endswith(".h"))
     source_exists = any(f"avd_asset_image_{image_name}_{image_hash}" in file for file in all_files if file.endswith(".c"))
     if header_exists and source_exists:
-        print(f"Asset {image_name} already exists with same hash, skipping generation.")
         return
     
     for file in all_files:
@@ -539,7 +533,6 @@ def create_image_assets_common_header(output_dir):
         source_file.write("\n".join(source_source))
         source_file.write("\n")
 
-    print(f"Generated common header file: {common_header_file_path}")
 
 def create_image_assets(git_root, output_dir):
     asset_dir = os.path.join(git_root, "em_assets")
@@ -577,9 +570,7 @@ def shader_language_to_avd(shader_language):
     else:
         return 'AVD_SHADER_LANGUAGE_UNKNOWN'
 
-def create_shader_asset(file_path, output_dir):
-    print(f"Generating shader asset for {file_path} in {output_dir}")
-
+def create_shader_asset(file_path, output_dir) -> bool:
     with open(file_path, "r") as f:
         shader_text = f.read()
     
@@ -609,8 +600,7 @@ def create_shader_asset(file_path, output_dir):
     source_exists = any(shader_c_file_name in file for file in all_files if file.endswith(".c"))
 
     if header_exists and source_exists:
-        print(f"Asset {shader_name} already exists with same hash, skipping generation.")
-        return
+        return False
     
     for file in all_files:
         if file.startswith(f"avd_asset_shader_{shader_name}_") and file.endswith(".h"):
@@ -681,6 +671,8 @@ def create_shader_asset(file_path, output_dir):
         source_file.write("\n".join(source_source))
         source_file.write("\n")
     print(f"Generated shader asset: {header_file_path}")
+    
+    return True
 
 def read_shader_source(output_dir, shader_name):
     all_file_names = os.listdir(output_dir + "/src")
@@ -717,6 +709,7 @@ def calculate_shader_dependency_hash(output_dir, shader_name, shader_names):
 def create_shader_assets_common_header(output_dir):
     all_shader_headers = os.listdir(output_dir + "/include")
     all_shader_headers = [f for f in all_shader_headers if f.endswith(".h") and f.startswith("avd_asset_shader_")]
+    all_shader_headers.sort()
     all_shader_names = [f.split("_")[3] for f in all_shader_headers]
 
     common_header_source = [
@@ -753,6 +746,7 @@ def create_shader_assets_common_header(output_dir):
         
     def shader_dependency_lambda(shader_name):
         dependencies = calculate_shader_dependency_list(output_dir, shader_name, all_shader_names)
+        dependencies = sorted(list(set(dependencies)))
         if not dependencies:
             return f"    if (strcmp(name, \"{shader_name}\") == 0) {{\n" \
                    f"        *count = 0;\n" \
@@ -835,7 +829,6 @@ def create_shader_assets_common_header(output_dir):
         source_file.write("\n".join(source_source))
         source_file.write("\n")
 
-    print(f"Generated common shader header file: {common_header_file_path}")
 
 def create_shader_assets(git_root, output_dir):
     asset_dir = os.path.join(git_root, "em_assets")
@@ -873,10 +866,8 @@ def create_assets_common_header(output_dir):
     with open(common_header_file_path, "w") as common_header_file:
         common_header_file.write("\n".join(common_header_source))
         common_header_file.write("\n")
-    print(f"Generated common header file: {common_header_file_path}")
 
 def create_text_asset(file_path, output_dir):
-    print(f"Generating text asset for {file_path} in {output_dir}")
     with open(file_path, "r", encoding="utf-8") as f:
         text_data = f.read()
     text_hash = hashlib.sha256(text_data.encode('utf-8')).hexdigest()
@@ -1021,6 +1012,72 @@ def create_assets(git_root, output_dir, temp_dir, msdf_exe_path):
 
     create_assets_common_header(output_dir)
 
+def calculate_directory_hashes(directory):
+    hashes = {}
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file == "assets_manifest.json" or file == "assets_history.txt" or file == ".assetshash":
+                continue
+            file_path = os.path.join(root, file)
+            rel_path = os.path.relpath(file_path, directory)
+            rel_path = rel_path.replace("\\", "/")
+            
+            with open(file_path, "rb") as f:
+                file_hash = hashlib.sha256(f.read()).hexdigest()
+            hashes[rel_path] = file_hash
+    return hashes
+
+def update_asset_history(output_dir):
+    manifest_path = os.path.join(output_dir, "assets_manifest.json")
+    history_path = os.path.join(output_dir, "assets_history.txt")
+    hash_file_path = os.path.join(output_dir, ".assetshash")
+    
+    current_hashes = calculate_directory_hashes(output_dir)
+    
+    combined_hash_input = ""
+    for file_path in sorted(current_hashes.keys()):
+        combined_hash_input += f"{file_path}:{current_hashes[file_path]};"
+    combined_hash = hashlib.sha256(combined_hash_input.encode('utf-8')).hexdigest()
+    
+    with open(hash_file_path, "w") as f:
+        f.write(combined_hash)
+    
+    previous_hashes = {}
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r") as f:
+                previous_hashes = json.load(f)
+        except:
+            print("Failed to load existing manifest, assuming clean state.")
+            
+    changed_files = []
+    
+    for file_path, file_hash in current_hashes.items():
+        if file_path not in previous_hashes:
+            changed_files.append(f"NEW: {file_path}")
+        elif previous_hashes[file_path] != file_hash:
+            changed_files.append(f"MODIFIED: {file_path}")
+            
+    for file_path in previous_hashes:
+        if file_path not in current_hashes:
+            changed_files.append(f"DELETED: {file_path}")
+            
+    if changed_files:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(history_path, "a") as f:
+            f.write(f"--- Build {timestamp} ---\n")
+            f.write(f"Combined Hash: {combined_hash}\n")
+            for change in changed_files:
+                f.write(f"{change}\n")
+            f.write("\n")
+        print(f"Updated assets history with {len(changed_files)} changes.")
+        
+        # Save new manifest
+        with open(manifest_path, "w") as f:
+            json.dump(current_hashes, f, indent=4, sort_keys=True)
+    else:
+        print(f"No asset changes detected. Combined Hash: {combined_hash}")
+
 def main():
     git_root = find_git_root()
     msdf_exe_path = ensure_msdf_atlas_gen(git_root)
@@ -1039,6 +1096,8 @@ def main():
     create_text_assets(git_root, output_dir)
     create_font_assets(git_root, output_dir, temp_dir, msdf_exe_path)
     create_assets_common_header(output_dir)
+    
+    update_asset_history(output_dir)
 
 if __name__ == "__main__":
     main()

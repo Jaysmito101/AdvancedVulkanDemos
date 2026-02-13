@@ -10,6 +10,7 @@
 #include "scenes/bloom/avd_scenes_bloom.h"
 #include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
 #include "scenes/eyeballs/avd_scenes_eyeballs.h"
+#include "scenes/hls_player/avd_scenes_hls_player.h"
 #include "scenes/realistic_head/avd_scenes_realistic_head.h"
 #include "scenes/subsurface_scattering/avd_scenes_subsurface_scattering.h"
 
@@ -26,6 +27,7 @@ typedef union AVD_Scene {
     AVD_SceneSubsurfaceScattering subsurfaceScattering;
     AVD_SceneEyeballs eyeballs;
     AVD_SceneRealisticHead realisticHead;
+    AVD_SceneHLSPlayer hlsPlayer;
 } AVD_Scene;
 
 typedef struct AVD_SceneManager {

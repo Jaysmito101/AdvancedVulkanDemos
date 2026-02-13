@@ -45,7 +45,7 @@ static bool __avdCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout desc
 
     // --- Update Descriptor Set ---
     VkWriteDescriptorSet descriptorWrite = {0};
-    AVD_CHECK(avdWriteImageDescriptorSet(&descriptorWrite, *descriptorSet, 0, &fontImage->descriptorImageInfo));
+    AVD_CHECK(avdWriteImageDescriptorSet(&descriptorWrite, *descriptorSet, 0, &fontImage->defaultSubresource.descriptorImageInfo));
     vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, NULL);
 
     return true;
@@ -209,7 +209,7 @@ static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderab
         }
 
         if (c >= AVD_FONT_MAX_GLYPHS) {
-            AVD_LOG("Font character out of range: %c [skipping]\n", c);
+            AVD_LOG_WARN("Font character out of range: %c [skipping]", c);
             continue;
         }
 
@@ -283,8 +283,8 @@ bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRendere
         &renderableText->vertexBuffer,
         currentSize,
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT // so that we can map it anc easy ly update it
-        ));
+        VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // so that we can map it anc easy ly update it
+        "Font/RenderableText/VertexBuffer"));
 
     // create the vertex buffer data
     renderableText->vertexBufferData = (AVD_FontRendererVertex *)malloc(currentSize);
@@ -319,8 +319,8 @@ bool avdRenderableTextUpdate(AVD_RenderableText *renderableText, AVD_FontRendere
             &renderableText->vertexBuffer,
             newSize,
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT // so that we can map it and easily update it
-            ));
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, // so that we can map it and easily update it
+            "Font/RenderableText/VertexBuffer"));
 
         free(renderableText->vertexBufferData);
         renderableText->vertexBufferData = (AVD_FontRendererVertex *)malloc(newSize);
@@ -374,7 +374,7 @@ bool avdFontCreate(AVD_FontData fontData, AVD_Vulkan *vulkan, AVD_Font *font)
 {
     AVD_ASSERT(font != NULL);
     font->fontData = fontData;
-    AVD_CHECK(avdVulkanImageLoadFromMemory(vulkan, fontData.atlasData, fontData.atlasDataSize, &font->fontAtlasImage));
+    AVD_CHECK(avdVulkanImageLoadFromMemory(vulkan, fontData.atlasData, fontData.atlasDataSize, &font->fontAtlasImage, fontData.name));
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &font->fontDescriptorSetLayout,
         vulkan->device,

@@ -30,7 +30,7 @@ void avdInputCalculateMousePositionFromRaw(AVD_Input *input, AVD_Window *window,
     input->mouseY = my;
 }
 
-void avdInputCalculateDeltas(AVD_Input *input)
+void avdInputCalculateMouseDeltas(AVD_Input *input)
 {
     AVD_ASSERT(input != NULL);
 
