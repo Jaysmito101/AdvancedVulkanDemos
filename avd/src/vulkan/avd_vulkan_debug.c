@@ -185,7 +185,7 @@ bool avdVulkanDebuggerQueueBeginLabel(AVD_Vulkan *vulkan, VkQueue queue, float *
     vsnprintf(labelNameBuffer, sizeof(labelNameBuffer), labelName, args);
     va_end(args);
 
-    float *color = colorIn != NULL ? colorIn : AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR;
+    float *color = colorIn != NULL ? colorIn : AVD_VULKAN_QUEUE_LABEL_DEFAULT_COLOR;
 
     VkDebugUtilsLabelEXT labelInfo = {
         .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
@@ -210,7 +210,7 @@ bool avdVulkanDebuggerQueueInsertLabel(AVD_Vulkan *vulkan, VkQueue queue, float 
     vsnprintf(labelNameBuffer, sizeof(labelNameBuffer), labelName, args);
     va_end(args);
 
-    float *color = colorIn != NULL ? colorIn : AVD_VULKAN_CMD_LABEL_DEFAULT_COLOR;
+    float *color = colorIn != NULL ? colorIn : AVD_VULKAN_QUEUE_LABEL_DEFAULT_COLOR;
 
     VkDebugUtilsLabelEXT labelInfo = {
         .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
