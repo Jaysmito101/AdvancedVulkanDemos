@@ -2,7 +2,7 @@
 
 static bool __avdCheckMatrix4x4()
 {
-    AVD_LOG_INFO("  Testing Matrix4x4 operations...");
+    AVD_LOG_DEBUG("  Testing Matrix4x4 operations...");
 
     // Test matrix creation and basic operations
     AVD_Matrix4x4 mat1 = avdMat4x4(
@@ -115,13 +115,13 @@ static bool __avdCheckMatrix4x4()
         return false;
     }
 
-    AVD_LOG_INFO("    Matrix4x4 tests PASSED");
+    AVD_LOG_DEBUG("    Matrix4x4 tests PASSED");
     return true;
 }
 
 static bool __avdCheckMatrix3x3()
 {
-    AVD_LOG_INFO("  Testing Matrix3x3 operations...");
+    AVD_LOG_DEBUG("  Testing Matrix3x3 operations...");
 
     // Test matrix creation
     AVD_Matrix3x3 mat1 = avdMat3x3(
@@ -175,7 +175,7 @@ static bool __avdCheckMatrix3x3()
         !avdIsFEqual(avdMat3x3Val(transpose, 2, 0), avdMat3x3Val(mat1, 0, 2))) {
         // Log the failure
         avdMat3x3Log(mat1);
-        AVD_LOG_INFO("    Matrix3x3 transpose:");
+        AVD_LOG_DEBUG("    Matrix3x3 transpose:");
         avdMat3x3Log(transpose);
         AVD_LOG_ERROR("    FAILED: Matrix3x3 transpose");
         return false;
@@ -224,13 +224,13 @@ static bool __avdCheckMatrix3x3()
         return false;
     }
 
-    AVD_LOG_INFO("    Matrix3x3 tests PASSED");
+    AVD_LOG_DEBUG("    Matrix3x3 tests PASSED");
     return true;
 }
 
 static bool __avdCheckVector2()
 {
-    AVD_LOG_INFO("  Testing Vector2 operations...");
+    AVD_LOG_DEBUG("  Testing Vector2 operations...");
 
     // Test vector creation
     AVD_Vector2 v1 = avdVec2(3.0f, 4.0f);
@@ -336,13 +336,13 @@ static bool __avdCheckVector2()
         return false;
     }
 
-    AVD_LOG_INFO("    Vector2 tests PASSED");
+    AVD_LOG_DEBUG("    Vector2 tests PASSED");
     return true;
 }
 
 static bool __avdCheckVector3()
 {
-    AVD_LOG_INFO("  Testing Vector3 operations...");
+    AVD_LOG_DEBUG("  Testing Vector3 operations...");
 
     // Test vector creation
     AVD_Vector3 v1 = avdVec3(1.0f, 2.0f, 3.0f);
@@ -474,13 +474,13 @@ static bool __avdCheckVector3()
         return false;
     }
 
-    AVD_LOG_INFO("    Vector3 tests PASSED");
+    AVD_LOG_DEBUG("    Vector3 tests PASSED");
     return true;
 }
 
 static bool __avdCheckVector4()
 {
-    AVD_LOG_INFO("  Testing Vector4 operations...");
+    AVD_LOG_DEBUG("  Testing Vector4 operations...");
 
     // Test vector creation
     AVD_Vector4 v1 = avdVec4(1.0f, 2.0f, 3.0f, 4.0f);
@@ -609,13 +609,13 @@ static bool __avdCheckVector4()
         return false;
     }
 
-    AVD_LOG_INFO("    Vector4 tests PASSED");
+    AVD_LOG_DEBUG("    Vector4 tests PASSED");
     return true;
 }
 
 static bool __avdCheckQuaternion()
 {
-    AVD_LOG_INFO("  Testing Quaternion operations...");
+    AVD_LOG_DEBUG("  Testing Quaternion operations...");
 
     // Test quaternion creation
     AVD_Quaternion q1 = avdQuat(0.0f, 0.0f, 0.0f, 1.0f);
@@ -785,13 +785,13 @@ static bool __avdCheckQuaternion()
         return false;
     }
 
-    AVD_LOG_INFO("    Quaternion tests PASSED");
+    AVD_LOG_DEBUG("    Quaternion tests PASSED");
     return true;
 }
 
 bool avdMathTestsRun()
 {
-    AVD_LOG_INFO("Running AVD Math Tests...");
+    AVD_LOG_DEBUG("Running AVD Math Tests...");
 
     AVD_CHECK(__avdCheckMatrix4x4());
     AVD_CHECK(__avdCheckMatrix3x3());
@@ -800,6 +800,6 @@ bool avdMathTestsRun()
     AVD_CHECK(__avdCheckVector4());
     AVD_CHECK(__avdCheckQuaternion());
 
-    AVD_LOG_INFO("All AVD Math Tests passed successfully!");
+    AVD_LOG_DEBUG("All AVD Math Tests passed successfully!");
     return true;
 }

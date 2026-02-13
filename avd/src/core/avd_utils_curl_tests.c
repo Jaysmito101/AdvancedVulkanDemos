@@ -3,21 +3,21 @@
 
 static bool __avdTestCurlIsSupported()
 {
-    AVD_LOG_INFO("  Testing curl support detection...");
+    AVD_LOG_DEBUG("  Testing curl support detection...");
 
     bool isSupported = avdCurlIsSupported();
 
-    AVD_LOG_INFO("    Curl %s on this system", isSupported ? "is available" : "is NOT available");
-    AVD_LOG_INFO("    Curl support detection PASSED");
+    AVD_LOG_DEBUG("    Curl %s on this system", isSupported ? "is available" : "is NOT available");
+    AVD_LOG_DEBUG("    Curl support detection PASSED");
     return true;
 }
 
 static bool __avdTestCurlDownloadToFile()
 {
-    AVD_LOG_INFO("  Testing curl download to file...");
+    AVD_LOG_DEBUG("  Testing curl download to file...");
 
     if (!avdCurlIsSupported()) {
-        AVD_LOG_INFO("    Curl not available, skipping download tests");
+        AVD_LOG_DEBUG("    Curl not available, skipping download tests");
         return true;
     }
 
@@ -47,16 +47,16 @@ static bool __avdTestCurlDownloadToFile()
     free(data);
     remove(outputFile);
 
-    AVD_LOG_INFO("    Curl download to file PASSED (downloaded %zu bytes)", size);
+    AVD_LOG_DEBUG("    Curl download to file PASSED (downloaded %zu bytes)", size);
     return true;
 }
 
 static bool __avdTestCurlDownloadToMemory()
 {
-    AVD_LOG_INFO("  Testing curl download to memory...");
+    AVD_LOG_DEBUG("  Testing curl download to memory...");
 
     if (!avdCurlIsSupported()) {
-        AVD_LOG_INFO("    Curl not available, skipping download tests");
+        AVD_LOG_DEBUG("    Curl not available, skipping download tests");
         return true;
     }
 
@@ -80,16 +80,16 @@ static bool __avdTestCurlDownloadToMemory()
 
     free(data);
 
-    AVD_LOG_INFO("    Curl download to memory PASSED (downloaded %zu bytes)", size);
+    AVD_LOG_DEBUG("    Curl download to memory PASSED (downloaded %zu bytes)", size);
     return true;
 }
 
 static bool __avdTestCurlFetchStringContent()
 {
-    AVD_LOG_INFO("  Testing curl fetch string content...");
+    AVD_LOG_DEBUG("  Testing curl fetch string content...");
 
     if (!avdCurlIsSupported()) {
-        AVD_LOG_INFO("    Curl not available, skipping download tests");
+        AVD_LOG_DEBUG("    Curl not available, skipping download tests");
         return true;
     }
 
@@ -119,16 +119,16 @@ static bool __avdTestCurlFetchStringContent()
     size_t contentLength = strlen(content);
     free(content);
 
-    AVD_LOG_INFO("    Curl fetch string content PASSED (fetched %zu characters, HTTP %d)", contentLength, returnCode);
+    AVD_LOG_DEBUG("    Curl fetch string content PASSED (fetched %zu characters, HTTP %d)", contentLength, returnCode);
     return true;
 }
 
 static bool __avdTestCurlInvalidUrl()
 {
-    AVD_LOG_INFO("  Testing curl with invalid URL...");
+    AVD_LOG_DEBUG("  Testing curl with invalid URL...");
 
     if (!avdCurlIsSupported()) {
-        AVD_LOG_INFO("    Curl not available, skipping invalid URL tests");
+        AVD_LOG_DEBUG("    Curl not available, skipping invalid URL tests");
         return true;
     }
 
@@ -145,13 +145,13 @@ static bool __avdTestCurlInvalidUrl()
         return false;
     }
 
-    AVD_LOG_INFO("    Curl invalid URL handling PASSED");
+    AVD_LOG_DEBUG("    Curl invalid URL handling PASSED");
     return true;
 }
 
 bool avdCurlUtilsTestsRun(void)
 {
-    AVD_LOG_INFO("Running Curl Utils Tests...");
+    AVD_LOG_DEBUG("Running Curl Utils Tests...");
 
     bool allPassed = true;
 
@@ -162,7 +162,7 @@ bool avdCurlUtilsTestsRun(void)
     allPassed &= __avdTestCurlInvalidUrl();
 
     if (allPassed) {
-        AVD_LOG_INFO("All Curl Utils Tests PASSED!");
+        AVD_LOG_DEBUG("All Curl Utils Tests PASSED!");
     } else {
         AVD_LOG_ERROR("Some Curl Utils Tests FAILED!");
     }
