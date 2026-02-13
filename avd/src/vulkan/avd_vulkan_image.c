@@ -43,7 +43,7 @@ bool avdVulkanFramebufferCreateSampler(
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_SAMPLER,
         (uint64_t)*outSampler,
-        "Sampler/%s",
+        "[Sampler][Core]:Vulkan/Sampler/%s",
         label ? label : "Unnamed");
 
     return true;
@@ -115,7 +115,7 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_Vulkan
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_IMAGE,
         (uint64_t)image->image,
-        "Image/%s",
+        "[Image][Core]:Vulkan/Image/%s",
         createInfo.label[0] != '\0' ? createInfo.label : "Unnamed");
 
     VkMemoryRequirements memRequirements = {0};
@@ -132,7 +132,7 @@ bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_Vulkan
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_DEVICE_MEMORY,
         (uint64_t)image->memory,
-        "Image/%s/Memory",
+        "[Image/Memory][Core]:Vulkan/Image/%s/Memory",
         createInfo.label[0] != '\0' ? createInfo.label : "Unnamed");
 
     result = vkBindImageMemory(vulkan->device, image->image, image->memory, 0);
@@ -275,7 +275,8 @@ bool avdVulkanImageSubresourceCreate(
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_IMAGE_VIEW,
         (uint64_t)outSubresource->imageView,
-        "Image/%s/Subresource",
+        "[ImageView][Core]:Vulkan/Image/%s/Subresource/%s",
+        image->info.label[0] != '\0' ? image->info.label : "Unnamed",
         label ? label : "Unnamed");
 
     outSubresource->descriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -414,7 +415,7 @@ bool avdVulkanImageTransitionLayout(AVD_VulkanImage *image, VkCommandBuffer comm
             break;
     }
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "TransitionLayout[%s]: %d -> %d", image->info.label, oldLayout, newLayout);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Core]:Vulkan/Image/TransitionLayout/%s/%d->%d", image->info.label, oldLayout, newLayout);
 
     vkCmdPipelineBarrier(
         commandBuffer,
@@ -447,7 +448,7 @@ bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_
     VkCommandBuffer commandBuffer;
     VkResult allocResult = vkAllocateCommandBuffers(vulkan->device, &allocInfo, &commandBuffer);
     AVD_CHECK_VK_RESULT(allocResult, "Failed to allocate command buffer for image layout transition");
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_COMMAND_BUFFER, commandBuffer, "Core/Image/TransitionLayout/Cmd/%s", image->info.label);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_COMMAND_BUFFER, commandBuffer, "[CommandBuffer][Core]:Vulkan/Image/TransitionLayout/%s", image->info.label);
 
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -469,10 +470,14 @@ bool avdVulkanImageTransitionLayoutWithoutCommandBuffer(AVD_Vulkan *vulkan, AVD_
         .commandBufferCount = 1,
         .pCommandBuffers    = &commandBuffer,
     };
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "[Queue][Core]:Vulkan/Queue/ImageTransitionSubmit/%s", image->info.label);
     VkResult submitResult = vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
     AVD_CHECK_VK_RESULT(submitResult, "Failed to submit command buffer for image layout transition");
 
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "[Queue][Core]:Vulkan/Queue/ImageTransitionWaitIdle/%s", image->info.label);
     VkResult waitResult = vkQueueWaitIdle(vulkan->graphicsQueue);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
     AVD_CHECK_VK_RESULT(waitResult, "Failed to wait for queue idle after image layout transition");
 
     vkFreeCommandBuffers(vulkan->device, vulkan->graphicsCommandPool, 1, &commandBuffer);
@@ -512,7 +517,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
     AVD_VulkanBuffer staging = {0};
     if (!avdVulkanBufferCreate(vulkan, &staging, imageSize,
                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Core/Image/UploadImage/Staging")) {
+                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, "Image/Upload/Staging")) {
         return false;
     }
 
@@ -532,7 +537,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
     };
     VkCommandBuffer cmd;
     vkAllocateCommandBuffers(vulkan->device, &bufAlloc, &cmd);
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_COMMAND_BUFFER, cmd, "Core/Image/UploadImage/Cmd/%s", image->info.label);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_COMMAND_BUFFER, cmd, "[CommandBuffer][Core]:Vulkan/Image/Upload/%s", image->info.label);
 
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -570,7 +575,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
         },
     };
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmd, NULL, "CopyBufferToImage[%s]", image->info.label);
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmd, NULL, "[Cmd][Core]:Vulkan/Image/CopyBufferToImage/%s", image->info.label);
     vkCmdCopyBufferToImage(cmd, staging.buffer, image->image,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     AVD_DEBUG_VK_CMD_END_LABEL(cmd);
@@ -593,6 +598,7 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
     };
     VkFence fence;
     vkCreateFence(vulkan->device, &fenceInfo, NULL, &fence);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_FENCE, fence, "[Fence][Core]:Vulkan/Image/UploadFence/%s", image->info.label);
 
     VkSubmitInfo submit = (VkSubmitInfo){
         .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -600,7 +606,9 @@ bool avdVulkanImageUploadSimple(AVD_Vulkan *vulkan, AVD_VulkanImage *image, cons
         .pCommandBuffers    = &cmd,
         .pNext              = NULL,
     };
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "[Queue][Core]:Vulkan/Queue/ImageUploadSubmit/%s", image->info.label);
     vkQueueSubmit(vulkan->graphicsQueue, 1, &submit, fence);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
 
     vkWaitForFences(vulkan->device, 1, &fence, VK_TRUE, UINT64_MAX);
     vkDestroyFence(vulkan->device, fence, NULL);
@@ -897,6 +905,10 @@ bool avdVulkanImageYCbCrSubresourceCreate(
                 NULL,
                 &outSubresource->conv.conversion),
             "Failed to create YCbCr sampler conversion\n");
+        AVD_DEBUG_VK_SET_OBJECT_NAME(
+            VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION,
+            outSubresource->conv.conversion,
+            "[SamplerYcbcrConversion][Core]:Vulkan/Image/YCbCr/Conversion");
 
         VkSamplerYcbcrConversionInfo conversionInfo = (VkSamplerYcbcrConversionInfo){
             .sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
@@ -908,7 +920,7 @@ bool avdVulkanImageYCbCrSubresourceCreate(
             VK_FILTER_LINEAR,
             VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
             &conversionInfo,
-            "Core/Image/Subresource/YCbCr/Sampler",
+            "Image/YCbCr/Sampler",
             &outSubresource->conv.sampler));
 
         AVD_CHECK(avdVulkanImageSubresourceCreate(
@@ -916,7 +928,7 @@ bool avdVulkanImageYCbCrSubresourceCreate(
             image,
             subresourceRange,
             &conversionInfo,
-            "Core/Image/Subresource/YCbCr/Conversion",
+            "Image/YCbCr/Conversion",
             &outSubresource->conv.rgb));
         outSubresource->conv.rgb.descriptorImageInfo.sampler = outSubresource->conv.sampler;
     }
@@ -934,7 +946,7 @@ bool avdVulkanImageYCbCrSubresourceCreate(
                 .layerCount     = subresourceRange.layerCount,
             },
             NULL,
-            "Core/Image/Subresource/YCbCr/Luma",
+            "Image/YCbCr/Luma",
             &outSubresource->raw.luma));
 
         AVD_CHECK(avdVulkanImageSubresourceCreate(
@@ -948,7 +960,7 @@ bool avdVulkanImageYCbCrSubresourceCreate(
                 .layerCount     = subresourceRange.layerCount,
             },
             NULL,
-            "Core/Image/Subresource/YCbCr/Chroma",
+            "Image/YCbCr/Chroma",
             &outSubresource->raw.chroma));
     }
 
