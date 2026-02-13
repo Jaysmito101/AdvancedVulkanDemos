@@ -1,5 +1,7 @@
 @echo off
-cls
+if /i "%~1"=="--help" goto show_help
+if /i "%~1"=="-h" goto show_help
+if /i "%~1"=="/?" goto show_help
 @REM check cmake is installed
 where cmake >nul 2>nul
 if %errorlevel% neq 0 (
@@ -91,6 +93,9 @@ shift
 goto append_build_args
 
 :end_parse
+
+cls
+
 
 echo Using %TOOLCHAIN% toolchain with %BUILD_TYPE% configuration
 echo Build directory: %BUILD_DIR%
@@ -204,3 +209,22 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 echo Program ran successfully.
+
+:show_help
+echo Usage: run.bat [options]
+echo.
+echo Options:
+echo   --help, -h, /?        Show this help and exit
+echo   --release             Build in Release (default: Debug)
+echo   --vs                  Use Visual Studio generator (default)
+echo   --ninja               Use Ninja generator
+echo   --mingw               Use MinGW Makefiles generator
+echo   --cmake-opts ...      Pass options to CMake configure step
+echo   --build-opts ...      Pass options to CMake build step
+echo   -- ...                Pass remaining args as CMake configure options
+echo.
+echo Examples:
+echo   run.bat --ninja -- -DAVD_ENABLE_VULKAN_VIDEO=ON
+echo   run.bat --ninja --build-opts --target avd -j 8
+echo   run.bat --ninja -- -DAVD_ENABLE_VULKAN_VIDEO=ON --build-opts --target avd -j 8
+exit /b 0
