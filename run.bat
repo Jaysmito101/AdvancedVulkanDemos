@@ -140,7 +140,11 @@ if not "%CMAKE_EXTRA_ARGS%"=="%LAST_CMAKE_OPTS%" (
     set "INVALIDATE_CACHE=1"
 )
 rem Always write cmake opts file to track state
->"%CMAKE_OPTS_FILE%" (echo %CMAKE_EXTRA_ARGS%)
+if "%CMAKE_EXTRA_ARGS%"=="" (
+    type nul > "%CMAKE_OPTS_FILE%"
+) else (
+    >"%CMAKE_OPTS_FILE%" echo %CMAKE_EXTRA_ARGS%
+)
 
 if exist "%ASSET_HASH_FILE%" (
     if exist "%BUILD_ASSET_HASH_FILE%" (
