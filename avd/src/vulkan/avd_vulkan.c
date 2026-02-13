@@ -486,7 +486,7 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     //                       And thus this optimizes the vulkan calls.
     volkLoadDevice(vulkan->device);
 
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DEVICE, vulkan->device, "Core/Device");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DEVICE, vulkan->device, "[Device][Core]:Vulkan/Device/Main");
 
     vulkan->graphicsQueueFamilyIndex    = graphicsQueueFamilyIndex;
     vulkan->computeQueueFamilyIndex     = computeQueueFamilyIndex;
@@ -552,14 +552,14 @@ static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_QUEUE,
         (uint64_t)vulkan->graphicsQueue,
-        "Core/GraphicsQueue");
+        "[Queue][Core]:Vulkan/Queue/Graphics");
 
     vkGetDeviceQueue(vulkan->device, vulkan->computeQueueFamilyIndex, 0, &vulkan->computeQueue);
     AVD_CHECK_MSG(vulkan->computeQueue != VK_NULL_HANDLE, "Failed to get compute queue\n");
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_QUEUE,
         (uint64_t)vulkan->computeQueue,
-        "Core/ComputeQueue");
+        "[Queue][Core]:Vulkan/Queue/Compute");
 
     if (vulkan->supportedFeatures.videoDecode) {
         vkGetDeviceQueue(vulkan->device, vulkan->videoDecodeQueueFamilyIndex, 0, &vulkan->videoDecodeQueue);
@@ -567,7 +567,7 @@ static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
         AVD_DEBUG_VK_SET_OBJECT_NAME(
             VK_OBJECT_TYPE_QUEUE,
             (uint64_t)vulkan->videoDecodeQueue,
-            "Core/VideoDecodeQueue");
+            "[Queue][Core]:Vulkan/Queue/VideoDecode");
     }
 
     if (vulkan->supportedFeatures.videoEncode) {
@@ -576,7 +576,7 @@ static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
         AVD_DEBUG_VK_SET_OBJECT_NAME(
             VK_OBJECT_TYPE_QUEUE,
             (uint64_t)vulkan->videoEncodeQueue,
-            "Core/VideoEncodeQueue");
+            "[Queue][Core]:Vulkan/Queue/VideoEncode");
     }
 
     return true;
@@ -596,7 +596,7 @@ static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_COMMAND_POOL,
         (uint64_t)vulkan->graphicsCommandPool,
-        "Core/GraphicsCommandPool");
+        "[CommandPool][Core]:Vulkan/CommandPool/Graphics");
 
     poolInfo.queueFamilyIndex = vulkan->computeQueueFamilyIndex;
     result                    = vkCreateCommandPool(vulkan->device, &poolInfo, NULL, &vulkan->computeCommandPool);
@@ -604,7 +604,7 @@ static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_COMMAND_POOL,
         (uint64_t)vulkan->computeCommandPool,
-        "Core/ComputeCommandPool");
+        "[CommandPool][Core]:Vulkan/CommandPool/Compute");
 
     if (vulkan->supportedFeatures.videoDecode) {
         poolInfo.queueFamilyIndex = vulkan->videoDecodeQueueFamilyIndex;
@@ -613,7 +613,7 @@ static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
         AVD_DEBUG_VK_SET_OBJECT_NAME(
             VK_OBJECT_TYPE_COMMAND_POOL,
             (uint64_t)vulkan->videoDecodeCommandPool,
-            "Core/VideoDecodeCommandPool");
+            "[CommandPool][Core]:Vulkan/CommandPool/VideoDecode");
     }
 
     if (vulkan->supportedFeatures.videoEncode) {
@@ -623,7 +623,7 @@ static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
         AVD_DEBUG_VK_SET_OBJECT_NAME(
             VK_OBJECT_TYPE_COMMAND_POOL,
             (uint64_t)vulkan->videoEncodeCommandPool,
-            "Core/VideoEncodeCommandPool");
+            "[CommandPool][Core]:Vulkan/CommandPool/VideoEncode");
     }
 
     return true;
@@ -652,14 +652,14 @@ static bool __avdVulkanDescriptorPoolCreate(AVD_Vulkan *vulkan)
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_DESCRIPTOR_POOL,
         (uint64_t)vulkan->descriptorPool,
-        "Core/DescriptorPool");
+        "[DescriptorPool][Core]:Vulkan/DescriptorPool/Main");
 
     result = vkCreateDescriptorPool(vulkan->device, &poolInfo, NULL, &vulkan->bindlessDescriptorPool);
     AVD_CHECK_VK_RESULT(result, "Failed to create bindless descriptor pool\n");
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_DESCRIPTOR_POOL,
         (uint64_t)vulkan->bindlessDescriptorPool,
-        "Core/BindlessDescriptorPool");
+        "[DescriptorPool][Core]:Vulkan/DescriptorPool/Bindless");
 
     return true;
 }
@@ -703,7 +703,7 @@ static bool __avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
         (uint64_t)vulkan->bindlessDescriptorSetLayout,
-        "Core/BindlessDescriptorSetLayout");
+        "[DescriptorSetLayout][Core]:Vulkan/DescriptorSetLayout/Bindless");
 
     uint32_t descriptorTypeCount = AVD_VULKAN_DESCRIPTOR_TYPE_COUNT * AVD_VULKAN_DESCRIPTOR_COUNT_PER_TYPE;
 
@@ -719,7 +719,7 @@ static bool __avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
     AVD_DEBUG_VK_SET_OBJECT_NAME(
         VK_OBJECT_TYPE_DESCRIPTOR_SET,
         (uint64_t)vulkan->bindlessDescriptorSet,
-        "Core/BindlessDescriptorSet");
+        "[DescriptorSet][Core]:Vulkan/DescriptorSet/Bindless");
 
     return true;
 }
@@ -777,14 +777,26 @@ bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface
 
 void avdVulkanWaitIdle(AVD_Vulkan *vulkan)
 {
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "[Queue][Core]:Vulkan/Queue/Graphics/WaitIdle");
     vkDeviceWaitIdle(vulkan->device);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
+
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "[Queue][Core]:Vulkan/Queue/Graphics/WaitIdle");
     vkQueueWaitIdle(vulkan->graphicsQueue);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
+
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->computeQueue, NULL, "[Queue][Core]:Vulkan/Queue/Compute/WaitIdle");
     vkQueueWaitIdle(vulkan->computeQueue);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->computeQueue);
     if (vulkan->supportedFeatures.videoDecode) {
+        AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->videoDecodeQueue, NULL, "[Queue][Core]:Vulkan/Queue/VideoDecode/WaitIdle");
         vkQueueWaitIdle(vulkan->videoDecodeQueue);
+        AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->videoDecodeQueue);
     }
     if (vulkan->supportedFeatures.videoEncode) {
+        AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->videoEncodeQueue, NULL, "[Queue][Core]:Vulkan/Queue/VideoEncode/WaitIdle");
         vkQueueWaitIdle(vulkan->videoEncodeQueue);
+        AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->videoEncodeQueue);
     }
 }
 
