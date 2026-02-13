@@ -121,7 +121,7 @@ static bool __avdVulkanSwapchainQueryImages(AVD_VulkanSwapchain *swapchain, AVD_
     vkGetSwapchainImagesKHR(vulkan->device, swapchain->swapchain, &imageCount, swapchain->images);
 
     for (uint32_t i = 0; i < imageCount; ++i) {
-        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_IMAGE, swapchain->images[i], "Core/Swapchain/Image");
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_IMAGE, swapchain->images[i], "[Image][Core]:Vulkan/Swapchain/Image/%u", i);
     }
 
     return true;
@@ -150,7 +150,7 @@ static bool __avdVulkanSwapchainCreateImageViews(AVD_VulkanSwapchain *swapchain,
 
         VkResult result = vkCreateImageView(vulkan->device, &viewInfo, NULL, &swapchain->imageViews[i]);
         AVD_CHECK_VK_RESULT(result, "Failed to create image view for image %d\n", i);
-        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_IMAGE_VIEW, swapchain->imageViews[i], "Core/Swapchain/ImageView");
+        AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_IMAGE_VIEW, swapchain->imageViews[i], "[ImageView][Core]:Vulkan/Swapchain/ImageView/%u", i);
     }
     return true;
 }
@@ -190,7 +190,7 @@ static bool __avdVulkanSwapchainCreateFramebuffer(AVD_VulkanSwapchain *swapchain
 
     VkResult result = vkCreateFramebuffer(vulkan->device, &framebufferInfo, NULL, &swapchain->framebuffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create framebuffer!\n");
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_FRAMEBUFFER, swapchain->framebuffer, "Core/Swapchain/Framebuffer");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_FRAMEBUFFER, swapchain->framebuffer, "[Framebuffer][Core]:Vulkan/Swapchain/Framebuffer");
     return true;
 }
 
@@ -221,7 +221,7 @@ static bool __avdVulkanSwapchainKHRCreate(AVD_VulkanSwapchain *swapchain, AVD_Vu
 
     VkResult result = vkCreateSwapchainKHR(vulkan->device, &swapchainInfo, NULL, &swapchain->swapchain);
     AVD_CHECK_VK_RESULT(result, "Failed to create swapchain\n");
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SWAPCHAIN_KHR, swapchain->swapchain, "Core/Swapchain");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SWAPCHAIN_KHR, swapchain->swapchain, "[Swapchain][Core]:Vulkan/Swapchain/Main");
 
     if (oldSwapchain != VK_NULL_HANDLE) {
         vkDestroySwapchainKHR(vulkan->device, oldSwapchain, NULL);
@@ -274,7 +274,7 @@ static bool __avdVulkanSwapchainCreateRenderPass(AVD_VulkanSwapchain *swapchain,
 
     VkResult result = vkCreateRenderPass(vulkan->device, &renderPassInfo, NULL, &swapchain->renderPass);
     AVD_CHECK_VK_RESULT(result, "Failed to create render pass\n");
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_RENDER_PASS, swapchain->renderPass, "Core/Swapchain/RenderPass");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_RENDER_PASS, swapchain->renderPass, "[RenderPass][Core]:Vulkan/Swapchain/RenderPass");
 
     return true;
 }
@@ -387,7 +387,9 @@ VkResult avdVulkanSwapchainPresent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *v
     presentInfo.pImageIndices      = &imageIndex;
     presentInfo.pNext              = &presentFenceInfo;
 
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "[Queue][Core]:Vulkan/Queue/Present/Image/%u", imageIndex);
     VkResult result = vkQueuePresentKHR(vulkan->graphicsQueue, &presentInfo);
+    AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
 
     if (result != VK_SUCCESS) {
         AVD_LOG_ERROR("Failed to present image to swapchain");
