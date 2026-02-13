@@ -1,4 +1,5 @@
 #include "vulkan/avd_vulkan_buffer.h"
+#include "vulkan/avd_vulkan_base.h"
 #include "vulkan/video/avd_vulkan_video_core.h"
 
 bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const char *label)
@@ -7,7 +8,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     AVD_ASSERT(buffer != NULL);
     AVD_ASSERT(size > 0);
 
-    snprintf(buffer->label, sizeof(buffer->label), "Buffer/%s/%zu", label ? label : "Unnamed", size);
+    snprintf(buffer->label, sizeof(buffer->label), "%s/%zu", label ? label : "Unnamed", size);
 
     VkBufferCreateInfo bufferInfo = {
         .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -32,6 +33,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
 
     VkResult result = vkCreateBuffer(vulkan->device, &bufferInfo, NULL, &buffer->buffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create buffer!");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_BUFFER, buffer->buffer, "[Buffer][Core]:Vulkan/%s", buffer->label);
 
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(vulkan->device, buffer->buffer, &memRequirements);
@@ -46,6 +48,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
 
     result = vkAllocateMemory(vulkan->device, &allocInfo, NULL, &buffer->memory);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate buffer memory!");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DEVICE_MEMORY, buffer->memory, "[Buffer/Memory][Core]:Vulkan/%s/Memory", buffer->label);
 
     result = vkBindBufferMemory(vulkan->device, buffer->buffer, buffer->memory, 0);
     AVD_CHECK_VK_RESULT(result, "Failed to bind buffer memory!");
@@ -128,13 +131,14 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
 
     VkCommandBuffer cmd;
     vkAllocateCommandBuffers(vulkan->device, &allocInfo, &cmd);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_COMMAND_BUFFER, cmd, "[CommandBuffer][Core]:Vulkan/Buffer/Upload");
 
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
     vkBeginCommandBuffer(cmd, &beginInfo);
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmd, NULL, "Core/Buffer/Upload");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmd, NULL, "[Cmd][Core]:Vulkan/Buffer/Upload");
 
     VkBufferCopy copyRegion = {
         .srcOffset = 0,
@@ -151,7 +155,7 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
         .commandBufferCount = 1,
         .pCommandBuffers    = &cmd,
     };
-    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "Core/Queue/BufferUpload");
+    AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(vulkan->graphicsQueue, NULL, "[Queue][Core]:Vulkan/Queue/BufferUpload");
     vkQueueSubmit(vulkan->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     AVD_DEBUG_VK_QUEUE_END_LABEL(vulkan->graphicsQueue);
     vkQueueWaitIdle(vulkan->graphicsQueue);

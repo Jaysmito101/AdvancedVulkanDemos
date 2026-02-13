@@ -4,7 +4,7 @@
 
 static bool __avdTestHashTableInit()
 {
-    AVD_LOG_INFO("  Testing HashTable initialization...");
+    AVD_LOG_DEBUG("  Testing HashTable initialization...");
 
     AVD_HashTable table;
 
@@ -39,13 +39,13 @@ static bool __avdTestHashTableInit()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable initialization PASSED");
+    AVD_LOG_DEBUG("    HashTable initialization PASSED");
     return true;
 }
 
 static bool __avdTestHashTableSetGet()
 {
-    AVD_LOG_INFO("  Testing HashTable set/get operations...");
+    AVD_LOG_DEBUG("  Testing HashTable set/get operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -109,13 +109,13 @@ static bool __avdTestHashTableSetGet()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable set/get operations PASSED");
+    AVD_LOG_DEBUG("    HashTable set/get operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableStringKeys()
 {
-    AVD_LOG_INFO("  Testing HashTable with string keys...");
+    AVD_LOG_DEBUG("  Testing HashTable with string keys...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, 0, sizeof(int), 0, true);
@@ -177,13 +177,13 @@ static bool __avdTestHashTableStringKeys()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable string keys PASSED");
+    AVD_LOG_DEBUG("    HashTable string keys PASSED");
     return true;
 }
 
 static bool __avdTestHashTableContains()
 {
-    AVD_LOG_INFO("  Testing HashTable contains operations...");
+    AVD_LOG_DEBUG("  Testing HashTable contains operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -218,13 +218,13 @@ static bool __avdTestHashTableContains()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable contains operations PASSED");
+    AVD_LOG_DEBUG("    HashTable contains operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableRemove()
 {
-    AVD_LOG_INFO("  Testing HashTable remove operations...");
+    AVD_LOG_DEBUG("  Testing HashTable remove operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -303,13 +303,13 @@ static bool __avdTestHashTableRemove()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable remove operations PASSED");
+    AVD_LOG_DEBUG("    HashTable remove operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableClear()
 {
-    AVD_LOG_INFO("  Testing HashTable clear operations...");
+    AVD_LOG_DEBUG("  Testing HashTable clear operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -375,13 +375,13 @@ static bool __avdTestHashTableClear()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable clear operations PASSED");
+    AVD_LOG_DEBUG("    HashTable clear operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableMemoryReuse()
 {
-    AVD_LOG_INFO("  Testing HashTable memory reuse after removal...");
+    AVD_LOG_DEBUG("  Testing HashTable memory reuse after removal...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -447,13 +447,13 @@ static bool __avdTestHashTableMemoryReuse()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable memory reuse PASSED");
+    AVD_LOG_DEBUG("    HashTable memory reuse PASSED");
     return true;
 }
 
 static bool __avdTestHashTableGetKeys()
 {
-    AVD_LOG_INFO("  Testing HashTable get keys operations...");
+    AVD_LOG_DEBUG("  Testing HashTable get keys operations...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -513,13 +513,13 @@ static bool __avdTestHashTableGetKeys()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable get keys operations PASSED");
+    AVD_LOG_DEBUG("    HashTable get keys operations PASSED");
     return true;
 }
 
 static bool __avdTestHashTableCollisions()
 {
-    AVD_LOG_INFO("  Testing HashTable collision handling...");
+    AVD_LOG_DEBUG("  Testing HashTable collision handling...");
 
     AVD_HashTable table;
     avdHashTableCreate(&table, sizeof(int), sizeof(int), 0, false);
@@ -577,13 +577,13 @@ static bool __avdTestHashTableCollisions()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable collision handling PASSED");
+    AVD_LOG_DEBUG("    HashTable collision handling PASSED");
     return true;
 }
 
 static bool __avdTestHashTableEdgeCases()
 {
-    AVD_LOG_INFO("  Testing HashTable edge cases...");
+    AVD_LOG_DEBUG("  Testing HashTable edge cases...");
 
     // Test NULL pointer handling
     bool result = avdHashTableCreate(NULL, sizeof(int), sizeof(int), 0, false);
@@ -641,13 +641,13 @@ static bool __avdTestHashTableEdgeCases()
         return false;
     }
 
-    AVD_LOG_INFO("    HashTable edge cases PASSED");
+    AVD_LOG_DEBUG("    HashTable edge cases PASSED");
     return true;
 }
 
 static bool __avdTestHashTableLargeDataTypes()
 {
-    AVD_LOG_INFO("  Testing HashTable with large data types...");
+    AVD_LOG_DEBUG("  Testing HashTable with large data types...");
 
     typedef struct {
         char name[64];
@@ -702,13 +702,13 @@ static bool __avdTestHashTableLargeDataTypes()
     }
 
     avdHashTableDestroy(&table);
-    AVD_LOG_INFO("    HashTable large data types PASSED");
+    AVD_LOG_DEBUG("    HashTable large data types PASSED");
     return true;
 }
 
 bool avdHashTableTestsRun(void)
 {
-    AVD_LOG_INFO("Running HashTable tests...");
+    AVD_LOG_DEBUG("Running HashTable tests...");
 
     bool allPassed = true;
 
@@ -725,9 +725,9 @@ bool avdHashTableTestsRun(void)
     allPassed &= __avdTestHashTableLargeDataTypes();
 
     if (allPassed) {
-        AVD_LOG_INFO("All HashTable tests PASSED!");
+        AVD_LOG_DEBUG("All HashTable tests PASSED!");
     } else {
-        AVD_LOG_INFO("Some HashTable tests FAILED!");
+        AVD_LOG_DEBUG("Some HashTable tests FAILED!");
     }
 
     return allPassed;

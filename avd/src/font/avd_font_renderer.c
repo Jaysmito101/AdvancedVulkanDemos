@@ -374,7 +374,7 @@ bool avdFontCreate(AVD_FontData fontData, AVD_Vulkan *vulkan, AVD_Font *font)
 {
     AVD_ASSERT(font != NULL);
     font->fontData = fontData;
-    AVD_CHECK(avdVulkanImageLoadFromMemory(vulkan, fontData.atlasData, fontData.atlasDataSize, &font->fontAtlasImage));
+    AVD_CHECK(avdVulkanImageLoadFromMemory(vulkan, fontData.atlasData, fontData.atlasDataSize, &font->fontAtlasImage, fontData.name));
     AVD_CHECK(avdCreateDescriptorSetLayout(
         &font->fontDescriptorSetLayout,
         vulkan->device,

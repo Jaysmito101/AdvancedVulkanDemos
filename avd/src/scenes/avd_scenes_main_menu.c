@@ -20,7 +20,7 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
 
     VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, layout);
     AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, *layout, "Scene/MainMenu/DescriptorSetLayout");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, *layout, "[DescriptorSetLayout][Scene]:MainMenu/DescriptorSetLayout");
     return true;
 }
 
@@ -31,7 +31,7 @@ static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AV
     AVD_ASSERT(title != NULL);
 
     card->targetSceneType = targetSceneType;
-    AVD_CHECK(avdVulkanImageLoadFromAsset(vulkan, imageAsset, &card->thumbnailImage));
+    AVD_CHECK(avdVulkanImageLoadFromAsset(vulkan, imageAsset, &card->thumbnailImage, NULL));
     AVD_CHECK(avdRenderableTextCreate(
         &card->title,
         fontRenderer,
@@ -48,7 +48,7 @@ static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AV
     AVD_CHECK_VK_RESULT(vkAllocateDescriptorSets(vulkan->device, &allocateInfo, &card->descriptorSet), "Failed to allocate descriptor set");
 
     char debugName[128];
-    snprintf(debugName, sizeof(debugName), "Scene/MainMenu/Card/%s/DescriptorSet", title);
+    snprintf(debugName, sizeof(debugName), "[DescriptorSet][Scene]:MainMenu/Card/%s", title);
     AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, card->descriptorSet, debugName);
 
     VkWriteDescriptorSet writeDescriptorSet = {0};
@@ -196,13 +196,12 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
     AVD_ASSERT(progress != NULL);
 
     AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
-    AVD_LOG_INFO("Loading main menu scene");
     // nothing to load really here but some busy waiting
+    // just as an example of how to use the loading progress and status message
     if (mainMenu->loadingCount < 4) {
         mainMenu->loadingCount++;
         static char buffer[256];
         snprintf(buffer, sizeof(buffer), "Loading main menu scene: %d%%", mainMenu->loadingCount * 100 / 4);
-        AVD_LOG_INFO("%s", buffer);
         *statusMessage = buffer;
         *progress      = (float)mainMenu->loadingCount / 4.0f;
         avdSleep(100);
@@ -262,11 +261,11 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/Render");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:MainMenu/Render");
 
     // AVD_LOG_VERBOSE("Rendering main menu scene");
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/RenderTitle");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:MainMenu/RenderTitle");
     float titleWidth, titleHeight;
     float creditsWidth, creditsHeight;
     float githubLinkWidth, githubLinkHeight;
@@ -320,7 +319,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     float offsetX        = (frameWidth - allCardsWidth) / 2.0f;
     float offsetY        = (frameHeight - allCardsHeight) / 2.0f;
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/MainMenu/RenderUi");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:MainMenu/RenderUi");
 
     avdUiBegin(
         commandBuffer,

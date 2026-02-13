@@ -25,6 +25,10 @@ bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan 
         vulkan->device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
+        presentation->descriptorSetLayout,
+        "[DescriptorSetLayout][Core]:Vulkan/Presentation/DescriptorSetLayout");
     AVD_CHECK(avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         &presentation->pipelineLayout,
         &presentation->pipeline,
@@ -38,6 +42,14 @@ bool avdVulkanPresentationInit(AVD_VulkanPresentation *presentation, AVD_Vulkan 
         "PresentationFrag",
         NULL,
         NULL));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE_LAYOUT,
+        presentation->pipelineLayout,
+        "[PipelineLayout][Core]:Vulkan/Presentation/PipelineLayout");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE,
+        presentation->pipeline,
+        "[Pipeline][Core]:Vulkan/Presentation/Pipeline");
     AVD_CHECK(avdFontRendererCreate(
         &presentation->presentationFontRenderer,
         vulkan,
@@ -97,6 +109,7 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
         swapchain->extent.height,
         defaultClearValues,
         AVD_ARRAY_COUNT(defaultClearValues)));
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Core]:Vulkan/Presentation/Render/Image/%u", imageIndex);
 
     // Populate the push constant struct
     AVD_VulkanPresentationPushConstants pushConstants = {
@@ -162,5 +175,6 @@ bool avdVulkanPresentationRender(AVD_VulkanPresentation *presentation, AVD_Vulka
     }
 
     AVD_CHECK(avdEndRenderPass(commandBuffer));
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
     return true;
 }

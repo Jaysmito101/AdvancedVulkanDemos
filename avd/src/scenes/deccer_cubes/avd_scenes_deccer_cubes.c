@@ -148,8 +148,8 @@ bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *sce
         appState->vulkan.descriptorPool,
         deccerCubes->set0Layout,
         &deccerCubes->set0));
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, deccerCubes->set0Layout, "Scene/DeccerCubes/Set0Layout");
-    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, deccerCubes->set0, "Scene/DeccerCubes/Set0");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, deccerCubes->set0Layout, "[DescriptorSetLayout][Scene]:DeccerCubes/Set0");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DESCRIPTOR_SET, deccerCubes->set0, "[DescriptorSet][Scene]:DeccerCubes/Set0");
 
     AVD_CHECK(avdRenderableTextCreate(
         &deccerCubes->title,
@@ -264,7 +264,7 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 AVD_CHECK(avdVulkanImageLoadFromFile(
                     &appState->vulkan,
                     mesh->material.albedoTexture.path,
-                    &deccerCubes->images[deccerCubes->imagesCount]));
+                    &deccerCubes->images[deccerCubes->imagesCount], NULL));
 
                 VkWriteDescriptorSet *write = &descriptorSetWrites[deccerCubes->imagesCount];
                 write->sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -335,7 +335,7 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/DeccerCubes/Render");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:DeccerCubes/Render");
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipeline);
     VkDescriptorSet descriptorSets[] = {

@@ -127,7 +127,7 @@ static bool __avdBloomPass(
     AVD_DEBUG_VK_CMD_BEGIN_LABEL(
         commandBuffer,
         AVD_BLOOM_LABEL_COLOR,
-        "Core/Bloom/%s/%s",
+        "[Cmd][Common]:Bloom/%s/%s",
         bloom->label,
         avdBloomPassTypeToString(passType));
 
@@ -184,6 +184,11 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         vulkan->device,
         (VkDescriptorType[]){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER}, 1,
         VK_SHADER_STAGE_FRAGMENT_BIT));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
+        bloom->bloomDescriptorSetLayout,
+        "[DescriptorSetLayout][Common]:Bloom/%s",
+        bloom->label);
     AVD_CHECK(avdPipelineUtilsCreateGraphicsPipelineLayout(
         &bloom->pipelineLayout,
         vulkan->device,
@@ -192,6 +197,11 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
             bloom->bloomDescriptorSetLayout},
         2,
         sizeof(AVD_BloomUberPushConstants)));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE_LAYOUT,
+        bloom->pipelineLayout,
+        "[PipelineLayout][Common]:Bloom/%s",
+        bloom->label);
     AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         &bloom->pipeline,
         bloom->pipelineLayout,
@@ -202,6 +212,11 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         "BloomFrag",
         NULL,
         NULL));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE,
+        bloom->pipeline,
+        "[Pipeline][Common]:Bloom/%s/Main",
+        bloom->label);
 
     AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         &bloom->pipelineComposite,
@@ -213,6 +228,11 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
         "BloomFrag",
         NULL,
         NULL));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE,
+        bloom->pipelineComposite,
+        "[Pipeline][Common]:Bloom/%s/Composite",
+        bloom->label);
 
     return true;
 }
@@ -245,7 +265,7 @@ bool avdBloomApplyInplace(
     AVD_DEBUG_VK_CMD_BEGIN_LABEL(
         commandBuffer,
         AVD_BLOOM_LABEL_COLOR,
-        "Core/Bloom/%s/ApplyInplace",
+        "[Cmd][Common]:Bloom/%s/ApplyInplace",
         bloom->label);
 
     AVD_CHECK(__avdBloomPass(

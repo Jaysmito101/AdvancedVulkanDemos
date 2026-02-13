@@ -229,6 +229,10 @@ bool avdPipelineUtilsCreateGraphicsPipelineLayout(
 
     VkResult result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL, pipelineLayout);
     AVD_CHECK_VK_RESULT(result, "Failed to create pipeline layout for presentation");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE_LAYOUT,
+        *pipelineLayout,
+        "[PipelineLayout][Core]:Vulkan/Pipeline/Layout");
 
     return true;
 }
@@ -316,6 +320,12 @@ bool avdPipelineUtilsCreateGenericGraphicsPipeline(
 
     VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, pipeline);
     AVD_CHECK_VK_RESULT(result, "Failed to create graphics pipeline for Ui");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE,
+        *pipeline,
+        "[Pipeline][Core]:Vulkan/Pipeline/Graphics/%s/%s",
+        vertShaderAsset,
+        fragShaderAsset);
 
     vkDestroyShaderModule(device, vertexShaderModule, NULL);
     vkDestroyShaderModule(device, fragmentShaderModule, NULL);

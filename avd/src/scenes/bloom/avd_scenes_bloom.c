@@ -217,7 +217,7 @@ bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
     avdRenderableTextGetSize(&bloom->uiInfoText, &uiInfoTextWidth, &uiInfoTextHeight);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/Bloom/Render");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:Bloom/Render");
 
     avdRenderText(
         vulkan,

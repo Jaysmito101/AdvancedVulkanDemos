@@ -21,6 +21,10 @@ static bool __avdVulkanFramebufferAttachmentDescriptorsCreate(AVD_Vulkan *vulkan
 
     VkResult result = vkCreateDescriptorSetLayout(vulkan->device, &descriptorSetLayoutInfo, NULL, &attachment->descriptorSetLayout);
     AVD_CHECK_VK_RESULT(result, "Failed to create framebuffer attachment descriptor set layout");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
+        attachment->descriptorSetLayout,
+        "[DescriptorSetLayout][Core]:Vulkan/Framebuffer/Attachment/DescriptorSetLayout");
 
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
         .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -31,6 +35,10 @@ static bool __avdVulkanFramebufferAttachmentDescriptorsCreate(AVD_Vulkan *vulkan
 
     result = vkAllocateDescriptorSets(vulkan->device, &descriptorSetAllocateInfo, &attachment->descriptorSet);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate framebuffer attachment descriptor set");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_DESCRIPTOR_SET,
+        attachment->descriptorSet,
+        "[DescriptorSet][Core]:Vulkan/Framebuffer/Attachment/DescriptorSet");
 
     VkWriteDescriptorSet writeDescriptorSet = {0};
     AVD_CHECK(avdWriteImageDescriptorSet(&writeDescriptorSet, attachment->descriptorSet, 0, &attachment->image.defaultSubresource.descriptorImageInfo));
@@ -58,7 +66,7 @@ static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_Vulka
                                        width,
                                        height,
                                        format,
-                                       usage)));
+                                       usage, "Core/FramebufferAttachment")));
     AVD_CHECK(__avdVulkanFramebufferAttachmentDescriptorsCreate(vulkan, attachment));
 
     attachment->attachmentDescription = (VkAttachmentDescription){
@@ -171,6 +179,10 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
     };
     VkResult result = vkCreateRenderPass(device, &renderPassInfo, NULL, &framebuffer->renderPass);
     AVD_CHECK_VK_RESULT(result, "Failed to create render pass");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_RENDER_PASS,
+        framebuffer->renderPass,
+        "[RenderPass][Core]:Vulkan/Framebuffer/RenderPass");
 
     static VkFramebufferAttachmentImageInfo attachmentImageInfos[64] = {0};
     // attachmentImageInfos[0]                                          = framebuffer->colorAttachment.attachmentImageInfo;
@@ -202,6 +214,10 @@ static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device
     };
     result = vkCreateFramebuffer(device, &framebufferInfo, NULL, &framebuffer->framebuffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create framebuffer");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_FRAMEBUFFER,
+        framebuffer->framebuffer,
+        "[Framebuffer][Core]:Vulkan/Framebuffer/Main");
 
     return true;
 }

@@ -122,16 +122,16 @@ bool avdVulkanDebuggerQueueEndLabel(AVD_Vulkan *vulkan, VkQueue queue);
 bool avdVulkanDebuggerSetObjectName(AVD_Vulkan *vulkan, VkObjectType objectType, uint64_t objectHandle, const char *name, ...);
 #endif
 
-#define AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmdBuffer, labelName, color, ...) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerCmdBeginLabel(avdVulkanGetGlobalInstance(), cmdBuffer, labelName, color, ##__VA_ARGS__))
-#define AVD_DEBUG_VK_CMD_INSERT_LABEL(cmdBuffer, labelName, color, ...) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerCmdInsertLabel(avdVulkanGetGlobalInstance(), cmdBuffer, labelName, color, ##__VA_ARGS__))
+#define AVD_DEBUG_VK_CMD_BEGIN_LABEL(cmdBuffer, color, labelName, ...) \
+    AVD_DEBUG_ONLY(avdVulkanDebuggerCmdBeginLabel(avdVulkanGetGlobalInstance(), cmdBuffer, color, labelName, ##__VA_ARGS__))
+#define AVD_DEBUG_VK_CMD_INSERT_LABEL(cmdBuffer, color, labelName, ...) \
+    AVD_DEBUG_ONLY(avdVulkanDebuggerCmdInsertLabel(avdVulkanGetGlobalInstance(), cmdBuffer, color, labelName, ##__VA_ARGS__))
 #define AVD_DEBUG_VK_CMD_END_LABEL(cmdBuffer) \
     AVD_DEBUG_ONLY(avdVulkanDebuggerCmdEndLabel(avdVulkanGetGlobalInstance(), cmdBuffer))
-#define AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(queue, labelName, color, ...) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerQueueBeginLabel(avdVulkanGetGlobalInstance(), queue, labelName, color, ##__VA_ARGS__))
-#define AVD_DEBUG_VK_QUEUE_INSERT_LABEL(queue, labelName, color, ...) \
-    AVD_DEBUG_ONLY(avdVulkanDebuggerQueueInsertLabel(avdVulkanGetGlobalInstance(), queue, labelName, color, ##__VA_ARGS__))
+#define AVD_DEBUG_VK_QUEUE_BEGIN_LABEL(queue, color, labelName, ...) \
+    AVD_DEBUG_ONLY(avdVulkanDebuggerQueueBeginLabel(avdVulkanGetGlobalInstance(), queue, color, labelName, ##__VA_ARGS__))
+#define AVD_DEBUG_VK_QUEUE_INSERT_LABEL(queue, color, labelName, ...) \
+    AVD_DEBUG_ONLY(avdVulkanDebuggerQueueInsertLabel(avdVulkanGetGlobalInstance(), queue, color, labelName, ##__VA_ARGS__))
 #define AVD_DEBUG_VK_QUEUE_END_LABEL(queue) \
     AVD_DEBUG_ONLY(avdVulkanDebuggerQueueEndLabel(avdVulkanGetGlobalInstance(), queue))
 

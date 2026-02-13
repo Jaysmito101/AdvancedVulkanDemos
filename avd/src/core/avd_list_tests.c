@@ -3,7 +3,7 @@
 
 static bool __avdTestListInit()
 {
-    AVD_LOG_INFO("  Testing List initialization...");
+    AVD_LOG_DEBUG("  Testing List initialization...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -18,13 +18,13 @@ static bool __avdTestListInit()
     }
 
     avdListDestroy(&list);
-    AVD_LOG_INFO("    List initialization PASSED");
+    AVD_LOG_DEBUG("    List initialization PASSED");
     return true;
 }
 
 static bool __avdTestListPushBack()
 {
-    AVD_LOG_INFO("  Testing List push back operations...");
+    AVD_LOG_DEBUG("  Testing List push back operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -70,13 +70,13 @@ static bool __avdTestListPushBack()
     }
 
     avdListDestroy(&list);
-    AVD_LOG_INFO("    List push back PASSED");
+    AVD_LOG_DEBUG("    List push back PASSED");
     return true;
 }
 
 static bool __avdTestListPushFront()
 {
-    AVD_LOG_INFO("  Testing List push front operations...");
+    AVD_LOG_DEBUG("  Testing List push front operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -105,13 +105,13 @@ static bool __avdTestListPushFront()
     }
 
     avdListDestroy(&list);
-    AVD_LOG_INFO("    List push front PASSED");
+    AVD_LOG_DEBUG("    List push front PASSED");
     return true;
 }
 
 static bool __avdTestListPopOperations()
 {
-    AVD_LOG_INFO("  Testing List pop operations...");
+    AVD_LOG_DEBUG("  Testing List pop operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -164,13 +164,13 @@ static bool __avdTestListPopOperations()
     }
 
     avdListDestroy(&list);
-    AVD_LOG_INFO("    List pop operations PASSED");
+    AVD_LOG_DEBUG("    List pop operations PASSED");
     return true;
 }
 
 static bool __avdTestListInsertRemove()
 {
-    AVD_LOG_INFO("  Testing List insert/remove operations...");
+    AVD_LOG_DEBUG("  Testing List insert/remove operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -241,7 +241,7 @@ static bool __avdTestListInsertRemove()
     }
 
     avdListDestroy(&list);
-    AVD_LOG_INFO("    List insert/remove operations PASSED");
+    AVD_LOG_DEBUG("    List insert/remove operations PASSED");
     return true;
 }
 
@@ -254,7 +254,7 @@ static int __compareInts(const void *a, const void *b)
 
 static bool __avdTestListSort()
 {
-    AVD_LOG_INFO("  Testing List sort operations...");
+    AVD_LOG_DEBUG("  Testing List sort operations...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -299,13 +299,13 @@ static bool __avdTestListSort()
     }
 
     avdListDestroy(&list);
-    AVD_LOG_INFO("    List sort operations PASSED");
+    AVD_LOG_DEBUG("    List sort operations PASSED");
     return true;
 }
 
 static bool __avdTestListUtilities()
 {
-    AVD_LOG_INFO("  Testing List utility functions...");
+    AVD_LOG_DEBUG("  Testing List utility functions...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -379,13 +379,13 @@ static bool __avdTestListUtilities()
     }
 
     avdListDestroy(&list);
-    AVD_LOG_INFO("    List utility functions PASSED");
+    AVD_LOG_DEBUG("    List utility functions PASSED");
     return true;
 }
 
 static bool __avdTestListWithStrings()
 {
-    AVD_LOG_INFO("  Testing List with string data...");
+    AVD_LOG_DEBUG("  Testing List with string data...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(char[32]));
@@ -419,13 +419,13 @@ static bool __avdTestListWithStrings()
     }
 
     avdListDestroy(&list);
-    AVD_LOG_INFO("    List with string data PASSED");
+    AVD_LOG_DEBUG("    List with string data PASSED");
     return true;
 }
 
 static bool __avdTestListEdgeCases()
 {
-    AVD_LOG_INFO("  Testing List edge cases...");
+    AVD_LOG_DEBUG("  Testing List edge cases...");
 
     AVD_List list;
     avdListCreate(&list, sizeof(int));
@@ -466,7 +466,7 @@ static bool __avdTestListEdgeCases()
     }
 
     avdListDestroy(&list);
-    AVD_LOG_INFO("    List edge cases PASSED");
+    AVD_LOG_DEBUG("    List edge cases PASSED");
     return true;
 }
 
@@ -491,7 +491,7 @@ static void __testDestructor(void *item, void *context)
     destructorCallCount++;
 
     if (expectedContext != NULL && *expectedContext != 42) {
-        AVD_LOG_INFO("    WARNING: Destructor context mismatch");
+        AVD_LOG_DEBUG("    WARNING: Destructor context mismatch");
     }
 }
 
@@ -507,7 +507,7 @@ static void __resetDestructorTracking()
 
 static bool __avdTestListDestructor()
 {
-    AVD_LOG_INFO("  Testing List destructor functionality...");
+    AVD_LOG_DEBUG("  Testing List destructor functionality...");
 
     __resetDestructorTracking();
 
@@ -629,13 +629,13 @@ static bool __avdTestListDestructor()
     avdListDestroy(&list);
     __resetDestructorTracking();
 
-    AVD_LOG_INFO("    List destructor functionality PASSED");
+    AVD_LOG_DEBUG("    List destructor functionality PASSED");
     return true;
 }
 
 bool avdListTestsRun(void)
 {
-    AVD_LOG_INFO("Running AVD List Tests...");
+    AVD_LOG_DEBUG("Running AVD List Tests...");
 
     AVD_CHECK(__avdTestListInit());
     AVD_CHECK(__avdTestListPushBack());
@@ -648,6 +648,6 @@ bool avdListTestsRun(void)
     AVD_CHECK(__avdTestListEdgeCases());
     AVD_CHECK(__avdTestListDestructor());
 
-    AVD_LOG_INFO("All AVD List Tests passed successfully!");
+    AVD_LOG_DEBUG("All AVD List Tests passed successfully!");
     return true;
 }

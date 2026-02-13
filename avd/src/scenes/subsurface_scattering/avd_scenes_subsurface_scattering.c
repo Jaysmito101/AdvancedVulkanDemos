@@ -593,42 +593,42 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/alien_thickness_map.png",
-                &subsurfaceScattering->alienThicknessMap));
+                &subsurfaceScattering->alienThicknessMap, NULL));
             break;
         case 7:
             *statusMessage = "Loaded Buddha Thickness Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_thickness_map.png",
-                &subsurfaceScattering->buddhaThicknessMap));
+                &subsurfaceScattering->buddhaThicknessMap, NULL));
             break;
         case 8:
             *statusMessage = "Loaded Standford Dragon Thickness Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/standford_dragon_thickness_map.png",
-                &subsurfaceScattering->standfordDragonThicknessMap));
+                &subsurfaceScattering->standfordDragonThicknessMap, NULL));
             break;
         case 9:
             *statusMessage = "Loaded Buddha ORM Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_orm_map.png",
-                &subsurfaceScattering->buddhaORMMap));
+                &subsurfaceScattering->buddhaORMMap, NULL));
             break;
         case 10:
             *statusMessage = "Loaded Buddha Albedo Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_albedo_map.png",
-                &subsurfaceScattering->buddhaAlbedoMap));
+                &subsurfaceScattering->buddhaAlbedoMap, NULL));
             break;
         case 11:
             *statusMessage = "Loaded Buddha Normal Map";
             AVD_CHECK(avdVulkanImageLoadFromFile(
                 &appState->vulkan,
                 "assets/scene_subsurface_scattering/buddha_normal_map.png",
-                &subsurfaceScattering->buddhaNormalMap));
+                &subsurfaceScattering->buddhaNormalMap, NULL));
             break;
         case 12:
             *statusMessage = "Generated Noise Texture for AO";
@@ -639,7 +639,7 @@ bool avdSceneSubsurfaceScatteringLoad(struct AVD_AppState *appState, union AVD_S
                     64,
                     64,
                     VK_FORMAT_R8G8B8A8_UNORM,
-                    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)));
+                    VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, "Scene/SubsurfaceScattering/NoiseTexture")));
             uint8_t *noiseTextureData = (uint8_t *)malloc(64 * 64 * 4);
             AVD_CHECK_MSG(noiseTextureData != NULL, "Failed to allocate noise texture data");
             for (uint32_t i = 0; i < 64 * 64; i++) {
@@ -1027,7 +1027,7 @@ static bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_Sce
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
     if (subsurfaceScattering->bloomEnabled) {
-        AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/Bloom");
+        AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/Bloom");
         AVD_BloomParams params = {
             .prefilterType   = AVD_BLOOM_PREFILTER_TYPE_SOFTKNEE,
             .threshold       = subsurfaceScattering->bloomThreshold,
@@ -1055,7 +1055,7 @@ static bool __avdSceneRenderGBufferPass(VkCommandBuffer commandBuffer, AVD_Scene
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/GBufferPass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/GBufferPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1090,7 +1090,7 @@ static bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/AOPass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/AOPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1125,7 +1125,7 @@ static bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_Scen
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/LightingPass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/LightingPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1171,7 +1171,7 @@ static bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffe
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/IrradianceDiffusionPass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/IrradianceDiffusionPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1216,7 +1216,7 @@ static bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_Sce
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/CompositePass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/CompositePass");
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipeline);
@@ -1268,7 +1268,7 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
     VkCommandBuffer commandBuffer                       = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/Render");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/Render");
 
     AVD_CHECK(__avdSceneRenderGBufferPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderAOPass(commandBuffer, subsurfaceScattering, appState));
