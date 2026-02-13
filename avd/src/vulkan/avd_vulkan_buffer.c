@@ -1,4 +1,5 @@
 #include "vulkan/avd_vulkan_buffer.h"
+#include "vulkan/avd_vulkan_base.h"
 #include "vulkan/video/avd_vulkan_video_core.h"
 
 bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, const char *label)
@@ -32,6 +33,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
 
     VkResult result = vkCreateBuffer(vulkan->device, &bufferInfo, NULL, &buffer->buffer);
     AVD_CHECK_VK_RESULT(result, "Failed to create buffer!");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_BUFFER, buffer->buffer, "z%s", buffer->label);
 
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(vulkan->device, buffer->buffer, &memRequirements);
@@ -46,6 +48,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
 
     result = vkAllocateMemory(vulkan->device, &allocInfo, NULL, &buffer->memory);
     AVD_CHECK_VK_RESULT(result, "Failed to allocate buffer memory!");
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_DEVICE_MEMORY, buffer->memory, "%s/Memory", buffer->label);
 
     result = vkBindBufferMemory(vulkan->device, buffer->buffer, buffer->memory, 0);
     AVD_CHECK_VK_RESULT(result, "Failed to bind buffer memory!");
@@ -128,6 +131,7 @@ bool avdVulkanBufferUpload(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, const v
 
     VkCommandBuffer cmd;
     vkAllocateCommandBuffers(vulkan->device, &allocInfo, &cmd);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_COMMAND_BUFFER, cmd, "Core/Buffer/Upload/Cmd");
 
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
