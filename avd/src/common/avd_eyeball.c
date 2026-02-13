@@ -138,7 +138,7 @@ bool avdEyeballCreate(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
         avdVulkanImageGetDefaultCreateInfo(
             512, 512,
             VK_FORMAT_R8G8B8A8_UNORM,
-            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)));
+            VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, "Scene/Eyeball/VeinsTexture")));
     AVD_CHECK(__avdEyeballSetupDescriptors(eyeball, vulkan));
     AVD_CHECK(__avdEyeballSetupDefaults(eyeball));
     AVD_CHECK(__avdEyeballSetupMesh(eyeball, vulkan));

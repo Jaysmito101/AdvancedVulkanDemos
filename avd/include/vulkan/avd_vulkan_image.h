@@ -13,6 +13,8 @@ typedef struct {
 
     AVD_Bool skipDefaultSubresourceCreation;
 
+    char label[128];
+
     uint32_t width;
     uint32_t height;
     uint32_t depth;
@@ -58,7 +60,7 @@ typedef struct {
     AVD_VulkanImageCreateInfo info;
 } AVD_VulkanImage;
 
-AVD_VulkanImageCreateInfo avdVulkanImageGetDefaultCreateInfo(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage);
+AVD_VulkanImageCreateInfo avdVulkanImageGetDefaultCreateInfo(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, const char *label);
 AVD_Bool avdVulkanImageIsFormatBiplanar(VkFormat format);
 AVD_Bool avdVulkanImageIsFormatTriplanar(VkFormat format);
 AVD_Bool avdVulkanImageGetPlaneFormats(VkFormat format, AVD_Size planeIndex, VkFormat *outFormatPlane0);
@@ -68,6 +70,7 @@ bool avdVulkanFramebufferCreateSampler(
     VkFilter filter,
     VkSamplerAddressMode addressMode,
     void *pNext,
+    const char *label,
     VkSampler *outSampler);
 bool avdVulkanImageCreate(AVD_Vulkan *vulkan, AVD_VulkanImage *image, AVD_VulkanImageCreateInfo createInfo);
 bool avdVulkanImageTransitionLayout(
@@ -92,14 +95,15 @@ bool avdVulkanImageUploadSimple(
     AVD_VulkanImage *image,
     const void *srcData,
     AVD_VulkanImageSubresource *subresourceRange);
-bool avdVulkanImageLoadFromFile(AVD_Vulkan *vulkan, const char *filename, AVD_VulkanImage *image);
-bool avdVulkanImageLoadFromMemory(AVD_Vulkan *vulkan, const void *data, size_t dataSize, AVD_VulkanImage *image);
-bool avdVulkanImageLoadFromAsset(AVD_Vulkan *vulkan, const char *asset, AVD_VulkanImage *image);
+bool avdVulkanImageLoadFromFile(AVD_Vulkan *vulkan, const char *filename, AVD_VulkanImage *image, const char *label);
+bool avdVulkanImageLoadFromMemory(AVD_Vulkan *vulkan, const void *data, size_t dataSize, AVD_VulkanImage *image, const char *label);
+bool avdVulkanImageLoadFromAsset(AVD_Vulkan *vulkan, const char *asset, AVD_VulkanImage *image, const char *label);
 bool avdVulkanImageSubresourceCreate(
     AVD_Vulkan *vulkan,
     AVD_VulkanImage *image,
     VkImageSubresourceRange subresourceRange,
     void *viewPNext,
+    const char *label,
     AVD_VulkanImageSubresource *outSubresource);
 void avdVulkanImageSubresourceDestroy(AVD_Vulkan *vulkan, AVD_VulkanImageSubresource *subresource);
 

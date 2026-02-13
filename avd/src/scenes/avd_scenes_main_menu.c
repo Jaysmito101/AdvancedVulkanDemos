@@ -31,7 +31,7 @@ static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AV
     AVD_ASSERT(title != NULL);
 
     card->targetSceneType = targetSceneType;
-    AVD_CHECK(avdVulkanImageLoadFromAsset(vulkan, imageAsset, &card->thumbnailImage));
+    AVD_CHECK(avdVulkanImageLoadFromAsset(vulkan, imageAsset, &card->thumbnailImage, NULL));
     AVD_CHECK(avdRenderableTextCreate(
         &card->title,
         fontRenderer,

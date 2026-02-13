@@ -58,7 +58,7 @@ static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_Vulka
                                        width,
                                        height,
                                        format,
-                                       usage)));
+                                       usage, "Core/FramebufferAttachment")));
     AVD_CHECK(__avdVulkanFramebufferAttachmentDescriptorsCreate(vulkan, attachment));
 
     attachment->attachmentDescription = (VkAttachmentDescription){

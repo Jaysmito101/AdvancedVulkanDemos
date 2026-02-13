@@ -264,7 +264,7 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
                 AVD_CHECK(avdVulkanImageLoadFromFile(
                     &appState->vulkan,
                     mesh->material.albedoTexture.path,
-                    &deccerCubes->images[deccerCubes->imagesCount]));
+                    &deccerCubes->images[deccerCubes->imagesCount], NULL));
 
                 VkWriteDescriptorSet *write = &descriptorSetWrites[deccerCubes->imagesCount];
                 write->sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
