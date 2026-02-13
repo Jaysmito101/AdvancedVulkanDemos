@@ -34,7 +34,7 @@ bool avdApplicationInit(AVD_AppState *appState)
     AVD_CHECK(avdFontManagerAddBasicFonts(&appState->fontManager));
     AVD_CHECK(avdFontRendererCreate(&appState->fontRenderer, &appState->vulkan, &appState->fontManager, appState->renderer.sceneFramebuffer.renderPass));
     AVD_CHECK(avdVulkanPresentationInit(&appState->presentation, &appState->vulkan, &appState->swapchain, &appState->fontManager));
-    AVD_CHECK(avdUiInit(&appState->ui, appState));
+    AVD_CHECK(avdSimpleUiInit(&appState->ui, appState));
     AVD_CHECK(avdSceneManagerInit(&appState->sceneManager, appState));
 
     __avdApplicationUpdateFramerateCalculation(&appState->framerate);
@@ -51,7 +51,7 @@ void avdApplicationShutdown(AVD_AppState *appState)
     avdVulkanWaitIdle(&appState->vulkan);
 
     avdSceneManagerDestroy(&appState->sceneManager, appState);
-    avdUiDestroy(&appState->ui, appState);
+    avdSimpleUiDestroy(&appState->ui, appState);
     avdVulkanPresentationDestroy(&appState->presentation, &appState->vulkan);
     avdFontRendererDestroy(&appState->fontRenderer, &appState->vulkan);
     avdFontManagerShutdown(&appState->fontManager);

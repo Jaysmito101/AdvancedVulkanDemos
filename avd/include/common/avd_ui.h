@@ -8,12 +8,12 @@
 
 struct AVD_AppState;
 
-typedef enum AVD_UiElementType {
+typedef enum AVD_SimpleUiElementType {
     AVD_UI_ELEMENT_TYPE_NONE = 0,
     AVD_UI_ELEMENT_TYPE_RECT = 1,
-} AVD_UiElementType;
+} AVD_SimpleUiElementType;
 
-typedef struct AVD_Ui {
+typedef struct AVD_SimpleUi {
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
 
@@ -26,16 +26,16 @@ typedef struct AVD_Ui {
 
     float frameWidth;
     float frameHeight;
-} AVD_Ui;
+} AVD_SimpleUi;
 
-bool avdUiInit(AVD_Ui *ui, struct AVD_AppState *appState);
-void avdUiDestroy(AVD_Ui *ui, struct AVD_AppState *appState);
+bool avdSimpleUiInit(AVD_SimpleUi *ui, struct AVD_AppState *appState);
+void avdSimpleUiDestroy(AVD_SimpleUi *ui, struct AVD_AppState *appState);
 
-void avdUiBegin(VkCommandBuffer commandBuffer, AVD_Ui *ui, struct AVD_AppState *appState, float width, float height, float offsetX, float offsetY, uint32_t frameWidth, uint32_t frameHeight);
-void avdUiEnd(VkCommandBuffer commandBuffer, AVD_Ui *ui, struct AVD_AppState *appState);
-void avdUiDrawRect(
+void avdSimpleUiBegin(VkCommandBuffer commandBuffer, AVD_SimpleUi *ui, struct AVD_AppState *appState, float width, float height, float offsetX, float offsetY, uint32_t frameWidth, uint32_t frameHeight);
+void avdSimpleUiEnd(VkCommandBuffer commandBuffer, AVD_SimpleUi *ui, struct AVD_AppState *appState);
+void avdSimpleUiDrawRect(
     VkCommandBuffer commandBuffer,
-    AVD_Ui *ui,
+    AVD_SimpleUi *ui,
     struct AVD_AppState *appState,
     float x,
     float y,
