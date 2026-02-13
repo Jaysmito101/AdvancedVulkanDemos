@@ -41,8 +41,16 @@ if "%1"=="--ninja" (
     shift
     goto parse_args
 )
+if /i "%1"=="--help" goto show_help
+if /i "%1"=="-h" goto show_help
+if /i "%1"=="/?" goto show_help
 if "%1"=="--cmake-opts" (
     shift
+    if "%1"=="" (
+        echo Missing value for --cmake-opts.
+        echo Use --help to see usage.
+        exit /b 1
+    )
     goto append_cmake_args
 )
 if "%1"=="--" (
@@ -51,10 +59,16 @@ if "%1"=="--" (
 )
 if "%1"=="--build-opts" (
     shift
+    if "%1"=="" (
+        echo Missing value for --build-opts.
+        echo Use --help to see usage.
+        exit /b 1
+    )
     goto append_build_args
 )
-shift
-goto parse_args
+echo Unknown argument: %1
+echo Use --help to see usage.
+exit /b 1
 
 :append_cmake_args
 if "%1"=="" goto end_parse
