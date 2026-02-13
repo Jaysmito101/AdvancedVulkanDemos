@@ -17,6 +17,10 @@
 #define AVD_MODEL_MAX_NODES 1024 * 16
 #endif
 
+#ifndef AVD_MODEL_MAX_ANIMATION_CHANNELS
+#define AVD_MODEL_MAX_ANIMATION_CHANNELS 256
+#endif
+
 typedef struct {
     AVD_Vector3 position;
     AVD_Vector3 normal;
@@ -35,6 +39,7 @@ typedef struct {
 typedef struct {
     AVD_List verticesList;
     AVD_List indicesList;
+    AVD_List animationsDataList;
 } AVD_ModelResources;
 
 void avdModelVertexInit(AVD_ModelVertex *vertex);
