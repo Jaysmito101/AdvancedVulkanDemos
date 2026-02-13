@@ -220,7 +220,7 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AV
     outFeatures->videoEncode     = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoEncodeExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoEncodeExtensions));
     outFeatures->ycbcrConversion = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanYCbCrConversionExtensions, AVD_ARRAY_COUNT(__avd_VulkanYCbCrConversionExtensions));
 
-#ifdef AVD_VULKAN_VIDEO_DISABLE
+#ifndef AVD_ENABLE_VULKAN_VIDEO
     outFeatures->videoCore = outFeatures->videoDecode = outFeatures->videoEncode = false;
 #endif
 

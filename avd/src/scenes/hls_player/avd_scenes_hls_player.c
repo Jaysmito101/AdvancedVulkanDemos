@@ -267,7 +267,7 @@ static bool avdSceneHLSPlayerCheckIntegrity(struct AVD_AppState *appState, const
     *statusMessage = NULL;
 
     if (!appState->vulkan.supportedFeatures.videoDecode) {
-        *statusMessage = "HLS Player scene is not supported on this GPU (video decode not supported).";
+        *statusMessage = "HLS Player scene is not supported on this GPU (video decode not supported). Or its disabled via CMake options.";
         return false;
     }
 

@@ -5,6 +5,12 @@ file(GLOB_RECURSE avd_headers
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 
+# By default we want to keep Vulkan Video disabled as enabling this will not
+# let use debug the application in a lot of Graphics Debuggers like RenderDoc and Nsight, 
+# which do not support Vulkan Video.
+option(AVD_ENABLE_VULKAN_VIDEO "Enable Vulkan Video support" OFF)
+
+
 add_executable(avd
     ${avd_headers}
     ./src/core/avd_utils.c
@@ -108,6 +114,10 @@ include_directories(avd
     ../avd_assets/generated/include
     ${Vulkan_INCLUDE_DIRS}
 )
+
+if (AVD_ENABLE_VULKAN_VIDEO)
+    target_compile_definitions(avd PRIVATE AVD_ENABLE_VULKAN_VIDEO)
+endif()
 
 
 # Ensure the Vulkan SDK path is set properly
