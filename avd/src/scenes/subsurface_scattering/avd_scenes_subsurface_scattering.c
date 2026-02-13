@@ -1027,7 +1027,7 @@ static bool __avdSceneRenderBloomIfNeeded(VkCommandBuffer commandBuffer, AVD_Sce
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
     if (subsurfaceScattering->bloomEnabled) {
-        AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/Bloom");
+        AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/Bloom");
         AVD_BloomParams params = {
             .prefilterType   = AVD_BLOOM_PREFILTER_TYPE_SOFTKNEE,
             .threshold       = subsurfaceScattering->bloomThreshold,
@@ -1055,7 +1055,7 @@ static bool __avdSceneRenderGBufferPass(VkCommandBuffer commandBuffer, AVD_Scene
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/GBufferPass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/GBufferPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1090,7 +1090,7 @@ static bool __avdSceneRenderAOPass(VkCommandBuffer commandBuffer, AVD_SceneSubsu
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/AOPass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/AOPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1125,7 +1125,7 @@ static bool __avdSceneRenderLightingPass(VkCommandBuffer commandBuffer, AVD_Scen
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/LightingPass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/LightingPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1171,7 +1171,7 @@ static bool __avdSceneRenderIrradianceDiffusionPass(VkCommandBuffer commandBuffe
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/IrradianceDiffusionPass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/IrradianceDiffusionPass");
 
     AVD_CHECK(avdBeginRenderPassWithFramebuffer(
         commandBuffer,
@@ -1216,7 +1216,7 @@ static bool __avdSceneRenderCompositePass(VkCommandBuffer commandBuffer, AVD_Sce
     AVD_ASSERT(subsurfaceScattering != NULL);
     AVD_ASSERT(commandBuffer != VK_NULL_HANDLE);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/CompositePass");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/CompositePass");
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, subsurfaceScattering->compositePipeline);
@@ -1268,7 +1268,7 @@ bool avdSceneSubsurfaceScatteringRender(struct AVD_AppState *appState, union AVD
     VkCommandBuffer commandBuffer                       = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
     AVD_SceneSubsurfaceScattering *subsurfaceScattering = __avdSceneGetTypePtr(scene);
 
-    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "Scene/SubsurfaceScattering/Render");
+    AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:SubsurfaceScattering/Render");
 
     AVD_CHECK(__avdSceneRenderGBufferPass(commandBuffer, subsurfaceScattering, appState));
     AVD_CHECK(__avdSceneRenderAOPass(commandBuffer, subsurfaceScattering, appState));
