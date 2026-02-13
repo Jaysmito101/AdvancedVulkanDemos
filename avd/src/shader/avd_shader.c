@@ -2,6 +2,7 @@
 #include "avd_asset.h"
 #include "shader/avd_shader_shaderc.h"
 #include "shader/avd_shader_slang.h"
+#include "vulkan/avd_vulkan_base.h"
 
 // Since this would be needed in a lot of places in code, its much
 // easier to have it be like a global singleton here,
@@ -62,6 +63,7 @@ bool avdShaderModuleCreateWithoutCache(
 
     AVD_CHECK_VK_RESULT(vkCreateShaderModule(device, &createInfo, NULL, outModule),
                         "Failed to create shader module from asset: %s", shaderName);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SHADER_MODULE, *outModule, "ShaderModule/%s", shaderName);
     return true;
 }
 
@@ -89,6 +91,7 @@ bool avdShaderModuleCreate(
 
     AVD_CHECK_VK_RESULT(vkCreateShaderModule(device, &createInfo, NULL, outModule),
                         "Failed to create shader module from asset: %s", shaderName);
+    AVD_DEBUG_VK_SET_OBJECT_NAME(VK_OBJECT_TYPE_SHADER_MODULE, *outModule, "ShaderModule/%s", shaderName);
     return true;
 }
 
