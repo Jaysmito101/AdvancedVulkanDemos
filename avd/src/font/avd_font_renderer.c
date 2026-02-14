@@ -295,6 +295,7 @@ bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRendere
     AVD_CHECK(avdFontManagerGetFont(fontRenderer->fontManager, fontName, &font));
     AVD_CHECK(__avdUpdateFontText(vulkan, renderableText, font, text, charHeight));
 
+    renderableText->initialized = true;
     return true;
 }
 
@@ -342,6 +343,8 @@ void avdRenderableTextDestroy(AVD_RenderableText *renderableText, AVD_Vulkan *vu
 
     avdVulkanBufferDestroy(vulkan, &renderableText->vertexBuffer);
     free(renderableText->vertexBufferData);
+
+    memset(renderableText, 0, sizeof(AVD_RenderableText));
 }
 
 void avdRenderableTextGetBounds(AVD_RenderableText *renderableText, float *minX, float *minY, float *maxX, float *maxY)
