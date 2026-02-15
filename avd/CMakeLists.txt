@@ -35,6 +35,12 @@ add_executable(avd
     ./src/common/avd_bloom.c
     ./src/common/avd_eyeball.c
     ./src/common/avd_ui.c
+    ./src/common/avd_gui/avd_gui.c
+    ./src/common/avd_gui/avd_gui_dummy.c
+    ./src/common/avd_gui/avd_gui_label.c
+    ./src/common/avd_gui/avd_gui_button.c
+    ./src/common/avd_gui/avd_gui_image.c
+    ./src/common/avd_gui/avd_gui_image_button.c
 
     ./src/shader/avd_shader_shaderc.c
     ./src/shader/avd_shader_slang.c
