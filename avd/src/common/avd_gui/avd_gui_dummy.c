@@ -4,7 +4,7 @@
 #include "core/avd_types.h"
 #include "math/avd_vector_non_simd.h"
 
-static void avdGuiDummyRenderRects(AVD_Gui *gui, AVD_GuiComponentHeader *header)
+static void __avdGuiDummyRenderRects(AVD_Gui *gui, AVD_GuiComponentHeader *header)
 {
     avdGuiPushRect(gui, header->pos, header->size, header->backgroundColor, header->clipRectPos, header->clipRectSize);
 }
@@ -37,7 +37,7 @@ void avdGuiDummy(
     dummy->header.backgroundColor = color;
     dummy->header.isHovered       = avdVec2IntersectRect(gui->inputState.mousePos, pos, size);
     dummy->header.isPressed       = dummy->header.isHovered && gui->inputState.mouseLeftPressed;
-    dummy->header.renderRects     = avdGuiDummyRenderRects;
+    dummy->header.renderRects     = __avdGuiDummyRenderRects;
     dummy->header.renderText      = NULL;
 
     AVD_ASSERT(layout->itemCount < (AVD_Int32)AVD_ARRAY_COUNT(layout->items));
