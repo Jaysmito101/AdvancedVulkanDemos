@@ -108,6 +108,8 @@ add_executable(avd
     ./src/scenes/hls_player/avd_scenes_hls_player_media_cache.c
     ./src/scenes/hls_player/avd_scenes_hls_player_worker_pool.c
     ./src/scenes/hls_player/avd_scenes_hls_player_context.c
+
+    ./src/scenes/ui_system_demo/avd_scenes_ui_system_demo.c
 )
 
 include_directories(avd
