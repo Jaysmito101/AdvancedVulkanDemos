@@ -90,10 +90,10 @@ bool avdGuiBeginCollapsingHeader(
         idStr              = separator + 2;
     }
 
-    AVD_GuiStyle *style            = avdGuiCurrentStyle(gui);
-    AVD_GuiLayoutComponent *layout = &gui->activeLayout->layout;
-    AVD_UInt32 resolvedId          = avdGuiCalculateId(gui, AVD_GUI_COMPONENT_TYPE_COLLAPSING_HEADER, idStr);
-    AVD_GuiComponent *comp         = avdGuiAcquireComponent(gui, AVD_GUI_COMPONENT_TYPE_COLLAPSING_HEADER, resolvedId);
+    AVD_GuiStyle *style                  = avdGuiCurrentStyle(gui);
+    AVD_GuiLayoutComponent *layout       = &gui->activeLayout->layout;
+    AVD_UInt32 resolvedId                = avdGuiCalculateId(gui, AVD_GUI_COMPONENT_TYPE_COLLAPSING_HEADER, idStr);
+    AVD_GuiComponent *comp               = avdGuiAcquireComponent(gui, AVD_GUI_COMPONENT_TYPE_COLLAPSING_HEADER, resolvedId);
     AVD_GuiCollapsingHeaderComponent *ch = &comp->collapsingHeader;
 
     if (ch->charHeight <= 0.0f) {
