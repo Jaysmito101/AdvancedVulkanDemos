@@ -60,8 +60,8 @@ bool avdGuiButton(
     AVD_ASSERT(fontName != NULL);
 
     const char *displayText = label;
-    const char *idStr = label;
-    const char *separator = strstr(label, "##");
+    const char *idStr       = label;
+    const char *separator   = strstr(label, "##");
     if (separator != NULL) {
         idStr = separator + 2;
     }
