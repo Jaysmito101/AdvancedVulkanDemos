@@ -5,7 +5,7 @@
 #include "math/avd_vector_non_simd.h"
 #include <string.h>
 
-static void avdGuiImageButtonRenderRects(AVD_Gui *gui, AVD_GuiComponentHeader *header)
+static void __avdGuiImageButtonRenderRects(AVD_Gui *gui, AVD_GuiComponentHeader *header)
 {
     avdGuiPushRect(gui, header->pos, header->size, avdColorRgba(1.0f, 1.0f, 1.0f, 1.0f), header->clipRectPos, header->clipRectSize);
 }
@@ -58,7 +58,7 @@ bool avdGuiImageButton(
         comp->header.isPressed = false;
     }
 
-    comp->header.renderRects = avdGuiImageButtonRenderRects;
+    comp->header.renderRects = __avdGuiImageButtonRenderRects;
     comp->header.renderText  = NULL;
 
     AVD_ASSERT(layout->itemCount < (AVD_Int32)AVD_ARRAY_COUNT(layout->items));
