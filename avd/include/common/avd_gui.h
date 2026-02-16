@@ -286,9 +286,9 @@ void avdGuiEndLayout(AVD_Gui *gui);
 
 void avdGuiDummy(AVD_Gui *gui, AVD_Vector2 size, AVD_Color color, const char *label);
 bool avdGuiLabel(AVD_Gui *gui, const char *text, const char *fontName, AVD_Float charHeight, const char *label);
-bool avdGuiButton(AVD_Gui *gui, const char *text, const char *fontName, AVD_Float charHeight, AVD_Vector2 size, const char *label, AVD_Bool *outClicked);
+bool avdGuiButton(AVD_Gui *gui, const char *label, const char *fontName, AVD_Float charHeight, AVD_Vector2 size);
 void avdGuiImage(AVD_Gui *gui, AVD_VulkanImageSubresource *subresource, AVD_Vector2 size, const char *label);
-bool avdGuiImageButton(AVD_Gui *gui, AVD_VulkanImageSubresource *subresource, AVD_Vector2 size, const char *label, AVD_Bool *outClicked);
+bool avdGuiImageButton(AVD_Gui *gui, const char *label, AVD_VulkanImageSubresource *subresource, AVD_Vector2 size);
 
 bool avdGuiPushId(AVD_Gui *gui, const char *strId);
 void avdGuiPopId(AVD_Gui *gui);
