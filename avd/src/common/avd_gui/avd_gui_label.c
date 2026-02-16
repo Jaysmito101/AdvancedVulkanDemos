@@ -7,14 +7,14 @@
 #include "math/avd_vector_non_simd.h"
 #include "vulkan/avd_vulkan_base.h"
 
-static void avdGuiLabelRenderRects(AVD_Gui *gui, AVD_GuiComponentHeader *header)
+static void __avdGuiLabelRenderRects(AVD_Gui *gui, AVD_GuiComponentHeader *header)
 {
     (void)gui;
     (void)header;
     // Labels have no background rect
 }
 
-static void avdGuiLabelRenderText(AVD_Gui *gui, AVD_GuiComponentHeader *header, VkCommandBuffer commandBuffer)
+static void __avdGuiLabelRenderText(AVD_Gui *gui, AVD_GuiComponentHeader *header, VkCommandBuffer commandBuffer)
 {
     AVD_GuiLabelComponent *lbl = (AVD_GuiLabelComponent *)header;
     if (!lbl->header.text.initialized) {
@@ -99,8 +99,8 @@ bool avdGuiLabel(
     lbl->header.foregroundColor = style->textColor;
     lbl->header.isHovered       = avdVec2IntersectRect(gui->inputState.mousePos, pos, lbl->header.size);
     lbl->header.isPressed       = lbl->header.isHovered && gui->inputState.mouseLeftPressed;
-    lbl->header.renderRects     = avdGuiLabelRenderRects;
-    lbl->header.renderText      = avdGuiLabelRenderText;
+    lbl->header.renderRects     = __avdGuiLabelRenderRects;
+    lbl->header.renderText      = __avdGuiLabelRenderText;
 
     AVD_ASSERT(layout->itemCount < (AVD_Int32)AVD_ARRAY_COUNT(layout->items));
     layout->items[layout->itemCount++] = labelComp;
