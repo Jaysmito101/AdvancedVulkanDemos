@@ -855,6 +855,8 @@ void avdGuiResolveComponentPosition(
             }
             pos = layout->cursor;
             layout->cursor.x += itemSize.x + layout->spacing;
+            maxSize.x = layout->contentSize.x - (pos.x - layout->header.pos.x) - style->padding;
+            maxSize.y = layout->contentSize.y - (pos.y - layout->header.pos.y) - style->padding;
             break;
         }
         case AVD_GUI_LAYOUT_TYPE_GRID:
@@ -1505,4 +1507,58 @@ void avdGuiPopId(AVD_Gui *gui)
     AVD_ASSERT(gui->idStackTop > 0);
 
     gui->idStackTop = AVD_MAX(0, gui->idStackTop - 1);
+}
+
+AVD_Vector2 avdGuiGetAvailableSize(AVD_Gui *gui)
+{
+    AVD_ASSERT(gui != NULL);
+    AVD_ASSERT(gui->activeLayout != NULL);
+
+    AVD_GuiLayoutComponent *layout = &gui->activeLayout->layout;
+    AVD_GuiStyle *style            = avdGuiCurrentStyle(gui);
+    AVD_Vector2 availableSize      = avdVec2Zero();
+
+    switch (layout->layoutType) {
+        case AVD_GUI_LAYOUT_TYPE_VERTICAL:
+        case AVD_GUI_LAYOUT_TYPE_SCROLL_VERTICAL:
+            availableSize.x = layout->contentSize.x - style->padding * 2.0f;
+            availableSize.y = layout->contentSize.y - (layout->cursor.y - layout->header.pos.y) - style->padding;
+            break;
+        case AVD_GUI_LAYOUT_TYPE_HORIZONTAL:
+        case AVD_GUI_LAYOUT_TYPE_SCROLL_HORIZONTAL:
+            availableSize.x = layout->contentSize.x - (layout->cursor.x - layout->header.pos.x) - style->padding;
+            availableSize.y = layout->contentSize.y - style->padding * 2.0f;
+            break;
+        case AVD_GUI_LAYOUT_TYPE_FLOAT:
+            availableSize.x = layout->contentSize.x - (layout->cursor.x - layout->header.pos.x) - style->padding;
+            availableSize.y = layout->contentSize.y - (layout->cursor.y - layout->header.pos.y) - style->padding;
+            break;
+        case AVD_GUI_LAYOUT_TYPE_GRID:
+        case AVD_GUI_LAYOUT_TYPE_NONE:
+        case AVD_GUI_LAYOUT_TYPE_COUNT:
+            break;
+    }
+
+    return availableSize;
+}
+
+AVD_Vector2 avdGuiGetContentSize(AVD_Gui *gui)
+{
+    AVD_ASSERT(gui != NULL);
+    AVD_ASSERT(gui->activeLayout != NULL);
+
+    return gui->activeLayout->layout.contentSize;
+}
+
+AVD_Vector2 avdGuiGetContentArea(AVD_Gui *gui)
+{
+    AVD_ASSERT(gui != NULL);
+    AVD_ASSERT(gui->activeLayout != NULL);
+
+    AVD_GuiLayoutComponent *layout = &gui->activeLayout->layout;
+    AVD_GuiStyle *style            = avdGuiCurrentStyle(gui);
+
+    return avdVec2(
+        layout->contentSize.x - style->padding * 2.0f,
+        layout->contentSize.y - style->padding * 2.0f);
 }

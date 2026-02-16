@@ -26,7 +26,16 @@ void avdGuiDummy(
     AVD_Vector2 pos     = avdVec2(0.0f, 0.0f);
     AVD_Vector2 maxSize = avdVec2(0.0f, 0.0f);
     avdGuiResolveComponentPosition(layout, size, style, &pos, &maxSize);
-    avdGuiApplyItemAlignment(layout, size, &pos, &maxSize);
+
+    AVD_Vector2 resolvedSize = size;
+    if (size.x == 0.0f) {
+        resolvedSize.x = maxSize.x;
+    }
+    if (size.y == 0.0f) {
+        resolvedSize.y = maxSize.y;
+    }
+
+    avdGuiApplyItemAlignment(layout, resolvedSize, &pos, &maxSize);
 
     AVD_GuiComponent *dummy = avdGuiAcquireComponent(gui, AVD_GUI_COMPONENT_TYPE_DUMMY, resolvedId);
 

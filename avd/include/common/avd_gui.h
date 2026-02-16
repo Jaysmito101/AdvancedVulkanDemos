@@ -324,4 +324,8 @@ AVD_Bool avdGuiIsItemHovered(AVD_Gui *gui);
 AVD_Bool avdGuiIsItemClicked(AVD_Gui *gui);
 AVD_Bool avdGuiIsItemPressed(AVD_Gui *gui);
 
+AVD_Vector2 avdGuiGetAvailableSize(AVD_Gui *gui);
+AVD_Vector2 avdGuiGetContentSize(AVD_Gui *gui);
+AVD_Vector2 avdGuiGetContentArea(AVD_Gui *gui);
+
 #endif // AVD_GUI_H

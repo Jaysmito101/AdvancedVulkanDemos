@@ -117,6 +117,14 @@ bool avdGuiButton(
     AVD_Vector2 pos     = avdVec2Zero();
     AVD_Vector2 maxSize = avdVec2Zero();
     avdGuiResolveComponentPosition(layout, resolvedSize, style, &pos, &maxSize);
+
+    if (size.x == 0.0f) {
+        resolvedSize.x = maxSize.x;
+    }
+    if (size.y == 0.0f) {
+        resolvedSize.y = maxSize.y;
+    }
+
     avdGuiApplyItemAlignment(layout, resolvedSize, &pos, &maxSize);
 
     btn->header.pos  = pos;

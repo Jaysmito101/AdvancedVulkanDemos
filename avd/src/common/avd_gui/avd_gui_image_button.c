@@ -34,13 +34,22 @@ bool avdGuiImageButton(
     AVD_Vector2 pos     = avdVec2Zero();
     AVD_Vector2 maxSize = avdVec2Zero();
     avdGuiResolveComponentPosition(layout, size, style, &pos, &maxSize);
-    avdGuiApplyItemAlignment(layout, size, &pos, &maxSize);
+
+    AVD_Vector2 resolvedSize = size;
+    if (size.x == 0.0f) {
+        resolvedSize.x = maxSize.x;
+    }
+    if (size.y == 0.0f) {
+        resolvedSize.y = maxSize.y;
+    }
+
+    avdGuiApplyItemAlignment(layout, resolvedSize, &pos, &maxSize);
 
     AVD_GuiComponent *comp              = avdGuiAcquireComponent(gui, AVD_GUI_COMPONENT_TYPE_IMAGE_BUTTON, resolvedId);
     AVD_GuiImageButtonComponent *imgBtn = &comp->imageButton;
 
     comp->header.pos          = pos;
-    comp->header.size         = size;
+    comp->header.size         = resolvedSize;
     comp->header.clipRectPos  = layout->header.clipRectPos;
     comp->header.clipRectSize = layout->header.clipRectSize;
     imgBtn->subresource       = subresource;
