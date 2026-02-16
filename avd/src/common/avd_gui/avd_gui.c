@@ -902,6 +902,10 @@ AVD_GuiStyle avdGuiStyleDefault(void)
         .sliderThumbColor       = avdColorRgba(0.55f, 0.42f, 0.85f, 1.0f),
         .sliderThumbHoverColor  = avdColorRgba(0.65f, 0.52f, 0.95f, 1.0f),
         .sliderThumbActiveColor = avdColorRgba(0.75f, 0.62f, 1.0f, 1.0f),
+        .headerColor            = avdColorRgba(0.10f, 0.11f, 0.14f, 1.0f),
+        .headerHoverColor       = avdColorRgba(0.14f, 0.15f, 0.20f, 1.0f),
+        .headerTextColor        = avdColorRgba(0.90f, 0.91f, 0.95f, 1.0f),
+        .headerArrowColor       = avdColorRgba(0.70f, 0.72f, 0.78f, 1.0f),
     };
 }
 

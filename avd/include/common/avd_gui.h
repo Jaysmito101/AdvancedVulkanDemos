@@ -29,6 +29,8 @@ typedef enum {
     AVD_GUI_COMPONENT_TYPE_IMAGE_BUTTON,
     AVD_GUI_COMPONENT_TYPE_HYPERLINK,
     AVD_GUI_COMPONENT_TYPE_SLIDER,
+    AVD_GUI_COMPONENT_TYPE_CHECKBOX,
+    AVD_GUI_COMPONENT_TYPE_COLLAPSING_HEADER,
     AVD_GUI_COMPONENT_TYPE_COUNT
 } AVD_GuiComponentType;
 
@@ -172,6 +174,25 @@ typedef struct {
     AVD_Bool isDragging;
 } AVD_GuiSliderComponent;
 
+typedef struct {
+    AVD_GuiComponentHeader header;
+    AVD_Float charHeight;
+    AVD_UInt32 textHash;
+    AVD_Bool isChecked;
+} AVD_GuiCheckboxComponent;
+
+typedef struct {
+    AVD_GuiComponentHeader header;
+    AVD_Float charHeight;
+    AVD_UInt32 textHash;
+    AVD_Bool open;
+    AVD_GuiLayout childLayoutType;
+    AVD_GuiLayoutAlign childHorizontalAlign;
+    AVD_GuiLayoutAlign childVerticalAlign;
+    AVD_Float childSpacing;
+    AVD_GuiComponent *childLayout;
+} AVD_GuiCollapsingHeaderComponent;
+
 union AVD_GuiComponent {
     AVD_GuiComponentHeader header;
     AVD_GuiWindowComponent window;
@@ -182,6 +203,8 @@ union AVD_GuiComponent {
     AVD_GuiImageButtonComponent imageButton;
     AVD_GuiHyperlinkComponent hyperlink;
     AVD_GuiSliderComponent slider;
+    AVD_GuiCheckboxComponent checkbox;
+    AVD_GuiCollapsingHeaderComponent collapsingHeader;
 };
 
 typedef struct {
@@ -231,6 +254,10 @@ typedef struct {
     AVD_Color sliderThumbColor;
     AVD_Color sliderThumbHoverColor;
     AVD_Color sliderThumbActiveColor;
+    AVD_Color headerColor;
+    AVD_Color headerHoverColor;
+    AVD_Color headerTextColor;
+    AVD_Color headerArrowColor;
 } AVD_GuiStyle;
 
 struct AVD_Gui {
@@ -316,6 +343,10 @@ void avdGuiImage(AVD_Gui *gui, AVD_VulkanImageSubresource *subresource, AVD_Vect
 bool avdGuiImageButton(AVD_Gui *gui, const char *label, AVD_VulkanImageSubresource *subresource, AVD_Vector2 size);
 bool avdGuiHyperlink(AVD_Gui *gui, const char *text, const char *url, const char *fontName, AVD_Float charHeight, const char *label);
 bool avdGuiSlider(AVD_Gui *gui, const char *label, AVD_Float *value, AVD_Float minValue, AVD_Float maxValue, AVD_Vector2 size);
+bool avdGuiCheckbox(AVD_Gui *gui, const char *label, AVD_Bool *checked, const char *fontName, AVD_Float charHeight);
+
+bool avdGuiBeginCollapsingHeader(AVD_Gui *gui, const char *label, const char *fontName, AVD_Float charHeight, AVD_Float headerHeight);
+void avdGuiEndCollapsingHeader(AVD_Gui *gui);
 
 bool avdGuiPushId(AVD_Gui *gui, const char *strId);
 void avdGuiPopId(AVD_Gui *gui);
