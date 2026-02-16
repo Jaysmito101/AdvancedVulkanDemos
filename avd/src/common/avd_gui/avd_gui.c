@@ -879,27 +879,27 @@ void avdGuiResolveComponentPosition(
 AVD_GuiStyle avdGuiStyleDefault(void)
 {
     return (AVD_GuiStyle){
-        .padding                 = 8.0f,
-        .itemSpacing             = 4.0f,
-        .cornerRadius            = 6.0f,
-        .titleBarHeight          = 30.0f,
-        .windowBgColor           = avdColorRgba(0.06f, 0.07f, 0.09f, 1.0f),
-        .windowBgFocusedColor    = avdColorRgba(0.07f, 0.08f, 0.10f, 1.0f),
-        .titleBarColor           = avdColorRgba(0.09f, 0.10f, 0.13f, 1.0f),
-        .textColor               = avdColorRgba(0.82f, 0.84f, 0.88f, 1.0f),
-        .buttonColor             = avdColorRgba(0.10f, 0.11f, 0.14f, 1.0f),
-        .buttonHoverColor        = avdColorRgba(0.14f, 0.15f, 0.20f, 1.0f),
-        .buttonPressColor        = avdColorRgba(0.08f, 0.09f, 0.12f, 1.0f),
-        .buttonTextColor         = avdColorRgba(0.90f, 0.91f, 0.95f, 1.0f),
-        .scrollTrackColor        = avdColorRgba(0.12f, 0.13f, 0.17f, 0.90f),
-        .scrollThumbColor        = avdColorRgba(0.55f, 0.42f, 0.85f, 0.95f),
-        .scrollThumbHoverColor   = avdColorRgba(0.8f, 0.8f, 0.8f, 1.0f),
-        .linkColor               = avdColorRgba(0.4f, 0.6f, 1.0f, 1.0f),
-        .linkHoverColor          = avdColorRgba(0.6f, 0.8f, 1.0f, 1.0f),
-        .sliderTrackColor        = avdColorRgba(0.12f, 0.13f, 0.17f, 1.0f),
-        .sliderThumbColor        = avdColorRgba(0.55f, 0.42f, 0.85f, 1.0f),
-        .sliderThumbHoverColor   = avdColorRgba(0.65f, 0.52f, 0.95f, 1.0f),
-        .sliderThumbActiveColor  = avdColorRgba(0.75f, 0.62f, 1.0f, 1.0f),
+        .padding                = 8.0f,
+        .itemSpacing            = 4.0f,
+        .cornerRadius           = 6.0f,
+        .titleBarHeight         = 30.0f,
+        .windowBgColor          = avdColorRgba(0.06f, 0.07f, 0.09f, 1.0f),
+        .windowBgFocusedColor   = avdColorRgba(0.07f, 0.08f, 0.10f, 1.0f),
+        .titleBarColor          = avdColorRgba(0.09f, 0.10f, 0.13f, 1.0f),
+        .textColor              = avdColorRgba(0.82f, 0.84f, 0.88f, 1.0f),
+        .buttonColor            = avdColorRgba(0.10f, 0.11f, 0.14f, 1.0f),
+        .buttonHoverColor       = avdColorRgba(0.14f, 0.15f, 0.20f, 1.0f),
+        .buttonPressColor       = avdColorRgba(0.08f, 0.09f, 0.12f, 1.0f),
+        .buttonTextColor        = avdColorRgba(0.90f, 0.91f, 0.95f, 1.0f),
+        .scrollTrackColor       = avdColorRgba(0.12f, 0.13f, 0.17f, 0.90f),
+        .scrollThumbColor       = avdColorRgba(0.55f, 0.42f, 0.85f, 0.95f),
+        .scrollThumbHoverColor  = avdColorRgba(0.8f, 0.8f, 0.8f, 1.0f),
+        .linkColor              = avdColorRgba(0.4f, 0.6f, 1.0f, 1.0f),
+        .linkHoverColor         = avdColorRgba(0.6f, 0.8f, 1.0f, 1.0f),
+        .sliderTrackColor       = avdColorRgba(0.12f, 0.13f, 0.17f, 1.0f),
+        .sliderThumbColor       = avdColorRgba(0.55f, 0.42f, 0.85f, 1.0f),
+        .sliderThumbHoverColor  = avdColorRgba(0.65f, 0.52f, 0.95f, 1.0f),
+        .sliderThumbActiveColor = avdColorRgba(0.75f, 0.62f, 1.0f, 1.0f),
     };
 }
 
@@ -1038,35 +1038,34 @@ bool avdGuiPushEvent(AVD_Gui *gui, AVD_InputEvent *event)
                         AVD_Vector2 paddedWindowSize = avdVec2Add(gui->window->header.size, avdVec2(40.0f, 40.0f));
                         AVD_Bool inWindow            = avdVec2IntersectRect(gui->inputState.mousePos, paddedWindowPos, paddedWindowSize);
                         if (inWindow) {
-                            gui->windowFocused                = true;
+                            gui->windowFocused = true;
+
+                            AVD_Bool inTitleBar = avdVec2IntersectRect(
+                                gui->inputState.mousePos,
+                                gui->window->header.pos,
+                                avdVec2(gui->window->header.size.x, gui->window->titleBarHeight));
+
+                            AVD_Bool onAnyChild = false;
+                            for (AVD_UInt32 i = 0; i < AVD_GUI_MAX_COMPONENTS; ++i) {
+                                AVD_GuiComponent *c = &gui->components[i];
+                                if (c->header.type == AVD_GUI_COMPONENT_TYPE_NONE ||
+                                    c->header.type == AVD_GUI_COMPONENT_TYPE_LAYOUT ||
+                                    c->header.type == AVD_GUI_COMPONENT_TYPE_WINDOW)
+                                    continue;
+                                if (avdVec2IntersectRect(gui->inputState.mousePos, c->header.pos, c->header.size)) {
+                                    onAnyChild = true;
+                                    break;
+                                }
+                            }
+
                             AVD_GuiInteractionMode resizeMode = __avdGuiDetectResizeEdge(gui);
-                            if (resizeMode != AVD_GUI_INTERACTION_NONE) {
+                            if (resizeMode != AVD_GUI_INTERACTION_NONE && !onAnyChild) {
                                 gui->interacting             = true;
                                 gui->window->interactionMode = resizeMode;
-                            } else if (gui->window->windowType == AVD_GUI_WINDOW_TYPE_FLOATING) {
-                                AVD_Bool inTitleBar = avdVec2IntersectRect(
-                                    gui->inputState.mousePos,
-                                    gui->window->header.pos,
-                                    avdVec2(gui->window->header.size.x, gui->window->titleBarHeight));
-
-                                AVD_Bool onAnyChild = false;
-                                for (AVD_UInt32 i = 0; i < AVD_GUI_MAX_COMPONENTS; ++i) {
-                                    AVD_GuiComponent *c = &gui->components[i];
-                                    if (c->header.type == AVD_GUI_COMPONENT_TYPE_NONE ||
-                                        c->header.type == AVD_GUI_COMPONENT_TYPE_LAYOUT ||
-                                        c->header.type == AVD_GUI_COMPONENT_TYPE_WINDOW)
-                                        continue;
-                                    if (avdVec2IntersectRect(gui->inputState.mousePos, c->header.pos, c->header.size)) {
-                                        onAnyChild = true;
-                                        break;
-                                    }
-                                }
-
-                                if (inTitleBar || !onAnyChild) {
-                                    gui->interacting             = true;
-                                    gui->window->interactionMode = AVD_GUI_INTERACTION_DRAG;
-                                    gui->window->dragOffset      = avdVec2Subtract(gui->inputState.mousePos, gui->window->header.pos);
-                                }
+                            } else if ((gui->window->windowType == AVD_GUI_WINDOW_TYPE_FLOATING) && (inTitleBar || !onAnyChild)) {
+                                gui->interacting             = true;
+                                gui->window->interactionMode = AVD_GUI_INTERACTION_DRAG;
+                                gui->window->dragOffset      = avdVec2Subtract(gui->inputState.mousePos, gui->window->header.pos);
                             }
                         } else {
                             gui->windowFocused = false;
