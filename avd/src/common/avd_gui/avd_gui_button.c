@@ -8,12 +8,12 @@
 #include "vulkan/avd_vulkan_base.h"
 #include <string.h>
 
-static void avdGuiButtonRenderRects(AVD_Gui *gui, AVD_GuiComponentHeader *header)
+static void __avdGuiButtonRenderRects(AVD_Gui *gui, AVD_GuiComponentHeader *header)
 {
     avdGuiPushRect(gui, header->pos, header->size, header->backgroundColor, header->clipRectPos, header->clipRectSize);
 }
 
-static void avdGuiButtonRenderText(AVD_Gui *gui, AVD_GuiComponentHeader *header, VkCommandBuffer commandBuffer)
+static void __avdGuiButtonRenderText(AVD_Gui *gui, AVD_GuiComponentHeader *header, VkCommandBuffer commandBuffer)
 {
     AVD_GuiButtonComponent *btn = (AVD_GuiButtonComponent *)header;
     if (!btn->header.text.initialized) {
@@ -59,11 +59,19 @@ bool avdGuiButton(
     AVD_ASSERT(label != NULL);
     AVD_ASSERT(fontName != NULL);
 
+    char displayBuffer[256];
     const char *displayText = label;
     const char *idStr       = label;
     const char *separator   = strstr(label, "##");
     if (separator != NULL) {
-        idStr = separator + 2;
+        size_t len = (size_t)(separator - label);
+        if (len >= sizeof(displayBuffer)) {
+            len = sizeof(displayBuffer) - 1;
+        }
+        memcpy(displayBuffer, label, len);
+        displayBuffer[len] = '\0';
+        displayText        = displayBuffer;
+        idStr              = separator + 2;
     }
 
     bool clicked = false;
@@ -139,8 +147,8 @@ bool avdGuiButton(
         btn->header.backgroundColor = style->buttonColor;
     }
 
-    btn->header.renderRects = avdGuiButtonRenderRects;
-    btn->header.renderText  = avdGuiButtonRenderText;
+    btn->header.renderRects = __avdGuiButtonRenderRects;
+    btn->header.renderText  = __avdGuiButtonRenderText;
 
     AVD_ASSERT(layout->itemCount < (AVD_Int32)AVD_ARRAY_COUNT(layout->items));
     layout->items[layout->itemCount++] = buttonComp;
