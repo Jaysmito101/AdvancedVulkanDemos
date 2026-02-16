@@ -27,6 +27,7 @@ typedef enum {
     AVD_GUI_COMPONENT_TYPE_BUTTON,
     AVD_GUI_COMPONENT_TYPE_IMAGE,
     AVD_GUI_COMPONENT_TYPE_IMAGE_BUTTON,
+    AVD_GUI_COMPONENT_TYPE_HYPERLINK,
     AVD_GUI_COMPONENT_TYPE_COUNT
 } AVD_GuiComponentType;
 
@@ -155,6 +156,13 @@ typedef struct {
     VkDescriptorSet descriptorSet;
 } AVD_GuiImageButtonComponent;
 
+typedef struct {
+    AVD_GuiComponentHeader header;
+    AVD_Float charHeight;
+    AVD_UInt32 textHash;
+    const char *url;
+} AVD_GuiHyperlinkComponent;
+
 union AVD_GuiComponent {
     AVD_GuiComponentHeader header;
     AVD_GuiWindowComponent window;
@@ -163,6 +171,7 @@ union AVD_GuiComponent {
     AVD_GuiButtonComponent button;
     AVD_GuiImageComponent image;
     AVD_GuiImageButtonComponent imageButton;
+    AVD_GuiHyperlinkComponent hyperlink;
 };
 
 typedef struct {
@@ -206,6 +215,8 @@ typedef struct {
     AVD_Color scrollTrackColor;
     AVD_Color scrollThumbColor;
     AVD_Color scrollThumbHoverColor;
+    AVD_Color linkColor;
+    AVD_Color linkHoverColor;
 } AVD_GuiStyle;
 
 struct AVD_Gui {
@@ -289,6 +300,7 @@ bool avdGuiLabel(AVD_Gui *gui, const char *text, const char *fontName, AVD_Float
 bool avdGuiButton(AVD_Gui *gui, const char *label, const char *fontName, AVD_Float charHeight, AVD_Vector2 size);
 void avdGuiImage(AVD_Gui *gui, AVD_VulkanImageSubresource *subresource, AVD_Vector2 size, const char *label);
 bool avdGuiImageButton(AVD_Gui *gui, const char *label, AVD_VulkanImageSubresource *subresource, AVD_Vector2 size);
+bool avdGuiHyperlink(AVD_Gui *gui, const char *text, const char *url, const char *fontName, AVD_Float charHeight, const char *label);
 
 bool avdGuiPushId(AVD_Gui *gui, const char *strId);
 void avdGuiPopId(AVD_Gui *gui);

@@ -893,7 +893,9 @@ AVD_GuiStyle avdGuiStyleDefault(void)
         .buttonTextColor       = avdColorRgba(0.90f, 0.91f, 0.95f, 1.0f),
         .scrollTrackColor      = avdColorRgba(0.12f, 0.13f, 0.17f, 0.90f),
         .scrollThumbColor      = avdColorRgba(0.55f, 0.42f, 0.85f, 0.95f),
-        .scrollThumbHoverColor = avdColorRgba(0.64f, 0.51f, 0.95f, 1.0f),
+        .scrollThumbHoverColor = avdColorRgba(0.8f, 0.8f, 0.8f, 1.0f),
+        .linkColor             = avdColorRgba(0.4f, 0.6f, 1.0f, 1.0f),
+        .linkHoverColor        = avdColorRgba(0.6f, 0.8f, 1.0f, 1.0f),
     };
 }
 
