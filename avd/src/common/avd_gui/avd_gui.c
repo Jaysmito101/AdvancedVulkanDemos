@@ -7,6 +7,7 @@
 #include "math/avd_vector_non_simd.h"
 #include "vulkan/avd_vulkan_base.h"
 #include "vulkan/avd_vulkan_pipeline_utils.h"
+#include <string.h>
 
 static void __avdGuiClampScrollOffset(AVD_GuiLayoutComponent *layout, AVD_GuiStyle *style)
 {
@@ -799,6 +800,8 @@ static bool avdGuiCalculateChildSizeOffset(
     AVD_ASSERT(childSize != NULL);
     AVD_ASSERT(style != NULL);
 
+
+
     AVD_Float topOffset = style->padding;
     if (parent->header.type == AVD_GUI_COMPONENT_TYPE_WINDOW) {
         topOffset += parent->window.titleBarHeight;
@@ -817,6 +820,34 @@ static bool avdGuiCalculateChildSizeOffset(
     }
 
     return true;
+}
+
+void avdGuiSplitLabel(
+    const char *label,
+    char *displayBuffer,
+    size_t bufferSize,
+    const char **outDisplayText,
+    const char **outId)
+{
+    AVD_ASSERT(label != NULL);
+    AVD_ASSERT(displayBuffer != NULL);
+    AVD_ASSERT(outDisplayText != NULL);
+    AVD_ASSERT(outId != NULL);
+
+    *outDisplayText = label;
+    *outId          = label;
+
+    const char *separator = strstr(label, "##");
+    if (separator != NULL) {
+        size_t len = (size_t)(separator - label);
+        if (len >= bufferSize) {
+            len = bufferSize - 1;
+        }
+        memcpy(displayBuffer, label, len);
+        displayBuffer[len] = '\0';
+        *outDisplayText    = displayBuffer;
+        *outId             = separator + 2;
+    }
 }
 
 void avdGuiResolveComponentPosition(
@@ -906,6 +937,10 @@ AVD_GuiStyle avdGuiStyleDefault(void)
         .headerHoverColor       = avdColorRgba(0.14f, 0.15f, 0.20f, 1.0f),
         .headerTextColor        = avdColorRgba(0.90f, 0.91f, 0.95f, 1.0f),
         .headerArrowColor       = avdColorRgba(0.70f, 0.72f, 0.78f, 1.0f),
+        .dragBgColor            = avdColorRgba(0.12f, 0.13f, 0.17f, 1.0f),
+        .dragHoverColor         = avdColorRgba(0.16f, 0.17f, 0.22f, 1.0f),
+        .dragActiveColor        = avdColorRgba(0.20f, 0.21f, 0.27f, 1.0f),
+        .dragTextColor          = avdColorRgba(0.82f, 0.84f, 0.88f, 1.0f),
     };
 }
 

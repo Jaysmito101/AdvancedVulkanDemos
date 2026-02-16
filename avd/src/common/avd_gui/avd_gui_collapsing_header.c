@@ -76,19 +76,9 @@ bool avdGuiBeginCollapsingHeader(
     AVD_ASSERT(fontName != NULL);
 
     char displayBuffer[256];
-    const char *displayText = label;
-    const char *idStr       = label;
-    const char *separator   = strstr(label, "##");
-    if (separator != NULL) {
-        size_t len = (size_t)(separator - label);
-        if (len >= sizeof(displayBuffer)) {
-            len = sizeof(displayBuffer) - 1;
-        }
-        memcpy(displayBuffer, label, len);
-        displayBuffer[len] = '\0';
-        displayText        = displayBuffer;
-        idStr              = separator + 2;
-    }
+    const char *displayText;
+    const char *idStr;
+    avdGuiSplitLabel(label, displayBuffer, sizeof(displayBuffer), &displayText, &idStr);
 
     AVD_GuiStyle *style                  = avdGuiCurrentStyle(gui);
     AVD_GuiLayoutComponent *layout       = &gui->activeLayout->layout;

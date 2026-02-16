@@ -32,4 +32,11 @@ AVD_Bool avdGuiPushRect(
 
 VkRect2D avdGuiScissorFromRect(AVD_Gui *gui, AVD_Vector2 pos, AVD_Vector2 size);
 
+void avdGuiSplitLabel(
+    const char *label,
+    char *displayBuffer,
+    size_t bufferSize,
+    const char **outDisplayText,
+    const char **outId);
+
 #endif // AVD_GUI_INTERNAL_H

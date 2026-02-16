@@ -19,11 +19,10 @@ bool avdGuiImageButton(
     AVD_ASSERT(gui != NULL);
     AVD_ASSERT(gui->activeLayout != NULL);
 
-    const char *idStr     = label;
-    const char *separator = strstr(label, "##");
-    if (separator != NULL) {
-        idStr = separator + 2;
-    }
+    char displayBuffer[256];
+    const char *displayText;
+    const char *idStr;
+    avdGuiSplitLabel(label, displayBuffer, sizeof(displayBuffer), &displayText, &idStr);
 
     bool clicked = false;
 
