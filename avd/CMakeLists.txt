@@ -45,6 +45,7 @@ add_executable(avd
     ./src/common/avd_gui/avd_gui_slider.c
     ./src/common/avd_gui/avd_gui_checkbox.c
     ./src/common/avd_gui/avd_gui_collapsing_header.c
+    ./src/common/avd_gui/avd_gui_drag.c
 
     ./src/shader/avd_shader_shaderc.c
     ./src/shader/avd_shader_slang.c

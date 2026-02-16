@@ -800,8 +800,6 @@ static bool avdGuiCalculateChildSizeOffset(
     AVD_ASSERT(childSize != NULL);
     AVD_ASSERT(style != NULL);
 
-
-
     AVD_Float topOffset = style->padding;
     if (parent->header.type == AVD_GUI_COMPONENT_TYPE_WINDOW) {
         topOffset += parent->window.titleBarHeight;

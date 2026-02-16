@@ -31,6 +31,7 @@ typedef enum {
     AVD_GUI_COMPONENT_TYPE_SLIDER,
     AVD_GUI_COMPONENT_TYPE_CHECKBOX,
     AVD_GUI_COMPONENT_TYPE_COLLAPSING_HEADER,
+    AVD_GUI_COMPONENT_TYPE_DRAG,
     AVD_GUI_COMPONENT_TYPE_COUNT
 } AVD_GuiComponentType;
 
@@ -193,6 +194,19 @@ typedef struct {
     AVD_GuiComponent *childLayout;
 } AVD_GuiCollapsingHeaderComponent;
 
+typedef struct {
+    AVD_GuiComponentHeader header;
+    AVD_Float charHeight;
+    AVD_UInt32 textHash;
+    AVD_Float value;
+    AVD_Float minValue;
+    AVD_Float maxValue;
+    AVD_Float speed;
+    AVD_Int32 precision;
+    AVD_Bool isInteger;
+    AVD_Bool isDragging;
+} AVD_GuiDragComponent;
+
 union AVD_GuiComponent {
     AVD_GuiComponentHeader header;
     AVD_GuiWindowComponent window;
@@ -205,6 +219,7 @@ union AVD_GuiComponent {
     AVD_GuiSliderComponent slider;
     AVD_GuiCheckboxComponent checkbox;
     AVD_GuiCollapsingHeaderComponent collapsingHeader;
+    AVD_GuiDragComponent drag;
 };
 
 typedef struct {
@@ -258,6 +273,10 @@ typedef struct {
     AVD_Color headerHoverColor;
     AVD_Color headerTextColor;
     AVD_Color headerArrowColor;
+    AVD_Color dragBgColor;
+    AVD_Color dragHoverColor;
+    AVD_Color dragActiveColor;
+    AVD_Color dragTextColor;
 } AVD_GuiStyle;
 
 struct AVD_Gui {
@@ -344,6 +363,8 @@ bool avdGuiImageButton(AVD_Gui *gui, const char *label, AVD_VulkanImageSubresour
 bool avdGuiHyperlink(AVD_Gui *gui, const char *text, const char *url, const char *fontName, AVD_Float charHeight, const char *label);
 bool avdGuiSlider(AVD_Gui *gui, const char *label, AVD_Float *value, AVD_Float minValue, AVD_Float maxValue, AVD_Vector2 size);
 bool avdGuiCheckbox(AVD_Gui *gui, const char *label, AVD_Bool *checked, const char *fontName, AVD_Float charHeight);
+bool avdGuiDragFloat(AVD_Gui *gui, const char *label, AVD_Float *value, AVD_Float speed, AVD_Float minValue, AVD_Float maxValue, AVD_Int32 precision, const char *fontName, AVD_Float charHeight, AVD_Vector2 size);
+bool avdGuiDragInt(AVD_Gui *gui, const char *label, AVD_Int32 *value, AVD_Float speed, AVD_Int32 minValue, AVD_Int32 maxValue, const char *fontName, AVD_Float charHeight, AVD_Vector2 size);
 
 bool avdGuiBeginCollapsingHeader(AVD_Gui *gui, const char *label, const char *fontName, AVD_Float charHeight, AVD_Float headerHeight);
 void avdGuiEndCollapsingHeader(AVD_Gui *gui);
