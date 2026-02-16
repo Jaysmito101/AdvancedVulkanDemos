@@ -19,7 +19,7 @@ bool avdGuiImageButton(
     AVD_ASSERT(gui != NULL);
     AVD_ASSERT(gui->activeLayout != NULL);
 
-    const char *idStr = label;
+    const char *idStr     = label;
     const char *separator = strstr(label, "##");
     if (separator != NULL) {
         idStr = separator + 2;
