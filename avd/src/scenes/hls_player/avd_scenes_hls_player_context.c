@@ -15,7 +15,7 @@
 #include "vulkan/video/avd_vulkan_video_h264_data.h"
 #include <math.h>
 
-static bool __avdSceneHLSPlayerContextInitVideo(
+static bool PRIV_avdSceneHLSPlayerContextInitVideo(
     AVD_Vulkan *vulkan,
     AVD_Audio *audio,
     AVD_SceneHLSPlayerContext *context,
@@ -59,7 +59,7 @@ static bool __avdSceneHLSPlayerContextInitVideo(
     return true;
 }
 
-static bool __avdSceneHLSPlayerContextInitAudio(
+static bool PRIV_avdSceneHLSPlayerContextInitAudio(
     AVD_Vulkan *vulkan,
     AVD_Audio *audio,
     AVD_SceneHLSPlayerContext *context,
@@ -86,7 +86,7 @@ static bool __avdSceneHLSPlayerContextInitAudio(
     return true;
 }
 
-static bool __avdSceneHLSPlayerContextInit(
+static bool PRIV_avdSceneHLSPlayerContextInit(
     AVD_Vulkan *vulkan,
     AVD_Audio *audio,
     AVD_SceneHLSPlayerContext *context,
@@ -99,8 +99,8 @@ static bool __avdSceneHLSPlayerContextInit(
     memset(context, 0, sizeof(AVD_SceneHLSPlayerContext));
 
     AVD_CHECK(avdHLSSegmentStoreInit(&context->segmentStore));
-    AVD_CHECK(__avdSceneHLSPlayerContextInitVideo(vulkan, audio, context, avData));
-    AVD_CHECK(__avdSceneHLSPlayerContextInitAudio(vulkan, audio, context, avData));
+    AVD_CHECK(PRIV_avdSceneHLSPlayerContextInitVideo(vulkan, audio, context, avData));
+    AVD_CHECK(PRIV_avdSceneHLSPlayerContextInitAudio(vulkan, audio, context, avData));
 
     context->sourceIndex             = avData.source;
     context->currentSegment          = avData;
@@ -111,7 +111,7 @@ static bool __avdSceneHLSPlayerContextInit(
     return true;
 }
 
-static bool __avdSceneHLSPlayerContextSwitchToNextSegment(
+static bool PRIV_avdSceneHLSPlayerContextSwitchToNextSegment(
     AVD_Vulkan *vulkan,
     AVD_Audio *audio,
     AVD_SceneHLSPlayerContext *context)
@@ -157,7 +157,7 @@ static bool __avdSceneHLSPlayerContextSwitchToNextSegment(
     return true;
 }
 
-static bool __avdSceneHLSPlayerContextDecodeVideoFrames(
+static bool PRIV_avdSceneHLSPlayerContextDecodeVideoFrames(
     AVD_Vulkan *vulkan,
     AVD_Audio *audio,
     AVD_SceneHLSPlayerContext *context)
@@ -219,7 +219,7 @@ bool avdSceneHLSPlayerContextAddSegment(
 
     if (!context->initialized) {
         // for first segment, just init
-        AVD_CHECK(__avdSceneHLSPlayerContextInit(vulkan, audio, context, avData));
+        AVD_CHECK(PRIV_avdSceneHLSPlayerContextInit(vulkan, audio, context, avData));
         return true;
     }
 
@@ -294,14 +294,14 @@ bool avdSceneHLSPlayerContextUpdate(AVD_Vulkan *vulkan, AVD_Audio *audio, AVD_Sc
 
     // check if current chunk is still playing, else switch to next (with some leeway)
     if (time - context->currentSegmentStartTime > context->currentSegment.duration) {
-        AVD_CHECK(__avdSceneHLSPlayerContextSwitchToNextSegment(vulkan, audio, context));
+        AVD_CHECK(PRIV_avdSceneHLSPlayerContextSwitchToNextSegment(vulkan, audio, context));
         context->currentSegmentPlayTime             = 0.0f;
         context->currentSegmentStartTime            = time;
         context->videoPlayer.timestampSecondsOffset = time; // NOTE: I know that this is kinda messy, I will clean it up later...
     } else {
         context->currentSegmentPlayTime = time - context->currentSegmentStartTime;
         if (!avdVulkanVideoDecoderHasFrameForTime(&context->videoPlayer, time)) {
-            AVD_CHECK(__avdSceneHLSPlayerContextDecodeVideoFrames(vulkan, audio, context));
+            AVD_CHECK(PRIV_avdSceneHLSPlayerContextDecodeVideoFrames(vulkan, audio, context));
         }
     }
 

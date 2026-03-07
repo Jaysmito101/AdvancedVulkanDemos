@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static void __avdHLSWorkerPoolFreeDemuxPayload(void *payloadRaw, void *context)
+static void PRIV_avdHLSWorkerPoolFreeDemuxPayload(void *payloadRaw, void *context)
 {
     (void)context;
 
@@ -25,7 +25,7 @@ static void __avdHLSWorkerPoolFreeDemuxPayload(void *payloadRaw, void *context)
     }
 }
 
-static void __avdHLSWorkerPoolFreeReadyPayload(void *payloadRaw, void *context)
+static void PRIV_avdHLSWorkerPoolFreeReadyPayload(void *payloadRaw, void *context)
 {
     (void)context;
 
@@ -35,7 +35,7 @@ static void __avdHLSWorkerPoolFreeReadyPayload(void *payloadRaw, void *context)
     avdHLSSegmentAVDataFree(&payload->avData);
 }
 
-static void __avdHLSSourceDownloadWorker(void *arg)
+static void PRIV_avdHLSSourceDownloadWorker(void *arg)
 {
     AVD_HLSWorkerPool *pool     = (AVD_HLSWorkerPool *)arg;
     pool->sourceDownloadRunning = true;
@@ -123,7 +123,7 @@ static void __avdHLSSourceDownloadWorker(void *arg)
     AVD_HLS_WORKER_POOL_LOG("Source download worker stopping [tid: %llu]", picoThreadGetCurrentId());
 }
 
-static void __avdHLSMediaDownloadWorker(void *arg)
+static void PRIV_avdHLSMediaDownloadWorker(void *arg)
 {
     AVD_HLSWorkerPool *pool    = (AVD_HLSWorkerPool *)arg;
     pool->mediaDownloadRunning = true;
@@ -181,7 +181,7 @@ static void __avdHLSMediaDownloadWorker(void *arg)
     AVD_HLS_WORKER_POOL_LOG("Media download worker stopping [tid: %llu]", picoThreadGetCurrentId());
 }
 
-static void __avdHLSMediaDemuxWorker(void *arg)
+static void PRIV_avdHLSMediaDemuxWorker(void *arg)
 {
     AVD_HLSWorkerPool *pool = (AVD_HLSWorkerPool *)arg;
     pool->mediaDemuxRunning = true;
@@ -316,24 +316,24 @@ bool avdHLSWorkerPoolInit(AVD_HLSWorkerPool *pool, AVD_HLSURLPool *urlPool, AVD_
 
     pool->mediaDemuxChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_HLSDemuxTaskPayload));
     AVD_CHECK_MSG(pool->mediaDemuxChannel != NULL, "Failed to create media demux channel");
-    picoThreadChannelSetItemDestructor(pool->mediaDemuxChannel, __avdHLSWorkerPoolFreeDemuxPayload, NULL);
+    picoThreadChannelSetItemDestructor(pool->mediaDemuxChannel, PRIV_avdHLSWorkerPoolFreeDemuxPayload, NULL);
 
     pool->mediaReadyChannel = picoThreadChannelCreateUnbounded(sizeof(AVD_HLSReadyPayload));
     AVD_CHECK_MSG(pool->mediaReadyChannel != NULL, "Failed to create media ready channel");
-    picoThreadChannelSetItemDestructor(pool->mediaReadyChannel, __avdHLSWorkerPoolFreeReadyPayload, NULL);
+    picoThreadChannelSetItemDestructor(pool->mediaReadyChannel, PRIV_avdHLSWorkerPoolFreeReadyPayload, NULL);
 
     for (AVD_Size i = 0; i < AVD_HLS_WORKER_NUM_SOURCE_WORKERS; i++) {
-        pool->sourceDownloadWorkers[i] = picoThreadCreate(__avdHLSSourceDownloadWorker, pool);
+        pool->sourceDownloadWorkers[i] = picoThreadCreate(PRIV_avdHLSSourceDownloadWorker, pool);
         AVD_CHECK_MSG(pool->sourceDownloadWorkers[i] != NULL, "Failed to create source download worker");
     }
 
     for (AVD_Size i = 0; i < AVD_HLS_WORKER_NUM_MEDIA_DOWNLOAD_WORKERS; i++) {
-        pool->mediaDownloadWorkers[i] = picoThreadCreate(__avdHLSMediaDownloadWorker, pool);
+        pool->mediaDownloadWorkers[i] = picoThreadCreate(PRIV_avdHLSMediaDownloadWorker, pool);
         AVD_CHECK_MSG(pool->mediaDownloadWorkers[i] != NULL, "Failed to create media download worker");
     }
 
     for (AVD_Size i = 0; i < AVD_HLS_WORKER_NUM_MEDIA_DEMUX_WORKERS; i++) {
-        pool->mediaDemuxWorkers[i] = picoThreadCreate(__avdHLSMediaDemuxWorker, pool);
+        pool->mediaDemuxWorkers[i] = picoThreadCreate(PRIV_avdHLSMediaDemuxWorker, pool);
         AVD_CHECK_MSG(pool->mediaDemuxWorkers[i] != NULL, "Failed to create media demux worker");
     }
 
@@ -392,12 +392,12 @@ void avdHLSWorkerPoolFlush(AVD_HLSWorkerPool *pool)
 
     AVD_HLSDemuxTaskPayload demuxPayload = {0};
     while (picoThreadChannelTryReceive(pool->mediaDemuxChannel, &demuxPayload)) {
-        __avdHLSWorkerPoolFreeDemuxPayload(&demuxPayload, NULL);
+        PRIV_avdHLSWorkerPoolFreeDemuxPayload(&demuxPayload, NULL);
     }
 
     AVD_HLSReadyPayload readyPayload = {0};
     while (picoThreadChannelTryReceive(pool->mediaReadyChannel, &readyPayload)) {
-        __avdHLSWorkerPoolFreeReadyPayload(&readyPayload, NULL);
+        PRIV_avdHLSWorkerPoolFreeReadyPayload(&readyPayload, NULL);
     }
 }
 

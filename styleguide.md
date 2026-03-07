@@ -106,11 +106,11 @@ Private symbols use double underscore prefix:
 
 ```c
 // Private functions
-static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan);
-static void __avdApplicationUpdateFramerateCalculation(AVD_Frametime *framerateInfo);
+static bool PRIV_avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan);
+static void PRIV_avdApplicationUpdateFramerateCalculation(AVD_Frametime *framerateInfo);
 
 // Private callbacks
-void __avdGLFWErrorCallback(int error, const char *description);
+void PRIV_avdGLFWErrorCallback(int error, const char *description);
 ```
 
 ### File Naming

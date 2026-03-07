@@ -7,7 +7,7 @@ typedef struct {
     void *allocatedMtlData;
 } AVD_MemoryContext;
 
-static void __avdReadFile(
+static void PRIV_avdReadFile(
     void *ctx,
     const char *filename,
     const int is_mtl,
@@ -42,7 +42,7 @@ static void __avdReadFile(
     }
 }
 
-static bool __avdMeshLoadFaces(
+static bool PRIV_avdMeshLoadFaces(
     tinyobj_attrib_t *attrib,
     AVD_ModelResources *resources,
     AVD_Mesh *mesh,
@@ -141,7 +141,7 @@ bool avdModelLoadObj(const char *filename, AVD_Model *model, AVD_ModelResources 
         &materials,
         &materialCount,
         filename,
-        __avdReadFile,
+        PRIV_avdReadFile,
         &memoryContext,
         TINYOBJ_FLAG_TRIANGULATE);
 
@@ -159,7 +159,7 @@ bool avdModelLoadObj(const char *filename, AVD_Model *model, AVD_ModelResources 
         AVD_CHECK(avdMeshInit(&mesh));
         snprintf(mesh.name, sizeof(mesh.name), "%s/Mesh", model->name);
         mesh.id = avdHashString(mesh.name);
-        AVD_CHECK(__avdMeshLoadFaces(&attrib, resources, &mesh, 0, attrib.num_face_num_verts));
+        AVD_CHECK(PRIV_avdMeshLoadFaces(&attrib, resources, &mesh, 0, attrib.num_face_num_verts));
         avdListPushBack(&model->meshes, &mesh);
     } else {
         // Load all shapes as separate meshes
@@ -169,7 +169,7 @@ bool avdModelLoadObj(const char *filename, AVD_Model *model, AVD_ModelResources 
             AVD_CHECK(avdMeshInit(&mesh));
             snprintf(mesh.name, sizeof(mesh.name), "%s/%s", model->name, shape->name);
             mesh.id = avdHashString(mesh.name);
-            AVD_CHECK(__avdMeshLoadFaces(&attrib, resources, &mesh, shape->face_offset, shape->length));
+            AVD_CHECK(PRIV_avdMeshLoadFaces(&attrib, resources, &mesh, shape->face_offset, shape->length));
             avdListPushBack(&model->meshes, &mesh);
         }
     }

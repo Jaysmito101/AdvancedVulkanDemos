@@ -25,7 +25,7 @@ typedef struct AVD_FontRendererVertex {
     float v;
 } AVD_FontRendererVertex;
 
-static bool __avdCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, AVD_VulkanImage *fontImage, VkDescriptorSet *descriptorSet)
+static bool PRIV_avdCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkDescriptorPool descriptorPool, AVD_VulkanImage *fontImage, VkDescriptorSet *descriptorSet)
 {
     AVD_ASSERT(descriptorSet != NULL);
     AVD_ASSERT(device != VK_NULL_HANDLE);
@@ -51,7 +51,7 @@ static bool __avdCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout desc
     return true;
 }
 
-static bool __avdCreatePipeline(AVD_FontRenderer *fr, VkDevice device, VkRenderPass renderPass)
+static bool PRIV_avdCreatePipeline(AVD_FontRenderer *fr, VkDevice device, VkRenderPass renderPass)
 {
     AVD_ASSERT(fr != NULL);
     AVD_ASSERT(device != VK_NULL_HANDLE);
@@ -146,7 +146,7 @@ static bool __avdCreatePipeline(AVD_FontRenderer *fr, VkDevice device, VkRenderP
     return true;
 }
 
-static bool __avdSetCharQuad(AVD_FontRendererVertex *vertex, float ax, float ay, float bx, float by, float u0, float v0, float u1, float v1)
+static bool PRIV_avdSetCharQuad(AVD_FontRendererVertex *vertex, float ax, float ay, float bx, float by, float u0, float v0, float u1, float v1)
 {
     AVD_ASSERT(vertex != NULL);
 
@@ -176,7 +176,7 @@ static bool __avdSetCharQuad(AVD_FontRendererVertex *vertex, float ax, float ay,
     return true;
 }
 
-static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderableText, AVD_Font *font, const char *text, float charHeight)
+static bool PRIV_avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderableText, AVD_Font *font, const char *text, float charHeight)
 {
     AVD_ASSERT(renderableText != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -241,11 +241,11 @@ static bool __avdUpdateFontText(AVD_Vulkan *vulkan, AVD_RenderableText *renderab
         cX += glyph->advanceX * charHeight;
 
         AVD_FontRendererVertex *vertex = &renderableText->vertexBufferData[indexOffset];
-        AVD_CHECK(__avdSetCharQuad(vertex, ax, ay, bx, by,
-                                   bounds->left / atlasWidth,
-                                   bounds->top / atlasHeight,
-                                   bounds->right / atlasWidth,
-                                   bounds->bottom / atlasHeight));
+        AVD_CHECK(PRIV_avdSetCharQuad(vertex, ax, ay, bx, by,
+                                      bounds->left / atlasWidth,
+                                      bounds->top / atlasHeight,
+                                      bounds->right / atlasWidth,
+                                      bounds->bottom / atlasHeight));
         indexOffset += 6;
     }
 
@@ -293,7 +293,7 @@ bool avdRenderableTextCreate(AVD_RenderableText *renderableText, AVD_FontRendere
     // get the font data
     AVD_Font *font = NULL;
     AVD_CHECK(avdFontManagerGetFont(fontRenderer->fontManager, fontName, &font));
-    AVD_CHECK(__avdUpdateFontText(vulkan, renderableText, font, text, charHeight));
+    AVD_CHECK(PRIV_avdUpdateFontText(vulkan, renderableText, font, text, charHeight));
 
     return true;
 }
@@ -330,7 +330,7 @@ bool avdRenderableTextUpdate(AVD_RenderableText *renderableText, AVD_FontRendere
     AVD_CHECK(avdFontManagerGetFont(fontRenderer->fontManager, renderableText->fontName, &font));
 
     // update the vertex buffer with the new text
-    AVD_CHECK(__avdUpdateFontText(vulkan, renderableText, font, text, renderableText->charHeight));
+    AVD_CHECK(PRIV_avdUpdateFontText(vulkan, renderableText, font, text, renderableText->charHeight));
 
     return true;
 }
@@ -382,7 +382,7 @@ bool avdFontCreate(AVD_FontData fontData, AVD_Vulkan *vulkan, AVD_Font *font)
         1,
         VK_SHADER_STAGE_FRAGMENT_BIT));
 
-    AVD_CHECK(__avdCreateDescriptorSet(vulkan->device, font->fontDescriptorSetLayout, vulkan->descriptorPool, &font->fontAtlasImage, &font->fontDescriptorSet));
+    AVD_CHECK(PRIV_avdCreateDescriptorSet(vulkan->device, font->fontDescriptorSetLayout, vulkan->descriptorPool, &font->fontAtlasImage, &font->fontDescriptorSet));
     return true;
 }
 
@@ -415,7 +415,7 @@ bool avdFontRendererCreate(AVD_FontRenderer *fontRenderer, AVD_Vulkan *vulkan, A
         &fontRenderer->fontDescriptorSetLayout, 1,
         sizeof(AVD_FontRendererPushConstants)));
 
-    AVD_CHECK(__avdCreatePipeline(fontRenderer, vulkan->device, renderPass));
+    AVD_CHECK(PRIV_avdCreatePipeline(fontRenderer, vulkan->device, renderPass));
 
     return true;
 }

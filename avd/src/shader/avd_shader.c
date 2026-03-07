@@ -119,7 +119,7 @@ bool avdShaderManagerCompile(
     return true;
 }
 
-bool __avdShaderLoadCached(
+bool PRIV_avdShaderLoadCached(
     const char *cachedShaderPath,
     const char *inputShaderName,
     AVD_ShaderCompilationOptions *options,
@@ -152,7 +152,7 @@ bool __avdShaderLoadCached(
     return true;
 }
 
-bool __avdShaderSaveCached(
+bool PRIV_avdShaderSaveCached(
     const char *cachedShaderPath,
     const char *inputShaderName,
     AVD_ShaderCompilationOptions *options,
@@ -201,7 +201,7 @@ bool avdShaderManagerCompileAndCache(
         cacheKey);
 
     if (avdPathExists(cachedShaderPath)) {
-        AVD_CHECK(__avdShaderLoadCached(
+        AVD_CHECK(PRIV_avdShaderLoadCached(
             cachedShaderPath,
             inputShaderName,
             options,
@@ -213,7 +213,7 @@ bool avdShaderManagerCompileAndCache(
             options,
             outResult));
 
-        AVD_CHECK(__avdShaderSaveCached(
+        AVD_CHECK(PRIV_avdShaderSaveCached(
             cachedShaderPath,
             inputShaderName,
             options,

@@ -4,7 +4,7 @@
 #include "core/avd_types.h"
 #include "core/avd_utils.h"
 
-static bool __avdAudioPlayerCallback(
+static bool PRIV_avdAudioPlayerCallback(
     const void *inputBuffer,
     void *outputBuffer,
     AVD_Size framesPerBuffer,
@@ -172,7 +172,7 @@ bool avdAudioPlayerPlayAsync(AVD_AudioPlayer *player, AVD_AudioClip *clip, AVD_B
         clip->sampleRate,
         clip->stereo,
         256,
-        __avdAudioPlayerCallback,
+        PRIV_avdAudioPlayerCallback,
         ctx);
 
     if (!success) {

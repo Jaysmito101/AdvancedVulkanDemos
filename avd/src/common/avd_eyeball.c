@@ -8,7 +8,7 @@ typedef struct {
     AVD_Float radius;
 } AVD_EyeballUniforms;
 
-bool __avdEyeballSetupDescriptors(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
+bool PRIV_avdEyeballSetupDescriptors(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(eyeball != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -51,14 +51,14 @@ bool __avdEyeballSetupDescriptors(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
     return true;
 }
 
-bool __avdEyeballSetupDefaults(AVD_Eyeball *eyeball)
+bool PRIV_avdEyeballSetupDefaults(AVD_Eyeball *eyeball)
 {
     AVD_ASSERT(eyeball != NULL);
 
     return true;
 }
 
-bool __avdEyeballSetupMesh(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
+bool PRIV_avdEyeballSetupMesh(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(eyeball != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -139,9 +139,9 @@ bool avdEyeballCreate(AVD_Eyeball *eyeball, AVD_Vulkan *vulkan)
             512, 512,
             VK_FORMAT_R8G8B8A8_UNORM,
             VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, "Scene/Eyeball/VeinsTexture")));
-    AVD_CHECK(__avdEyeballSetupDescriptors(eyeball, vulkan));
-    AVD_CHECK(__avdEyeballSetupDefaults(eyeball));
-    AVD_CHECK(__avdEyeballSetupMesh(eyeball, vulkan));
+    AVD_CHECK(PRIV_avdEyeballSetupDescriptors(eyeball, vulkan));
+    AVD_CHECK(PRIV_avdEyeballSetupDefaults(eyeball));
+    AVD_CHECK(PRIV_avdEyeballSetupMesh(eyeball, vulkan));
 
     return true;
 }

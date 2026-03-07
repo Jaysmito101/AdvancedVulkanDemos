@@ -1,6 +1,6 @@
 #include "math/avd_math_tests.h"
 
-static bool __avdCheckMatrix4x4()
+static bool PRIV_avdCheckMatrix4x4()
 {
     AVD_LOG_DEBUG("  Testing Matrix4x4 operations...");
 
@@ -119,7 +119,7 @@ static bool __avdCheckMatrix4x4()
     return true;
 }
 
-static bool __avdCheckMatrix3x3()
+static bool PRIV_avdCheckMatrix3x3()
 {
     AVD_LOG_DEBUG("  Testing Matrix3x3 operations...");
 
@@ -228,7 +228,7 @@ static bool __avdCheckMatrix3x3()
     return true;
 }
 
-static bool __avdCheckVector2()
+static bool PRIV_avdCheckVector2()
 {
     AVD_LOG_DEBUG("  Testing Vector2 operations...");
 
@@ -340,7 +340,7 @@ static bool __avdCheckVector2()
     return true;
 }
 
-static bool __avdCheckVector3()
+static bool PRIV_avdCheckVector3()
 {
     AVD_LOG_DEBUG("  Testing Vector3 operations...");
 
@@ -478,7 +478,7 @@ static bool __avdCheckVector3()
     return true;
 }
 
-static bool __avdCheckVector4()
+static bool PRIV_avdCheckVector4()
 {
     AVD_LOG_DEBUG("  Testing Vector4 operations...");
 
@@ -613,7 +613,7 @@ static bool __avdCheckVector4()
     return true;
 }
 
-static bool __avdCheckQuaternion()
+static bool PRIV_avdCheckQuaternion()
 {
     AVD_LOG_DEBUG("  Testing Quaternion operations...");
 
@@ -793,12 +793,12 @@ bool avdMathTestsRun()
 {
     AVD_LOG_DEBUG("Running AVD Math Tests...");
 
-    AVD_CHECK(__avdCheckMatrix4x4());
-    AVD_CHECK(__avdCheckMatrix3x3());
-    AVD_CHECK(__avdCheckVector2());
-    AVD_CHECK(__avdCheckVector3());
-    AVD_CHECK(__avdCheckVector4());
-    AVD_CHECK(__avdCheckQuaternion());
+    AVD_CHECK(PRIV_avdCheckMatrix4x4());
+    AVD_CHECK(PRIV_avdCheckMatrix3x3());
+    AVD_CHECK(PRIV_avdCheckVector2());
+    AVD_CHECK(PRIV_avdCheckVector3());
+    AVD_CHECK(PRIV_avdCheckVector4());
+    AVD_CHECK(PRIV_avdCheckQuaternion());
 
     AVD_LOG_DEBUG("All AVD Math Tests passed successfully!");
     return true;

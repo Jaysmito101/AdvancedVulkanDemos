@@ -2,7 +2,7 @@
 #include "scenes/avd_scenes.h"
 #include "vulkan/avd_vulkan_renderer.h"
 
-static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
+static bool PRIV_avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(layout != NULL);
@@ -24,7 +24,7 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
     return true;
 }
 
-static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AVD_SceneType targetSceneType, AVD_SceneMainMenuCard *card, AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, VkDescriptorSetLayout layout)
+static bool PRIV_avdSetupMainMenuCard(const char *imageAsset, const char *title, AVD_SceneType targetSceneType, AVD_SceneMainMenuCard *card, AVD_Vulkan *vulkan, AVD_FontRenderer *fontRenderer, VkDescriptorSetLayout layout)
 {
     AVD_ASSERT(card != NULL);
     AVD_ASSERT(imageAsset != NULL);
@@ -58,7 +58,7 @@ static bool __avdSetupMainMenuCard(const char *imageAsset, const char *title, AV
     return true;
 }
 
-static void __avdDestroyMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan *vulkan)
+static void PRIV_avdDestroyMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(card != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -67,7 +67,7 @@ static void __avdDestroyMainMenuCard(AVD_SceneMainMenuCard *card, AVD_Vulkan *vu
     avdRenderableTextDestroy(&card->title, vulkan);
 }
 
-static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *appState)
+static bool PRIV_avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *appState)
 {
     AVD_ASSERT(mainMenu != NULL);
     AVD_ASSERT(appState != NULL);
@@ -85,7 +85,7 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
 
         card = &mainMenu->cards[mainMenu->cardCount++];
         AVD_CHECK(
-            __avdSetupMainMenuCard(
+            PRIV_avdSetupMainMenuCard(
                 api[i].id,
                 api[i].displayName,
                 (AVD_SceneType)i,
@@ -98,7 +98,7 @@ static bool __avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState *a
     return true;
 }
 
-static AVD_SceneMainMenu *__avdSceneGetTypePtr(AVD_Scene *scene)
+static AVD_SceneMainMenu *PRIV_avdSceneGetTypePtr(AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_MAIN_MENU);
@@ -135,14 +135,14 @@ bool avdSceneMainMenuRegisterApi(AVD_SceneAPI *api)
 
 bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
 {
-    AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
+    AVD_SceneMainMenu *mainMenu = PRIV_avdSceneGetTypePtr(scene);
     AVD_LOG_INFO("Initializing main menu scene");
     mainMenu->loadingCount = 0;
     mainMenu->currentPage  = 0;
     mainMenu->hoveredCard  = -1;
 
-    AVD_CHECK(__avdSetupDescriptors(&mainMenu->descriptorSetLayout, &appState->vulkan));
-    AVD_CHECK(__avdSetupMainMenuCards(mainMenu, appState));
+    AVD_CHECK(PRIV_avdSetupDescriptors(&mainMenu->descriptorSetLayout, &appState->vulkan));
+    AVD_CHECK(PRIV_avdSetupMainMenuCards(mainMenu, appState));
 
     AVD_CHECK(avdRenderableTextCreate(
         &mainMenu->title,
@@ -178,7 +178,7 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
 
 void avdSceneMainMenuDestroy(AVD_AppState *appState, AVD_Scene *scene)
 {
-    AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
+    AVD_SceneMainMenu *mainMenu = PRIV_avdSceneGetTypePtr(scene);
 
     AVD_LOG_INFO("Destroying main menu scene");
     avdRenderableTextDestroy(&mainMenu->title, &appState->vulkan);
@@ -187,7 +187,7 @@ void avdSceneMainMenuDestroy(AVD_AppState *appState, AVD_Scene *scene)
     avdRenderableTextDestroy(&mainMenu->pageNumberText, &appState->vulkan);
     vkDestroyDescriptorSetLayout(appState->vulkan.device, mainMenu->descriptorSetLayout, NULL);
     for (uint32_t i = 0; i < mainMenu->cardCount; i++)
-        __avdDestroyMainMenuCard(&mainMenu->cards[i], &appState->vulkan);
+        PRIV_avdDestroyMainMenuCard(&mainMenu->cards[i], &appState->vulkan);
 }
 
 bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char **statusMessage, float *progress)
@@ -195,7 +195,7 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
     AVD_ASSERT(statusMessage != NULL);
     AVD_ASSERT(progress != NULL);
 
-    AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
+    AVD_SceneMainMenu *mainMenu = PRIV_avdSceneGetTypePtr(scene);
     // nothing to load really here but some busy waiting
     // just as an example of how to use the loading progress and status message
     if (mainMenu->loadingCount < 4) {
@@ -216,7 +216,7 @@ bool avdSceneMainMenuLoad(AVD_AppState *appState, AVD_Scene *scene, const char *
 
 void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
 {
-    AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
+    AVD_SceneMainMenu *mainMenu = PRIV_avdSceneGetTypePtr(scene);
 
     if (event->type == AVD_INPUT_EVENT_KEY) {
         if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS) {
@@ -247,13 +247,13 @@ void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *
 
 bool avdSceneMainMenuUpdate(AVD_AppState *appState, AVD_Scene *scene)
 {
-    AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
+    AVD_SceneMainMenu *mainMenu = PRIV_avdSceneGetTypePtr(scene);
     return true;
 }
 
 bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
 {
-    AVD_SceneMainMenu *mainMenu = __avdSceneGetTypePtr(scene);
+    AVD_SceneMainMenu *mainMenu = PRIV_avdSceneGetTypePtr(scene);
 
     AVD_Vulkan *vulkan           = &appState->vulkan;
     AVD_VulkanRenderer *renderer = &appState->renderer;

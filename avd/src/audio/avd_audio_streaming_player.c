@@ -3,7 +3,7 @@
 #include "audio/avd_audio_core.h"
 #include "core/avd_types.h"
 
-static bool __avdAudioStreamingPlayerCallback(
+static bool PRIV_avdAudioStreamingPlayerCallback(
     const void *inputBuffer,
     void *outputBuffer,
     AVD_Size framesPerBuffer,
@@ -131,7 +131,7 @@ void avdAudioStreamingPlayerShutdown(AVD_AudioStreamingPlayer *player)
     memset(player, 0, sizeof(AVD_AudioStreamingPlayer));
 }
 
-static bool __avdAudioStreamingPlayerAddClip(AVD_AudioStreamingPlayer *player, AVD_AudioClip *clip)
+static bool PRIV_avdAudioStreamingPlayerAddClip(AVD_AudioStreamingPlayer *player, AVD_AudioClip *clip)
 {
     AVD_ASSERT(player != NULL);
     AVD_ASSERT(clip != NULL);
@@ -210,7 +210,7 @@ bool avdAudioStreamingPlayerAddChunk(AVD_AudioStreamingPlayer *player, const voi
         return false;
     }
 
-    bool result = __avdAudioStreamingPlayerAddClip(player, &clip);
+    bool result = PRIV_avdAudioStreamingPlayerAddClip(player, &clip);
     if (!result) {
         avdAudioClipFree(&clip);
     }
@@ -238,7 +238,7 @@ bool avdAudioStreamingPlayerAddRawChunk(
         return false;
     }
 
-    bool result = __avdAudioStreamingPlayerAddClip(player, &clip);
+    bool result = PRIV_avdAudioStreamingPlayerAddClip(player, &clip);
     if (!result) {
         avdAudioClipFree(&clip);
     }
@@ -272,7 +272,7 @@ bool avdAudioStreamingPlayerPlay(AVD_AudioStreamingPlayer *player)
             player->sampleRate,
             player->channels == 2,
             256,
-            __avdAudioStreamingPlayerCallback,
+            PRIV_avdAudioStreamingPlayerCallback,
             player);
 
         if (!success) {

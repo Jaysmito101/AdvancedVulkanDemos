@@ -1,7 +1,7 @@
 #include "core/avd_core.h"
 #include <string.h>
 
-static bool __avdTestCurlIsSupported()
+static bool PRIV_avdTestCurlIsSupported()
 {
     AVD_LOG_DEBUG("  Testing curl support detection...");
 
@@ -12,7 +12,7 @@ static bool __avdTestCurlIsSupported()
     return true;
 }
 
-static bool __avdTestCurlDownloadToFile()
+static bool PRIV_avdTestCurlDownloadToFile()
 {
     AVD_LOG_DEBUG("  Testing curl download to file...");
 
@@ -51,7 +51,7 @@ static bool __avdTestCurlDownloadToFile()
     return true;
 }
 
-static bool __avdTestCurlDownloadToMemory()
+static bool PRIV_avdTestCurlDownloadToMemory()
 {
     AVD_LOG_DEBUG("  Testing curl download to memory...");
 
@@ -84,7 +84,7 @@ static bool __avdTestCurlDownloadToMemory()
     return true;
 }
 
-static bool __avdTestCurlFetchStringContent()
+static bool PRIV_avdTestCurlFetchStringContent()
 {
     AVD_LOG_DEBUG("  Testing curl fetch string content...");
 
@@ -123,7 +123,7 @@ static bool __avdTestCurlFetchStringContent()
     return true;
 }
 
-static bool __avdTestCurlInvalidUrl()
+static bool PRIV_avdTestCurlInvalidUrl()
 {
     AVD_LOG_DEBUG("  Testing curl with invalid URL...");
 
@@ -155,11 +155,11 @@ bool avdCurlUtilsTestsRun(void)
 
     bool allPassed = true;
 
-    allPassed &= __avdTestCurlIsSupported();
-    allPassed &= __avdTestCurlDownloadToFile();
-    allPassed &= __avdTestCurlDownloadToMemory();
-    allPassed &= __avdTestCurlFetchStringContent();
-    allPassed &= __avdTestCurlInvalidUrl();
+    allPassed &= PRIV_avdTestCurlIsSupported();
+    allPassed &= PRIV_avdTestCurlDownloadToFile();
+    allPassed &= PRIV_avdTestCurlDownloadToMemory();
+    allPassed &= PRIV_avdTestCurlFetchStringContent();
+    allPassed &= PRIV_avdTestCurlInvalidUrl();
 
     if (allPassed) {
         AVD_LOG_DEBUG("All Curl Utils Tests PASSED!");

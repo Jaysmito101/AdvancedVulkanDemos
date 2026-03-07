@@ -27,7 +27,7 @@ bool avdWindowInit(AVD_Window *window, AVD_AppState *appState)
     window->isMinimized = false;
     glfwSetWindowUserPointer(window->window, appState);
 
-    __avdSetupWindowEvents(window);
+    PRIV_avdSetupWindowEvents(window);
 
     return true;
 }

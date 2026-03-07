@@ -69,20 +69,20 @@
         AVD_LOG_WARN("Attempted to free a NULL pointer at %s:%d", __FILE__, __LINE__); \
     }
 
-#define AVD_EXECUTE_DEBOUNCED(intervalMs, codeBlock)                                                         \
-    do {                                                                                                     \
-        static picoPerfTime __avdDebouncedExecutorLastTime = {0};                                            \
-        static AVD_Size __avdNumSkippedCalls               = 0;                                              \
-        picoPerfTime __avdDebouncedExecutorCurrentTime     = picoPerfNow();                                  \
-        AVD_Double __avdDebouncedExecutorElapsed =                                                           \
-            picoPerfDurationMilliseconds(__avdDebouncedExecutorLastTime, __avdDebouncedExecutorCurrentTime); \
-        if (__avdDebouncedExecutorElapsed >= (AVD_Double)(intervalMs)) {                                     \
-            __avdDebouncedExecutorLastTime = __avdDebouncedExecutorCurrentTime;                              \
-            codeBlock;                                                                                       \
-            __avdNumSkippedCalls = 0;                                                                        \
-        } else {                                                                                             \
-            __avdNumSkippedCalls++;                                                                          \
-        }                                                                                                    \
+#define AVD_EXECUTE_DEBOUNCED(intervalMs, codeBlock)                                                               \
+    do {                                                                                                           \
+        static picoPerfTime PRIV_avdDebouncedExecutorLastTime = {0};                                               \
+        static AVD_Size PRIV_avdNumSkippedCalls               = 0;                                                 \
+        picoPerfTime PRIV_avdDebouncedExecutorCurrentTime     = picoPerfNow();                                     \
+        AVD_Double PRIV_avdDebouncedExecutorElapsed =                                                              \
+            picoPerfDurationMilliseconds(PRIV_avdDebouncedExecutorLastTime, PRIV_avdDebouncedExecutorCurrentTime); \
+        if (PRIV_avdDebouncedExecutorElapsed >= (AVD_Double)(intervalMs)) {                                        \
+            PRIV_avdDebouncedExecutorLastTime = PRIV_avdDebouncedExecutorCurrentTime;                              \
+            codeBlock;                                                                                             \
+            PRIV_avdNumSkippedCalls = 0;                                                                           \
+        } else {                                                                                                   \
+            PRIV_avdNumSkippedCalls++;                                                                             \
+        }                                                                                                          \
     } while (0)
 
 #define AVD_LOG_INIT()            PICO_LOG_INIT()
@@ -93,9 +93,9 @@
 #define AVD_LOG_WARN(msg, ...)    PICO_WARN(msg, ##__VA_ARGS__)
 #define AVD_LOG_ERROR(msg, ...)   PICO_ERROR(msg, ##__VA_ARGS__)
 
-#define __AVD_LOG_DEBOUNCED(intervalMs, logFunc, msg, ...)                                      \
-    AVD_EXECUTE_DEBOUNCED(intervalMs, {                                                         \
-        logFunc("[Debounced] " msg " (skipped %d calls)", ##__VA_ARGS__, __avdNumSkippedCalls); \
+#define __AVD_LOG_DEBOUNCED(intervalMs, logFunc, msg, ...)                                         \
+    AVD_EXECUTE_DEBOUNCED(intervalMs, {                                                            \
+        logFunc("[Debounced] " msg " (skipped %d calls)", ##__VA_ARGS__, PRIV_avdNumSkippedCalls); \
     })
 
 #define AVD_LOG_DEBUG_DEBOUNCED(intervalMs, msg, ...) \

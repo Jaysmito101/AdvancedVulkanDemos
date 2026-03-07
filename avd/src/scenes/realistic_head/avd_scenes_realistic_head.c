@@ -11,7 +11,7 @@ typedef struct {
     int32_t pad1;
 } AVD_RealisticHeadPushConstants;
 
-static AVD_SceneRealisticHead *__avdSceneGetTypePtr(union AVD_Scene *scene)
+static AVD_SceneRealisticHead *PRIV_avdSceneGetTypePtr(union AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_REALISTIC_HEAD);
@@ -52,7 +52,7 @@ bool avdSceneRealisticHeadInit(struct AVD_AppState *appState, union AVD_Scene *s
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneRealisticHead *realisticHead = __avdSceneGetTypePtr(scene);
+    AVD_SceneRealisticHead *realisticHead = PRIV_avdSceneGetTypePtr(scene);
 
     // Initialize title and info text
     AVD_CHECK(avdRenderableTextCreate(
@@ -81,7 +81,7 @@ void avdSceneRealisticHeadDestroy(struct AVD_AppState *appState, union AVD_Scene
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneRealisticHead *realisticHead = __avdSceneGetTypePtr(scene);
+    AVD_SceneRealisticHead *realisticHead = PRIV_avdSceneGetTypePtr(scene);
 
     vkDestroyPipeline(appState->vulkan.device, realisticHead->pipeline, NULL);
     vkDestroyPipelineLayout(appState->vulkan.device, realisticHead->pipelineLayout, NULL);
@@ -116,7 +116,7 @@ void avdSceneRealisticHeadInputEvent(struct AVD_AppState *appState, union AVD_Sc
     }
 }
 
-static bool __avdSceneUpdateCamera(AVD_SceneRealisticHead *realisticHead, AVD_Float timer)
+static bool PRIV_avdSceneUpdateCamera(AVD_SceneRealisticHead *realisticHead, AVD_Float timer)
 {
     AVD_ASSERT(realisticHead != NULL);
 
@@ -144,9 +144,9 @@ bool avdSceneRealisticHeadUpdate(struct AVD_AppState *appState, union AVD_Scene 
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneRealisticHead *realisticHead = __avdSceneGetTypePtr(scene);
+    AVD_SceneRealisticHead *realisticHead = PRIV_avdSceneGetTypePtr(scene);
 
-    AVD_CHECK(__avdSceneUpdateCamera(realisticHead, (float)appState->framerate.currentTime));
+    AVD_CHECK(PRIV_avdSceneUpdateCamera(realisticHead, (float)appState->framerate.currentTime));
 
     return true;
 }
@@ -157,7 +157,7 @@ bool avdSceneRealisticHeadRender(struct AVD_AppState *appState, union AVD_Scene 
     AVD_ASSERT(scene != NULL);
 
     VkCommandBuffer commandBuffer         = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
-    AVD_SceneRealisticHead *realisticHead = __avdSceneGetTypePtr(scene);
+    AVD_SceneRealisticHead *realisticHead = PRIV_avdSceneGetTypePtr(scene);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
 

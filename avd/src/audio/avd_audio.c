@@ -3,7 +3,7 @@
 #include "pico/picoAudio.h"
 #include "portaudio.h"
 
-static bool __avdAudioPaAudioDeviceToAVDAudioDevice(
+static bool PRIV_avdAudioPaAudioDeviceToAVDAudioDevice(
     const PaDeviceInfo *paDeviceInfo,
     AVD_Size index,
     AVD_AudioDevice *outDevice)
@@ -26,7 +26,7 @@ static bool __avdAudioPaAudioDeviceToAVDAudioDevice(
     return true;
 }
 
-static int __avdAudioPaAudioCallback(
+static int PRIV_avdAudioPaAudioCallback(
     const void *inputBuffer,
     void *outputBuffer,
     unsigned long framesPerBuffer,
@@ -97,7 +97,7 @@ bool avdAudioGetDevices(AVD_Audio *audio, AVD_AudioDevice *devices, AVD_Size *de
     if (devices) {
         for (AVD_Size i = 0; i < count; i++) {
             const PaDeviceInfo *paDeviceInfo = Pa_GetDeviceInfo((PaDeviceIndex)i);
-            __avdAudioPaAudioDeviceToAVDAudioDevice(paDeviceInfo, i, &devices[i]);
+            PRIV_avdAudioPaAudioDeviceToAVDAudioDevice(paDeviceInfo, i, &devices[i]);
         }
     }
 
@@ -122,7 +122,7 @@ bool avdAudioGetDefaultOutputDevice(AVD_Audio *audio, AVD_AudioDevice *device)
         return false;
     }
 
-    __avdAudioPaAudioDeviceToAVDAudioDevice(paDeviceInfo, (AVD_Size)defaultOutputDeviceIndex, device);
+    PRIV_avdAudioPaAudioDeviceToAVDAudioDevice(paDeviceInfo, (AVD_Size)defaultOutputDeviceIndex, device);
     return true;
 }
 
@@ -143,7 +143,7 @@ bool avdAudioGetDefaultInputDevice(AVD_Audio *audio, AVD_AudioDevice *device)
         return false;
     }
 
-    __avdAudioPaAudioDeviceToAVDAudioDevice(paDeviceInfo, (AVD_Size)defaultInputDeviceIndex, device);
+    PRIV_avdAudioPaAudioDeviceToAVDAudioDevice(paDeviceInfo, (AVD_Size)defaultInputDeviceIndex, device);
     return true;
 }
 
@@ -188,7 +188,7 @@ bool avdAudioOpenOutputStream(
         (double)sampleRate,
         framesPerBuffer,
         paClipOff,
-        __avdAudioPaAudioCallback,
+        PRIV_avdAudioPaAudioCallback,
         stream);
     if (err != paNoError) {
         AVD_LOG_ERROR("Failed to open audio output stream: %s", Pa_GetErrorText(err));
@@ -233,7 +233,7 @@ bool avdAudioOpenInputStream(
         (double)sampleRate,
         framesPerBuffer,
         paClipOff,
-        __avdAudioPaAudioCallback,
+        PRIV_avdAudioPaAudioCallback,
         stream);
     if (err != paNoError) {
         AVD_LOG_ERROR("Failed to open audio input stream: %s", Pa_GetErrorText(err));

@@ -14,7 +14,7 @@ typedef struct {
     size_t count;
 } AVD_MeshGenMidpointCache;
 
-static void __avdMeshGenCacheCreate(AVD_MeshGenMidpointCache *cache, size_t initialCapacity)
+static void PRIV_avdMeshGenCacheCreate(AVD_MeshGenMidpointCache *cache, size_t initialCapacity)
 {
     AVD_ASSERT(cache != NULL);
     AVD_ASSERT(initialCapacity > 0);
@@ -27,7 +27,7 @@ static void __avdMeshGenCacheCreate(AVD_MeshGenMidpointCache *cache, size_t init
     }
 }
 
-static void __avdMeshGenCacheDestroy(AVD_MeshGenMidpointCache *cache)
+static void PRIV_avdMeshGenCacheDestroy(AVD_MeshGenMidpointCache *cache)
 {
     AVD_ASSERT(cache != NULL);
     if (cache->entries) {
@@ -38,7 +38,7 @@ static void __avdMeshGenCacheDestroy(AVD_MeshGenMidpointCache *cache)
     }
 }
 
-static AVD_MeshGenCacheEntry *__avdMeshGenCacheFindEntry(AVD_MeshGenCacheEntry *entries, size_t capacity, uint64_t key)
+static AVD_MeshGenCacheEntry *PRIV_avdMeshGenCacheFindEntry(AVD_MeshGenCacheEntry *entries, size_t capacity, uint64_t key)
 {
     uint64_t hash = key % capacity;
     size_t index  = (size_t)hash;
@@ -52,7 +52,7 @@ static AVD_MeshGenCacheEntry *__avdMeshGenCacheFindEntry(AVD_MeshGenCacheEntry *
     }
 }
 
-static void __avdMeshGenCacheResize(AVD_MeshGenMidpointCache *cache, size_t newCapacity)
+static void PRIV_avdMeshGenCacheResize(AVD_MeshGenMidpointCache *cache, size_t newCapacity)
 {
     AVD_MeshGenCacheEntry *newEntries = (AVD_MeshGenCacheEntry *)malloc(newCapacity * sizeof(AVD_MeshGenCacheEntry));
     AVD_ASSERT(newEntries != NULL);
@@ -64,7 +64,7 @@ static void __avdMeshGenCacheResize(AVD_MeshGenMidpointCache *cache, size_t newC
     for (size_t i = 0; i < cache->capacity; ++i) {
         AVD_MeshGenCacheEntry *entry = &cache->entries[i];
         if (entry->key != CACHE_EMPTY_KEY) {
-            AVD_MeshGenCacheEntry *dest = __avdMeshGenCacheFindEntry(newEntries, newCapacity, entry->key);
+            AVD_MeshGenCacheEntry *dest = PRIV_avdMeshGenCacheFindEntry(newEntries, newCapacity, entry->key);
             dest->key                   = entry->key;
             dest->value                 = entry->value;
             cache->count++;
@@ -76,13 +76,13 @@ static void __avdMeshGenCacheResize(AVD_MeshGenMidpointCache *cache, size_t newC
     cache->capacity = newCapacity;
 }
 
-static void __avdMeshGenCacheSet(AVD_MeshGenMidpointCache *cache, uint64_t key, uint32_t value)
+static void PRIV_avdMeshGenCacheSet(AVD_MeshGenMidpointCache *cache, uint64_t key, uint32_t value)
 {
     if (cache->count + 1 > cache->capacity * 0.75) {
-        __avdMeshGenCacheResize(cache, cache->capacity * 2);
+        PRIV_avdMeshGenCacheResize(cache, cache->capacity * 2);
     }
 
-    AVD_MeshGenCacheEntry *entry = __avdMeshGenCacheFindEntry(cache->entries, cache->capacity, key);
+    AVD_MeshGenCacheEntry *entry = PRIV_avdMeshGenCacheFindEntry(cache->entries, cache->capacity, key);
     bool isNew                   = entry->key == CACHE_EMPTY_KEY;
     entry->key                   = key;
     entry->value                 = value;
@@ -92,12 +92,12 @@ static void __avdMeshGenCacheSet(AVD_MeshGenMidpointCache *cache, uint64_t key, 
     }
 }
 
-static bool __avdMeshGenCacheGet(AVD_MeshGenMidpointCache *cache, uint64_t key, uint32_t *value)
+static bool PRIV_avdMeshGenCacheGet(AVD_MeshGenMidpointCache *cache, uint64_t key, uint32_t *value)
 {
     if (cache->count == 0)
         return false;
 
-    AVD_MeshGenCacheEntry *entry = __avdMeshGenCacheFindEntry(cache->entries, cache->capacity, key);
+    AVD_MeshGenCacheEntry *entry = PRIV_avdMeshGenCacheFindEntry(cache->entries, cache->capacity, key);
     if (entry->key == CACHE_EMPTY_KEY) {
         return false;
     }
@@ -106,12 +106,12 @@ static bool __avdMeshGenCacheGet(AVD_MeshGenMidpointCache *cache, uint64_t key, 
     return true;
 }
 
-static uint32_t __avdMeshGenGetMidpointIndex(AVD_MeshGenMidpointCache *cache, uint32_t i1, uint32_t i2, AVD_List *vertices)
+static uint32_t PRIV_avdMeshGenGetMidpointIndex(AVD_MeshGenMidpointCache *cache, uint32_t i1, uint32_t i2, AVD_List *vertices)
 {
     uint64_t key = (i1 < i2) ? (((uint64_t)i1 << 32) | i2) : (((uint64_t)i2 << 32) | i1);
 
     uint32_t cachedIndex;
-    if (__avdMeshGenCacheGet(cache, key, &cachedIndex)) {
+    if (PRIV_avdMeshGenCacheGet(cache, key, &cachedIndex)) {
         return cachedIndex;
     }
 
@@ -124,7 +124,7 @@ static uint32_t __avdMeshGenGetMidpointIndex(AVD_MeshGenMidpointCache *cache, ui
     uint32_t newIndex = (uint32_t)vertices->count;
     avdListPushBack(vertices, &midpoint);
 
-    __avdMeshGenCacheSet(cache, key, newIndex);
+    PRIV_avdMeshGenCacheSet(cache, key, newIndex);
     return newIndex;
 }
 
@@ -168,7 +168,7 @@ bool avdModelAddOctaSphere(
 
     for (uint32_t i = 0; i < subdivisions; ++i) {
         AVD_MeshGenMidpointCache cache;
-        __avdMeshGenCacheCreate(&cache, localIndices.count);
+        PRIV_avdMeshGenCacheCreate(&cache, localIndices.count);
         AVD_List nextIndices;
         avdListCreate(&nextIndices, sizeof(uint32_t));
 
@@ -177,9 +177,9 @@ bool avdModelAddOctaSphere(
             uint32_t i2 = *(uint32_t *)avdListGet(&localIndices, j + 1);
             uint32_t i3 = *(uint32_t *)avdListGet(&localIndices, j + 2);
 
-            uint32_t m12 = __avdMeshGenGetMidpointIndex(&cache, i1, i2, &localVertices);
-            uint32_t m23 = __avdMeshGenGetMidpointIndex(&cache, i2, i3, &localVertices);
-            uint32_t m31 = __avdMeshGenGetMidpointIndex(&cache, i3, i1, &localVertices);
+            uint32_t m12 = PRIV_avdMeshGenGetMidpointIndex(&cache, i1, i2, &localVertices);
+            uint32_t m23 = PRIV_avdMeshGenGetMidpointIndex(&cache, i2, i3, &localVertices);
+            uint32_t m31 = PRIV_avdMeshGenGetMidpointIndex(&cache, i3, i1, &localVertices);
 
             uint32_t newFaces[] = {
                 i1, m12, m31, // Top corner
@@ -194,7 +194,7 @@ bool avdModelAddOctaSphere(
 
         avdListDestroy(&localIndices);
         localIndices = nextIndices;
-        __avdMeshGenCacheDestroy(&cache);
+        PRIV_avdMeshGenCacheDestroy(&cache);
     }
 
     uint32_t baseVertexIndex = (uint32_t)resources->verticesList.count;

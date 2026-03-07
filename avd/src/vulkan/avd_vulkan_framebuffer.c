@@ -1,7 +1,7 @@
 #include "vulkan/avd_vulkan_framebuffer.h"
 #include "vulkan/avd_vulkan_pipeline_utils.h"
 
-static bool __avdVulkanFramebufferAttachmentDescriptorsCreate(AVD_Vulkan *vulkan, AVD_VulkanFramebufferAttachment *attachment)
+static bool PRIV_avdVulkanFramebufferAttachmentDescriptorsCreate(AVD_Vulkan *vulkan, AVD_VulkanFramebufferAttachment *attachment)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(attachment != NULL);
@@ -47,7 +47,7 @@ static bool __avdVulkanFramebufferAttachmentDescriptorsCreate(AVD_Vulkan *vulkan
     return true;
 }
 
-static void __avdVulkanFramebufferAttachmentDestroy(AVD_Vulkan *vulkan, AVD_VulkanFramebufferAttachment *attachment)
+static void PRIV_avdVulkanFramebufferAttachmentDestroy(AVD_Vulkan *vulkan, AVD_VulkanFramebufferAttachment *attachment)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(attachment != NULL);
@@ -56,7 +56,7 @@ static void __avdVulkanFramebufferAttachmentDestroy(AVD_Vulkan *vulkan, AVD_Vulk
     vkDestroyDescriptorSetLayout(vulkan->device, attachment->descriptorSetLayout, NULL);
 }
 
-static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_VulkanFramebufferAttachment *attachment, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
+static bool PRIV_avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_VulkanFramebufferAttachment *attachment, VkFormat format, VkImageUsageFlags usage, uint32_t width, uint32_t height)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(attachment != NULL);
@@ -67,7 +67,7 @@ static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_Vulka
                                        height,
                                        format,
                                        usage, "Core/FramebufferAttachment")));
-    AVD_CHECK(__avdVulkanFramebufferAttachmentDescriptorsCreate(vulkan, attachment));
+    AVD_CHECK(PRIV_avdVulkanFramebufferAttachmentDescriptorsCreate(vulkan, attachment));
 
     attachment->attachmentDescription = (VkAttachmentDescription){
         .flags          = 0,
@@ -98,7 +98,7 @@ static bool __avdVulkanFramebufferAttachmentCreate(AVD_Vulkan *vulkan, AVD_Vulka
     return true;
 }
 
-static bool __avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device, AVD_VulkanFramebuffer *framebuffer)
+static bool PRIV_avdVulkanFramebufferCreateRenderPassAndFramebuffer(VkDevice device, AVD_VulkanFramebuffer *framebuffer)
 {
     AVD_ASSERT(device != VK_NULL_HANDLE);
     AVD_ASSERT(framebuffer != NULL);
@@ -295,7 +295,7 @@ bool avdVulkanFramebufferCreate(
     for (uint32_t i = 0; i < formatCount; ++i) {
         AVD_VulkanFramebufferAttachment attachment     = {0};
         AVD_VulkanFramebufferAttachment *attachmentPtr = (AVD_VulkanFramebufferAttachment *)avdListPushBack(&framebuffer->colorAttachments, &attachment);
-        if (!__avdVulkanFramebufferAttachmentCreate(vulkan, attachmentPtr, colorFormats[i], VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
+        if (!PRIV_avdVulkanFramebufferAttachmentCreate(vulkan, attachmentPtr, colorFormats[i], VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
             AVD_LOG_ERROR("Failed to create color attachment for format %d", colorFormats[i]);
             return false;
         }
@@ -317,14 +317,14 @@ bool avdVulkanFramebufferCreate(
     }
 
     if (hasDepthStencil) {
-        if (!__avdVulkanFramebufferAttachmentCreate(vulkan, &framebuffer->depthStencilAttachment, depthStencilFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
+        if (!PRIV_avdVulkanFramebufferAttachmentCreate(vulkan, &framebuffer->depthStencilAttachment, depthStencilFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, width, height)) {
             AVD_LOG_ERROR("Failed to create depth stencil attachment");
             return false;
         }
     }
 
     // Create render pass and framebuffer here (omitted for brevity)
-    if (!__avdVulkanFramebufferCreateRenderPassAndFramebuffer(vulkan->device, framebuffer)) {
+    if (!PRIV_avdVulkanFramebufferCreateRenderPassAndFramebuffer(vulkan->device, framebuffer)) {
         AVD_LOG_ERROR("Failed to create render pass and framebuffer");
         return false;
     }
@@ -336,11 +336,11 @@ void avdVulkanFramebufferDestroy(AVD_Vulkan *vulkan, AVD_VulkanFramebuffer *fram
 {
     for (size_t i = 0; i < framebuffer->colorAttachments.count; ++i) {
         AVD_VulkanFramebufferAttachment *attachment = (AVD_VulkanFramebufferAttachment *)avdListGet(&framebuffer->colorAttachments, i);
-        __avdVulkanFramebufferAttachmentDestroy(vulkan, attachment);
+        PRIV_avdVulkanFramebufferAttachmentDestroy(vulkan, attachment);
     }
 
     if (framebuffer->hasDepthStencil) {
-        __avdVulkanFramebufferAttachmentDestroy(vulkan, &framebuffer->depthStencilAttachment);
+        PRIV_avdVulkanFramebufferAttachmentDestroy(vulkan, &framebuffer->depthStencilAttachment);
     }
     vkDestroyRenderPass(vulkan->device, framebuffer->renderPass, NULL);
     vkDestroyFramebuffer(vulkan->device, framebuffer->framebuffer, NULL);

@@ -1,7 +1,7 @@
 #include "core/avd_core.h"
 #include <string.h>
 
-static bool __avdTestListInit()
+static bool PRIV_avdTestListInit()
 {
     AVD_LOG_DEBUG("  Testing List initialization...");
 
@@ -22,7 +22,7 @@ static bool __avdTestListInit()
     return true;
 }
 
-static bool __avdTestListPushBack()
+static bool PRIV_avdTestListPushBack()
 {
     AVD_LOG_DEBUG("  Testing List push back operations...");
 
@@ -74,7 +74,7 @@ static bool __avdTestListPushBack()
     return true;
 }
 
-static bool __avdTestListPushFront()
+static bool PRIV_avdTestListPushFront()
 {
     AVD_LOG_DEBUG("  Testing List push front operations...");
 
@@ -109,7 +109,7 @@ static bool __avdTestListPushFront()
     return true;
 }
 
-static bool __avdTestListPopOperations()
+static bool PRIV_avdTestListPopOperations()
 {
     AVD_LOG_DEBUG("  Testing List pop operations...");
 
@@ -168,7 +168,7 @@ static bool __avdTestListPopOperations()
     return true;
 }
 
-static bool __avdTestListInsertRemove()
+static bool PRIV_avdTestListInsertRemove()
 {
     AVD_LOG_DEBUG("  Testing List insert/remove operations...");
 
@@ -252,7 +252,7 @@ static int __compareInts(const void *a, const void *b)
     return (intA > intB) - (intA < intB);
 }
 
-static bool __avdTestListSort()
+static bool PRIV_avdTestListSort()
 {
     AVD_LOG_DEBUG("  Testing List sort operations...");
 
@@ -303,7 +303,7 @@ static bool __avdTestListSort()
     return true;
 }
 
-static bool __avdTestListUtilities()
+static bool PRIV_avdTestListUtilities()
 {
     AVD_LOG_DEBUG("  Testing List utility functions...");
 
@@ -383,7 +383,7 @@ static bool __avdTestListUtilities()
     return true;
 }
 
-static bool __avdTestListWithStrings()
+static bool PRIV_avdTestListWithStrings()
 {
     AVD_LOG_DEBUG("  Testing List with string data...");
 
@@ -423,7 +423,7 @@ static bool __avdTestListWithStrings()
     return true;
 }
 
-static bool __avdTestListEdgeCases()
+static bool PRIV_avdTestListEdgeCases()
 {
     AVD_LOG_DEBUG("  Testing List edge cases...");
 
@@ -505,7 +505,7 @@ static void __resetDestructorTracking()
     destructorCalledValuesSize = 0;
 }
 
-static bool __avdTestListDestructor()
+static bool PRIV_avdTestListDestructor()
 {
     AVD_LOG_DEBUG("  Testing List destructor functionality...");
 
@@ -637,16 +637,16 @@ bool avdListTestsRun(void)
 {
     AVD_LOG_DEBUG("Running AVD List Tests...");
 
-    AVD_CHECK(__avdTestListInit());
-    AVD_CHECK(__avdTestListPushBack());
-    AVD_CHECK(__avdTestListPushFront());
-    AVD_CHECK(__avdTestListPopOperations());
-    AVD_CHECK(__avdTestListInsertRemove());
-    AVD_CHECK(__avdTestListSort());
-    AVD_CHECK(__avdTestListUtilities());
-    AVD_CHECK(__avdTestListWithStrings());
-    AVD_CHECK(__avdTestListEdgeCases());
-    AVD_CHECK(__avdTestListDestructor());
+    AVD_CHECK(PRIV_avdTestListInit());
+    AVD_CHECK(PRIV_avdTestListPushBack());
+    AVD_CHECK(PRIV_avdTestListPushFront());
+    AVD_CHECK(PRIV_avdTestListPopOperations());
+    AVD_CHECK(PRIV_avdTestListInsertRemove());
+    AVD_CHECK(PRIV_avdTestListSort());
+    AVD_CHECK(PRIV_avdTestListUtilities());
+    AVD_CHECK(PRIV_avdTestListWithStrings());
+    AVD_CHECK(PRIV_avdTestListEdgeCases());
+    AVD_CHECK(PRIV_avdTestListDestructor());
 
     AVD_LOG_DEBUG("All AVD List Tests passed successfully!");
     return true;

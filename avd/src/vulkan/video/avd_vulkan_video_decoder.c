@@ -12,7 +12,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-static bool __avdVulkanVideoDecoderCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video)
+static bool PRIV_avdVulkanVideoDecoderCreateSession(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video)
 {
     VkVideoDecodeH264ProfileInfoKHR h264DecodeProfileInfo = {
         .sType         = VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_PROFILE_INFO_KHR,
@@ -92,7 +92,7 @@ static bool __avdVulkanVideoDecoderCreateSession(AVD_Vulkan *vulkan, AVD_VulkanV
     return true;
 }
 
-static bool __avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
+static bool PRIV_avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -126,7 +126,7 @@ static bool __avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(AVD_Vulkan *vulkan
     return true;
 }
 
-static bool __avdVulkanVideoDecoderUpdateDPB(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
+static bool PRIV_avdVulkanVideoDecoderUpdateDPB(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -154,7 +154,7 @@ static bool __avdVulkanVideoDecoderUpdateDPB(AVD_Vulkan *vulkan, AVD_VulkanVideo
     return true;
 }
 
-static bool __avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
+static bool PRIV_avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -195,7 +195,7 @@ static bool __avdVulkanVideoDecoderUpdateDecodedFrames(AVD_Vulkan *vulkan, AVD_V
     return true;
 }
 
-static bool __avdVulkanVideoDecoderPrepareVulkanPpsData(
+static bool PRIV_avdVulkanVideoDecoderPrepareVulkanPpsData(
     StdVideoH264PictureParameterSet *vPps,
     StdVideoH264ScalingLists *vScalingLists,
     picoH264PictureParameterSet pps)
@@ -245,7 +245,7 @@ static bool __avdVulkanVideoDecoderPrepareVulkanPpsData(
     return true;
 }
 
-static bool __avdVulkanVideoDecoderLevelIdcToStdVideo(
+static bool PRIV_avdVulkanVideoDecoderLevelIdcToStdVideo(
     uint8_t levelIdc,
     StdVideoH264LevelIdc *outStdLevelIdc)
 {
@@ -315,7 +315,7 @@ static bool __avdVulkanVideoDecoderLevelIdcToStdVideo(
     return true;
 }
 
-static bool __avdVulkanVideoDecoderPrepareVulkanSpsData(
+static bool PRIV_avdVulkanVideoDecoderPrepareVulkanSpsData(
     AVD_Vulkan *vulkan,
     StdVideoH264SequenceParameterSet *vSps,
     StdVideoH264SequenceParameterSetVui *vVui,
@@ -390,7 +390,7 @@ static bool __avdVulkanVideoDecoderPrepareVulkanSpsData(
     }
 
     vSps->profile_idc = (StdVideoH264ProfileIdc)sps->profileIdc;
-    AVD_CHECK(__avdVulkanVideoDecoderLevelIdcToStdVideo(sps->levelIdc, &vSps->level_idc));
+    AVD_CHECK(PRIV_avdVulkanVideoDecoderLevelIdcToStdVideo(sps->levelIdc, &vSps->level_idc));
     AVD_CHECK_MSG(vSps->level_idc <= vulkan->supportedFeatures.videoDecodeH264Capabilities.maxLevelIdc, "Unsupported H264 level idc: %d", sps->levelIdc);
     AVD_CHECK_MSG(sps->chromaFormatIdc == STD_VIDEO_H264_CHROMA_FORMAT_IDC_420, "Only 4:2:0 chroma format is supported in Vulkan video decoding right now");
     // vSps->chroma_format_idc = (StdVideoH264ChromaFormatIdc)sps->chromaFormatIdc;
@@ -419,7 +419,7 @@ static bool __avdVulkanVideoDecoderPrepareVulkanSpsData(
 // NOTE: here we are recreating the SPS for every change, which is not optimal
 // a more optimal approach would be to just use an update call to update the changed SPS/PPS
 // and keep the existing ones, but this is simpler to implement for now
-static bool __avdVulkanVideoDecoderUpdateSessionParameters(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk, bool spsDirty, bool ppsDirty)
+static bool PRIV_avdVulkanVideoDecoderUpdateSessionParameters(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk, bool spsDirty, bool ppsDirty)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -458,7 +458,7 @@ static bool __avdVulkanVideoDecoderUpdateSessionParameters(AVD_Vulkan *vulkan, A
         for (AVD_Size i = 0; i < PICO_H264_MAX_PPS_COUNT; i++) {
             if (chunk->videoChunk->ppsArray[i] != NULL) {
                 AVD_CHECK(
-                    __avdVulkanVideoDecoderPrepareVulkanPpsData(
+                    PRIV_avdVulkanVideoDecoderPrepareVulkanPpsData(
                         &video->sessionData.ppsArray[index],
                         &video->sessionData.scalingListsArray[index],
                         chunk->videoChunk->ppsArray[i]));
@@ -471,7 +471,7 @@ static bool __avdVulkanVideoDecoderUpdateSessionParameters(AVD_Vulkan *vulkan, A
         for (AVD_Size i = 0; i < PICO_H264_MAX_SPS_COUNT; i++) {
             if (chunk->videoChunk->spsArray[i] != NULL) {
                 AVD_CHECK(
-                    __avdVulkanVideoDecoderPrepareVulkanSpsData(
+                    PRIV_avdVulkanVideoDecoderPrepareVulkanSpsData(
                         vulkan,
                         &video->sessionData.spsArray[index],
                         &video->sessionData.vuiArray[index],
@@ -519,7 +519,7 @@ static bool __avdVulkanVideoDecoderUpdateSessionParameters(AVD_Vulkan *vulkan, A
     return true;
 }
 
-static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk, bool spsDirty, bool ppsDirty)
+static bool PRIV_avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecoderChunk *chunk, bool spsDirty, bool ppsDirty)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(chunk != NULL);
@@ -533,16 +533,16 @@ static bool __avdVulkanVideoDecoderPrepareForNewChunk(AVD_Vulkan *vulkan, AVD_Vu
     memset(video->currentChunk.referenceInfo, 0, sizeof(video->currentChunk.referenceInfo));
     memset(video->currentChunk.references, 0, sizeof(video->currentChunk.references));
 
-    AVD_CHECK(__avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(vulkan, video, chunk));
-    AVD_CHECK(__avdVulkanVideoDecoderUpdateDPB(vulkan, video, chunk));
-    AVD_CHECK(__avdVulkanVideoDecoderUpdateDecodedFrames(vulkan, video, chunk));
-    AVD_CHECK(__avdVulkanVideoDecoderUpdateSessionParameters(vulkan, video, chunk, spsDirty, ppsDirty));
+    AVD_CHECK(PRIV_avdVulkanVideoDecoderUpdateChunkBitstreamBuffer(vulkan, video, chunk));
+    AVD_CHECK(PRIV_avdVulkanVideoDecoderUpdateDPB(vulkan, video, chunk));
+    AVD_CHECK(PRIV_avdVulkanVideoDecoderUpdateDecodedFrames(vulkan, video, chunk));
+    AVD_CHECK(PRIV_avdVulkanVideoDecoderUpdateSessionParameters(vulkan, video, chunk, spsDirty, ppsDirty));
 
     chunk->ready = true;
     return true;
 }
 
-static bool __avdVulkanVideoDecoderCopyToDecodedFrame(
+static bool PRIV_avdVulkanVideoDecoderCopyToDecodedFrame(
     VkCommandBuffer commandBuffer,
     AVD_VulkanVideoDecoder *video,
     AVD_VulkanVideoDecodedFrame *decodedFrame)
@@ -640,7 +640,7 @@ static bool __avdVulkanVideoDecoderCopyToDecodedFrame(
     return true;
 }
 
-static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *decodedFrame)
+static bool PRIV_avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *decodedFrame)
 {
     AVD_ASSERT(video != NULL);
     AVD_ASSERT(decodedFrame != NULL);
@@ -849,7 +849,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
                 video->commandBuffer));
     }
 
-    AVD_CHECK(__avdVulkanVideoDecoderCopyToDecodedFrame(video->commandBuffer, video, decodedFrame));
+    AVD_CHECK(PRIV_avdVulkanVideoDecoderCopyToDecodedFrame(video->commandBuffer, video, decodedFrame));
 
     AVD_VK_CALL(vkEndCommandBuffer(video->commandBuffer));
 
@@ -881,7 +881,7 @@ static bool __avdVulkanVideoDecoderDecodeCurrentFrame(AVD_Vulkan *vulkan, AVD_Vu
     return true;
 }
 
-static bool __avdVulkanVideoDecoderIsFrameInTime(AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *frame, AVD_Float targetTimeSeconds)
+static bool PRIV_avdVulkanVideoDecoderIsFrameInTime(AVD_VulkanVideoDecoder *video, AVD_VulkanVideoDecodedFrame *frame, AVD_Float targetTimeSeconds)
 {
     AVD_ASSERT(video != NULL);
 
@@ -1057,7 +1057,7 @@ bool avdVulkanVideoDecoderCreate(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *vid
         vkAllocateCommandBuffers(vulkan->device, &cmdBufAllocInfo, &video->commandBuffer),
         "Failed to allocate video decode command buffer");
 
-    AVD_CHECK(__avdVulkanVideoDecoderCreateSession(vulkan, video));
+    AVD_CHECK(PRIV_avdVulkanVideoDecoderCreateSession(vulkan, video));
 
     strncpy(video->label, label, sizeof(video->label) - 1);
     video->label[sizeof(video->label) - 1] = '\0';
@@ -1162,7 +1162,7 @@ bool avdVulkanVideoDecoderNextChunk(AVD_Vulkan *vulkan, AVD_VulkanVideoDecoder *
             &ppsDirty,
             eof));
 
-    AVD_CHECK(__avdVulkanVideoDecoderPrepareForNewChunk(vulkan, video, &video->currentChunk, spsDirty, ppsDirty));
+    AVD_CHECK(PRIV_avdVulkanVideoDecoderPrepareForNewChunk(vulkan, video, &video->currentChunk, spsDirty, ppsDirty));
 
     video->displayOrderOffset += video->currentChunk.videoChunk->frameInfos.count;
     video->timestampSecondsOffset += video->currentChunk.videoChunk->durationSeconds;
@@ -1228,7 +1228,7 @@ bool avdVulkanVideoDecoderTryDecodeFrames(
         decodedFrame = oldestFrame;
     }
 
-    AVD_CHECK(__avdVulkanVideoDecoderDecodeCurrentFrame(vulkan, video, decodedFrame));
+    AVD_CHECK(PRIV_avdVulkanVideoDecoderDecodeCurrentFrame(vulkan, video, decodedFrame));
 
     return true;
 }
@@ -1243,7 +1243,7 @@ bool avdVulkanVideoDecoderTryAcquireFrame(
 
     AVD_VulkanVideoDecodedFrame *currentFrame = *outFrame;
 
-    if (currentFrame != NULL && __avdVulkanVideoDecoderIsFrameInTime(video, currentFrame, currentTime)) {
+    if (currentFrame != NULL && PRIV_avdVulkanVideoDecoderIsFrameInTime(video, currentFrame, currentTime)) {
         // frame is still valid
         return true;
     }
@@ -1252,7 +1252,7 @@ bool avdVulkanVideoDecoderTryAcquireFrame(
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
         AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
         if (frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY) {
-            if (__avdVulkanVideoDecoderIsFrameInTime(video, frame, currentTime)) {
+            if (PRIV_avdVulkanVideoDecoderIsFrameInTime(video, frame, currentTime)) {
                 if (currentFrame != NULL) {
                     // release previous frame
                     currentFrame->status = AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_FREE;
@@ -1279,7 +1279,7 @@ bool avdVulkanVideoDecoderHasFrameForTime(
     for (AVD_Size i = 0; i < AVD_VULKAN_VIDEO_MAX_DECODED_FRAMES; i++) {
         AVD_VulkanVideoDecodedFrame *frame = &video->decodedFrames[i];
         if (frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_READY || frame->status == AVD_VULKAN_VIDEO_DECODED_FRAME_STATUS_ACQUIRED) {
-            if (__avdVulkanVideoDecoderIsFrameInTime(video, frame, currentTime)) {
+            if (PRIV_avdVulkanVideoDecoderIsFrameInTime(video, frame, currentTime)) {
                 return true;
             }
         }

@@ -1,7 +1,7 @@
 #include "scenes/avd_scenes.h"
 #include "avd_application.h"
 
-static bool __avdCheckSceneApiValidity(AVD_SceneAPI *api)
+static bool PRIV_avdCheckSceneApiValidity(AVD_SceneAPI *api)
 {
     AVD_CHECK(api->checkIntegrity != NULL);
     AVD_CHECK(api->init != NULL);
@@ -19,16 +19,16 @@ static bool __avdCheckSceneApiValidity(AVD_SceneAPI *api)
     return true;
 }
 
-static bool __avdCheckAllSceneApis(AVD_SceneManager *sceneManager)
+static bool PRIV_avdCheckAllSceneApis(AVD_SceneManager *sceneManager)
 {
     AVD_ASSERT(sceneManager != NULL);
     for (int i = 0; i < AVD_SCENE_TYPE_COUNT; ++i)
-        AVD_CHECK_MSG(__avdCheckSceneApiValidity(&sceneManager->api[i]), "Failed to validate scene API for type %s\n",
+        AVD_CHECK_MSG(PRIV_avdCheckSceneApiValidity(&sceneManager->api[i]), "Failed to validate scene API for type %s\n",
                       avdSceneTypeToString((AVD_SceneType)i));
     return true;
 }
 
-static bool __avdRegisterSceneApis(AVD_SceneManager *sceneManager)
+static bool PRIV_avdRegisterSceneApis(AVD_SceneManager *sceneManager)
 {
     AVD_ASSERT(sceneManager != NULL);
 
@@ -47,8 +47,8 @@ static bool __avdRegisterSceneApis(AVD_SceneManager *sceneManager)
 
 bool avdSceneManagerInit(AVD_SceneManager *sceneManager, AVD_AppState *appState)
 {
-    AVD_CHECK(__avdRegisterSceneApis(sceneManager));
-    AVD_CHECK(__avdCheckAllSceneApis(sceneManager));
+    AVD_CHECK(PRIV_avdRegisterSceneApis(sceneManager));
+    AVD_CHECK(PRIV_avdCheckAllSceneApis(sceneManager));
 
     sceneManager->currentSceneType   = AVD_SCENE_TYPE_MAIN_MENU;
     sceneManager->isSceneInitialized = false;
