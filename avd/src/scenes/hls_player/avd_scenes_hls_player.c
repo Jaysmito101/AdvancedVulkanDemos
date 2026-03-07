@@ -34,20 +34,20 @@ typedef struct {
 
 // TODO: a better way would be to acutally feed these to the shader via
 // push constants
-static AVD_Vector3 __avdHLSSceneSourcePositions[] = {
+static AVD_Vector3 PRIV_avdHLSSceneSourcePositions[] = {
     {-40.0, 12.0, 15.0},
     {-20.0, 12.0, -8.0},
     {20.0, 12.0, -5.0},
     {40.0, 12.0, 18.0}};
 
-static AVD_SceneHLSPlayer *__avdSceneGetTypePtr(union AVD_Scene *scene)
+static AVD_SceneHLSPlayer *PRIV_avdSceneGetTypePtr(union AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_HLS_PLAYER);
     return &scene->hlsPlayer;
 }
 
-static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+static bool PRIV_avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
     (void)appState;
     for (AVD_Size i = 0; i < scene->sourceCount; i++) {
@@ -58,12 +58,12 @@ static bool __avdSceneHLSPlayerFreeSources(AVD_AppState *appState, AVD_SceneHLSP
     return true;
 }
 
-static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, const char *path)
+static bool PRIV_avdSceneHLSPlayerLoadSourcesFromPath(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, const char *path)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(path != NULL);
 
-    __avdSceneHLSPlayerFreeSources(appState, scene);
+    PRIV_avdSceneHLSPlayerFreeSources(appState, scene);
 
     char *fileData  = NULL;
     size_t fileSize = 0;
@@ -112,7 +112,7 @@ static bool __avdSceneHLSPlayerLoadSourcesFromPath(AVD_AppState *appState, AVD_S
     return true;
 }
 
-static bool __avdSceneHLSPlayerRequestSourceUpdate(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, AVD_UInt32 source)
+static bool PRIV_avdSceneHLSPlayerRequestSourceUpdate(AVD_AppState *appState, AVD_SceneHLSPlayer *scene, AVD_UInt32 source)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(source < scene->sourceCount);
@@ -128,7 +128,7 @@ static bool __avdSceneHLSPlayerRequestSourceUpdate(AVD_AppState *appState, AVD_S
 }
 
 #ifdef AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
-static bool __avdSceneHLSPlayerSaveSegmentToDisk(AVD_HLSSegmentAVData *avData)
+static bool PRIV_avdSceneHLSPlayerSaveSegmentToDisk(AVD_HLSSegmentAVData *avData)
 {
     AVD_ASSERT(avData != NULL);
 
@@ -152,7 +152,7 @@ static bool __avdSceneHLSPlayerSaveSegmentToDisk(AVD_HLSSegmentAVData *avData)
 }
 #endif // AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
 
-static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+static bool PRIV_avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
     AVD_Float time = (AVD_Float)appState->framerate.currentTime;
 
@@ -163,7 +163,7 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
         }
 
         if (source->lastRefreshed + source->refreshIntervalMs < time) {
-            AVD_CHECK(__avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i));
+            AVD_CHECK(PRIV_avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i));
             continue;
         }
     }
@@ -171,7 +171,7 @@ static bool __avdSceneHLSPlayerUpdateSources(AVD_AppState *appState, AVD_SceneHL
     return true;
 }
 
-static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+static bool PRIV_avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
     (void)appState;
 
@@ -188,7 +188,7 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
         source->refreshIntervalMs = AVD_MIN(source->refreshIntervalMs, payload.avData.duration);
 
 #ifdef AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
-        __avdSceneHLSPlayerSaveSegmentToDisk(&payload.avData);
+        PRIV_avdSceneHLSPlayerSaveSegmentToDisk(&payload.avData);
 #endif
 
         AVD_LOG_INFO("received ready segment %u uration: %.3f at %.3f", payload.avData.segmentId, payload.avData.duration, (AVD_Float)appState->framerate.currentTime);
@@ -203,7 +203,7 @@ static bool __avdSceneHLSPlayerReceiveReadySegments(AVD_AppState *appState, AVD_
     return true;
 }
 
-static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
+static bool PRIV_avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneHLSPlayer *scene)
 {
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
@@ -215,7 +215,7 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
 
         if (source->currentlyPlayingSegmentId != 0 && !avdSceneHLSPlayerContextIsFed(&source->player) && time - source->lastRefreshed >= 1.0f) {
             AVD_LOG_WARN("HLS Player context ran out of data to decode/play!");
-            __avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i);
+            PRIV_avdSceneHLSPlayerRequestSourceUpdate(appState, scene, (AVD_UInt32)i);
         }
 
         if (!source->player.initialized) {
@@ -254,7 +254,7 @@ static bool __avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_SceneH
             vkUpdateDescriptorSets(appState->vulkan.device, 2, descriptorWrite, 0, NULL);
         }
 
-        AVD_Float distanceFromCamera      = avdVec3Length(avdVec3Subtract(__avdHLSSceneSourcePositions[i], scene->cameraPosition));
+        AVD_Float distanceFromCamera      = avdVec3Length(avdVec3Subtract(PRIV_avdHLSSceneSourcePositions[i], scene->cameraPosition));
         source->player.audioPlayer.volume = 10.0f / (distanceFromCamera * distanceFromCamera);
     }
 
@@ -312,7 +312,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
+    AVD_SceneHLSPlayer *hlsPlayer = PRIV_avdSceneGetTypePtr(scene);
 
     memset(hlsPlayer->sources, 0, sizeof(hlsPlayer->sources));
 
@@ -365,7 +365,7 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
         &pipelineCreationInfo));
 
     if (avdPathExists("assets/scene_hls_player/sources.txt")) {
-        AVD_CHECK(__avdSceneHLSPlayerLoadSourcesFromPath(appState, hlsPlayer, "assets/scene_hls_player/sources.txt"));
+        AVD_CHECK(PRIV_avdSceneHLSPlayerLoadSourcesFromPath(appState, hlsPlayer, "assets/scene_hls_player/sources.txt"));
         AVD_LOG_INFO("Loaded HLS sources from sources.txt");
     }
 
@@ -383,13 +383,13 @@ void avdSceneHLSPlayerDestroy(struct AVD_AppState *appState, union AVD_Scene *sc
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
+    AVD_SceneHLSPlayer *hlsPlayer = PRIV_avdSceneGetTypePtr(scene);
 
     avdHLSWorkerPoolDestroy(&hlsPlayer->workerPool);
     avdHLSMediaCacheDestroy(&hlsPlayer->mediaCache);
     avdHLSURLPoolDestroy(&hlsPlayer->urlPool);
 
-    __avdSceneHLSPlayerFreeSources(appState, hlsPlayer);
+    PRIV_avdSceneHLSPlayerFreeSources(appState, hlsPlayer);
 
     avdRenderableTextDestroy(&hlsPlayer->title, &appState->vulkan);
     avdRenderableTextDestroy(&hlsPlayer->info, &appState->vulkan);
@@ -420,7 +420,7 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(event != NULL);
 
-    AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
+    AVD_SceneHLSPlayer *hlsPlayer = PRIV_avdSceneGetTypePtr(scene);
 
     if (event->type == AVD_INPUT_EVENT_KEY) {
         if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS) {
@@ -452,7 +452,7 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
 
             avdHLSWorkerPoolFlush(&hlsPlayer->workerPool);
             avdHLSURLPoolClear(&hlsPlayer->urlPool);
-            __avdSceneHLSPlayerLoadSourcesFromPath(appState, hlsPlayer, event->dragNDrop.paths[0]);
+            PRIV_avdSceneHLSPlayerLoadSourcesFromPath(appState, hlsPlayer, event->dragNDrop.paths[0]);
         }
     }
 }
@@ -462,15 +462,15 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
+    AVD_SceneHLSPlayer *hlsPlayer = PRIV_avdSceneGetTypePtr(scene);
 
     if (!hlsPlayer->isSupported) {
         return true;
     }
 
-    AVD_CHECK(__avdSceneHLSPlayerUpdateSources(appState, hlsPlayer));
-    AVD_CHECK(__avdSceneHLSPlayerReceiveReadySegments(appState, hlsPlayer));
-    AVD_CHECK(__avdSceneHLSPlayerUpdateContexts(appState, hlsPlayer));
+    AVD_CHECK(PRIV_avdSceneHLSPlayerUpdateSources(appState, hlsPlayer));
+    AVD_CHECK(PRIV_avdSceneHLSPlayerReceiveReadySegments(appState, hlsPlayer));
+    AVD_CHECK(PRIV_avdSceneHLSPlayerUpdateContexts(appState, hlsPlayer));
 
     {
         const float moveSpeed = 40.0f * (AVD_Float)appState->framerate.deltaTime;
@@ -511,7 +511,7 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_ASSERT(scene != NULL);
 
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
-    AVD_SceneHLSPlayer *hlsPlayer = __avdSceneGetTypePtr(scene);
+    AVD_SceneHLSPlayer *hlsPlayer = PRIV_avdSceneGetTypePtr(scene);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
 

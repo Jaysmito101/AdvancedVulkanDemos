@@ -1,7 +1,7 @@
 #include "scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.h"
 #include "scenes/avd_scenes.h"
 
-static AVD_Scene2DRadianceCascades *__avdSceneGetTypePtr(AVD_Scene *scene)
+static AVD_Scene2DRadianceCascades *PRIV_avdSceneGetTypePtr(AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_2D_RADIANCE_CASCADES);
@@ -21,7 +21,7 @@ bool avdScene2DRadianceCascadesRender(struct AVD_AppState *appState, union AVD_S
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_Scene2DRadianceCascades *radianceCascades = __avdSceneGetTypePtr(scene);
+    AVD_Scene2DRadianceCascades *radianceCascades = PRIV_avdSceneGetTypePtr(scene);
 
     return true;
 }

@@ -3,10 +3,10 @@
 
 #ifdef AVD_DEBUG
 
-static VkBool32 __avdDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                 VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                 const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                                                 void *pUserData)
+static VkBool32 PRIV_avdDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                    VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                    const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                                                    void *pUserData)
 {
     const char *severity = NULL;
     switch (messageSeverity) {
@@ -34,7 +34,7 @@ static VkBool32 __avdDebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlag
     return VK_FALSE; // Don't abort on debug messages
 }
 
-static bool __avdCreateDebugUtilsMessenger(AVD_Vulkan *vulkan, AVD_VulkanDebugger *debugger)
+static bool PRIV_avdCreateDebugUtilsMessenger(AVD_Vulkan *vulkan, AVD_VulkanDebugger *debugger)
 {
     AVD_ASSERT(vulkan != NULL);
 
@@ -47,7 +47,7 @@ static bool __avdCreateDebugUtilsMessenger(AVD_Vulkan *vulkan, AVD_VulkanDebugge
         .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
                        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                        VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-        .pfnUserCallback = __avdDebugUtilsMessengerCallback,
+        .pfnUserCallback = PRIV_avdDebugUtilsMessengerCallback,
         .pUserData       = vulkan,
     };
 
@@ -91,7 +91,7 @@ bool avdVulkanDebuggerCreate(AVD_Vulkan *vulkan)
     AVD_ASSERT(vulkan != NULL);
 
     if (vulkan->debugger.layersEnabled) {
-        AVD_CHECK(__avdCreateDebugUtilsMessenger(vulkan, &vulkan->debugger));
+        AVD_CHECK(PRIV_avdCreateDebugUtilsMessenger(vulkan, &vulkan->debugger));
     }
     return true;
 }

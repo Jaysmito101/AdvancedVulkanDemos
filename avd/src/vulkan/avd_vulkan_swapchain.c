@@ -1,6 +1,6 @@
 #include "vulkan/avd_vulkan_swapchain.h"
 
-static bool __avdVulkanSwapchainChooseSurfaceformat(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanSwapchainChooseSurfaceformat(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(swapchain != NULL);
@@ -24,7 +24,7 @@ static bool __avdVulkanSwapchainChooseSurfaceformat(AVD_VulkanSwapchain *swapcha
     return true;
 }
 
-static bool __avdVulkanSwapchainChoosePresentMode(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanSwapchainChoosePresentMode(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(swapchain != NULL);
@@ -49,7 +49,7 @@ static bool __avdVulkanSwapchainChoosePresentMode(AVD_VulkanSwapchain *swapchain
     return true;
 }
 
-static bool __avdVulkanSwapchainChooseExtent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t fallBackWidth, uint32_t fallBackHeight)
+static bool PRIV_avdVulkanSwapchainChooseExtent(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t fallBackWidth, uint32_t fallBackHeight)
 {
     AVD_ASSERT(swapchain != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -79,7 +79,7 @@ static bool __avdVulkanSwapchainChooseExtent(AVD_VulkanSwapchain *swapchain, AVD
     return true;
 }
 
-static bool __avdVulkanSwapchainChooseImageCount(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanSwapchainChooseImageCount(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(swapchain != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -95,21 +95,21 @@ static bool __avdVulkanSwapchainChooseImageCount(AVD_VulkanSwapchain *swapchain,
     return true;
 }
 
-static bool __avdVulkanSwapchainChooseParameters(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t windowWidth, uint32_t windowHeight)
+static bool PRIV_avdVulkanSwapchainChooseParameters(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, uint32_t windowWidth, uint32_t windowHeight)
 {
     AVD_ASSERT(swapchain != NULL);
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(windowWidth > 0);
     AVD_ASSERT(windowHeight > 0);
 
-    AVD_CHECK(__avdVulkanSwapchainChooseSurfaceformat(swapchain, vulkan));
-    AVD_CHECK(__avdVulkanSwapchainChoosePresentMode(swapchain, vulkan));
-    AVD_CHECK(__avdVulkanSwapchainChooseExtent(swapchain, vulkan, windowWidth, windowHeight));
-    AVD_CHECK(__avdVulkanSwapchainChooseImageCount(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainChooseSurfaceformat(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainChoosePresentMode(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainChooseExtent(swapchain, vulkan, windowWidth, windowHeight));
+    AVD_CHECK(PRIV_avdVulkanSwapchainChooseImageCount(swapchain, vulkan));
     return true;
 }
 
-static bool __avdVulkanSwapchainQueryImages(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanSwapchainQueryImages(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(swapchain != NULL);
@@ -127,7 +127,7 @@ static bool __avdVulkanSwapchainQueryImages(AVD_VulkanSwapchain *swapchain, AVD_
     return true;
 }
 
-static bool __avdVulkanSwapchainCreateImageViews(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanSwapchainCreateImageViews(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(swapchain != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -155,7 +155,7 @@ static bool __avdVulkanSwapchainCreateImageViews(AVD_VulkanSwapchain *swapchain,
     return true;
 }
 
-static bool __avdVulkanSwapchainCreateFramebuffer(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanSwapchainCreateFramebuffer(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(swapchain != NULL);
@@ -194,7 +194,7 @@ static bool __avdVulkanSwapchainCreateFramebuffer(AVD_VulkanSwapchain *swapchain
     return true;
 }
 
-static bool __avdVulkanSwapchainKHRCreate(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, VkSwapchainKHR oldSwapchain)
+static bool PRIV_avdVulkanSwapchainKHRCreate(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan, VkSwapchainKHR oldSwapchain)
 {
     AVD_ASSERT(swapchain != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -231,7 +231,7 @@ static bool __avdVulkanSwapchainKHRCreate(AVD_VulkanSwapchain *swapchain, AVD_Vu
     return true;
 }
 
-static bool __avdVulkanSwapchainCreateRenderPass(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanSwapchainCreateRenderPass(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(swapchain != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -288,12 +288,12 @@ bool avdVulkanSwapchainCreate(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulkan
 
     swapchain->surface = surface;
 
-    AVD_CHECK(__avdVulkanSwapchainChooseParameters(swapchain, vulkan, window->width, window->height));
-    AVD_CHECK(__avdVulkanSwapchainKHRCreate(swapchain, vulkan, VK_NULL_HANDLE));
-    AVD_CHECK(__avdVulkanSwapchainCreateRenderPass(swapchain, vulkan));
-    AVD_CHECK(__avdVulkanSwapchainQueryImages(swapchain, vulkan));
-    AVD_CHECK(__avdVulkanSwapchainCreateImageViews(swapchain, vulkan));
-    AVD_CHECK(__avdVulkanSwapchainCreateFramebuffer(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainChooseParameters(swapchain, vulkan, window->width, window->height));
+    AVD_CHECK(PRIV_avdVulkanSwapchainKHRCreate(swapchain, vulkan, VK_NULL_HANDLE));
+    AVD_CHECK(PRIV_avdVulkanSwapchainCreateRenderPass(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainQueryImages(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainCreateImageViews(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainCreateFramebuffer(swapchain, vulkan));
 
     swapchain->swapchainReady            = true;
     swapchain->swapchainRecreateRequired = false;
@@ -315,11 +315,11 @@ bool avdVulkanSwapchainRecreate(AVD_VulkanSwapchain *swapchain, AVD_Vulkan *vulk
         vkDestroyFramebuffer(vulkan->device, swapchain->framebuffer, NULL);
     }
 
-    AVD_CHECK(__avdVulkanSwapchainChooseParameters(swapchain, vulkan, window->width, window->height));
-    AVD_CHECK(__avdVulkanSwapchainKHRCreate(swapchain, vulkan, swapchain->swapchain));
-    AVD_CHECK(__avdVulkanSwapchainQueryImages(swapchain, vulkan));
-    AVD_CHECK(__avdVulkanSwapchainCreateImageViews(swapchain, vulkan));
-    AVD_CHECK(__avdVulkanSwapchainCreateFramebuffer(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainChooseParameters(swapchain, vulkan, window->width, window->height));
+    AVD_CHECK(PRIV_avdVulkanSwapchainKHRCreate(swapchain, vulkan, swapchain->swapchain));
+    AVD_CHECK(PRIV_avdVulkanSwapchainQueryImages(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainCreateImageViews(swapchain, vulkan));
+    AVD_CHECK(PRIV_avdVulkanSwapchainCreateFramebuffer(swapchain, vulkan));
 
     swapchain->swapchainReady            = true;
     swapchain->swapchainRecreateRequired = false;

@@ -1,7 +1,7 @@
 #include "audio/avd_audio_clip.h"
 #include "pico/picoAudio.h"
 
-static bool __avdAudioClipFromDecoder(picoAudioDecoder decoder, AVD_AudioClip *outAudioData)
+static bool PRIV_avdAudioClipFromDecoder(picoAudioDecoder decoder, AVD_AudioClip *outAudioData)
 {
     AVD_ASSERT(decoder != NULL);
     AVD_ASSERT(outAudioData != NULL);
@@ -62,7 +62,7 @@ bool avdAudioClipFromFile(const char *filePath, AVD_AudioClip *outAudioData)
         return false;
     }
 
-    return __avdAudioClipFromDecoder(decoder, outAudioData);
+    return PRIV_avdAudioClipFromDecoder(decoder, outAudioData);
 }
 
 bool avdAudioClipFromMemory(const void *data, AVD_Size dataSize, AVD_AudioClip *outAudioData)
@@ -80,7 +80,7 @@ bool avdAudioClipFromMemory(const void *data, AVD_Size dataSize, AVD_AudioClip *
         return false;
     }
 
-    return __avdAudioClipFromDecoder(decoder, outAudioData);
+    return PRIV_avdAudioClipFromDecoder(decoder, outAudioData);
 }
 
 bool avdAudioClipFromRawPCM(

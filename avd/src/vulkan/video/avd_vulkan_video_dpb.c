@@ -7,7 +7,7 @@
 // to check which format is supported, but for now we just assume this one is supported everywhere.... :)
 static const VkFormat __AVD_VULKAN_VIDEO_DPB_FORMAT = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
 
-static bool __avdVulkanVideoDPBLoadSystemFlags(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb)
+static bool PRIV_avdVulkanVideoDPBLoadSystemFlags(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb)
 {
 
     dpb->decodeOutputCoincideSupported = (vulkan->supportedFeatures.videoDecodeCapabilities.flags &
@@ -23,7 +23,7 @@ static bool __avdVulkanVideoDPBLoadSystemFlags(AVD_Vulkan *vulkan, AVD_VulkanVid
     return true;
 }
 
-static bool __avdVulkanVideoDPBCreateFreeResources(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb)
+static bool PRIV_avdVulkanVideoDPBCreateFreeResources(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(dpb != NULL);
@@ -39,7 +39,7 @@ static bool __avdVulkanVideoDPBCreateFreeResources(AVD_Vulkan *vulkan, AVD_Vulka
     return true;
 }
 
-static bool __avdVulkanVideoDPBCreateImages(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb, bool forDecode, AVD_UInt32 width, AVD_UInt32 height, AVD_UInt32 numDPBSlots)
+static bool PRIV_avdVulkanVideoDPBCreateImages(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb, bool forDecode, AVD_UInt32 width, AVD_UInt32 height, AVD_UInt32 numDPBSlots)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(dpb != NULL);
@@ -115,12 +115,12 @@ bool avdVulkanVideoDecodeDPBCreate(
     dpb->format = __AVD_VULKAN_VIDEO_DPB_FORMAT;
 
     AVD_CHECK_MSG(
-        __avdVulkanVideoDPBLoadSystemFlags(vulkan, dpb),
+        PRIV_avdVulkanVideoDPBLoadSystemFlags(vulkan, dpb),
         "Failed to load system flags for video DPB %s",
         dpb->label);
 
     AVD_CHECK_MSG(
-        __avdVulkanVideoDPBCreateImages(vulkan, dpb, true, width, height, numDPBSlots),
+        PRIV_avdVulkanVideoDPBCreateImages(vulkan, dpb, true, width, height, numDPBSlots),
         "Failed to create images for video DPB %s",
         dpb->label);
 
@@ -142,7 +142,7 @@ void avdVulkanVideoDPBDestroy(AVD_Vulkan *vulkan, AVD_VulkanVideoDPB *dpb)
         return;
     }
 
-    if (!__avdVulkanVideoDPBCreateFreeResources(vulkan, dpb)) {
+    if (!PRIV_avdVulkanVideoDPBCreateFreeResources(vulkan, dpb)) {
         AVD_LOG_ERROR("Failed to free video DPB resources");
     }
 

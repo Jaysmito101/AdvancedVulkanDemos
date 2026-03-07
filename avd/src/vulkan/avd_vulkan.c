@@ -4,9 +4,9 @@
 #include "vulkan/video/avd_vulkan_video_core.h"
 #include <stdint.h>
 
-static AVD_Vulkan *__avdGlobalVulkanInstance = NULL;
+static AVD_Vulkan *PRIV_avdGlobalVulkanInstance = NULL;
 
-static const char *__avd_RequiredVulkanExtensions[] = {
+static const char *PRIV_avd_RequiredVulkanExtensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
     VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
@@ -21,34 +21,34 @@ static const char *__avd_RequiredVulkanExtensions[] = {
     // we can switch to the KHR versions when they are more widely supported.
     VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME};
 
-static const char *__avd_VulkanRayTraceExtensions[] = {
+static const char *PRIV_avd_VulkanRayTraceExtensions[] = {
     VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
     VK_KHR_RAY_QUERY_EXTENSION_NAME
     // VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, // disabling this as this messes renderdoc
 };
 
-static const char *__avd_VulkanVideoExtensions[] = {
+static const char *PRIV_avd_VulkanVideoExtensions[] = {
     VK_KHR_VIDEO_QUEUE_EXTENSION_NAME,
     VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
 };
 
-static const char *__avd_VulkanVideoDecodeExtensions[] = {
+static const char *PRIV_avd_VulkanVideoDecodeExtensions[] = {
     VK_KHR_VIDEO_DECODE_QUEUE_EXTENSION_NAME,
     VK_KHR_VIDEO_DECODE_H264_EXTENSION_NAME,
     // VK_KHR_VIDEO_DECODE_H265_EXTENSION_NAME, // we only deal with h264 for now!
 };
 
-static const char *__avd_VulkanVideoEncodeExtensions[] = {
+static const char *PRIV_avd_VulkanVideoEncodeExtensions[] = {
     VK_KHR_VIDEO_ENCODE_QUEUE_EXTENSION_NAME,
     VK_KHR_VIDEO_ENCODE_H264_EXTENSION_NAME,
     // VK_KHR_VIDEO_ENCODE_H265_EXTENSION_NAME, // we only deal with h264 for now!
 };
 
-static const char *__avd_VulkanYCbCrConversionExtensions[] = {
+static const char *PRIV_avd_VulkanYCbCrConversionExtensions[] = {
     VK_KHR_SAMPLER_YCBCR_CONVERSION_EXTENSION_NAME,
 };
 
-static AVD_VulkanFeatures *__avdVulkanFeaturesInit(AVD_VulkanFeatures *features)
+static AVD_VulkanFeatures *PRIV_avdVulkanFeaturesInit(AVD_VulkanFeatures *features)
 {
     AVD_ASSERT(features != NULL);
     features->rayTracing      = false;
@@ -59,7 +59,7 @@ static AVD_VulkanFeatures *__avdVulkanFeaturesInit(AVD_VulkanFeatures *features)
     return features;
 }
 
-static bool __avdAddGlfwExtenstions(uint32_t *extensionCount, const char **extensions)
+static bool PRIV_avdAddGlfwExtenstions(uint32_t *extensionCount, const char **extensions)
 {
     uint32_t count              = 0;
     const char **glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
@@ -74,7 +74,7 @@ static bool __avdAddGlfwExtenstions(uint32_t *extensionCount, const char **exten
     return true;
 }
 
-static void __avdVulkanAddDeviceExtensionsToList(const char **extensions, uint32_t *extensionCount, const char **deviceExtensions, uint32_t deviceExtensionCount)
+static void PRIV_avdVulkanAddDeviceExtensionsToList(const char **extensions, uint32_t *extensionCount, const char **deviceExtensions, uint32_t deviceExtensionCount)
 {
     for (uint32_t i = 0; i < deviceExtensionCount; ++i) {
         extensions[*extensionCount] = deviceExtensions[i];
@@ -82,7 +82,7 @@ static void __avdVulkanAddDeviceExtensionsToList(const char **extensions, uint32
     }
 }
 
-static const char **__avdGetVulkanDeviceExtensions(AVD_Vulkan *vulkan, uint32_t *extensionCount)
+static const char **PRIV_avdGetVulkanDeviceExtensions(AVD_Vulkan *vulkan, uint32_t *extensionCount)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(extensionCount != NULL);
@@ -90,28 +90,28 @@ static const char **__avdGetVulkanDeviceExtensions(AVD_Vulkan *vulkan, uint32_t 
     static const char *deviceExtensions[128] = {0};
 
     uint32_t count = 0;
-    __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_RequiredVulkanExtensions, AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions));
+    PRIV_avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, PRIV_avd_RequiredVulkanExtensions, AVD_ARRAY_COUNT(PRIV_avd_RequiredVulkanExtensions));
     if (vulkan->supportedFeatures.rayTracing) {
-        __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_VulkanRayTraceExtensions, AVD_ARRAY_COUNT(__avd_VulkanRayTraceExtensions));
+        PRIV_avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, PRIV_avd_VulkanRayTraceExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanRayTraceExtensions));
     }
     if (vulkan->supportedFeatures.videoCore) {
-        __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions));
+        PRIV_avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, PRIV_avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanVideoExtensions));
         if (vulkan->supportedFeatures.videoDecode) {
-            __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_VulkanVideoDecodeExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoDecodeExtensions));
+            PRIV_avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, PRIV_avd_VulkanVideoDecodeExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanVideoDecodeExtensions));
         }
         if (vulkan->supportedFeatures.videoEncode) {
-            __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_VulkanVideoEncodeExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoEncodeExtensions));
+            PRIV_avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, PRIV_avd_VulkanVideoEncodeExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanVideoEncodeExtensions));
         }
     }
     if (vulkan->supportedFeatures.ycbcrConversion) {
-        __avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, __avd_VulkanYCbCrConversionExtensions, AVD_ARRAY_COUNT(__avd_VulkanYCbCrConversionExtensions));
+        PRIV_avdVulkanAddDeviceExtensionsToList(deviceExtensions, &count, PRIV_avd_VulkanYCbCrConversionExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanYCbCrConversionExtensions));
     }
 
     *extensionCount = count;
     return deviceExtensions;
 }
 
-static bool __avdAddSurfaceExtensions(uint32_t *extensionCount, const char **extensions)
+static bool PRIV_avdAddSurfaceExtensions(uint32_t *extensionCount, const char **extensions)
 {
     extensions[*extensionCount] = VK_EXT_SURFACE_MAINTENANCE_1_EXTENSION_NAME;
     (*extensionCount)++;
@@ -122,7 +122,7 @@ static bool __avdAddSurfaceExtensions(uint32_t *extensionCount, const char **ext
     return true;
 }
 
-static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanCreateInstance(AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
 
@@ -138,8 +138,8 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
     uint32_t extensionCount           = 0;
     static const char *extensions[64] = {0};
 
-    AVD_CHECK(__avdAddGlfwExtenstions(&extensionCount, extensions));
-    AVD_CHECK(__avdAddSurfaceExtensions(&extensionCount, extensions));
+    AVD_CHECK(PRIV_avdAddGlfwExtenstions(&extensionCount, extensions));
+    AVD_CHECK(PRIV_avdAddSurfaceExtensions(&extensionCount, extensions));
 
     AVD_DEBUG_ONLY(avdVulkanAddDebugUtilsExtensions(&extensionCount, extensions));
 
@@ -165,7 +165,7 @@ static bool __avdVulkanCreateInstance(AVD_Vulkan *vulkan)
     return true;
 }
 
-static bool __avdVulkanCreateSurface(AVD_Vulkan *vulkan, GLFWwindow *window, VkSurfaceKHR *surface)
+static bool PRIV_avdVulkanCreateSurface(AVD_Vulkan *vulkan, GLFWwindow *window, VkSurfaceKHR *surface)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(window != NULL);
@@ -182,7 +182,7 @@ static bool __avdVulkanCreateSurface(AVD_Vulkan *vulkan, GLFWwindow *window, VkS
     return true;
 }
 
-static bool __avdVulkanPhysicalDeviceCheckExtensionsSet(VkExtensionProperties *extensions, uint32_t extensionsCount, const char **requiredExtensions, uint32_t requiredExtensionCount)
+static bool PRIV_avdVulkanPhysicalDeviceCheckExtensionsSet(VkExtensionProperties *extensions, uint32_t extensionsCount, const char **requiredExtensions, uint32_t requiredExtensionCount)
 {
     for (uint32_t i = 0; i < requiredExtensionCount; ++i) {
         bool found = false;
@@ -199,7 +199,7 @@ static bool __avdVulkanPhysicalDeviceCheckExtensionsSet(VkExtensionProperties *e
     return true;
 }
 
-static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AVD_VulkanFeatures *outFeatures)
+static bool PRIV_avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AVD_VulkanFeatures *outFeatures)
 {
     uint32_t extensionCount                      = 0;
     static VkExtensionProperties extensions[256] = {0};
@@ -210,15 +210,15 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AV
     }
     vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, extensions);
 
-    if (!__avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_RequiredVulkanExtensions, AVD_ARRAY_COUNT(__avd_RequiredVulkanExtensions))) {
+    if (!PRIV_avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, PRIV_avd_RequiredVulkanExtensions, AVD_ARRAY_COUNT(PRIV_avd_RequiredVulkanExtensions))) {
         return false;
     }
 
-    outFeatures->rayTracing      = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanRayTraceExtensions, AVD_ARRAY_COUNT(__avd_VulkanRayTraceExtensions));
-    outFeatures->videoCore       = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoExtensions));
-    outFeatures->videoDecode     = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoDecodeExtensions));
-    outFeatures->videoEncode     = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanVideoEncodeExtensions, AVD_ARRAY_COUNT(__avd_VulkanVideoEncodeExtensions));
-    outFeatures->ycbcrConversion = __avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, __avd_VulkanYCbCrConversionExtensions, AVD_ARRAY_COUNT(__avd_VulkanYCbCrConversionExtensions));
+    outFeatures->rayTracing      = PRIV_avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, PRIV_avd_VulkanRayTraceExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanRayTraceExtensions));
+    outFeatures->videoCore       = PRIV_avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, PRIV_avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanVideoExtensions));
+    outFeatures->videoDecode     = PRIV_avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, PRIV_avd_VulkanVideoExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanVideoDecodeExtensions));
+    outFeatures->videoEncode     = PRIV_avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, PRIV_avd_VulkanVideoEncodeExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanVideoEncodeExtensions));
+    outFeatures->ycbcrConversion = PRIV_avdVulkanPhysicalDeviceCheckExtensionsSet(extensions, extensionCount, PRIV_avd_VulkanYCbCrConversionExtensions, AVD_ARRAY_COUNT(PRIV_avd_VulkanYCbCrConversionExtensions));
 
 #ifndef AVD_ENABLE_VULKAN_VIDEO
     outFeatures->videoCore = outFeatures->videoDecode = outFeatures->videoEncode = false;
@@ -227,7 +227,7 @@ static bool __avdVulkanPhysicalDeviceCheckExtensions(VkPhysicalDevice device, AV
     return true;
 }
 
-static bool __avdVulkanPhysicalDeviceCheckFeatures(VkPhysicalDevice device, AVD_VulkanFeatures *outFeatures)
+static bool PRIV_avdVulkanPhysicalDeviceCheckFeatures(VkPhysicalDevice device, AVD_VulkanFeatures *outFeatures)
 {
     VkPhysicalDeviceFeatures features = {0};
     vkGetPhysicalDeviceFeatures(device, &features);
@@ -242,7 +242,7 @@ static bool __avdVulkanPhysicalDeviceCheckFeatures(VkPhysicalDevice device, AVD_
     return true;
 }
 
-static bool __avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
 
@@ -260,12 +260,12 @@ static bool __avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(devices[i], &deviceProperties);
 
-        if (!__avdVulkanPhysicalDeviceCheckExtensions(devices[i], __avdVulkanFeaturesInit(&supportedFeatures))) {
+        if (!PRIV_avdVulkanPhysicalDeviceCheckExtensions(devices[i], PRIV_avdVulkanFeaturesInit(&supportedFeatures))) {
             AVD_LOG_WARN("Physical device %s does not support required extensions\n", deviceProperties.deviceName);
             continue;
         }
 
-        if (!__avdVulkanPhysicalDeviceCheckFeatures(devices[i], &supportedFeatures)) {
+        if (!PRIV_avdVulkanPhysicalDeviceCheckFeatures(devices[i], &supportedFeatures)) {
             AVD_LOG_WARN("Physical device %s does not support required features\n", deviceProperties.deviceName);
             continue;
         }
@@ -287,7 +287,7 @@ static bool __avdVulkanPickPhysicalDevice(AVD_Vulkan *vulkan)
     return true;
 }
 
-static int32_t __avdVulkanFindQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlags flags, VkSurfaceKHR surface, int32_t excludeIndex)
+static int32_t PRIV_avdVulkanFindQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlags flags, VkSurfaceKHR surface, int32_t excludeIndex)
 {
     uint32_t queueFamilyCount                         = 0;
     static VkQueueFamilyProperties queueFamilies[128] = {0};
@@ -323,23 +323,23 @@ static int32_t __avdVulkanFindQueueFamilyIndex(VkPhysicalDevice device, VkQueueF
     return -1;
 }
 
-static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
+static bool PRIV_avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(surface != NULL);
 
-    int32_t graphicsQueueFamilyIndex = __avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_GRAPHICS_BIT, *surface, -1);
+    int32_t graphicsQueueFamilyIndex = PRIV_avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_GRAPHICS_BIT, *surface, -1);
     AVD_CHECK_MSG(graphicsQueueFamilyIndex >= 0, "Failed to find graphics queue family index\n");
 
-    int32_t computeQueueFamilyIndex = __avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_NULL_HANDLE, graphicsQueueFamilyIndex);
+    int32_t computeQueueFamilyIndex = PRIV_avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_NULL_HANDLE, graphicsQueueFamilyIndex);
     AVD_CHECK_MSG(computeQueueFamilyIndex >= 0, "Failed to find compute queue family index\n");
 
-    int32_t videoDecodeQueueFamilyIndex = __avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT, VK_NULL_HANDLE, -1);
+    int32_t videoDecodeQueueFamilyIndex = PRIV_avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_VIDEO_DECODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT, VK_NULL_HANDLE, -1);
     if (vulkan->supportedFeatures.videoDecode) {
         AVD_CHECK_MSG(videoDecodeQueueFamilyIndex >= 0, "Failed to find video decode queue family index\n");
     }
 
-    int32_t videoEncodeQueueFamilyIndex = __avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_VIDEO_ENCODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT, VK_NULL_HANDLE, -1);
+    int32_t videoEncodeQueueFamilyIndex = PRIV_avdVulkanFindQueueFamilyIndex(vulkan->physicalDevice, VK_QUEUE_VIDEO_ENCODE_BIT_KHR | VK_QUEUE_TRANSFER_BIT, VK_NULL_HANDLE, -1);
     if (vulkan->supportedFeatures.videoEncode) {
         AVD_CHECK_MSG(videoEncodeQueueFamilyIndex >= 0, "Failed to find video encode queue family index\n");
     }
@@ -456,7 +456,7 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     };
 
     uint32_t deviceExtensionCount = 0;
-    const char **deviceExtensions = __avdGetVulkanDeviceExtensions(vulkan, &deviceExtensionCount);
+    const char **deviceExtensions = PRIV_avdGetVulkanDeviceExtensions(vulkan, &deviceExtensionCount);
 
     VkDeviceCreateInfo createInfo = {
         .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -496,7 +496,7 @@ static bool __avdVulkanCreateDevice(AVD_Vulkan *vulkan, VkSurfaceKHR *surface)
     return true;
 }
 
-static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
 {
     if (vulkan->supportedFeatures.videoDecode) {
         vulkan->supportedFeatures.videoDecodeH264Capabilities = (VkVideoDecodeH264CapabilitiesKHR){
@@ -545,7 +545,7 @@ static bool __avdVulkanQueryDeviceProperties(AVD_Vulkan *vulkan)
     return true;
 }
 
-static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanGetQueues(AVD_Vulkan *vulkan)
 {
     vkGetDeviceQueue(vulkan->device, vulkan->graphicsQueueFamilyIndex, 0, &vulkan->graphicsQueue);
     AVD_CHECK_MSG(vulkan->graphicsQueue != VK_NULL_HANDLE, "Failed to get graphics queue\n");
@@ -582,7 +582,7 @@ static bool __avdVulkanGetQueues(AVD_Vulkan *vulkan)
     return true;
 }
 
-static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
 {
     VkCommandPoolCreateInfo poolInfo = {
         .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -629,7 +629,7 @@ static bool __avdVulkanCreateCommandPools(AVD_Vulkan *vulkan)
     return true;
 }
 
-static bool __avdVulkanDescriptorPoolCreate(AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanDescriptorPoolCreate(AVD_Vulkan *vulkan)
 {
     VkDescriptorPoolSize poolSizes[AVD_VULKAN_DESCRIPTOR_TYPE_COUNT] = {0};
     for (int i = 0; i < AVD_VULKAN_DESCRIPTOR_TYPE_COUNT; ++i) {
@@ -664,7 +664,7 @@ static bool __avdVulkanDescriptorPoolCreate(AVD_Vulkan *vulkan)
     return true;
 }
 
-static bool __avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
+static bool PRIV_avdVulkanCreateDescriptorSets(AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
 
@@ -752,25 +752,25 @@ bool avdVulkanInstanceLayersSupported(const char **layers, uint32_t layerCount)
 
 AVD_Vulkan *avdVulkanGetGlobalInstance()
 {
-    return __avdGlobalVulkanInstance;
+    return PRIV_avdGlobalVulkanInstance;
 }
 
 bool avdVulkanInit(AVD_Vulkan *vulkan, AVD_Window *window, VkSurfaceKHR *surface)
 {
-    AVD_CHECK_MSG(__avdGlobalVulkanInstance == NULL, "Vulkan instance already initialized");
-    __avdGlobalVulkanInstance = vulkan;
+    AVD_CHECK_MSG(PRIV_avdGlobalVulkanInstance == NULL, "Vulkan instance already initialized");
+    PRIV_avdGlobalVulkanInstance = vulkan;
 
     AVD_CHECK_VK_RESULT(volkInitialize(), "Failed to initialize Vulkan");
-    AVD_CHECK(__avdVulkanCreateInstance(vulkan));
+    AVD_CHECK(PRIV_avdVulkanCreateInstance(vulkan));
     AVD_DEBUG_ONLY(AVD_CHECK(avdVulkanDebuggerCreate(vulkan)));
-    AVD_CHECK(__avdVulkanCreateSurface(vulkan, window->window, surface));
-    AVD_CHECK(__avdVulkanPickPhysicalDevice(vulkan));
-    AVD_CHECK(__avdVulkanCreateDevice(vulkan, surface));
-    AVD_CHECK(__avdVulkanQueryDeviceProperties(vulkan));
-    AVD_CHECK(__avdVulkanGetQueues(vulkan));
-    AVD_CHECK(__avdVulkanCreateCommandPools(vulkan));
-    AVD_CHECK(__avdVulkanDescriptorPoolCreate(vulkan));
-    AVD_CHECK(__avdVulkanCreateDescriptorSets(vulkan));
+    AVD_CHECK(PRIV_avdVulkanCreateSurface(vulkan, window->window, surface));
+    AVD_CHECK(PRIV_avdVulkanPickPhysicalDevice(vulkan));
+    AVD_CHECK(PRIV_avdVulkanCreateDevice(vulkan, surface));
+    AVD_CHECK(PRIV_avdVulkanQueryDeviceProperties(vulkan));
+    AVD_CHECK(PRIV_avdVulkanGetQueues(vulkan));
+    AVD_CHECK(PRIV_avdVulkanCreateCommandPools(vulkan));
+    AVD_CHECK(PRIV_avdVulkanDescriptorPoolCreate(vulkan));
+    AVD_CHECK(PRIV_avdVulkanCreateDescriptorSets(vulkan));
 
     return true;
 }

@@ -12,7 +12,7 @@ typedef struct {
     AVD_Int64 headOffset;
 } AVD_ScenesHLSStream;
 
-static size_t __avdHLSStreamRead(void *userData, void *buffer, size_t size)
+static size_t PRIV_avdHLSStreamRead(void *userData, void *buffer, size_t size)
 {
     AVD_ScenesHLSStream *hlsStream = (AVD_ScenesHLSStream *)userData;
     AVD_ASSERT(hlsStream != NULL);
@@ -30,7 +30,7 @@ static size_t __avdHLSStreamRead(void *userData, void *buffer, size_t size)
     return size;
 }
 
-static int __avdHLSStreamSeek(void *userData, int64_t offset, picoStreamSeekOrigin origin)
+static int PRIV_avdHLSStreamSeek(void *userData, int64_t offset, picoStreamSeekOrigin origin)
 {
     AVD_ScenesHLSStream *hlsStream = (AVD_ScenesHLSStream *)userData;
     AVD_ASSERT(hlsStream != NULL);
@@ -71,14 +71,14 @@ static int __avdHLSStreamSeek(void *userData, int64_t offset, picoStreamSeekOrig
     return 0;
 }
 
-static int64_t __avdHLSStreamTell(void *userData)
+static int64_t PRIV_avdHLSStreamTell(void *userData)
 {
     AVD_ScenesHLSStream *hlsStream = (AVD_ScenesHLSStream *)userData;
     AVD_ASSERT(hlsStream != NULL);
     return hlsStream->headOffset + (int64_t)hlsStream->readHead;
 }
 
-static void __avdHLSStreamDestroy(void *userData)
+static void PRIV_avdHLSStreamDestroy(void *userData)
 {
     AVD_ScenesHLSStream *hlsStream = (AVD_ScenesHLSStream *)userData;
     AVD_ASSERT(hlsStream != NULL);
@@ -106,10 +106,10 @@ picoStream avdHLSStreamCreate()
     }
 
     customStream.userData = hlsStream;
-    customStream.read     = __avdHLSStreamRead;
-    customStream.seek     = __avdHLSStreamSeek;
-    customStream.tell     = __avdHLSStreamTell;
-    customStream.destroy  = __avdHLSStreamDestroy;
+    customStream.read     = PRIV_avdHLSStreamRead;
+    customStream.seek     = PRIV_avdHLSStreamSeek;
+    customStream.tell     = PRIV_avdHLSStreamTell;
+    customStream.destroy  = PRIV_avdHLSStreamDestroy;
 
     return picoStreamFromCustom(customStream, true, false);
 }

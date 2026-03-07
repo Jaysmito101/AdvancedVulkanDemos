@@ -2,12 +2,12 @@
 #include "avd_application.h"
 #include "core/avd_window.h"
 
-void __avdGLFWErrorCallback(int error, const char *description)
+void PRIV_avdGLFWErrorCallback(int error, const char *description)
 {
     AVD_LOG_ERROR("GLFW Error: %d - %s", error, description);
 }
 
-void __avdGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void PRIV_avdGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     if (key >= 0 && key < 1024) {
@@ -23,14 +23,14 @@ void __avdGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action,
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
-void __avdGLFWCharCallback(GLFWwindow *window, unsigned int codepoint)
+void PRIV_avdGLFWCharCallback(GLFWwindow *window, unsigned int codepoint)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     // TODO: Handle char events
     // AVD_LOG("Char: %u\n", codepoint);
 }
 
-void __avdGLFWDropCallback(GLFWwindow *window, int count, const char **paths)
+void PRIV_avdGLFWDropCallback(GLFWwindow *window, int count, const char **paths)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     // TODO: Handle drop events
@@ -45,7 +45,7 @@ void __avdGLFWDropCallback(GLFWwindow *window, int count, const char **paths)
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
-void __avdGLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+void PRIV_avdGLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
     AVD_AppState *appState       = (AVD_AppState *)glfwGetWindowUserPointer(window);
     appState->input.mouseScrollX = (float)xoffset;
@@ -58,7 +58,7 @@ void __avdGLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
-void __avdGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos)
+void PRIV_avdGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     avdInputCalculateMousePositionFromRaw(&appState->input, &appState->window, xpos, ypos);
@@ -71,7 +71,7 @@ void __avdGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos)
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
-void __avdGLFWWindowPosCallback(GLFWwindow *window, int xpos, int ypos)
+void PRIV_avdGLFWWindowPosCallback(GLFWwindow *window, int xpos, int ypos)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     // TODO: Handle window position events
@@ -83,7 +83,7 @@ void __avdGLFWWindowPosCallback(GLFWwindow *window, int xpos, int ypos)
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
-void __avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height)
+void PRIV_avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height)
 {
     AVD_AppState *appState  = (AVD_AppState *)glfwGetWindowUserPointer(window);
     appState->window.width  = width;
@@ -110,14 +110,14 @@ void __avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height)
     avdApplicationUpdateWithoutPolling(appState);
 }
 
-void __avdGLFWCursorEnterCallback(GLFWwindow *window, int entered)
+void PRIV_avdGLFWCursorEnterCallback(GLFWwindow *window, int entered)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     // TODO: Handle cursor enter/leave events
     // AVD_LOG("Cursor Enter: %d\n", entered);
 }
 
-void __avdGLFWWindowCloseCallback(GLFWwindow *window)
+void PRIV_avdGLFWWindowCloseCallback(GLFWwindow *window)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     appState->running      = false; // Signal the main loop to exit
@@ -127,7 +127,7 @@ void __avdGLFWWindowCloseCallback(GLFWwindow *window)
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
-void __avdGLFWMouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+void PRIV_avdGLFWMouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
 {
     AVD_AppState *appState                   = (AVD_AppState *)glfwGetWindowUserPointer(window);
     appState->input.mouseButtonState[button] = (action == GLFW_PRESS);
@@ -140,7 +140,7 @@ void __avdGLFWMouseButtonCallback(GLFWwindow *window, int button, int action, in
     avdSceneManagerPushInputEvent(&appState->sceneManager, appState, &event);
 }
 
-void __avdGLFWFramebufferSizeCallback(GLFWwindow *window, int width, int height)
+void PRIV_avdGLFWFramebufferSizeCallback(GLFWwindow *window, int width, int height)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     // TODO: Handle framebuffer size changes (important for rendering viewport)
@@ -156,14 +156,14 @@ void __avdGLFWFramebufferSizeCallback(GLFWwindow *window, int width, int height)
     }
 }
 
-void __avdGLFWWindowMaximizeCallback(GLFWwindow *window, int maximized)
+void PRIV_avdGLFWWindowMaximizeCallback(GLFWwindow *window, int maximized)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     // TODO: Handle window maximize/restore events
     // AVD_LOG("Window Maximize: %d\n", maximized);
 }
 
-void __avdGLFWWindowFocusCallback(GLFWwindow *window, int focused)
+void PRIV_avdGLFWWindowFocusCallback(GLFWwindow *window, int focused)
 {
     AVD_AppState *appState = (AVD_AppState *)glfwGetWindowUserPointer(window);
     // TODO: Handle window focus/blur events
@@ -172,22 +172,22 @@ void __avdGLFWWindowFocusCallback(GLFWwindow *window, int focused)
 
 // ---------- GLFW Callbacks End ----------
 
-void __avdSetupWindowEvents(AVD_Window *window)
+void PRIV_avdSetupWindowEvents(AVD_Window *window)
 {
     AVD_ASSERT(window != NULL);
 
-    glfwSetErrorCallback(__avdGLFWErrorCallback);
-    glfwSetKeyCallback(window->window, __avdGLFWKeyCallback);
-    glfwSetCharCallback(window->window, __avdGLFWCharCallback);
-    glfwSetDropCallback(window->window, __avdGLFWDropCallback);
-    glfwSetScrollCallback(window->window, __avdGLFWScrollCallback);
-    glfwSetCursorPosCallback(window->window, __avdGLFWCursorPosCallback);
-    glfwSetWindowPosCallback(window->window, __avdGLFWWindowPosCallback);
-    glfwSetWindowSizeCallback(window->window, __avdGLFWWindowSizeCallback);
-    glfwSetCursorEnterCallback(window->window, __avdGLFWCursorEnterCallback);
-    glfwSetWindowCloseCallback(window->window, __avdGLFWWindowCloseCallback);
-    glfwSetMouseButtonCallback(window->window, __avdGLFWMouseButtonCallback);
-    glfwSetFramebufferSizeCallback(window->window, __avdGLFWFramebufferSizeCallback);
-    glfwSetWindowMaximizeCallback(window->window, __avdGLFWWindowMaximizeCallback);
-    glfwSetWindowFocusCallback(window->window, __avdGLFWWindowFocusCallback);
+    glfwSetErrorCallback(PRIV_avdGLFWErrorCallback);
+    glfwSetKeyCallback(window->window, PRIV_avdGLFWKeyCallback);
+    glfwSetCharCallback(window->window, PRIV_avdGLFWCharCallback);
+    glfwSetDropCallback(window->window, PRIV_avdGLFWDropCallback);
+    glfwSetScrollCallback(window->window, PRIV_avdGLFWScrollCallback);
+    glfwSetCursorPosCallback(window->window, PRIV_avdGLFWCursorPosCallback);
+    glfwSetWindowPosCallback(window->window, PRIV_avdGLFWWindowPosCallback);
+    glfwSetWindowSizeCallback(window->window, PRIV_avdGLFWWindowSizeCallback);
+    glfwSetCursorEnterCallback(window->window, PRIV_avdGLFWCursorEnterCallback);
+    glfwSetWindowCloseCallback(window->window, PRIV_avdGLFWWindowCloseCallback);
+    glfwSetMouseButtonCallback(window->window, PRIV_avdGLFWMouseButtonCallback);
+    glfwSetFramebufferSizeCallback(window->window, PRIV_avdGLFWFramebufferSizeCallback);
+    glfwSetWindowMaximizeCallback(window->window, PRIV_avdGLFWWindowMaximizeCallback);
+    glfwSetWindowFocusCallback(window->window, PRIV_avdGLFWWindowFocusCallback);
 }

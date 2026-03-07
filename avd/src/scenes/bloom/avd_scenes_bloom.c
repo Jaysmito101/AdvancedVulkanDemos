@@ -2,7 +2,7 @@
 #include "scenes/avd_scenes.h"
 #include "vulkan/vulkan_core.h"
 
-static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
+static bool PRIV_avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(layout != NULL);
@@ -23,7 +23,7 @@ static bool __avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vul
     return true;
 }
 
-static AVD_SceneBloom *__avdSceneGetTypePtr(AVD_Scene *scene)
+static AVD_SceneBloom *PRIV_avdSceneGetTypePtr(AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_BLOOM);
@@ -60,7 +60,7 @@ bool avdSceneBloomRegisterApi(AVD_SceneAPI *api)
 
 bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
 {
-    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+    AVD_SceneBloom *bloom = PRIV_avdSceneGetTypePtr(scene);
     AVD_LOG_INFO("Initializing main menu scene");
     bloom->isBloomEnabled = true;
 
@@ -81,7 +81,7 @@ bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
         appState->renderer.sceneFramebuffer.height,
         "CustomBloom"));
 
-    AVD_CHECK(__avdSetupDescriptors(&bloom->descriptorSetLayout, &appState->vulkan));
+    AVD_CHECK(PRIV_avdSetupDescriptors(&bloom->descriptorSetLayout, &appState->vulkan));
 
     AVD_CHECK(avdRenderableTextCreate(
         &bloom->title,
@@ -103,7 +103,7 @@ bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
 
 void avdSceneBloomDestroy(AVD_AppState *appState, AVD_Scene *scene)
 {
-    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+    AVD_SceneBloom *bloom = PRIV_avdSceneGetTypePtr(scene);
 
     AVD_LOG_INFO("Destroying bloom scene");
     avdRenderableTextDestroy(&bloom->title, &appState->vulkan);
@@ -123,7 +123,7 @@ bool avdSceneBloomLoad(AVD_AppState *appState, AVD_Scene *scene, const char **st
 
 void avdSceneBloomInputEvent(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event)
 {
-    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+    AVD_SceneBloom *bloom = PRIV_avdSceneGetTypePtr(scene);
 
     if (event->type == AVD_INPUT_EVENT_KEY) {
         if (event->key.key == GLFW_KEY_ESCAPE && event->key.action == GLFW_PRESS) {
@@ -147,7 +147,7 @@ void avdSceneBloomInputEvent(struct AVD_AppState *appState, union AVD_Scene *sce
 
 bool avdSceneBloomUpdate(AVD_AppState *appState, AVD_Scene *scene)
 {
-    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+    AVD_SceneBloom *bloom = PRIV_avdSceneGetTypePtr(scene);
 
     const float scale = (float)appState->framerate.deltaTime * 2.0f;
     if (appState->input.keyState[GLFW_KEY_UP] && appState->input.keyState[GLFW_KEY_T]) {
@@ -200,7 +200,7 @@ bool avdSceneBloomUpdate(AVD_AppState *appState, AVD_Scene *scene)
 
 bool avdSceneBloomRender(AVD_AppState *appState, AVD_Scene *scene)
 {
-    AVD_SceneBloom *bloom = __avdSceneGetTypePtr(scene);
+    AVD_SceneBloom *bloom = PRIV_avdSceneGetTypePtr(scene);
 
     AVD_Vulkan *vulkan           = &appState->vulkan;
     AVD_VulkanRenderer *renderer = &appState->renderer;

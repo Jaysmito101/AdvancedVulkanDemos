@@ -1,6 +1,6 @@
 #include "avd_application.h"
 
-static void __avdApplicationUpdateFramerateCalculation(AVD_Frametime *framerateInfo)
+static void PRIV_avdApplicationUpdateFramerateCalculation(AVD_Frametime *framerateInfo)
 {
     AVD_ASSERT(framerateInfo != NULL);
 
@@ -37,7 +37,7 @@ bool avdApplicationInit(AVD_AppState *appState)
     AVD_CHECK(avdUiInit(&appState->ui, appState));
     AVD_CHECK(avdSceneManagerInit(&appState->sceneManager, appState));
 
-    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
+    PRIV_avdApplicationUpdateFramerateCalculation(&appState->framerate);
 
     memset(&appState->input, 0, sizeof(AVD_Input));
 
@@ -88,7 +88,7 @@ void avdApplicationUpdate(AVD_AppState *appState)
 void avdApplicationUpdateWithoutPolling(AVD_AppState *appState)
 {
     AVD_ASSERT(appState != NULL);
-    __avdApplicationUpdateFramerateCalculation(&appState->framerate);
+    PRIV_avdApplicationUpdateFramerateCalculation(&appState->framerate);
     avdSceneManagerUpdate(&appState->sceneManager, appState);
     avdApplicationRender(appState);
 }

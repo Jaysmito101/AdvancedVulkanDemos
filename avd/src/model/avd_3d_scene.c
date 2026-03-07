@@ -1,6 +1,6 @@
 #include "model/avd_3d_scene.h"
 
-static void __avdModelDestructor(void *item, void *context)
+static void PRIV_avdModelDestructor(void *item, void *context)
 {
     (void)context; // Unused parameter
     AVD_Model *model = (AVD_Model *)item;
@@ -8,7 +8,7 @@ static void __avdModelDestructor(void *item, void *context)
     avdModelDestroy(model);
 }
 
-static void __avd3DScenePrintNodeHierarchy(const AVD_ModelNode *node, int indent, const AVD_ModelNode *mainScene)
+static void PRIV_avd3DScenePrintNodeHierarchy(const AVD_ModelNode *node, int indent, const AVD_ModelNode *mainScene)
 {
     if (node == NULL)
         return;
@@ -32,7 +32,7 @@ static void __avd3DScenePrintNodeHierarchy(const AVD_ModelNode *node, int indent
 
     for (int i = 0; i < AVD_MODEL_NODE_MAX_CHILDREN; ++i) {
         if (node->children[i] != NULL) {
-            __avd3DScenePrintNodeHierarchy(node->children[i], indent + 2, mainScene);
+            PRIV_avd3DScenePrintNodeHierarchy(node->children[i], indent + 2, mainScene);
         }
     }
 }
@@ -43,7 +43,7 @@ bool avd3DSceneCreate(AVD_3DScene *scene)
 
     AVD_CHECK(avdModelResourcesCreate(&scene->modelResources));
     avdListCreate(&scene->modelsList, sizeof(AVD_Model));
-    avdListSetDestructor(&scene->modelsList, __avdModelDestructor, NULL);
+    avdListSetDestructor(&scene->modelsList, PRIV_avdModelDestructor, NULL);
     return true;
 }
 
@@ -105,7 +105,7 @@ void avd3DSceneDebugLog(const AVD_3DScene *scene, const char *name)
 
         if (model->rootNode != NULL) {
             AVD_LOG_INFO("    Node Hierarchy:");
-            __avd3DScenePrintNodeHierarchy(model->rootNode, 6, model->mainScene);
+            PRIV_avd3DScenePrintNodeHierarchy(model->rootNode, 6, model->mainScene);
         }
     }
 }

@@ -2,7 +2,7 @@
 #include "core/avd_hashtable.h"
 #include <string.h>
 
-static bool __avdTestHashTableInit()
+static bool PRIV_avdTestHashTableInit()
 {
     AVD_LOG_DEBUG("  Testing HashTable initialization...");
 
@@ -43,7 +43,7 @@ static bool __avdTestHashTableInit()
     return true;
 }
 
-static bool __avdTestHashTableSetGet()
+static bool PRIV_avdTestHashTableSetGet()
 {
     AVD_LOG_DEBUG("  Testing HashTable set/get operations...");
 
@@ -113,7 +113,7 @@ static bool __avdTestHashTableSetGet()
     return true;
 }
 
-static bool __avdTestHashTableStringKeys()
+static bool PRIV_avdTestHashTableStringKeys()
 {
     AVD_LOG_DEBUG("  Testing HashTable with string keys...");
 
@@ -181,7 +181,7 @@ static bool __avdTestHashTableStringKeys()
     return true;
 }
 
-static bool __avdTestHashTableContains()
+static bool PRIV_avdTestHashTableContains()
 {
     AVD_LOG_DEBUG("  Testing HashTable contains operations...");
 
@@ -222,7 +222,7 @@ static bool __avdTestHashTableContains()
     return true;
 }
 
-static bool __avdTestHashTableRemove()
+static bool PRIV_avdTestHashTableRemove()
 {
     AVD_LOG_DEBUG("  Testing HashTable remove operations...");
 
@@ -307,7 +307,7 @@ static bool __avdTestHashTableRemove()
     return true;
 }
 
-static bool __avdTestHashTableClear()
+static bool PRIV_avdTestHashTableClear()
 {
     AVD_LOG_DEBUG("  Testing HashTable clear operations...");
 
@@ -379,7 +379,7 @@ static bool __avdTestHashTableClear()
     return true;
 }
 
-static bool __avdTestHashTableMemoryReuse()
+static bool PRIV_avdTestHashTableMemoryReuse()
 {
     AVD_LOG_DEBUG("  Testing HashTable memory reuse after removal...");
 
@@ -451,7 +451,7 @@ static bool __avdTestHashTableMemoryReuse()
     return true;
 }
 
-static bool __avdTestHashTableGetKeys()
+static bool PRIV_avdTestHashTableGetKeys()
 {
     AVD_LOG_DEBUG("  Testing HashTable get keys operations...");
 
@@ -517,7 +517,7 @@ static bool __avdTestHashTableGetKeys()
     return true;
 }
 
-static bool __avdTestHashTableCollisions()
+static bool PRIV_avdTestHashTableCollisions()
 {
     AVD_LOG_DEBUG("  Testing HashTable collision handling...");
 
@@ -581,7 +581,7 @@ static bool __avdTestHashTableCollisions()
     return true;
 }
 
-static bool __avdTestHashTableEdgeCases()
+static bool PRIV_avdTestHashTableEdgeCases()
 {
     AVD_LOG_DEBUG("  Testing HashTable edge cases...");
 
@@ -645,7 +645,7 @@ static bool __avdTestHashTableEdgeCases()
     return true;
 }
 
-static bool __avdTestHashTableLargeDataTypes()
+static bool PRIV_avdTestHashTableLargeDataTypes()
 {
     AVD_LOG_DEBUG("  Testing HashTable with large data types...");
 
@@ -712,17 +712,17 @@ bool avdHashTableTestsRun(void)
 
     bool allPassed = true;
 
-    allPassed &= __avdTestHashTableInit();
-    allPassed &= __avdTestHashTableSetGet();
-    allPassed &= __avdTestHashTableStringKeys();
-    allPassed &= __avdTestHashTableContains();
-    allPassed &= __avdTestHashTableRemove();
-    allPassed &= __avdTestHashTableClear();
-    allPassed &= __avdTestHashTableMemoryReuse();
-    allPassed &= __avdTestHashTableGetKeys();
-    allPassed &= __avdTestHashTableCollisions();
-    allPassed &= __avdTestHashTableEdgeCases();
-    allPassed &= __avdTestHashTableLargeDataTypes();
+    allPassed &= PRIV_avdTestHashTableInit();
+    allPassed &= PRIV_avdTestHashTableSetGet();
+    allPassed &= PRIV_avdTestHashTableStringKeys();
+    allPassed &= PRIV_avdTestHashTableContains();
+    allPassed &= PRIV_avdTestHashTableRemove();
+    allPassed &= PRIV_avdTestHashTableClear();
+    allPassed &= PRIV_avdTestHashTableMemoryReuse();
+    allPassed &= PRIV_avdTestHashTableGetKeys();
+    allPassed &= PRIV_avdTestHashTableCollisions();
+    allPassed &= PRIV_avdTestHashTableEdgeCases();
+    allPassed &= PRIV_avdTestHashTableLargeDataTypes();
 
     if (allPassed) {
         AVD_LOG_DEBUG("All HashTable tests PASSED!");

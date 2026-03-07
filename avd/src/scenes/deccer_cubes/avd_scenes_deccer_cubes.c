@@ -14,14 +14,14 @@ typedef struct {
     uint32_t pad1;
 } AVD_DeccerCubeUberPushConstants;
 
-static AVD_SceneDeccerCubes *__avdSceneGetTypePtr(AVD_Scene *scene)
+static AVD_SceneDeccerCubes *PRIV_avdSceneGetTypePtr(AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_DECCER_CUBES);
     return &scene->deccerCubes;
 }
 
-static bool __avdSetupBuffer(
+static bool PRIV_avdSetupBuffer(
     AVD_Vulkan *vulkan,
     AVD_VulkanBuffer *buffer,
     AVD_List *dataList)
@@ -42,7 +42,7 @@ static bool __avdSetupBuffer(
     return true;
 }
 
-static uint32_t __avdFindTextureIndexFromHash(AVD_SceneDeccerCubes *deccerCubes, uint32_t hash)
+static uint32_t PRIV_avdFindTextureIndexFromHash(AVD_SceneDeccerCubes *deccerCubes, uint32_t hash)
 {
     AVD_ASSERT(deccerCubes != NULL);
 
@@ -55,7 +55,7 @@ static uint32_t __avdFindTextureIndexFromHash(AVD_SceneDeccerCubes *deccerCubes,
     return 0; // as a fallback return the first texture
 }
 
-static bool __avdRenderModelNode(VkCommandBuffer commandBuffer, AVD_SceneDeccerCubes *deccerCubes, AVD_ModelNode *node, AVD_Matrix4x4 parentTransform)
+static bool PRIV_avdRenderModelNode(VkCommandBuffer commandBuffer, AVD_SceneDeccerCubes *deccerCubes, AVD_ModelNode *node, AVD_Matrix4x4 parentTransform)
 {
     AVD_ASSERT(deccerCubes != NULL);
     AVD_ASSERT(node != NULL);
@@ -71,7 +71,7 @@ static bool __avdRenderModelNode(VkCommandBuffer commandBuffer, AVD_SceneDeccerC
             .viewMatrix       = deccerCubes->viewMatrix,
             .vertexCount      = node->mesh.triangleCount * 3,
             .vertexOffset     = node->mesh.indexOffset,
-            .textureIndex     = __avdFindTextureIndexFromHash(deccerCubes, node->mesh.material.albedoTexture.id) + 1,
+            .textureIndex     = PRIV_avdFindTextureIndexFromHash(deccerCubes, node->mesh.material.albedoTexture.id) + 1,
         };
         vkCmdPushConstants(commandBuffer, deccerCubes->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);
         vkCmdDraw(commandBuffer, node->mesh.triangleCount * 3, 1, 0, 0);
@@ -79,7 +79,7 @@ static bool __avdRenderModelNode(VkCommandBuffer commandBuffer, AVD_SceneDeccerC
 
     for (AVD_UInt32 i = 0; i < AVD_MODEL_NODE_MAX_CHILDREN; i++) {
         if (node->children[i])
-            AVD_CHECK(__avdRenderModelNode(commandBuffer, deccerCubes, node->children[i], globalTransform));
+            AVD_CHECK(PRIV_avdRenderModelNode(commandBuffer, deccerCubes, node->children[i], globalTransform));
     }
 
     return true;
@@ -129,7 +129,7 @@ bool avdSceneDeccerCubesInit(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
+    AVD_SceneDeccerCubes *deccerCubes = PRIV_avdSceneGetTypePtr(scene);
 
     deccerCubes->loadStage        = 0;
     deccerCubes->imagesCount      = 0;
@@ -174,7 +174,7 @@ void avdSceneDeccerCubesDestroy(struct AVD_AppState *appState, union AVD_Scene *
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
+    AVD_SceneDeccerCubes *deccerCubes = PRIV_avdSceneGetTypePtr(scene);
 
     avdVulkanBufferDestroy(&appState->vulkan, &deccerCubes->vertexBuffer);
     avdVulkanBufferDestroy(&appState->vulkan, &deccerCubes->indexBuffer);
@@ -198,7 +198,7 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_ASSERT(statusMessage != NULL);
     AVD_ASSERT(progress != NULL);
 
-    AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
+    AVD_SceneDeccerCubes *deccerCubes = PRIV_avdSceneGetTypePtr(scene);
 
     switch (deccerCubes->loadStage) {
         case 0:
@@ -209,11 +209,11 @@ bool avdSceneDeccerCubesLoad(struct AVD_AppState *appState, union AVD_Scene *sce
             break;
         case 2:
             *statusMessage = "Setup GPU Buffers";
-            AVD_CHECK(__avdSetupBuffer(
+            AVD_CHECK(PRIV_avdSetupBuffer(
                 &appState->vulkan,
                 &deccerCubes->indexBuffer,
                 &deccerCubes->scene.modelResources.indicesList));
-            AVD_CHECK(__avdSetupBuffer(
+            AVD_CHECK(PRIV_avdSetupBuffer(
                 &appState->vulkan,
                 &deccerCubes->vertexBuffer,
                 &deccerCubes->scene.modelResources.verticesList));
@@ -314,7 +314,7 @@ bool avdSceneDeccerCubesUpdate(struct AVD_AppState *appState, union AVD_Scene *s
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
+    AVD_SceneDeccerCubes *deccerCubes = PRIV_avdSceneGetTypePtr(scene);
 
     // rotate the camera around the orgin
     deccerCubes->viewMatrix = avdMatLookAt(
@@ -330,7 +330,7 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneDeccerCubes *deccerCubes = __avdSceneGetTypePtr(scene);
+    AVD_SceneDeccerCubes *deccerCubes = PRIV_avdSceneGetTypePtr(scene);
 
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
 
@@ -345,7 +345,7 @@ bool avdSceneDeccerCubesRender(struct AVD_AppState *appState, union AVD_Scene *s
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deccerCubes->pipelineLayout, 0, 2, descriptorSets, 0, NULL);
 
     AVD_Model *model = (AVD_Model *)avdListGet(&deccerCubes->scene.modelsList, 0);
-    AVD_CHECK(__avdRenderModelNode(commandBuffer, deccerCubes, model->mainScene, avdMat4x4Identity()));
+    AVD_CHECK(PRIV_avdRenderModelNode(commandBuffer, deccerCubes, model->mainScene, avdMat4x4Identity()));
 
     float titleWidth, titleHeight;
     float infoWidth, infoHeight;

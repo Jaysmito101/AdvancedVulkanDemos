@@ -4,20 +4,20 @@
 #include "avd_application.h"
 #include "core/avd_window.h"
 
-void __avdGLFWErrorCallback(int error, const char *description);
-void __avdGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
-void __avdGLFWCharCallback(GLFWwindow *window, unsigned int codepoint);
-void __avdGLFWDropCallback(GLFWwindow *window, int count, const char **paths);
-void __avdGLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
-void __avdGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos);
-void __avdGLFWWindowPosCallback(GLFWwindow *window, int xpos, int ypos);
-void __avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height);
-void __avdGLFWCursorEnterCallback(GLFWwindow *window, int entered);
-void __avdGLFWWindowCloseCallback(GLFWwindow *window);
-void __avdGLFWMouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
-void __avdGLFWFramebufferSizeCallback(GLFWwindow *window, int width, int height);
-void __avdGLFWWindowMaximizeCallback(GLFWwindow *window, int maximized);
-void __avdGLFWWindowFocusCallback(GLFWwindow *window, int focused);
-void __avdSetupWindowEvents(AVD_Window *window);
+void PRIV_avdGLFWErrorCallback(int error, const char *description);
+void PRIV_avdGLFWKeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+void PRIV_avdGLFWCharCallback(GLFWwindow *window, unsigned int codepoint);
+void PRIV_avdGLFWDropCallback(GLFWwindow *window, int count, const char **paths);
+void PRIV_avdGLFWScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
+void PRIV_avdGLFWCursorPosCallback(GLFWwindow *window, double xpos, double ypos);
+void PRIV_avdGLFWWindowPosCallback(GLFWwindow *window, int xpos, int ypos);
+void PRIV_avdGLFWWindowSizeCallback(GLFWwindow *window, int width, int height);
+void PRIV_avdGLFWCursorEnterCallback(GLFWwindow *window, int entered);
+void PRIV_avdGLFWWindowCloseCallback(GLFWwindow *window);
+void PRIV_avdGLFWMouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
+void PRIV_avdGLFWFramebufferSizeCallback(GLFWwindow *window, int width, int height);
+void PRIV_avdGLFWWindowMaximizeCallback(GLFWwindow *window, int maximized);
+void PRIV_avdGLFWWindowFocusCallback(GLFWwindow *window, int focused);
+void PRIV_avdSetupWindowEvents(AVD_Window *window);
 
 #endif // AVD_WINDOW_CB_H

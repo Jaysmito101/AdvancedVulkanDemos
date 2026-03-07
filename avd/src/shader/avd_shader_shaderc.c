@@ -1,7 +1,7 @@
 #include "shader/avd_shader_shaderc.h"
 #include "avd_asset.h"
 
-static shaderc_include_result *__avdIncludeResolver(void *userData, const char *requestedSource, int type, const char *requestingSource, size_t includeDepth)
+static shaderc_include_result *PRIV_avdIncludeResolver(void *userData, const char *requestedSource, int type, const char *requestingSource, size_t includeDepth)
 {
     AVD_ASSERT(requestedSource != NULL);
 
@@ -20,7 +20,7 @@ static shaderc_include_result *__avdIncludeResolver(void *userData, const char *
     return result;
 }
 
-static void __avdIncludeResultReleaser(void *userData, shaderc_include_result *includeResult)
+static void PRIV_avdIncludeResultReleaser(void *userData, shaderc_include_result *includeResult)
 {
     (void)userData;
     if (includeResult) {
@@ -77,7 +77,7 @@ bool avdShaderShaderCCompile(
         AVD_LOG_INFO("Compiling shader: %s with warnings as errors enabled", inputShaderName);
         shaderc_compile_options_set_warnings_as_errors(options);
     }
-    shaderc_compile_options_set_include_callbacks(options, __avdIncludeResolver, __avdIncludeResultReleaser, NULL);
+    shaderc_compile_options_set_include_callbacks(options, PRIV_avdIncludeResolver, PRIV_avdIncludeResultReleaser, NULL);
     if (inOptions->macros && inOptions->macroCount > 0) {
         for (size_t i = 0; i < inOptions->macroCount; ++i) {
             const char *macro     = inOptions->macros[i];

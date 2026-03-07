@@ -11,7 +11,7 @@ typedef struct {
     int32_t pad1;
 } AVD_EyeballPushConstants;
 
-static AVD_SceneEyeballs *__avdSceneGetTypePtr(union AVD_Scene *scene)
+static AVD_SceneEyeballs *PRIV_avdSceneGetTypePtr(union AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
     AVD_ASSERT(scene->type == AVD_SCENE_TYPE_EYEBALLS);
@@ -52,7 +52,7 @@ bool avdSceneEyeballsInit(struct AVD_AppState *appState, union AVD_Scene *scene)
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneEyeballs *eyeballs = __avdSceneGetTypePtr(scene);
+    AVD_SceneEyeballs *eyeballs = PRIV_avdSceneGetTypePtr(scene);
 
     // Initialize title and info text
     AVD_CHECK(avdRenderableTextCreate(
@@ -103,7 +103,7 @@ void avdSceneEyeballsDestroy(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneEyeballs *eyeballs = __avdSceneGetTypePtr(scene);
+    AVD_SceneEyeballs *eyeballs = PRIV_avdSceneGetTypePtr(scene);
 
     vkDestroyPipeline(appState->vulkan.device, eyeballs->pipeline, NULL);
     vkDestroyPipelineLayout(appState->vulkan.device, eyeballs->pipelineLayout, NULL);
@@ -141,7 +141,7 @@ void avdSceneEyeballsInputEvent(struct AVD_AppState *appState, union AVD_Scene *
     }
 }
 
-static bool __avdSceneUpdateCamera(AVD_SceneEyeballs *eyeballs, AVD_Float timer)
+static bool PRIV_avdSceneUpdateCamera(AVD_SceneEyeballs *eyeballs, AVD_Float timer)
 {
     AVD_ASSERT(eyeballs != NULL);
 
@@ -169,9 +169,9 @@ bool avdSceneEyeballsUpdate(struct AVD_AppState *appState, union AVD_Scene *scen
     AVD_ASSERT(appState != NULL);
     AVD_ASSERT(scene != NULL);
 
-    AVD_SceneEyeballs *eyeballs = __avdSceneGetTypePtr(scene);
+    AVD_SceneEyeballs *eyeballs = PRIV_avdSceneGetTypePtr(scene);
 
-    AVD_CHECK(__avdSceneUpdateCamera(eyeballs, (float)appState->framerate.currentTime));
+    AVD_CHECK(PRIV_avdSceneUpdateCamera(eyeballs, (float)appState->framerate.currentTime));
 
     return true;
 }
@@ -182,7 +182,7 @@ bool avdSceneEyeballsRender(struct AVD_AppState *appState, union AVD_Scene *scen
     AVD_ASSERT(scene != NULL);
 
     VkCommandBuffer commandBuffer = avdVulkanRendererGetCurrentCmdBuffer(&appState->renderer);
-    AVD_SceneEyeballs *eyeballs   = __avdSceneGetTypePtr(scene);
+    AVD_SceneEyeballs *eyeballs   = PRIV_avdSceneGetTypePtr(scene);
 
     AVD_CHECK(avdBeginSceneRenderPass(commandBuffer, &appState->renderer));
 

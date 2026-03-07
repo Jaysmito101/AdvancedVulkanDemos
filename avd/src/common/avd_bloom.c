@@ -17,7 +17,7 @@ typedef struct AVD_BloomUberPushConstants {
     int applyGamma;
 } AVD_BloomUberPushConstants;
 
-static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, uint32_t width, uint32_t height)
+static bool PRIV_avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, uint32_t width, uint32_t height)
 {
     AVD_ASSERT(bloom != NULL);
     AVD_ASSERT(vulkan != NULL);
@@ -65,7 +65,7 @@ static bool __avdBloomCreateFramebuffers(AVD_Bloom *bloom, AVD_Vulkan *vulkan, u
     return true;
 }
 
-static bool __avdBloomPass(
+static bool PRIV_avdBloomPass(
     VkCommandBuffer commandBuffer,
     AVD_BloomPassType passType,
     AVD_Bloom *bloom,
@@ -175,7 +175,7 @@ bool avdBloomCreate(AVD_Bloom *bloom, AVD_Vulkan *vulkan, VkRenderPass composite
     bloom->height    = height;
     bloom->passCount = AVD_BLOOM_PASS_COUNT;
 
-    AVD_CHECK(__avdBloomCreateFramebuffers(bloom, vulkan, width, height));
+    AVD_CHECK(PRIV_avdBloomCreateFramebuffers(bloom, vulkan, width, height));
 
     snprintf(bloom->label, sizeof(bloom->label), "%s", label ? label : "Unnamed");
 
@@ -268,7 +268,7 @@ bool avdBloomApplyInplace(
         "[Cmd][Common]:Bloom/%s/ApplyInplace",
         bloom->label);
 
-    AVD_CHECK(__avdBloomPass(
+    AVD_CHECK(PRIV_avdBloomPass(
         commandBuffer,
         AVD_BLOOM_PASS_TYPE_DOWNSAMPLE_PREFILTER,
         bloom, vulkan,
@@ -279,7 +279,7 @@ bool avdBloomApplyInplace(
 
     for (uint32_t i = 0; i < bloom->passCount - 2; ++i) {
         // AVD_LOG_DEBUG("Downsampling pass %d -> %d", i, i + 1);
-        AVD_CHECK(__avdBloomPass(
+        AVD_CHECK(PRIV_avdBloomPass(
             commandBuffer,
             AVD_BLOOM_PASS_TYPE_DOWNSAMPLE,
             bloom, vulkan,
@@ -291,7 +291,7 @@ bool avdBloomApplyInplace(
 
     for (uint32_t i = bloom->passCount - 2; i < bloom->passCount * 2 - 4; i++) {
         // AVD_LOG_DEBUG("Upsampling pass %d -> %d", i, i + 1);
-        AVD_CHECK(__avdBloomPass(
+        AVD_CHECK(PRIV_avdBloomPass(
             commandBuffer,
             AVD_BLOOM_PASS_TYPE_UPSAMPLE,
             bloom, vulkan,
@@ -303,7 +303,7 @@ bool avdBloomApplyInplace(
 
     // another prefiltering without theshold
     params.prefilterType = AVD_BLOOM_PREFILTER_TYPE_NONE;
-    AVD_CHECK(__avdBloomPass(
+    AVD_CHECK(PRIV_avdBloomPass(
         commandBuffer,
         AVD_BLOOM_PASS_TYPE_PREFILTER,
         bloom, vulkan,
@@ -312,7 +312,7 @@ bool avdBloomApplyInplace(
         bloom->passCount * 2 - 3, // target index
         params));
 
-    AVD_CHECK(__avdBloomPass(
+    AVD_CHECK(PRIV_avdBloomPass(
         commandBuffer,
         AVD_BLOOM_PASS_TYPE_COMPOSITE,
         bloom, vulkan,

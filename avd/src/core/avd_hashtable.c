@@ -1,7 +1,7 @@
 #include "core/avd_hashtable.h"
 #include "core/avd_utils.h"
 
-static size_t __avdHashTableHash(const AVD_HashTable *table, const void *key)
+static size_t PRIV_avdHashTableHash(const AVD_HashTable *table, const void *key)
 {
     if (table->stringKey) {
         return avdHashString((const char *)key) % AVD_HASHTABLE_SIZE;
@@ -10,7 +10,7 @@ static size_t __avdHashTableHash(const AVD_HashTable *table, const void *key)
     }
 }
 
-static bool __avdHashTableKeysEqual(const AVD_HashTable *table, const void *key1, const void *key2)
+static bool PRIV_avdHashTableKeysEqual(const AVD_HashTable *table, const void *key1, const void *key2)
 {
     if (table->stringKey) {
         return strcmp((const char *)key1, (const char *)key2) == 0;
@@ -19,7 +19,7 @@ static bool __avdHashTableKeysEqual(const AVD_HashTable *table, const void *key1
     }
 }
 
-static void __avdHashTableCopyKey(const AVD_HashTable *table, char *dest, const void *src)
+static void PRIV_avdHashTableCopyKey(const AVD_HashTable *table, char *dest, const void *src)
 {
     if (table->stringKey) {
         strncpy(dest, (const char *)src, AVD_HASHTABLE_KEY_MAX_SIZE - 1);
@@ -29,7 +29,7 @@ static void __avdHashTableCopyKey(const AVD_HashTable *table, char *dest, const 
     }
 }
 
-static AVD_HashTableEntry *__avdHashTableAllocateEntry(AVD_HashTable *table)
+static AVD_HashTableEntry *PRIV_avdHashTableAllocateEntry(AVD_HashTable *table)
 {
     for (size_t i = 0; i < table->bankCount; i++) {
         AVD_HashTableBank *bank = &table->banks[i];
@@ -168,23 +168,23 @@ bool avdHashTableSet(AVD_HashTable *table, const void *key, const void *value)
         return false;
     }
 
-    size_t hash               = __avdHashTableHash(table, key);
+    size_t hash               = PRIV_avdHashTableHash(table, key);
     AVD_HashTableEntry *entry = table->table[hash];
 
     while (entry) {
-        if (__avdHashTableKeysEqual(table, entry->key, key)) {
+        if (PRIV_avdHashTableKeysEqual(table, entry->key, key)) {
             memcpy(entry->value, value, table->itemSize);
             return true;
         }
         entry = entry->next;
     }
 
-    AVD_HashTableEntry *newEntry = __avdHashTableAllocateEntry(table);
+    AVD_HashTableEntry *newEntry = PRIV_avdHashTableAllocateEntry(table);
     if (!newEntry) {
         return false;
     }
 
-    __avdHashTableCopyKey(table, newEntry->key, key);
+    PRIV_avdHashTableCopyKey(table, newEntry->key, key);
     memcpy(newEntry->value, value, table->itemSize);
     newEntry->next     = table->table[hash];
     table->table[hash] = newEntry;
@@ -199,11 +199,11 @@ bool avdHashTableGet(AVD_HashTable *table, const void *key, void *outValue)
         return false;
     }
 
-    size_t hash               = __avdHashTableHash(table, key);
+    size_t hash               = PRIV_avdHashTableHash(table, key);
     AVD_HashTableEntry *entry = table->table[hash];
 
     while (entry) {
-        if (__avdHashTableKeysEqual(table, entry->key, key)) {
+        if (PRIV_avdHashTableKeysEqual(table, entry->key, key)) {
             if (outValue) {
                 memcpy(outValue, entry->value, table->itemSize);
             }
@@ -226,12 +226,12 @@ bool avdHashTableRemove(AVD_HashTable *table, const void *key)
         return false;
     }
 
-    size_t hash               = __avdHashTableHash(table, key);
+    size_t hash               = PRIV_avdHashTableHash(table, key);
     AVD_HashTableEntry *entry = table->table[hash];
     AVD_HashTableEntry *prev  = NULL;
 
     while (entry) {
-        if (__avdHashTableKeysEqual(table, entry->key, key)) {
+        if (PRIV_avdHashTableKeysEqual(table, entry->key, key)) {
             if (prev) {
                 prev->next = entry->next;
             } else {
