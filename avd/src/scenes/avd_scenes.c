@@ -42,6 +42,7 @@ static bool PRIV_avdRegisterSceneApis(AVD_SceneManager *sceneManager)
     avdSceneEyeballsRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_EYEBALLS]);
     avdSceneRealisticHeadRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_REALISTIC_HEAD]);
     avdSceneHLSPlayerRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_HLS_PLAYER]);
+    avdSceneImmediateGuiRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_GUI]);
     return true;
 }
 
@@ -166,6 +167,8 @@ const char *avdSceneTypeToString(AVD_SceneType type)
             return "Realistic_Head";
         case AVD_SCENE_TYPE_HLS_PLAYER:
             return "HLS_Player";
+        case AVD_SCENE_TYPE_GUI:
+            return "Immediate_GUI";
         default:
             return "Unknown_Scene_Type";
     }
