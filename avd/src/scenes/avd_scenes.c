@@ -164,6 +164,8 @@ const char *avdSceneTypeToString(AVD_SceneType type)
             return "Subsurface_Scattering";
         case AVD_SCENE_TYPE_REALISTIC_HEAD:
             return "Realistic_Head";
+        case AVD_SCENE_TYPE_HLS_PLAYER:
+            return "HLS_Player";
         default:
             return "Unknown_Scene_Type";
     }
