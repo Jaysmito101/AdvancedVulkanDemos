@@ -2,27 +2,6 @@
 #include "scenes/avd_scenes.h"
 #include "vulkan/vulkan_core.h"
 
-static bool PRIV_avdSetupDescriptors(VkDescriptorSetLayout *layout, AVD_Vulkan *vulkan)
-{
-    AVD_ASSERT(vulkan != NULL);
-    AVD_ASSERT(layout != NULL);
-
-    VkDescriptorSetLayoutBinding sceneFramebufferBinding = {0};
-    sceneFramebufferBinding.binding                      = 0;
-    sceneFramebufferBinding.descriptorType               = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    sceneFramebufferBinding.descriptorCount              = 1;
-    sceneFramebufferBinding.stageFlags                   = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorSetLayoutCreateInfo sceneFramebufferLayoutInfo = {0};
-    sceneFramebufferLayoutInfo.sType                           = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    sceneFramebufferLayoutInfo.bindingCount                    = 1;
-    sceneFramebufferLayoutInfo.pBindings                       = &sceneFramebufferBinding;
-
-    VkResult sceneLayoutResult = vkCreateDescriptorSetLayout(vulkan->device, &sceneFramebufferLayoutInfo, NULL, layout);
-    AVD_CHECK_VK_RESULT(sceneLayoutResult, "Failed to create scene framebuffer descriptor set layout");
-    return true;
-}
-
 static AVD_SceneBloom *PRIV_avdSceneGetTypePtr(AVD_Scene *scene)
 {
     AVD_ASSERT(scene != NULL);
@@ -81,8 +60,6 @@ bool avdSceneBloomInit(AVD_AppState *appState, AVD_Scene *scene)
         appState->renderer.sceneFramebuffer.height,
         "CustomBloom"));
 
-    AVD_CHECK(PRIV_avdSetupDescriptors(&bloom->descriptorSetLayout, &appState->vulkan));
-
     AVD_CHECK(avdRenderableTextCreate(
         &bloom->title,
         &appState->fontRenderer,
@@ -109,7 +86,6 @@ void avdSceneBloomDestroy(AVD_AppState *appState, AVD_Scene *scene)
     avdRenderableTextDestroy(&bloom->title, &appState->vulkan);
     avdRenderableTextDestroy(&bloom->uiInfoText, &appState->vulkan);
     avdBloomDestroy(&bloom->bloom, &appState->vulkan);
-    vkDestroyDescriptorSetLayout(appState->vulkan.device, bloom->descriptorSetLayout, NULL);
 }
 
 bool avdSceneBloomLoad(AVD_AppState *appState, AVD_Scene *scene, const char **statusMessage, float *progress)

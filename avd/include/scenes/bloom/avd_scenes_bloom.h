@@ -10,7 +10,6 @@ typedef struct AVD_SceneBloom {
     AVD_RenderableText title;
     AVD_RenderableText uiInfoText;
 
-    VkDescriptorSetLayout descriptorSetLayout;
     AVD_BloomPrefilterType prefilterType;
     float bloomThreshold;
     float bloomSoftKnee;
