@@ -1,5 +1,6 @@
 #include "scenes/gui/avd_scenes_gui.h"
 #include "avd_application.h"
+#include "common/avd_drawlist.h"
 #include "scenes/avd_scenes.h"
 
 static AVD_SceneImmediateGui *PRIV_avdSceneGetTypePtr(AVD_Scene *scene)
@@ -58,6 +59,11 @@ bool avdSceneImmediateGuiInit(AVD_AppState *appState, AVD_Scene *scene)
         "...",
         24.0f));
 
+    AVD_CHECK(avdDrawListRendererCreate(
+        &gui->drawListRenderer,
+        &appState->renderer.sceneFramebuffer,
+        &appState->vulkan));
+
     return true;
 }
 
@@ -68,6 +74,7 @@ void avdSceneImmediateGuiDestroy(AVD_AppState *appState, AVD_Scene *scene)
     AVD_LOG_INFO("Destroying immediate GUI scene");
     avdRenderableTextDestroy(&gui->title, &appState->vulkan);
     avdRenderableTextDestroy(&gui->uiInfoText, &appState->vulkan);
+    avdDrawListRendererDestroy(&gui->drawListRenderer, &appState->vulkan);
 }
 
 bool avdSceneImmediateGuiLoad(AVD_AppState *appState, AVD_Scene *scene, const char **statusMessage, float *progress)
@@ -155,6 +162,8 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
         1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
+
+    AVD_CHECK(avdDrawListRendererRender(&gui->drawListRenderer, commandBuffer, gui->title.font->fontDescriptorSet));
 
     AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
