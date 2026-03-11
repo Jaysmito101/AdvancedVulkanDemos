@@ -64,6 +64,8 @@ bool avdSceneImmediateGuiInit(AVD_AppState *appState, AVD_Scene *scene)
         &appState->renderer.sceneFramebuffer,
         &appState->vulkan));
 
+    AVD_CHECK(avdDrawListCreate(&gui->drawList));
+
     return true;
 }
 
@@ -75,6 +77,7 @@ void avdSceneImmediateGuiDestroy(AVD_AppState *appState, AVD_Scene *scene)
     avdRenderableTextDestroy(&gui->title, &appState->vulkan);
     avdRenderableTextDestroy(&gui->uiInfoText, &appState->vulkan);
     avdDrawListRendererDestroy(&gui->drawListRenderer, &appState->vulkan);
+    avdDrawListDestroy(&gui->drawList);
 }
 
 bool avdSceneImmediateGuiLoad(AVD_AppState *appState, AVD_Scene *scene, const char **statusMessage, float *progress)
@@ -163,7 +166,9 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
 
-    AVD_CHECK(avdDrawListRendererRender(&gui->drawListRenderer, commandBuffer, gui->title.font->fontDescriptorSet));
+    AVD_DrawListPacked packedDrawList = {0};
+    AVD_CHECK(avdDrawListPack(&gui->drawList, &packedDrawList));
+    AVD_CHECK(avdDrawListRendererRender(&gui->drawListRenderer, &appState->vulkan, commandBuffer, &packedDrawList));
 
     AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));
