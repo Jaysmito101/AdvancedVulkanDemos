@@ -70,6 +70,7 @@ void avdVulkanBufferDestroy(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer)
     AVD_ASSERT(vulkan != NULL);
     AVD_ASSERT(buffer != NULL);
 
+    avdVulkanWaitIdle(vulkan); // must ensure the buffer is not in use before destroying it
     vkDestroyBuffer(vulkan->device, buffer->buffer, NULL);
     vkFreeMemory(vulkan->device, buffer->memory, NULL);
 
