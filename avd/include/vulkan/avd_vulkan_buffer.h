@@ -4,6 +4,7 @@
 #include "vulkan/avd_vulkan_base.h"
 
 typedef struct AVD_VulkanBuffer {
+    AVD_Bool initialized;
     VkBuffer buffer;
     VkDeviceMemory memory;
     VkDescriptorBufferInfo descriptorBufferInfo;
