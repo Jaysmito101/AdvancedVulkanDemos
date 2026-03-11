@@ -60,6 +60,7 @@ bool avdVulkanBufferCreate(AVD_Vulkan *vulkan, AVD_VulkanBuffer *buffer, VkDevic
     buffer->size                        = size;
     buffer->hostVisible                 = (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) != 0;
     buffer->hostCoherent                = (properties & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
+    buffer->initialized                 = true;
 
     return true;
 }
