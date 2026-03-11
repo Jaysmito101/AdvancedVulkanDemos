@@ -34,6 +34,7 @@ add_executable(avd
 
     ./src/common/avd_bloom.c
     ./src/common/avd_eyeball.c
+    ./src/common/avd_ui.c
 
     ./src/shader/avd_shader_shaderc.c
     ./src/shader/avd_shader_slang.c
@@ -58,8 +59,6 @@ add_executable(avd
     ./src/audio/avd_audio_clip.c
     ./src/audio/avd_audio_player.c
     ./src/audio/avd_audio_streaming_player.c
-
-    ./src/ui/avd_ui.c
 
     ./src/math/avd_matrix_non_simd.c
     ./src/math/avd_quaternion_non_simd.c

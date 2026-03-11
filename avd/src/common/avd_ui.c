@@ -1,4 +1,4 @@
-#include "ui/avd_ui.h"
+#include "common/avd_ui.h"
 #include "avd_application.h"
 
 typedef struct AVD_UiPushConstants {

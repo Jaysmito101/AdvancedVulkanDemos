@@ -2,12 +2,13 @@
 #define AVD_APPLICATION_H
 
 #include "audio/avd_audio.h"
+#include "common/avd_ui.h"
 #include "core/avd_core.h"
 #include "font/avd_font_renderer.h"
 #include "scenes/avd_scenes.h"
 #include "shader/avd_shader.h"
-#include "ui/avd_ui.h"
 #include "vulkan/avd_vulkan.h"
+
 
 typedef struct AVD_Frametime {
     double lastTime;
