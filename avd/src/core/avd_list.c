@@ -14,6 +14,7 @@ void avdListCreate(AVD_List *list, size_t itemSize)
     list->items             = malloc(list->capacity * itemSize);
     list->destructor        = NULL;
     list->destructorContext = NULL;
+    // TODO: maybe dont assert and handle the error gracefully?
     assert(list->items != NULL);
 }
 
