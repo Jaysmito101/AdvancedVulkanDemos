@@ -22,6 +22,8 @@ typedef struct {
 } AVD_Font;
 
 typedef struct {
+    bool initialized;
+
     size_t characterCount;
     size_t renderableVertexCount;
     AVD_VulkanBuffer vertexBuffer;

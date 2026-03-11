@@ -20,6 +20,8 @@ uint16_t avdQuantizeHalf(float value);
 float avdDequantizeHalf(uint16_t value);
 int avdQuantizeSnorm(float v, int N);
 
+void avdOpenUrl(const char *url);
+
 bool avdIsStringAURL(const char *str);
 void avdResolveRelativeURL(char *buffer, size_t bufferSize, const char *baseURL, const char *segmentURI);
 

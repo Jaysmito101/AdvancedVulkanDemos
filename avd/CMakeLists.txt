@@ -34,6 +34,18 @@ add_executable(avd
 
     ./src/common/avd_bloom.c
     ./src/common/avd_eyeball.c
+    ./src/common/avd_ui.c
+    ./src/common/avd_gui/avd_gui.c
+    ./src/common/avd_gui/avd_gui_dummy.c
+    ./src/common/avd_gui/avd_gui_label.c
+    ./src/common/avd_gui/avd_gui_button.c
+    ./src/common/avd_gui/avd_gui_image.c
+    ./src/common/avd_gui/avd_gui_image_button.c
+    ./src/common/avd_gui/avd_gui_hyperlink.c
+    ./src/common/avd_gui/avd_gui_slider.c
+    ./src/common/avd_gui/avd_gui_checkbox.c
+    ./src/common/avd_gui/avd_gui_collapsing_header.c
+    ./src/common/avd_gui/avd_gui_drag.c
 
     ./src/shader/avd_shader_shaderc.c
     ./src/shader/avd_shader_slang.c
@@ -58,8 +70,6 @@ add_executable(avd
     ./src/audio/avd_audio_clip.c
     ./src/audio/avd_audio_player.c
     ./src/audio/avd_audio_streaming_player.c
-
-    ./src/ui/avd_ui.c
 
     ./src/math/avd_matrix_non_simd.c
     ./src/math/avd_quaternion_non_simd.c
@@ -98,6 +108,8 @@ add_executable(avd
     ./src/scenes/hls_player/avd_scenes_hls_player_media_cache.c
     ./src/scenes/hls_player/avd_scenes_hls_player_worker_pool.c
     ./src/scenes/hls_player/avd_scenes_hls_player_context.c
+
+    ./src/scenes/ui_system_demo/avd_scenes_ui_system_demo.c
 )
 
 include_directories(avd

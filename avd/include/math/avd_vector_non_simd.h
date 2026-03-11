@@ -55,6 +55,8 @@ typedef union {
     avdLerp((a).x, (b).x, (t)),          \
     avdLerp((a).y, (b).y, (t)))
 #define avdVec2FromPolar(angle, length) avdVec2(length *avdCos(angle), length *avdSin(angle))
+#define avdVec2IntersectRect(point, rectPos, rectSize) \
+    ((point).x >= (rectPos).x && (point).y >= (rectPos).y && (point).x <= (rectPos).x + (rectSize).x && (point).y <= (rectPos).y + (rectSize).y)
 #define avdVec2Log(v)                   AVD_LOG_INFO("Vec2[x: %.2f, y: %.2f]", (v).x, (v).y)
 
 #define avdVec3(vx, vy, vz)             ((AVD_Vector3){.x = (vx), .y = (vy), .z = (vz)})
@@ -83,6 +85,8 @@ typedef union {
     radius *avdCos(elevation) * avdCos(azimuth),                  \
     radius * avdCos(elevation) * avdSin(azimuth),                 \
     radius * avdSin(elevation))
+#define avdVec3IntersectRect(point, rectPos, rectSize) \
+    ((point).x >= (rectPos).x && (point).y >= (rectPos).y && (point).x <= (rectPos).x + (rectSize).x && (point).y <= (rectPos).y + (rectSize).y)
 #define avdVec3Log(v)           AVD_LOG_INFO("Vec3[x: %.2f, y: %.2f, z: %.2f]", (v).x, (v).y, (v).z)
 
 #define avdVec4(vx, vy, vz, vw) ((AVD_Vector4){.x = (vx), .y = (vy), .z = (vz), .w = (vw)})
@@ -101,11 +105,13 @@ typedef union {
     (v1).z * (v2).x - (v1).x * (v2).z, \
     (v1).x * (v2).y - (v1).y * (v2).x, \
     1.0f)
-#define avdVec4Lerp(a, b, t) avdVec4( \
-    avdLerp((a).x, (b).x, (t)),       \
-    avdLerp((a).y, (b).y, (t)),       \
-    avdLerp((a).z, (b).z, (t)),       \
-    avdLerp((a).w, (b).w, (t)))
+    #define avdVec4Lerp(a, b, t) avdVec4( \
+        avdLerp((a).x, (b).x, (t)),       \
+        avdLerp((a).y, (b).y, (t)),       \
+        avdLerp((a).z, (b).z, (t)),       \
+        avdLerp((a).w, (b).w, (t)))
+#define avdVec4IntersectRect(point, rectPos, rectSize) \
+    ((point).x >= (rectPos).x && (point).y >= (rectPos).y && (point).x <= (rectPos).x + (rectSize).x && (point).y <= (rectPos).y + (rectSize).y)
 #define avdVec4Log(v) AVD_LOG_INFO("Vec4[x: %.2f, y: %.2f, z: %.2f, w: %.2f]", (v).x, (v).y, (v).z, (v).w)
 
 // Define the swizzle macros for vectors

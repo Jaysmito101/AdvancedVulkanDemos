@@ -42,6 +42,7 @@ static bool PRIV_avdRegisterSceneApis(AVD_SceneManager *sceneManager)
     avdSceneEyeballsRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_EYEBALLS]);
     avdSceneRealisticHeadRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_REALISTIC_HEAD]);
     avdSceneHLSPlayerRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_HLS_PLAYER]);
+    avdSceneUiSystemDemoRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_UI_SYSTEM_DEMO]);
     return true;
 }
 
@@ -164,6 +165,8 @@ const char *avdSceneTypeToString(AVD_SceneType type)
             return "Subsurface_Scattering";
         case AVD_SCENE_TYPE_REALISTIC_HEAD:
             return "Realistic_Head";
+        case AVD_SCENE_TYPE_UI_SYSTEM_DEMO:
+            return "UI_System_Demo";
         default:
             return "Unknown_Scene_Type";
     }

@@ -1,7 +1,7 @@
-#include "ui/avd_ui.h"
+#include "common/avd_ui.h"
 #include "avd_application.h"
 
-typedef struct AVD_UiPushConstants {
+typedef struct AVD_SimpleUiPushConstants {
     int type;
     float width;
     float height;
@@ -26,9 +26,9 @@ typedef struct AVD_UiPushConstants {
     float colorG;
     float colorB;
     float colorA;
-} AVD_UiPushConstants;
+} AVD_SimpleUiPushConstants;
 
-bool avdUiInit(AVD_Ui *ui, struct AVD_AppState *appState)
+bool avdSimpleUiInit(AVD_SimpleUi *ui, struct AVD_AppState *appState)
 {
     AVD_ASSERT(ui != NULL);
     AVD_ASSERT(appState != NULL);
@@ -46,7 +46,7 @@ bool avdUiInit(AVD_Ui *ui, struct AVD_AppState *appState)
         vulkan->device,
         (VkDescriptorSetLayout[]){ui->descriptorSetLayout},
         1,
-        sizeof(AVD_UiPushConstants),
+        sizeof(AVD_SimpleUiPushConstants),
         appState->renderer.sceneFramebuffer.renderPass,
         (uint32_t)appState->renderer.sceneFramebuffer.colorAttachments.count,
         "FullScreenQuadVert",
@@ -57,7 +57,7 @@ bool avdUiInit(AVD_Ui *ui, struct AVD_AppState *appState)
     return true;
 }
 
-void avdUiDestroy(AVD_Ui *ui, struct AVD_AppState *appState)
+void avdSimpleUiDestroy(AVD_SimpleUi *ui, struct AVD_AppState *appState)
 {
     AVD_ASSERT(ui != NULL);
     AVD_ASSERT(appState != NULL);
@@ -69,7 +69,7 @@ void avdUiDestroy(AVD_Ui *ui, struct AVD_AppState *appState)
     vkDestroyDescriptorSetLayout(vulkan->device, ui->descriptorSetLayout, NULL);
 }
 
-void avdUiBegin(VkCommandBuffer commandBuffer, AVD_Ui *ui, AVD_AppState *appState, float width, float height, float offsetX, float offsetY, uint32_t frameWidth, uint32_t frameHeight)
+void avdSimpleUiBegin(VkCommandBuffer commandBuffer, AVD_SimpleUi *ui, AVD_AppState *appState, float width, float height, float offsetX, float offsetY, uint32_t frameWidth, uint32_t frameHeight)
 {
     AVD_ASSERT(ui != NULL);
     AVD_ASSERT(appState != NULL);
@@ -93,7 +93,7 @@ void avdUiBegin(VkCommandBuffer commandBuffer, AVD_Ui *ui, AVD_AppState *appStat
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void avdUiEnd(VkCommandBuffer commandBuffer, AVD_Ui *ui, AVD_AppState *appState)
+void avdSimpleUiEnd(VkCommandBuffer commandBuffer, AVD_SimpleUi *ui, AVD_AppState *appState)
 {
     AVD_ASSERT(ui != NULL);
     AVD_ASSERT(appState != NULL);
@@ -101,9 +101,9 @@ void avdUiEnd(VkCommandBuffer commandBuffer, AVD_Ui *ui, AVD_AppState *appState)
     // A No op for now?
 }
 
-void avdUiDrawRect(
+void avdSimpleUiDrawRect(
     VkCommandBuffer commandBuffer,
-    AVD_Ui *ui,
+    AVD_SimpleUi *ui,
     struct AVD_AppState *appState,
     float x,
     float y,
@@ -129,7 +129,7 @@ void avdUiDrawRect(
         fallbackImage = descriptorSet;
     }
 
-    AVD_UiPushConstants pushConstants = {
+    AVD_SimpleUiPushConstants pushConstants = {
         .type        = AVD_UI_ELEMENT_TYPE_RECT,
         .width       = ui->width,
         .height      = ui->height,

@@ -2,11 +2,11 @@
 #define AVD_APPLICATION_H
 
 #include "audio/avd_audio.h"
+#include "common/avd_common.h"
 #include "core/avd_core.h"
 #include "font/avd_font_renderer.h"
 #include "scenes/avd_scenes.h"
 #include "shader/avd_shader.h"
-#include "ui/avd_ui.h"
 #include "vulkan/avd_vulkan.h"
 
 typedef struct AVD_Frametime {
@@ -33,7 +33,7 @@ typedef struct AVD_AppState {
     AVD_FontRenderer fontRenderer;       // The default font renderer used for rendering text
     AVD_SceneManager sceneManager;       // The scene manager
     AVD_ShaderManager shaderManager;     // The shader manager
-    AVD_Ui ui;                           // The UI manager
+    AVD_SimpleUi ui;                     // The UI manager
 
     VkSurfaceKHR surface; // The Vulkan surface
     bool running;         // The application running state

@@ -3,6 +3,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <dbghelp.h>
+#include <shellapi.h>
 #include <shlobj.h>
 #ifdef AVD_DEBUG
 #pragma comment(lib, "dbghelp.lib")
@@ -300,6 +301,21 @@ int avdQuantizeSnorm(float v, int N)
     v = (v <= +1) ? v : +1;
 
     return (int)(v * scale + round);
+}
+
+void avdOpenUrl(const char *url)
+{
+#if defined(_WIN32) || defined(__CYGWIN__)
+    ShellExecuteA(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
+#elif defined(__APPLE__)
+    char command[4096];
+    snprintf(command, sizeof(command), "open \"%s\"", url);
+    system(command);
+#else
+    char command[4096];
+    snprintf(command, sizeof(command), "xdg-open \"%s\"", url);
+    system(command);
+#endif
 }
 
 bool avdIsStringAURL(const char *str)

@@ -321,7 +321,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
 
     AVD_DEBUG_VK_CMD_BEGIN_LABEL(commandBuffer, NULL, "[Cmd][Scene]:MainMenu/RenderUi");
 
-    avdUiBegin(
+    avdSimpleUiBegin(
         commandBuffer,
         &appState->ui,
         appState,
@@ -351,7 +351,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
 
         if (mouseX >= x && mouseX <= x + cardWidth && mouseY >= y && mouseY <= y + cardHeight) {
             mainMenu->hoveredCard = currentOffset + i;
-            avdUiDrawRect(
+            avdSimpleUiDrawRect(
                 commandBuffer,
                 &appState->ui,
                 appState,
@@ -360,7 +360,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
                 1.0f, 1.0f, 1.0f, 1.0f,
                 card->descriptorSet, image->info.width, image->info.height);
         } else {
-            avdUiDrawRect(
+            avdSimpleUiDrawRect(
                 commandBuffer,
                 &appState->ui,
                 appState,
@@ -407,7 +407,7 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
 
-    avdUiEnd(
+    avdSimpleUiEnd(
         commandBuffer,
         &appState->ui,
         appState);
