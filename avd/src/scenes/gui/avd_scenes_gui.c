@@ -168,7 +168,7 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
 
     AVD_CHECK(avdDrawListBegin(&gui->drawList, 1920, 1080));
 
-    AVD_CHECK(avdDrawListAddTriangle(
+    AVD_CHECK(avdDrawListAddTriangleFilled(
         &gui->drawList,
         avdVec2(100.0f, 100.0f), avdVec2(0.0f, 0.0f),
         avdVec2(200.0f, 100.0f), avdVec2(1.0f, 0.0f),

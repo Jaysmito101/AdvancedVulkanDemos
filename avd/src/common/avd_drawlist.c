@@ -269,7 +269,24 @@ AVD_Bool avdDrawListPack(AVD_DrawList *drawList, AVD_DrawListPacked *packedData)
     return true;
 }
 
-AVD_Bool avdDrawListAddTriangle(
+bool avdDrawListAddTriangle(
+    AVD_DrawList *drawList,
+    AVD_Vector2 v1Pos,
+    AVD_Vector2 v2Pos,
+    AVD_Vector2 v3Pos,
+    AVD_Float thickness,
+    AVD_Vector3 color)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    AVD_CHECK(avdDrawListAddLine(drawList, v1Pos, v2Pos, thickness, color));
+    AVD_CHECK(avdDrawListAddLine(drawList, v2Pos, v3Pos, thickness, color));
+    AVD_CHECK(avdDrawListAddLine(drawList, v3Pos, v1Pos, thickness, color));
+
+    return true;
+}
+
+AVD_Bool avdDrawListAddTriangleFilled(
     AVD_DrawList *drawList,
     AVD_Vector2 v1Pos, AVD_Vector2 v1UV,
     AVD_Vector2 v2Pos, AVD_Vector2 v2UV,
@@ -361,8 +378,8 @@ AVD_Bool avdDrawListAddQuadFilledUv(
 {
     AVD_ASSERT(drawList != NULL);
 
-    AVD_CHECK(avdDrawListAddTriangle(drawList, v1Pos, v1UV, v2Pos, v2UV, v3Pos, v3UV, color));
-    AVD_CHECK(avdDrawListAddTriangle(drawList, v1Pos, v1UV, v3Pos, v3UV, v4Pos, v4UV, color));
+    AVD_CHECK(avdDrawListAddTriangleFilled(drawList, v1Pos, v1UV, v2Pos, v2UV, v3Pos, v3UV, color));
+    AVD_CHECK(avdDrawListAddTriangleFilled(drawList, v1Pos, v1UV, v3Pos, v3UV, v4Pos, v4UV, color));
     return true;
 }
 
@@ -472,7 +489,7 @@ AVD_Bool avdDrawListAddCircleFilledUv(
             nextUV  = firstUV;
         }
 
-        AVD_CHECK(avdDrawListAddTriangle(drawList, center, uvCenter, prevPos, prevUV, nextPos, nextUV, color));
+        AVD_CHECK(avdDrawListAddTriangleFilled(drawList, center, uvCenter, prevPos, prevUV, nextPos, nextUV, color));
 
         prevPos = nextPos;
         prevUV  = nextUV;

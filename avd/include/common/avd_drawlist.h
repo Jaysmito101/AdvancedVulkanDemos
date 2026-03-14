@@ -81,6 +81,13 @@ void avdDrawListEnd(AVD_DrawList *drawList);
 
 bool avdDrawListAddTriangle(
     AVD_DrawList *drawList,
+    AVD_Vector2 v1Pos,
+    AVD_Vector2 v2Pos,
+    AVD_Vector2 v3Pos,
+    AVD_Float thickness,
+    AVD_Vector3 color);
+bool avdDrawListAddTriangleFilled(
+    AVD_DrawList *drawList,
     AVD_Vector2 v1Pos, AVD_Vector2 v1UV,
     AVD_Vector2 v2Pos, AVD_Vector2 v2UV,
     AVD_Vector2 v3Pos, AVD_Vector2 v3UV,
