@@ -479,7 +479,7 @@ AVD_Bool avdDrawListAddCircleFilledUv(
     AVD_Vector2 prevPos = firstPos;
     AVD_Vector2 prevUV  = firstUV;
 
-    for (AVD_UInt32 i = 1; i <= segmentCount; i++) {
+    for (AVD_UInt32 i = 1; i <= (AVD_UInt32)segmentCount; i++) {
         float angle         = (AVD_Float)i * angleStep;
         AVD_Vector2 nextPos = {
             center.x + radius * cosf(angle),
@@ -576,7 +576,7 @@ bool avdDrawListAddCircle(
 
     AVD_Vector2 prevPos = firstPos;
 
-    for (AVD_UInt32 i = 1; i <= segmentCount; i++) {
+    for (AVD_UInt32 i = 1; i <= (AVD_UInt32)segmentCount; i++) {
         float angle         = (AVD_Float)i * angleStep;
         AVD_Vector2 nextPos = {
             center.x + radius * cosf(angle),
@@ -612,7 +612,7 @@ bool avdDrawListAddElipse(
 
     AVD_Vector2 prevPos = firstPos;
 
-    for (AVD_UInt32 i = 1; i <= segmentCount; i++) {
+    for (AVD_UInt32 i = 1; i <= (AVD_UInt32)segmentCount; i++) {
         float angle         = (AVD_Float)i * angleStep;
         AVD_Vector2 nextPos = {
             center.x + radius.x * cosf(angle),
@@ -652,7 +652,7 @@ bool avdDrawListAddElipseFilledUv(
     AVD_Vector2 prevPos = firstPos;
     AVD_Vector2 prevUV  = firstUV;
 
-    for (AVD_UInt32 i = 1; i <= segmentCount; i++) {
+    for (AVD_UInt32 i = 1; i <= (AVD_UInt32)segmentCount; i++) {
         float angle         = (AVD_Float)i * angleStep;
         AVD_Vector2 nextPos = {
             center.x + radius.x * cosf(angle),
