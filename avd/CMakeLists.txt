@@ -65,6 +65,7 @@ add_executable(avd
     ./src/math/avd_quaternion_non_simd.c
     ./src/math/avd_math_tests.c
 
+    ./src/geom/avd_2d_geom.c
     ./src/geom/avd_3d_matrices.c
     ./src/geom/avd_transform.c
 
