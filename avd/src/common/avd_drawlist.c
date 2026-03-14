@@ -3,6 +3,7 @@
 #include "core/avd_list.h"
 #include "core/avd_types.h"
 #include "font/avd_font_renderer.h"
+#include "geom/avd_2d_geom.h"
 #include "math/avd_vector_non_simd.h"
 #include "model/avd_model_base.h"
 #include "vulkan/avd_vulkan_base.h"
@@ -96,6 +97,26 @@ static AVD_Bool PRIV_avdDrawListFinalizeCurrentCommand(AVD_DrawList *drawList)
     return true;
 }
 
+static AVD_DrawListTexture *PRIV_avdDrawListGetCurrentTexture(AVD_DrawList *drawList)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    if (drawList->textureStackTop >= 0) {
+        return &drawList->textureStack[drawList->textureStackTop];
+    }
+    return NULL; // no texture
+}
+
+static AVD_DrawListClipRect *PRIV_avdDrawListGetCurrentClipRect(AVD_DrawList *drawList)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    if (drawList->clipRectStackTop >= 0) {
+        return &drawList->clipRectStack[drawList->clipRectStackTop];
+    }
+    return NULL; // no clip rect
+}
+
 static AVD_Bool PRIV_avdDrawListAddTriangle(
     AVD_DrawList *drawList,
     AVD_ModelVertex vertices[3],
@@ -104,6 +125,25 @@ static AVD_Bool PRIV_avdDrawListAddTriangle(
     AVD_ASSERT(drawList != NULL);
 
     AVD_CHECK_MSG(drawList->recording, "Must call avdDrawListBegin before adding draw commands");
+
+    AVD_DrawListClipRect clipRect     = {0};
+    AVD_DrawListClipRect *clipRectPtr = PRIV_avdDrawListGetCurrentClipRect(drawList);
+    if (clipRectPtr != NULL) {
+        clipRect = *clipRectPtr;
+    } else {
+        clipRect.min = avdVec2Zero();
+        clipRect.max = avdVec2((AVD_Float)drawList->framebufferWidth, (AVD_Float)drawList->framebufferHeight);
+    }
+
+    AVD_GeomTriangleClipStatus clipStatus = avdGeomGetTriangleClipStatus(
+        avdVec2(vertices[0].position.x, vertices[0].position.y),
+        avdVec2(vertices[1].position.x, vertices[1].position.y),
+        avdVec2(vertices[2].position.x, vertices[2].position.y),
+        clipRect.min,
+        clipRect.max);
+    if (clipStatus == AVD_GEOM_TRIANGLE_CLIP_STATUS_OUTSIDE) {
+        return true;
+    }
 
     if (textureHandle == NULL) {
         textureHandle = drawList->currentCommand.textureHandle;
@@ -126,26 +166,6 @@ static AVD_Bool PRIV_avdDrawListAddTriangle(
     drawList->currentCommand.textureHandle = textureHandle;
 
     return true;
-}
-
-static AVD_DrawListTexture *PRIV_avdDrawListGetCurrentTexture(AVD_DrawList *drawList)
-{
-    AVD_ASSERT(drawList != NULL);
-
-    if (drawList->textureStackTop >= 0) {
-        return &drawList->textureStack[drawList->textureStackTop];
-    }
-    return NULL; // no texture
-}
-
-static AVD_DrawListClipRect *PRIV_avdDrawListGetCurrentClipRect(AVD_DrawList *drawList)
-{
-    AVD_ASSERT(drawList != NULL);
-
-    if (drawList->clipRectStackTop >= 0) {
-        return &drawList->clipRectStack[drawList->clipRectStackTop];
-    }
-    return NULL; // no clip rect
 }
 
 AVD_Bool avdDrawListCreate(AVD_DrawList *drawList, AVD_FontManager *fontManager)
