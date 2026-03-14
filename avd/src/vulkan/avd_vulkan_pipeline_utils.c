@@ -1,5 +1,6 @@
 #include "vulkan/avd_vulkan_pipeline_utils.h"
 #include "shader/avd_shader.h"
+#include "vulkan/avd_vulkan_base.h"
 #include "vulkan/avd_vulkan_renderer.h"
 
 bool avdPipelineUtilsShaderStage(VkPipelineShaderStageCreateInfo *shaderStageInfo, VkShaderModule shaderModule, VkShaderStageFlagBits stageFlags)
@@ -360,6 +361,12 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         descriptorSetLayouts,
         descriptorSetLayoutCount,
         pushConstantSize));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE_LAYOUT,
+        *pipelineLayout,
+        "[PipelineLayout][Core]:Vulkan/Pipeline/Layout/%s/%s",
+        vertShaderAsset,
+        fragShaderAsset);
     AVD_CHECK(avdPipelineUtilsCreateGenericGraphicsPipeline(
         pipeline,
         *pipelineLayout,
@@ -370,6 +377,12 @@ bool avdPipelineUtilsCreateGraphicsLayoutAndPipeline(
         fragShaderAsset,
         compilationOptions,
         pipelineCreationInfo));
+    AVD_DEBUG_VK_SET_OBJECT_NAME(
+        VK_OBJECT_TYPE_PIPELINE,
+        *pipeline,
+        "[Pipeline][Core]:Vulkan/Pipeline/Graphics/%s/%s",
+        vertShaderAsset,
+        fragShaderAsset);
 
     return true;
 }
