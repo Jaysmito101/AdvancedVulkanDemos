@@ -589,6 +589,107 @@ bool avdDrawListAddCircle(
     return true;
 }
 
+bool avdDrawListAddElipse(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, AVD_Vector2 radius,
+    float thickness,
+    AVD_Vector3 color,
+    int segmentCount)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    segmentCount = AVD_CLAMP(segmentCount, 3, 360);
+
+    float angleStep = 2.0f * AVD_PI / (float)segmentCount;
+
+    AVD_Vector2 firstPos = {
+        center.x + radius.x * cosf(0.0f),
+        center.y + radius.y * sinf(0.0f)};
+
+    AVD_Vector2 prevPos = firstPos;
+
+    for (AVD_UInt32 i = 1; i <= segmentCount; i++) {
+        float angle         = (AVD_Float)i * angleStep;
+        AVD_Vector2 nextPos = {
+            center.x + radius.x * cosf(angle),
+            center.y + radius.y * sinf(angle)};
+
+        if (i == segmentCount) {
+            nextPos = firstPos;
+        }
+
+        AVD_CHECK(avdDrawListAddLine(drawList, prevPos, nextPos, thickness, color));
+
+        prevPos = nextPos;
+    }
+    return true;
+}
+
+bool avdDrawListAddElipseFilledUv(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, AVD_Vector2 radius,
+    AVD_Vector2 uvCenter, AVD_Vector2 uvRadius,
+    AVD_Vector3 color,
+    int segmentCount)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    segmentCount = AVD_CLAMP(segmentCount, 3, 360);
+
+    float angleStep = 2.0f * AVD_PI / (float)segmentCount;
+
+    AVD_Vector2 firstPos = {
+        center.x + radius.x * cosf(0.0f),
+        center.y + radius.y * sinf(0.0f)};
+    AVD_Vector2 firstUV = {
+        uvCenter.x + uvRadius.x * cosf(0.0f),
+        uvCenter.y + uvRadius.y * sinf(0.0f)};
+
+    AVD_Vector2 prevPos = firstPos;
+    AVD_Vector2 prevUV  = firstUV;
+
+    for (AVD_UInt32 i = 1; i <= segmentCount; i++) {
+        float angle         = (AVD_Float)i * angleStep;
+        AVD_Vector2 nextPos = {
+            center.x + radius.x * cosf(angle),
+            center.y + radius.y * sinf(angle)};
+        AVD_Vector2 nextUV = {
+            uvCenter.x + uvRadius.x * cosf(angle),
+            uvCenter.y + uvRadius.y * sinf(angle)};
+
+        if (i == segmentCount) {
+            nextPos = firstPos;
+            nextUV  = firstUV;
+        }
+
+        AVD_CHECK(avdDrawListAddTriangleFilled(drawList, center, uvCenter, prevPos, prevUV, nextPos, nextUV, color));
+
+        prevPos = nextPos;
+        prevUV  = nextUV;
+    }
+    return true;
+}
+
+bool avdDrawListAddElipseFilled(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, AVD_Vector2 radius,
+    AVD_Vector3 color,
+    int segmentCount)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    AVD_Vector2 uvCenter = {0.5f, 0.5f};
+    AVD_Vector2 uvRadius = {0.5f, 0.5f};
+    return avdDrawListAddElipseFilledUv(
+        drawList,
+        center,
+        radius,
+        uvCenter,
+        uvRadius,
+        color,
+        segmentCount);
+}
+
 // ----------------
 
 AVD_Bool avdDrawListRendererCreate(AVD_DrawListRenderer *renderer, AVD_VulkanFramebuffer *framebuffer, AVD_Vulkan *vulkan)

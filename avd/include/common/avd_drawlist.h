@@ -156,6 +156,24 @@ bool avdDrawListAddCircleFilled(
     AVD_Vector3 color,
     int segmentCount);
 
+bool avdDrawListAddElipse(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, AVD_Vector2 radius,
+    float thickness,
+    AVD_Vector3 color,
+    int segmentCount);
+bool avdDrawListAddElipseFilled(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, AVD_Vector2 radius,
+    AVD_Vector3 color,
+    int segmentCount);
+bool avdDrawListAddElipseFilledUv(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, AVD_Vector2 radius,
+    AVD_Vector2 uvCenter, AVD_Vector2 uvRadius,
+    AVD_Vector3 color,
+    int segmentCount);
+
 
 // NOTE: packedData doesnt own anything, its just a pointer to existing data owned by the drawlist,
 // so the caller must ensure that the drawlist is not freed while the packeData is in use as well as
