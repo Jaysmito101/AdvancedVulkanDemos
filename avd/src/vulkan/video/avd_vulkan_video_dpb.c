@@ -212,7 +212,7 @@ bool avdVulkanVideoDecodeDPBTransitionImageLayout(
                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
                .baseMipLevel   = 0,
                .levelCount     = VK_REMAINING_MIP_LEVELS,
-               .baseArrayLayer = slotIndex,
+               .baseArrayLayer = (AVD_UInt32)slotIndex,
                .layerCount     = 1,
         },
     };
