@@ -319,6 +319,88 @@ AVD_Bool avdDrawListAddTriangle(
     return true;
 }
 
+AVD_Bool avdDrawListAddQuad(
+    AVD_DrawList *drawList,
+    AVD_Vector2 v1Pos, AVD_Vector2 v1UV,
+    AVD_Vector2 v2Pos, AVD_Vector2 v2UV,
+    AVD_Vector2 v3Pos, AVD_Vector2 v3UV,
+    AVD_Vector2 v4Pos, AVD_Vector2 v4UV,
+    AVD_Vector3 color)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    AVD_CHECK(avdDrawListAddTriangle(drawList, v1Pos, v1UV, v2Pos, v2UV, v3Pos, v3UV, color));
+    AVD_CHECK(avdDrawListAddTriangle(drawList, v1Pos, v1UV, v3Pos, v3UV, v4Pos, v4UV, color));
+    return true;
+}
+
+AVD_Bool avdDrawListAddRect(
+    AVD_DrawList *drawList,
+    AVD_Vector2 minPos, AVD_Vector2 maxPos,
+    AVD_Vector2 uvMin, AVD_Vector2 uvMax,
+    AVD_Vector3 color)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    AVD_Vector2 v1Pos = {minPos.x, minPos.y};
+    AVD_Vector2 v2Pos = {maxPos.x, minPos.y};
+    AVD_Vector2 v3Pos = {maxPos.x, maxPos.y};
+    AVD_Vector2 v4Pos = {minPos.x, maxPos.y};
+
+    AVD_Vector2 v1UV = {uvMin.x, uvMin.y};
+    AVD_Vector2 v2UV = {uvMax.x, uvMin.y};
+    AVD_Vector2 v3UV = {uvMax.x, uvMax.y};
+    AVD_Vector2 v4UV = {uvMin.x, uvMax.y};
+
+    AVD_CHECK(avdDrawListAddQuad(drawList, v1Pos, v1UV, v2Pos, v2UV, v3Pos, v3UV, v4Pos, v4UV, color));
+    return true;
+}
+
+AVD_Bool avdDrawListAddCircle(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, float radius,
+    AVD_Vector2 uvCenter, float uvRadius,
+    AVD_Vector3 color,
+    int segmentCount)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    segmentCount = AVD_CLAMP(segmentCount, 3, 360);
+
+    float angleStep = 2.0f * AVD_PI / (float)segmentCount;
+
+    AVD_Vector2 firstPos = {
+        center.x + radius * cosf(0.0f),
+        center.y + radius * sinf(0.0f)};
+    AVD_Vector2 firstUV = {
+        uvCenter.x + uvRadius * cosf(0.0f),
+        uvCenter.y + uvRadius * sinf(0.0f)};
+
+    AVD_Vector2 prevPos = firstPos;
+    AVD_Vector2 prevUV  = firstUV;
+
+    for (AVD_UInt32 i = 1; i <= segmentCount; i++) {
+        float angle         = (AVD_Float)i * angleStep;
+        AVD_Vector2 nextPos = {
+            center.x + radius * cosf(angle),
+            center.y + radius * sinf(angle)};
+        AVD_Vector2 nextUV = {
+            uvCenter.x + uvRadius * cosf(angle),
+            uvCenter.y + uvRadius * sinf(angle)};
+
+        if (i == segmentCount) {
+            nextPos = firstPos;
+            nextUV  = firstUV;
+        }
+
+        AVD_CHECK(avdDrawListAddTriangle(drawList, center, uvCenter, prevPos, prevUV, nextPos, nextUV, color));
+
+        prevPos = nextPos;
+        prevUV  = nextUV;
+    }
+    return true;
+}
+
 // ----------------
 
 AVD_Bool avdDrawListRendererCreate(AVD_DrawListRenderer *renderer, AVD_VulkanFramebuffer *framebuffer, AVD_Vulkan *vulkan)

@@ -85,6 +85,24 @@ bool avdDrawListAddTriangle(
     AVD_Vector2 v2Pos, AVD_Vector2 v2UV,
     AVD_Vector2 v3Pos, AVD_Vector2 v3UV,
     AVD_Vector3 color);
+bool avdDrawListAddQuad(
+    AVD_DrawList *drawList,
+    AVD_Vector2 v1Pos, AVD_Vector2 v1UV,
+    AVD_Vector2 v2Pos, AVD_Vector2 v2UV,
+    AVD_Vector2 v3Pos, AVD_Vector2 v3UV,
+    AVD_Vector2 v4Pos, AVD_Vector2 v4UV,
+    AVD_Vector3 color);
+bool avdDrawListAddRect(
+    AVD_DrawList *drawList,
+    AVD_Vector2 minPos, AVD_Vector2 maxPos,
+    AVD_Vector2 uvMin, AVD_Vector2 uvMax,
+    AVD_Vector3 color);
+bool avdDrawListAddCircle(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, float radius,
+    AVD_Vector2 uvCenter, float uvRadius,
+    AVD_Vector3 color,
+    int segmentCount);
 
 // NOTE: packedData doesnt own anything, its just a pointer to existing data owned by the drawlist,
 // so the caller must ensure that the drawlist is not freed while the packeData is in use as well as
