@@ -474,6 +474,7 @@ bool avdFontManagerAddBasicFonts(AVD_FontManager *fontManager)
 {
     AVD_ASSERT(fontManager != NULL);
 
+    AVD_CHECK(avdFontManagerAddFontFromAsset(fontManager, "Default"));
     AVD_CHECK(avdFontManagerAddFontFromAsset(fontManager, "OpenSansRegular"));
     AVD_CHECK(avdFontManagerAddFontFromAsset(fontManager, "ShantellSansBold"));
     AVD_CHECK(avdFontManagerAddFontFromAsset(fontManager, "RampartOneRegular"));
