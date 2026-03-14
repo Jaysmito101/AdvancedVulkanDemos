@@ -49,8 +49,15 @@
     #define mod fmod
     #define fract frac
 
-    #define TEXTURE_SIZE(tex) tex.GetDimensions()
-    #define TEXTURE_TAB_SIZE(tex, index) tex[index].GetDimensions()
+
+uint2 PRIV__hlslTextureSize(Texture2D tex) {
+    uint width, height;
+    tex.GetDimensions(width, height);
+    return uint2(width, height);
+}
+
+    #define TEXTURE_SIZE(tex) PRIV__hlslTextureSize(tex)
+    #define TEXTURE_TAB_SIZE(tex, index) PRIV__hlslTextureSize(tex[index])
 
     #define SAMPLE_TEXTURE(tex, uv) tex.Sample(tex##_sampler, uv)
     #define SAMPLE_TEXTURE_TAB(tex, uv, index) tex[index].Sample(tex##_sampler[index], uv)
