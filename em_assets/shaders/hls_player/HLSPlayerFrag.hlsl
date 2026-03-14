@@ -9,7 +9,7 @@ cbuffer PushConstants {
 };
 
 [[vk::binding(1, 0)]]
-SAMPLER2D_TAB(textures, 1);
+SAMPLER2D_TAB(textures, 1, 0);
 
 
 float3 calcNormal(float3 p) {

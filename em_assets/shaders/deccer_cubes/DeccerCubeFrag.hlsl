@@ -6,7 +6,7 @@ cbuffer PushConstants {
 };
 
 [[vk::binding(1, 1)]]
-SAMPLER2D_TAB(textures, 1);
+SAMPLER2D_TAB(textures, 1, 1);
 
 float4 main(VertexShaderOutput input) : SV_Target {
     const float3 lightPosition = float3(5.0, 5.0, 5.0);
