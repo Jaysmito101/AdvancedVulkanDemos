@@ -80,6 +80,15 @@ static AVD_Bool PRIV_avdDrawListFinalizeCurrentCommand(AVD_DrawList *drawList)
     AVD_ASSERT(drawList != NULL);
 
     drawList->currentCommand.vertexCount = (AVD_UInt32)(drawList->vertexData.count - drawList->currentCommand.vertexOffset);
+
+    if (drawList->currentCommand.textureHandle == NULL) {
+        // if we have not set a texture for this command, use the default font texture
+        // so that we have something to bind
+        AVD_Font *defaultFont = NULL;
+        AVD_CHECK(avdFontManagerGetFont(drawList->fontManager, "Default", &defaultFont));
+        drawList->currentCommand.textureHandle = (void *)defaultFont->fontDescriptorSet;
+    }
+
     avdListPushBack(&drawList->commands, &drawList->currentCommand);
     drawList->currentCommand.vertexOffset = (AVD_UInt32)drawList->vertexData.count;
     drawList->currentCommand.vertexCount  = 0;
@@ -101,7 +110,11 @@ static AVD_Bool PRIV_avdDrawListAddTriangle(
     }
 
     if (drawList->currentCommand.textureHandle != textureHandle) {
-        AVD_CHECK(PRIV_avdDrawListFinalizeCurrentCommand(drawList));
+        if (drawList->currentCommand.textureHandle == NULL) {
+            drawList->currentCommand.textureHandle = textureHandle;
+        } else {
+            AVD_CHECK(PRIV_avdDrawListFinalizeCurrentCommand(drawList));
+        }
     }
 
     AVD_ModelVertexPacked packedVertex = {0};
@@ -227,15 +240,13 @@ bool avdDrawListBegin(AVD_DrawList *drawList, AVD_UInt32 width, AVD_UInt32 heigh
     avdListClear(&drawList->vertexData);
     avdListClear(&drawList->commands);
 
-    drawList->recording                   = true;
-    drawList->framebufferWidth            = width;
-    drawList->framebufferHeight           = height;
-    drawList->currentCommand.vertexOffset = 0;
-    drawList->currentCommand.vertexCount  = 0;
-
-    AVD_Font *defaultFont = NULL;
-    AVD_CHECK(avdFontManagerGetFont(drawList->fontManager, "Default", &defaultFont));
-    drawList->currentCommand.textureHandle = (void *)defaultFont->fontDescriptorSet;
+    drawList->recording                    = true;
+    drawList->framebufferWidth             = width;
+    drawList->framebufferHeight            = height;
+    drawList->currentCommand.vertexOffset  = 0;
+    drawList->currentCommand.vertexCount   = 0;
+    drawList->currentCommand.fontPxRange   = 0.0;
+    drawList->currentCommand.textureHandle = NULL;
 
     return true;
 }
@@ -692,6 +703,95 @@ bool avdDrawListAddElipseFilled(
         uvRadius,
         color,
         segmentCount);
+}
+
+bool avdDrawListAddText(
+    AVD_DrawList *drawList,
+    const char *text,
+    AVD_Vector2 position,
+    float fontSize,
+    AVD_Vector3 color,
+    const char *fontName,
+    AVD_Float wrapWidth)
+{
+    AVD_ASSERT(drawList != NULL);
+    AVD_ASSERT(text != NULL);
+
+    if (drawList->fontManager == NULL) {
+        AVD_LOG_WARN("Cannot add text to draw list: fontManager is NULL");
+        return false;
+    }
+
+    AVD_Font *font = NULL;
+    if (!avdFontManagerGetFont(drawList->fontManager, fontName ? fontName : "Default", &font) || font == NULL) {
+        AVD_LOG_WARN("Failed to get font: %s", fontName);
+        return false;
+    }
+
+    // push a font texture for the text rendering
+    drawList->textureStackTop++;
+    drawList->textureStack[drawList->textureStackTop] = (AVD_DrawListTexture){
+        .handle        = (void *)font->fontDescriptorSet,
+        .isFontTexture = true,
+    };
+    drawList->currentCommand.fontPxRange = font->fontData.atlas->info.distanceRange;
+
+    float lineHeight  = font->fontData.atlas->metrics.lineHeight;
+    float atlasWidth  = (float)font->fontData.atlas->info.width;
+    float atlasHeight = (float)font->fontData.atlas->info.height;
+
+    float cX = position.x;
+    float cY = position.y;
+
+    for (size_t i = 0; i < strlen(text); i++) {
+        uint32_t c = (uint32_t)text[i];
+        if (c == '\n' || (wrapWidth > 0.0f && cX - position.x >= wrapWidth)) {
+            cX = position.x;
+            cY += fontSize * lineHeight;
+            continue;
+        }
+
+        if (c >= AVD_FONT_MAX_GLYPHS) {
+            continue;
+        }
+
+        if (c == ' ') {
+            cX += font->fontData.atlas->glyphs[' '].advanceX * fontSize;
+            continue;
+        }
+
+        if (c == '\r') {
+            continue;
+        }
+
+        AVD_FontAtlasGlyph *glyph        = &font->fontData.atlas->glyphs[c];
+        AVD_FontAtlasBounds *bounds      = &glyph->atlasBounds;
+        AVD_FontAtlasBounds *planeBounds = &glyph->planeBounds;
+
+        float ax = cX + planeBounds->left * fontSize;
+        float ay = cY - planeBounds->top * fontSize;
+        float bx = cX + planeBounds->right * fontSize;
+        float by = cY - planeBounds->bottom * fontSize;
+
+        float u0 = bounds->left / atlasWidth;
+        float v0 = bounds->top / atlasHeight;
+        float u1 = bounds->right / atlasWidth;
+        float v1 = bounds->bottom / atlasHeight;
+
+        if (!avdDrawListAddRectFilledUv(
+                drawList,
+                (AVD_Vector2){ax, ay}, (AVD_Vector2){bx, by},
+                (AVD_Vector2){u0, v0}, (AVD_Vector2){u1, v1},
+                color)) {
+            AVD_LOG_WARN("Failed to add text to draw list");
+        }
+
+        cX += glyph->advanceX * fontSize;
+    }
+
+    avdDrawListPopTexture(drawList);
+
+    return true;
 }
 
 // ----------------
