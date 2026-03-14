@@ -46,4 +46,9 @@ float2 rotateXZ(float2 p, float angle) {
     return float2(c * p.x - s * p.y, s * p.x + c * p.y);
 }
 
+
+float median(float r, float g, float b) {
+    return max(min(r, g), min(max(r, g), b));
+}
+
 #endif 
