@@ -64,7 +64,7 @@ bool avdSceneImmediateGuiInit(AVD_AppState *appState, AVD_Scene *scene)
         &appState->renderer.sceneFramebuffer,
         &appState->vulkan));
 
-    AVD_CHECK(avdDrawListCreate(&gui->drawList));
+    AVD_CHECK(avdDrawListCreate(&gui->drawList, &appState->fontManager));
 
     return true;
 }
@@ -165,6 +165,17 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
         1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
+
+    AVD_CHECK(avdDrawListBegin(&gui->drawList, 1920, 1080));
+
+    AVD_CHECK(avdDrawListAddTriangle(
+        &gui->drawList,
+        avdVec2(100.0f, 100.0f), avdVec2(0.0f, 0.0f),
+        avdVec2(200.0f, 100.0f), avdVec2(1.0f, 0.0f),
+        avdVec2(150.0f, 200.0f), avdVec2(0.5f, 1.0f),
+        avdVec3(1.0f, 1.0f, 1.0f)));
+
+    avdDrawListEnd(&gui->drawList);
 
     AVD_DrawListPacked packedDrawList = {0};
     AVD_CHECK(avdDrawListPack(&gui->drawList, &packedDrawList));

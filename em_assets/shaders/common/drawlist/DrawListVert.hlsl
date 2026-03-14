@@ -1,9 +1,7 @@
 #include "DrawListCommon"
 
-struct VertexShaderOutput {
-    float2 texCoord : TEXCOORD;
-    float4 position : SV_Position;
-};
+[[vk::binding(0, 0)]]
+StructuredBuffer<ModelVertex> vertices : register(t0, space0);
 
 [[vk::push_constant]]
 cbuffer PushConstants {
@@ -11,22 +9,28 @@ cbuffer PushConstants {
 };
 
 
+float3 sampleColor(uint vertexIndex)
+{
+    float3 normal;
+    float4 tangent;
+    unpackTBN(vertices[vertexIndex].np, uint(vertices[vertexIndex].tp), normal, tangent);
+    return normal;
+}
+
 
 VertexShaderOutput main(uint vertexId : SV_VertexID) {
-    float2 positions[3] = {
-        float2(0.0, -0.5),
-        float2(0.5, 0.5),
-        float2(-0.5, 0.5)
-    };
+    uint vertexIndex = vertexId + data.vertexOffset;
 
-    float2 texCoords[3] = {
-        float2(0.5, 0.0),
-        float2(1.0, 1.0),
-        float2(0.0, 1.0)
-    };
+    float2 position = float2(vertices[vertexIndex].vx, vertices[vertexIndex].vy) / float2(data.framebufferWidth, data.framebufferHeight);
+    position = position * 2.0 - 1.0;
+
+    float2 uv = float2(vertices[vertexIndex].tu, vertices[vertexIndex].tv);
+    float3 color = sampleColor(vertexIndex);
 
     VertexShaderOutput output;
-    output.texCoord = texCoords[vertexId];
-    output.position = float4(positions[vertexId], 0.0, 1.0);
+    output.texCoord = uv;
+    output.position = float4(position, 0.0, 1.0);
+    output.color = color;
+    output.hasTexture = uint(float(vertices[vertexIndex].vz)); 
     return output;
 }
