@@ -335,7 +335,7 @@ AVD_Bool avdDrawListAddTriangleFilled(
         PRIV_avdDrawListAddTriangle(
             drawList,
             vertices,
-            currentTexture->handle));
+            currentTexture ? currentTexture->handle : NULL));
 
     return true;
 }
