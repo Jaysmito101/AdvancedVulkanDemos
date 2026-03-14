@@ -14,7 +14,7 @@ typedef struct AVD_DrawListPushConstants {
     AVD_UInt32 vertexOffset;
     AVD_UInt32 framebufferWidth;
     AVD_UInt32 framebufferHeight;
-    AVD_UInt32 pad0;
+    AVD_Float fontPxRange;
 } AVD_DrawListPushConstants;
 
 static AVD_Bool PRIV_avdDrawListRendererSetupDescriptors(AVD_DrawListRenderer *renderer, AVD_Vulkan *vulkan)
@@ -788,7 +788,8 @@ AVD_Bool avdDrawListRendererRender(
             .vertexOffset      = cmd->vertexOffset,
             .framebufferWidth  = drawListData->width,
             .framebufferHeight = drawListData->height,
-            .pad0              = 0};
+            .fontPxRange       = cmd->fontPxRange,
+        };
         vkCmdPushConstants(
             commandBuffer,
             renderer->pipelineLayout,

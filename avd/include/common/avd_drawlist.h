@@ -20,6 +20,7 @@
 typedef struct {
     AVD_UInt32 vertexOffset;
     AVD_UInt32 vertexCount;
+    AVD_Float fontPxRange;
     void *textureHandle;
 } AVD_DrawListCommand;
 
@@ -178,6 +179,14 @@ bool avdDrawListAddElipseFilledUv(
     AVD_Vector2 uvCenter, AVD_Vector2 uvRadius,
     AVD_Vector3 color,
     int segmentCount);
+bool avdDrawListAddText(
+    AVD_DrawList *drawList,
+    const char *text,
+    AVD_Vector2 position,
+    float fontSize,
+    AVD_Vector3 color,
+    const char *fontName,
+    AVD_Float wrapWidth); // wrap width can be 0 for no wrapping
 
 
 // NOTE: packedData doesnt own anything, its just a pointer to existing data owned by the drawlist,

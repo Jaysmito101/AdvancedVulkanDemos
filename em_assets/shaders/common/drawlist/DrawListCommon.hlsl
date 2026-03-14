@@ -6,7 +6,7 @@ struct PushConstantData
     uint vertexOffset;
     uint framebufferWidth;
     uint framebufferHeight;
-    uint pad0;
+    float fontPxRange;
 };
 
 
