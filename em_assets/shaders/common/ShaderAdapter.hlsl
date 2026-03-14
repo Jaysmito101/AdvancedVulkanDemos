@@ -19,8 +19,8 @@
     #define uint16_t min16uint
 
 
-    #define SAMPLER2D(name, reg) Texture2D name : register(t##reg); SamplerState name##_sampler : register(s##reg)
-    #define SAMPLER2D_TAB(name, reg) Texture2D name[] : register(t##reg); SamplerState name##_sampler[] : register(s##reg)
+    #define SAMPLER2D(name, reg, sp) Texture2D name : register(t##reg, space##sp); SamplerState name##_sampler : register(s##reg, space##sp)
+    #define SAMPLER2D_TAB(name, reg, sp) Texture2D name[] : register(t##reg, space##sp); SamplerState name##_sampler[] : register(s##reg, space##sp)
 
 #elif defined(AVD_GLSL)
     #define float2 vec2
@@ -37,8 +37,8 @@
     #define min16int int16_t
     #define min16uint uint16_t
     
-    #define SAMPLER2D(name, binding_loc) layout(binding = binding_loc) uniform sampler2D name
-    #define SAMPLER2D_TAB(name, binding_loc) layout(binding = binding_loc) uniform sampler2D name[];
+    #define SAMPLER2D(name, binding_loc, sp) layout(set = sp, binding = binding_loc, std430) uniform sampler2D name
+    #define SAMPLER2D_TAB(name, binding_loc, sp) layout(set = sp, binding = binding_loc, std430) uniform sampler2D name[];
 #else
     #error "Shader language not defined. Please define either AVD_HLSL or AVD_GLSL"
 #endif
