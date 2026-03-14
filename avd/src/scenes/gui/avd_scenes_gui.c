@@ -2,6 +2,7 @@
 #include "avd_application.h"
 #include "common/avd_drawlist.h"
 #include "scenes/avd_scenes.h"
+#include <string.h>
 
 static AVD_SceneImmediateGui *PRIV_avdSceneGetTypePtr(AVD_Scene *scene)
 {
@@ -237,6 +238,24 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
         avdVec2(900.0f, 150.0f), avdVec2(40.0f, 80.0f),
         avdVec3(1.0f, 0.5f, 0.0f),
         32));
+
+    AVD_CHECK(avdDrawListAddText(
+        &gui->drawList,
+        "Hello DrawList text testing! 1.. 2.. 3..",
+        avdVec2(100.0f, 500.0f),
+        48.0f,
+        avdVec3(1.0f, 0.0f, 1.0f),
+        "RobotoCondensedRegular",
+        200.0));
+
+    AVD_CHECK(avdDrawListAddText(
+        &gui->drawList,
+        "Hello DrawList text testing! 1.. 2.. 3..",
+        avdVec2(100.0f, 500.0f),
+        48.0f,
+        avdVec3(1.0f, 0.0f, 1.0f),
+        NULL,
+        200.0));
 
     avdDrawListEnd(&gui->drawList);
 
