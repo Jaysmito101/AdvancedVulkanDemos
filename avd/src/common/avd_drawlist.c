@@ -319,7 +319,39 @@ AVD_Bool avdDrawListAddTriangle(
     return true;
 }
 
-AVD_Bool avdDrawListAddQuadUv(
+bool avdDrawListAddLine(
+    AVD_DrawList *drawList,
+    AVD_Vector2 startPos,
+    AVD_Vector2 endPos,
+    float thickness,
+    AVD_Vector3 color)
+{
+    AVD_ASSERT(drawList != NULL);
+    AVD_CHECK_MSG(drawList->recording, "Must call avdDrawListBegin before adding draw commands");
+
+    AVD_Vector2 dir     = avdVec2Normalize(avdVec2Subtract(endPos, startPos));
+    AVD_Vector2 tangent = avdVec2(-dir.y, dir.x);
+    AVD_Vector2 offset  = avdVec2Scale(tangent, thickness * 0.5f);
+
+    AVD_Vector2 capOffset = avdVec2Scale(dir, thickness * 0.5f);
+    AVD_Vector2 extStart  = avdVec2Subtract(startPos, capOffset);
+    AVD_Vector2 extEnd    = avdVec2Add(endPos, capOffset);
+
+    AVD_Vector2 v1Pos = avdVec2Subtract(extStart, offset);
+    AVD_Vector2 v2Pos = avdVec2Subtract(extEnd, offset);
+    AVD_Vector2 v3Pos = avdVec2Add(extEnd, offset);
+    AVD_Vector2 v4Pos = avdVec2Add(extStart, offset);
+
+    return avdDrawListAddQuadFilled(
+        drawList,
+        v1Pos,
+        v2Pos,
+        v3Pos,
+        v4Pos,
+        color);
+}
+
+AVD_Bool avdDrawListAddQuadFilledUv(
     AVD_DrawList *drawList,
     AVD_Vector2 v1Pos, AVD_Vector2 v1UV,
     AVD_Vector2 v2Pos, AVD_Vector2 v2UV,
@@ -334,7 +366,7 @@ AVD_Bool avdDrawListAddQuadUv(
     return true;
 }
 
-bool avdDrawListAddQuad(
+bool avdDrawListAddQuadFilled(
     AVD_DrawList *drawList,
     AVD_Vector2 v1Pos,
     AVD_Vector2 v2Pos,
@@ -346,7 +378,7 @@ bool avdDrawListAddQuad(
 
     AVD_Vector2 uvMin = {0.0f, 0.0f};
     AVD_Vector2 uvMax = {1.0f, 1.0f};
-    AVD_CHECK(avdDrawListAddQuadUv(
+    AVD_CHECK(avdDrawListAddQuadFilledUv(
         drawList,
         v1Pos,
         uvMin,
@@ -361,7 +393,7 @@ bool avdDrawListAddQuad(
     return true;
 }
 
-AVD_Bool avdDrawListAddRectUv(
+AVD_Bool avdDrawListAddRectFilledUv(
     AVD_DrawList *drawList,
     AVD_Vector2 minPos, AVD_Vector2 maxPos,
     AVD_Vector2 uvMin, AVD_Vector2 uvMax,
@@ -379,11 +411,11 @@ AVD_Bool avdDrawListAddRectUv(
     AVD_Vector2 v3UV = {uvMax.x, uvMax.y};
     AVD_Vector2 v4UV = {uvMin.x, uvMax.y};
 
-    AVD_CHECK(avdDrawListAddQuadUv(drawList, v1Pos, v1UV, v2Pos, v2UV, v3Pos, v3UV, v4Pos, v4UV, color));
+    AVD_CHECK(avdDrawListAddQuadFilledUv(drawList, v1Pos, v1UV, v2Pos, v2UV, v3Pos, v3UV, v4Pos, v4UV, color));
     return true;
 }
 
-bool avdDrawListAddRect(
+bool avdDrawListAddRectFilled(
     AVD_DrawList *drawList,
     AVD_Vector2 minPos, AVD_Vector2 maxPos,
     AVD_Vector3 color)
@@ -392,7 +424,7 @@ bool avdDrawListAddRect(
 
     AVD_Vector2 uvMin = {0.0f, 0.0f};
     AVD_Vector2 uvMax = {1.0f, 1.0f};
-    AVD_CHECK(avdDrawListAddRectUv(
+    AVD_CHECK(avdDrawListAddRectFilledUv(
         drawList,
         minPos,
         maxPos,
@@ -403,7 +435,7 @@ bool avdDrawListAddRect(
     return true;
 }
 
-AVD_Bool avdDrawListAddCircleUv(
+AVD_Bool avdDrawListAddCircleFilledUv(
     AVD_DrawList *drawList,
     AVD_Vector2 center, float radius,
     AVD_Vector2 uvCenter, float uvRadius,
@@ -448,7 +480,7 @@ AVD_Bool avdDrawListAddCircleUv(
     return true;
 }
 
-bool avdDrawListAddCircle(
+bool avdDrawListAddCircleFilled(
     AVD_DrawList *drawList,
     AVD_Vector2 center, float radius,
     AVD_Vector3 color,
@@ -458,7 +490,7 @@ bool avdDrawListAddCircle(
 
     AVD_Vector2 uvCenter = {0.5f, 0.5f};
     float uvRadius       = 0.5f;
-    return avdDrawListAddCircleUv(
+    return avdDrawListAddCircleFilledUv(
         drawList,
         center,
         radius,
@@ -466,6 +498,78 @@ bool avdDrawListAddCircle(
         uvRadius,
         color,
         segmentCount);
+}
+
+bool avdDrawListAddQuad(
+    AVD_DrawList *drawList,
+    AVD_Vector2 v1Pos,
+    AVD_Vector2 v2Pos,
+    AVD_Vector2 v3Pos,
+    AVD_Vector2 v4Pos,
+    AVD_Float thickness,
+    AVD_Vector3 color)
+{
+    AVD_ASSERT(drawList != NULL);
+    AVD_CHECK(avdDrawListAddLine(drawList, v1Pos, v2Pos, thickness, color));
+    AVD_CHECK(avdDrawListAddLine(drawList, v2Pos, v3Pos, thickness, color));
+    AVD_CHECK(avdDrawListAddLine(drawList, v3Pos, v4Pos, thickness, color));
+    AVD_CHECK(avdDrawListAddLine(drawList, v4Pos, v1Pos, thickness, color));
+
+    return true;
+}
+
+bool avdDrawListAddRect(
+    AVD_DrawList *drawList,
+    AVD_Vector2 minPos, AVD_Vector2 maxPos,
+    float thickness,
+    AVD_Vector3 color)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    AVD_Vector2 v1Pos = {minPos.x, minPos.y};
+    AVD_Vector2 v2Pos = {maxPos.x, minPos.y};
+    AVD_Vector2 v3Pos = {maxPos.x, maxPos.y};
+    AVD_Vector2 v4Pos = {minPos.x, maxPos.y};
+
+    AVD_CHECK(avdDrawListAddQuad(drawList, v1Pos, v2Pos, v3Pos, v4Pos, thickness, color));
+
+    return true;
+}
+
+bool avdDrawListAddCircle(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, float radius,
+    float thickness,
+    AVD_Vector3 color,
+    int segmentCount)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    segmentCount = AVD_CLAMP(segmentCount, 3, 360);
+
+    float angleStep = 2.0f * AVD_PI / (float)segmentCount;
+
+    AVD_Vector2 firstPos = {
+        center.x + radius * cosf(0.0f),
+        center.y + radius * sinf(0.0f)};
+
+    AVD_Vector2 prevPos = firstPos;
+
+    for (AVD_UInt32 i = 1; i <= segmentCount; i++) {
+        float angle         = (AVD_Float)i * angleStep;
+        AVD_Vector2 nextPos = {
+            center.x + radius * cosf(angle),
+            center.y + radius * sinf(angle)};
+
+        if (i == segmentCount) {
+            nextPos = firstPos;
+        }
+
+        AVD_CHECK(avdDrawListAddLine(drawList, prevPos, nextPos, thickness, color));
+
+        prevPos = nextPos;
+    }
+    return true;
 }
 
 // ----------------

@@ -175,7 +175,7 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
         avdVec2(150.0f, 200.0f), avdVec2(0.5f, 1.0f),
         avdVec3(1.0f, 0.0f, 0.0f)));
 
-    AVD_CHECK(avdDrawListAddQuadUv(
+    AVD_CHECK(avdDrawListAddQuadFilledUv(
         &gui->drawList,
         avdVec2(300.0f, 100.0f), avdVec2(0.0f, 0.0f),
         avdVec2(400.0f, 100.0f), avdVec2(1.0f, 0.0f),
@@ -183,16 +183,49 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
         avdVec2(250.0f, 200.0f), avdVec2(0.0f, 1.0f),
         avdVec3(0.0f, 1.0f, 0.0f)));
 
-    AVD_CHECK(avdDrawListAddRectUv(
+    AVD_CHECK(avdDrawListAddRectFilledUv(
         &gui->drawList,
         avdVec2(500.0f, 100.0f), avdVec2(600.0f, 200.0f),
         avdVec2(0.0f, 0.0f), avdVec2(1.0f, 1.0f),
         avdVec3(0.0f, 0.0f, 1.0f)));
 
-    AVD_CHECK(avdDrawListAddCircleUv(
+    AVD_CHECK(avdDrawListAddCircleFilledUv(
         &gui->drawList,
         avdVec2(750.0f, 150.0f), 50.0f,
         avdVec2(0.5f, 0.5f), 0.5f,
+        avdVec3(1.0f, 1.0f, 0.0f),
+        32));
+
+    // lines sample
+    AVD_CHECK(avdDrawListAddLine(
+        &gui->drawList,
+        avdVec2(850.0f, 100.0f),
+        avdVec2(950.0f, 200.0f),
+        5.0f,
+        avdVec3(1.0f, 0.0f, 1.0f)));
+
+    // empty quad
+    AVD_CHECK(avdDrawListAddQuad(
+        &gui->drawList,
+        avdVec2(300.0f, 300.0f),
+        avdVec2(400.0f, 300.0f),
+        avdVec2(450.0f, 400.0f),
+        avdVec2(250.0f, 400.0f),
+        2.0f,
+        avdVec3(0.0f, 1.0f, 0.0f)));
+
+    // empty rect
+    AVD_CHECK(avdDrawListAddRect(
+        &gui->drawList,
+        avdVec2(500.0f, 300.0f), avdVec2(600.0f, 400.0f),
+        3.0f,
+        avdVec3(0.0f, 0.0f, 1.0f)));
+
+    // empty circle
+    AVD_CHECK(avdDrawListAddCircle(
+        &gui->drawList,
+        avdVec2(750.0f, 350.0f), 50.0f,
+        4.0f,
         avdVec3(1.0f, 1.0f, 0.0f),
         32));
 
