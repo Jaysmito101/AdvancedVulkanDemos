@@ -1,7 +1,9 @@
 #include "scenes/gui/avd_scenes_gui.h"
 #include "avd_application.h"
 #include "common/avd_drawlist.h"
+#include "core/avd_base.h"
 #include "scenes/avd_scenes.h"
+#include <stdlib.h>
 #include <string.h>
 
 static AVD_SceneImmediateGui *PRIV_avdSceneGetTypePtr(AVD_Scene *scene)
@@ -169,93 +171,90 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
 
     AVD_CHECK(avdDrawListBegin(&gui->drawList, 1920, 1080));
 
-    AVD_CHECK(avdDrawListAddTriangleFilled(
-        &gui->drawList,
-        avdVec2(100.0f, 100.0f), avdVec2(0.0f, 0.0f),
-        avdVec2(200.0f, 100.0f), avdVec2(1.0f, 0.0f),
-        avdVec2(150.0f, 200.0f), avdVec2(0.5f, 1.0f),
-        avdVec3(1.0f, 0.0f, 0.0f)));
+    static float time = 0.0f;
+    time += (float)appState->framerate.deltaTime;
 
-    AVD_CHECK(avdDrawListAddQuadFilledUv(
-        &gui->drawList,
-        avdVec2(300.0f, 100.0f), avdVec2(0.0f, 0.0f),
-        avdVec2(400.0f, 100.0f), avdVec2(1.0f, 0.0f),
-        avdVec2(450.0f, 200.0f), avdVec2(1.0f, 1.0f),
-        avdVec2(250.0f, 200.0f), avdVec2(0.0f, 1.0f),
-        avdVec3(0.0f, 1.0f, 0.0f)));
+    srand(1337);
 
-    AVD_CHECK(avdDrawListAddRectFilledUv(
-        &gui->drawList,
-        avdVec2(500.0f, 100.0f), avdVec2(600.0f, 200.0f),
-        avdVec2(0.0f, 0.0f), avdVec2(1.0f, 1.0f),
-        avdVec3(0.0f, 0.0f, 1.0f)));
+    const int NUM_RANDOM_ELEMENTS = 50000;
+    const char *fonts[]           = {
+        "Default",
+        "OpenSansRegular",
+        "ShantellSansBold",
+        "RampartOneRegular",
+        "RubikGlitchRegular",
+        "RobotoCondensedRegular"};
 
-    AVD_CHECK(avdDrawListAddCircleFilledUv(
-        &gui->drawList,
-        avdVec2(750.0f, 150.0f), 50.0f,
-        avdVec2(0.5f, 0.5f), 0.5f,
-        avdVec3(1.0f, 1.0f, 0.0f),
-        32));
+    for (int i = 0; i < NUM_RANDOM_ELEMENTS; i++) {
+        int shapeType = rand() % 7;
 
-    AVD_CHECK(avdDrawListAddLine(
-        &gui->drawList,
-        avdVec2(850.0f, 100.0f),
-        avdVec2(950.0f, 200.0f),
-        5.0f,
-        avdVec3(1.0f, 0.0f, 1.0f)));
+        float x = (float)(rand() % 10000) - 5000.0f;
+        float y = (float)(rand() % 10000) - 5000.0f;
 
-    AVD_CHECK(avdDrawListAddQuad(
-        &gui->drawList,
-        avdVec2(300.0f, 300.0f),
-        avdVec2(400.0f, 300.0f),
-        avdVec2(450.0f, 400.0f),
-        avdVec2(250.0f, 400.0f),
-        2.0f,
-        avdVec3(0.0f, 1.0f, 0.0f)));
+        float offsetX = sinf(time * ((float)rand() / RAND_MAX * 2.0f)) * 100.0f;
+        float offsetY = cosf(time * ((float)rand() / RAND_MAX * 2.0f)) * 100.0f;
 
-    AVD_CHECK(avdDrawListAddRect(
-        &gui->drawList,
-        avdVec2(500.0f, 300.0f), avdVec2(600.0f, 400.0f),
-        3.0f,
-        avdVec3(0.0f, 0.0f, 1.0f)));
+        x += offsetX;
+        y += offsetY;
 
-    AVD_CHECK(avdDrawListAddCircle(
-        &gui->drawList,
-        avdVec2(750.0f, 350.0f), 50.0f,
-        4.0f,
-        avdVec3(1.0f, 1.0f, 0.0f),
-        32));
+        AVD_Vector3 color = avdVec3(
+            (float)rand() / RAND_MAX,
+            (float)rand() / RAND_MAX,
+            (float)rand() / RAND_MAX);
 
-    AVD_CHECK(avdDrawListAddElipse(
-        &gui->drawList,
-        avdVec2(900.0f, 350.0f), avdVec2(80.0f, 40.0f),
-        3.0f,
-        avdVec3(0.0f, 1.0f, 1.0f),
-        32));
+        float size = 10.0f + (float)(rand() % 100);
+        float a    = size;
+        float b    = size;
 
-    AVD_CHECK(avdDrawListAddElipseFilled(
-        &gui->drawList,
-        avdVec2(900.0f, 150.0f), avdVec2(40.0f, 80.0f),
-        avdVec3(1.0f, 0.5f, 0.0f),
-        32));
-
-    AVD_CHECK(avdDrawListAddText(
-        &gui->drawList,
-        "Hello DrawList text testing! 1.. 2.. 3..",
-        avdVec2(100.0f, 500.0f),
-        48.0f,
-        avdVec3(1.0f, 0.0f, 1.0f),
-        "RobotoCondensedRegular",
-        200.0));
-
-    AVD_CHECK(avdDrawListAddText(
-        &gui->drawList,
-        "Hello DrawList text testing! 1.. 2.. 3..",
-        avdVec2(100.0f, 500.0f),
-        48.0f,
-        avdVec3(1.0f, 0.0f, 1.0f),
-        NULL,
-        200.0));
+        switch (shapeType) {
+            case 0:
+                avdDrawListAddTriangleFilled(&gui->drawList,
+                                             avdVec2(x, y), avdVec2(0.0f, 0.0f),
+                                             avdVec2(x + a, y), avdVec2(1.0f, 0.0f),
+                                             avdVec2(x + a / 2.0f, y + a), avdVec2(0.5f, 1.0f),
+                                             color);
+                break;
+            case 1:
+                avdDrawListAddQuadFilled(&gui->drawList,
+                                         avdVec2(x, y),
+                                         avdVec2(x + a, y),
+                                         avdVec2(x + a, y + a),
+                                         avdVec2(x, y + a),
+                                         color);
+                break;
+            case 2:
+                avdDrawListAddRectFilled(&gui->drawList,
+                                         avdVec2(x, y), avdVec2(x + a, y + a),
+                                         color);
+                break;
+            case 3:
+                avdDrawListAddCircleFilled(&gui->drawList,
+                                           avdVec2(x, y), a / 2.0f,
+                                           color, 16);
+                break;
+            case 4:
+                avdDrawListAddElipseFilled(&gui->drawList,
+                                           avdVec2(x, y), avdVec2(a, b),
+                                           color, 16);
+                break;
+            case 5:
+                avdDrawListAddLine(&gui->drawList,
+                                   avdVec2(x, y),
+                                   avdVec2(x + a, y + b),
+                                   2.0f, color);
+                break;
+            case 6: {
+                int fontIdx = rand() % AVD_ARRAY_COUNT(fonts);
+                avdDrawListAddText(&gui->drawList,
+                                   "AVD GUI Test!",
+                                   avdVec2(x, y),
+                                   size / 2.0f + 10.0f,
+                                   color,
+                                   fonts[fontIdx],
+                                   0.0f);
+            } break;
+        }
+    }
 
     avdDrawListEnd(&gui->drawList);
 
