@@ -85,22 +85,41 @@ bool avdDrawListAddTriangle(
     AVD_Vector2 v2Pos, AVD_Vector2 v2UV,
     AVD_Vector2 v3Pos, AVD_Vector2 v3UV,
     AVD_Vector3 color);
-bool avdDrawListAddQuad(
+
+bool avdDrawListAddQuadUv(
     AVD_DrawList *drawList,
     AVD_Vector2 v1Pos, AVD_Vector2 v1UV,
     AVD_Vector2 v2Pos, AVD_Vector2 v2UV,
     AVD_Vector2 v3Pos, AVD_Vector2 v3UV,
     AVD_Vector2 v4Pos, AVD_Vector2 v4UV,
     AVD_Vector3 color);
-bool avdDrawListAddRect(
+bool avdDrawListAddQuad(
+    AVD_DrawList *drawList,
+    AVD_Vector2 v1Pos,
+    AVD_Vector2 v2Pos,
+    AVD_Vector2 v3Pos,
+    AVD_Vector2 v4Pos,
+    AVD_Vector3 color);
+
+bool avdDrawListAddRectUv(
     AVD_DrawList *drawList,
     AVD_Vector2 minPos, AVD_Vector2 maxPos,
     AVD_Vector2 uvMin, AVD_Vector2 uvMax,
     AVD_Vector3 color);
-bool avdDrawListAddCircle(
+bool avdDrawListAddRect(
+    AVD_DrawList *drawList,
+    AVD_Vector2 minPos, AVD_Vector2 maxPos,
+    AVD_Vector3 color);
+
+bool avdDrawListAddCircleUv(
     AVD_DrawList *drawList,
     AVD_Vector2 center, float radius,
     AVD_Vector2 uvCenter, float uvRadius,
+    AVD_Vector3 color,
+    int segmentCount);
+bool avdDrawListAddCircle(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, float radius,
     AVD_Vector3 color,
     int segmentCount);
 

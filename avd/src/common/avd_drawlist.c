@@ -319,7 +319,7 @@ AVD_Bool avdDrawListAddTriangle(
     return true;
 }
 
-AVD_Bool avdDrawListAddQuad(
+AVD_Bool avdDrawListAddQuadUv(
     AVD_DrawList *drawList,
     AVD_Vector2 v1Pos, AVD_Vector2 v1UV,
     AVD_Vector2 v2Pos, AVD_Vector2 v2UV,
@@ -334,7 +334,34 @@ AVD_Bool avdDrawListAddQuad(
     return true;
 }
 
-AVD_Bool avdDrawListAddRect(
+bool avdDrawListAddQuad(
+    AVD_DrawList *drawList,
+    AVD_Vector2 v1Pos,
+    AVD_Vector2 v2Pos,
+    AVD_Vector2 v3Pos,
+    AVD_Vector2 v4Pos,
+    AVD_Vector3 color)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    AVD_Vector2 uvMin = {0.0f, 0.0f};
+    AVD_Vector2 uvMax = {1.0f, 1.0f};
+    AVD_CHECK(avdDrawListAddQuadUv(
+        drawList,
+        v1Pos,
+        uvMin,
+        v2Pos,
+        (AVD_Vector2){uvMax.x, uvMin.y},
+        v3Pos,
+        uvMax,
+        v4Pos,
+        (AVD_Vector2){uvMin.x, uvMax.y},
+        color));
+
+    return true;
+}
+
+AVD_Bool avdDrawListAddRectUv(
     AVD_DrawList *drawList,
     AVD_Vector2 minPos, AVD_Vector2 maxPos,
     AVD_Vector2 uvMin, AVD_Vector2 uvMax,
@@ -352,11 +379,31 @@ AVD_Bool avdDrawListAddRect(
     AVD_Vector2 v3UV = {uvMax.x, uvMax.y};
     AVD_Vector2 v4UV = {uvMin.x, uvMax.y};
 
-    AVD_CHECK(avdDrawListAddQuad(drawList, v1Pos, v1UV, v2Pos, v2UV, v3Pos, v3UV, v4Pos, v4UV, color));
+    AVD_CHECK(avdDrawListAddQuadUv(drawList, v1Pos, v1UV, v2Pos, v2UV, v3Pos, v3UV, v4Pos, v4UV, color));
     return true;
 }
 
-AVD_Bool avdDrawListAddCircle(
+bool avdDrawListAddRect(
+    AVD_DrawList *drawList,
+    AVD_Vector2 minPos, AVD_Vector2 maxPos,
+    AVD_Vector3 color)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    AVD_Vector2 uvMin = {0.0f, 0.0f};
+    AVD_Vector2 uvMax = {1.0f, 1.0f};
+    AVD_CHECK(avdDrawListAddRectUv(
+        drawList,
+        minPos,
+        maxPos,
+        uvMin,
+        uvMax,
+        color));
+
+    return true;
+}
+
+AVD_Bool avdDrawListAddCircleUv(
     AVD_DrawList *drawList,
     AVD_Vector2 center, float radius,
     AVD_Vector2 uvCenter, float uvRadius,
@@ -399,6 +446,26 @@ AVD_Bool avdDrawListAddCircle(
         prevUV  = nextUV;
     }
     return true;
+}
+
+bool avdDrawListAddCircle(
+    AVD_DrawList *drawList,
+    AVD_Vector2 center, float radius,
+    AVD_Vector3 color,
+    int segmentCount)
+{
+    AVD_ASSERT(drawList != NULL);
+
+    AVD_Vector2 uvCenter = {0.5f, 0.5f};
+    float uvRadius       = 0.5f;
+    return avdDrawListAddCircleUv(
+        drawList,
+        center,
+        radius,
+        uvCenter,
+        uvRadius,
+        color,
+        segmentCount);
 }
 
 // ----------------

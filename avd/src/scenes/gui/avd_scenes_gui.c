@@ -175,7 +175,7 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
         avdVec2(150.0f, 200.0f), avdVec2(0.5f, 1.0f),
         avdVec3(1.0f, 0.0f, 0.0f)));
 
-    AVD_CHECK(avdDrawListAddQuad(
+    AVD_CHECK(avdDrawListAddQuadUv(
         &gui->drawList,
         avdVec2(300.0f, 100.0f), avdVec2(0.0f, 0.0f),
         avdVec2(400.0f, 100.0f), avdVec2(1.0f, 0.0f),
@@ -183,13 +183,13 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
         avdVec2(250.0f, 200.0f), avdVec2(0.0f, 1.0f),
         avdVec3(0.0f, 1.0f, 0.0f)));
 
-    AVD_CHECK(avdDrawListAddRect(
+    AVD_CHECK(avdDrawListAddRectUv(
         &gui->drawList,
         avdVec2(500.0f, 100.0f), avdVec2(600.0f, 200.0f),
         avdVec2(0.0f, 0.0f), avdVec2(1.0f, 1.0f),
         avdVec3(0.0f, 0.0f, 1.0f)));
 
-    AVD_CHECK(avdDrawListAddCircle(
+    AVD_CHECK(avdDrawListAddCircleUv(
         &gui->drawList,
         avdVec2(750.0f, 150.0f), 50.0f,
         avdVec2(0.5f, 0.5f), 0.5f,
