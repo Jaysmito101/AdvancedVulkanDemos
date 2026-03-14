@@ -1,3 +1,5 @@
+#include "MathUtils"
+
 Texture2D fontAtlasImage : register(t0, space0);
 SamplerState fontAtlasSampler : register(s0, space0);
 
@@ -18,9 +20,6 @@ cbuffer PushConstants {
     PushConstantData data;
 };
 
-float median(float r, float g, float b) {
-    return max(min(r, g), min(max(r, g), b));
-}
 
 float screenPxRange(float2 texCoord) {
     float2 unitRange = float2(data.pxRange / data.texSize, data.pxRange / data.texSize);
