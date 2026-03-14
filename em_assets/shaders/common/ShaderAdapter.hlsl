@@ -49,10 +49,16 @@
     #define mod fmod
     #define fract frac
 
+    #define TEXTURE_SIZE(tex) tex.GetDimensions()
+    #define TEXTURE_TAB_SIZE(tex, index) tex[index].GetDimensions()
+
     #define SAMPLE_TEXTURE(tex, uv) tex.Sample(tex##_sampler, uv)
     #define SAMPLE_TEXTURE_TAB(tex, uv, index) tex[index].Sample(tex##_sampler[index], uv)
 #else 
     #define saturate(x) clamp(x, 0.0, 1.0)
+
+    #define TEXTURE_SIZE(tex) textureSize(tex, 0)
+    #define TEXTURE_TAB_SIZE(tex, index) textureSize(tex[index], 0)
 
     #define SAMPLE_TEXTURE(tex, uv) texture(tex, uv)
     #define SAMPLE_TEXTURE_TAB(tex, uv, index) texture(tex[index], uv)
