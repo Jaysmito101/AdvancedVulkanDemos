@@ -38,10 +38,15 @@ typedef struct {
 } AVD_DrawListClipRect;
 
 typedef struct {
+    void* handle;
+    bool isFontTexture;
+} AVD_DrawListTexture;
+
+typedef struct {
     AVD_List vertexData;
     AVD_List commands;
 
-    void* textureStack[AVD_DRAWLIST_MAX_TEXTURES];
+    AVD_DrawListTexture textureStack[AVD_DRAWLIST_MAX_TEXTURES];
     int textureStackTop;
     
     AVD_DrawListClipRect clipRectStack[AVD_DRAWLIST_MAX_CLIP_RECTS];

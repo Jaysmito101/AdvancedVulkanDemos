@@ -115,12 +115,12 @@ static AVD_Bool PRIV_avdDrawListAddTriangle(
     return true;
 }
 
-static void *PRIV_avdDrawListGetCurrentTexture(AVD_DrawList *drawList)
+static AVD_DrawListTexture *PRIV_avdDrawListGetCurrentTexture(AVD_DrawList *drawList)
 {
     AVD_ASSERT(drawList != NULL);
 
     if (drawList->textureStackTop >= 0) {
-        return drawList->textureStack[drawList->textureStackTop];
+        return &drawList->textureStack[drawList->textureStackTop];
     }
     return NULL; // no texture
 }
@@ -200,7 +200,10 @@ bool avdDrawListPushTexture(AVD_DrawList *drawList, void *textureHandle)
     }
 
     drawList->textureStackTop++;
-    drawList->textureStack[drawList->textureStackTop] = textureHandle;
+    drawList->textureStack[drawList->textureStackTop] = (AVD_DrawListTexture){
+        .handle        = textureHandle,
+        .isFontTexture = false,
+    };
 
     return true;
 }
@@ -296,14 +299,14 @@ AVD_Bool avdDrawListAddTriangleFilled(
     AVD_ASSERT(drawList != NULL);
     AVD_CHECK_MSG(drawList->recording, "Must call avdDrawListBegin before adding draw commands");
 
-    void *currentTexture = PRIV_avdDrawListGetCurrentTexture(drawList);
+    AVD_DrawListTexture *currentTexture = PRIV_avdDrawListGetCurrentTexture(drawList);
 
     AVD_ModelVertex vertices[3] = {
         {
             .position = {
                 v1Pos.x,
                 v1Pos.y,
-                currentTexture != NULL ? 1.0f : 0.0f,
+                currentTexture != NULL ? currentTexture->isFontTexture ? 2.0f : 1.0f : 0.0f,
             },
             .normal   = {color.x, color.y, color.z},
             .texCoord = {v1UV.x, v1UV.y},
@@ -312,15 +315,16 @@ AVD_Bool avdDrawListAddTriangleFilled(
             .position = {
                 v2Pos.x,
                 v2Pos.y,
-                currentTexture != NULL ? 1.0f : 0.0f,
+                currentTexture != NULL ? currentTexture->isFontTexture ? 2.0f : 1.0f : 0.0f,
             },
             .normal   = {color.x, color.y, color.z},
             .texCoord = {v2UV.x, v2UV.y},
         },
         {
             .position = {
-                v3Pos.x, v3Pos.y,
-                currentTexture != NULL ? 1.0f : 0.0f, // if no texture, it will just use the color
+                v3Pos.x,
+                v3Pos.y,
+                currentTexture != NULL ? currentTexture->isFontTexture ? 2.0f : 1.0f : 0.0f,
             },
             .normal   = {color.x, color.y, color.z},
             .texCoord = {v3UV.x, v3UV.y},
@@ -331,7 +335,7 @@ AVD_Bool avdDrawListAddTriangleFilled(
         PRIV_avdDrawListAddTriangle(
             drawList,
             vertices,
-            currentTexture));
+            currentTexture->handle));
 
     return true;
 }
