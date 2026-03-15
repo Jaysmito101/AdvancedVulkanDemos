@@ -176,6 +176,8 @@ bool avdSceneImmediateGuiRender(AVD_AppState *appState, AVD_Scene *scene)
 
     srand(1337);
 
+    avdDrawListPushClipRect(&gui->drawList, avdVec2(500.0f * sinf(time), 300.0f * cosf(time)), avdVec2(900.0f, 700.0f));
+
     const int NUM_RANDOM_ELEMENTS = 50000;
     const char *fonts[]           = {
         "Default",
