@@ -18,6 +18,13 @@ typedef struct AVD_DrawListPushConstants {
     AVD_Float fontPxRange;
 } AVD_DrawListPushConstants;
 
+typedef enum {
+    AVD_DRAWLIST_CLIP_EDGE_LEFT,
+    AVD_DRAWLIST_CLIP_EDGE_RIGHT,
+    AVD_DRAWLIST_CLIP_EDGE_TOP,
+    AVD_DRAWLIST_CLIP_EDGE_BOTTOM
+} AVD_DrawListClipEdge;
+
 static AVD_Bool PRIV_avdDrawListRendererSetupDescriptors(AVD_DrawListRenderer *renderer, AVD_Vulkan *vulkan)
 {
     AVD_ASSERT(renderer != NULL);
@@ -117,6 +124,92 @@ static AVD_DrawListClipRect *PRIV_avdDrawListGetCurrentClipRect(AVD_DrawList *dr
     return NULL; // no clip rect
 }
 
+static AVD_Float PRIV_avdDrawListGetClipDist(const AVD_ModelVertex *v, AVD_DrawListClipRect rect, AVD_DrawListClipEdge edge)
+{
+    switch (edge) {
+        case AVD_DRAWLIST_CLIP_EDGE_LEFT:
+            return v->position.x - rect.min.x;
+        case AVD_DRAWLIST_CLIP_EDGE_RIGHT:
+            return rect.max.x - v->position.x;
+        case AVD_DRAWLIST_CLIP_EDGE_TOP:
+            return v->position.y - rect.min.y;
+        case AVD_DRAWLIST_CLIP_EDGE_BOTTOM:
+            return rect.max.y - v->position.y;
+    }
+    return 0.0f;
+}
+
+static AVD_ModelVertex PRIV_avdDrawListInterpolateVertex(const AVD_ModelVertex *v1, const AVD_ModelVertex *v2, AVD_Float t)
+{
+    AVD_ModelVertex r = *v1;
+    r.position.x      = v1->position.x + (v2->position.x - v1->position.x) * t;
+    r.position.y      = v1->position.y + (v2->position.y - v1->position.y) * t;
+    r.position.z      = v1->position.z + (v2->position.z - v1->position.z) * t;
+    r.texCoord.x      = v1->texCoord.x + (v2->texCoord.x - v1->texCoord.x) * t;
+    r.texCoord.y      = v1->texCoord.y + (v2->texCoord.y - v1->texCoord.y) * t;
+    r.normal.x        = v1->normal.x + (v2->normal.x - v1->normal.x) * t;
+    r.normal.y        = v1->normal.y + (v2->normal.y - v1->normal.y) * t;
+    r.normal.z        = v1->normal.z + (v2->normal.z - v1->normal.z) * t;
+    return r;
+}
+
+static AVD_Bool PRIV_avdDrawListClipTriangle(
+    AVD_ModelVertex *vertices[3],
+    AVD_DrawListClipRect clipRect,
+    AVD_Size *clippedTriangleCount,
+    AVD_ModelVertex clippedVertices[10][3])
+{
+    AVD_ModelVertex poly1[10];
+    AVD_ModelVertex poly2[10];
+    AVD_UInt32 polyCount = 3;
+
+    poly1[0] = *vertices[0];
+    poly1[1] = *vertices[1];
+    poly1[2] = *vertices[2];
+
+    for (int e = 0; e < 4; ++e) {
+        AVD_UInt32 outCount       = 0;
+        AVD_DrawListClipEdge edge = (AVD_DrawListClipEdge)e;
+
+        for (int i = 0; i < polyCount; ++i) {
+            int j                       = (i + 1) % polyCount;
+            const AVD_ModelVertex *cur  = &poly1[i];
+            const AVD_ModelVertex *next = &poly1[j];
+
+            AVD_Float d1 = PRIV_avdDrawListGetClipDist(cur, clipRect, edge);
+            AVD_Float d2 = PRIV_avdDrawListGetClipDist(next, clipRect, edge);
+
+            if (d1 >= 0.0f && outCount < 10) {
+                poly2[outCount++] = *cur;
+            }
+            if (((d1 >= 0.0f && d2 < 0.0f) || (d1 < 0.0f && d2 >= 0.0f)) && outCount < 10) {
+                AVD_Float t       = d1 / (d1 - d2);
+                poly2[outCount++] = PRIV_avdDrawListInterpolateVertex(cur, next, t);
+            }
+        }
+
+        polyCount = outCount;
+        for (int i = 0; i < polyCount; ++i) {
+            poly1[i] = poly2[i];
+        }
+
+        if (polyCount == 0) {
+            *clippedTriangleCount = 0;
+            return true;
+        }
+    }
+
+    *clippedTriangleCount = 0;
+    for (int i = 1; i < polyCount - 1 && *clippedTriangleCount < 10; ++i) {
+        clippedVertices[*clippedTriangleCount][0] = poly1[0];
+        clippedVertices[*clippedTriangleCount][1] = poly1[i];
+        clippedVertices[*clippedTriangleCount][2] = poly1[i + 1];
+        (*clippedTriangleCount)++;
+    }
+
+    return true;
+}
+
 static AVD_Bool PRIV_avdDrawListAddTriangle(
     AVD_DrawList *drawList,
     AVD_ModelVertex vertices[3],
@@ -142,6 +235,18 @@ static AVD_Bool PRIV_avdDrawListAddTriangle(
         clipRect.min,
         clipRect.max);
     if (clipStatus == AVD_GEOM_TRIANGLE_CLIP_STATUS_OUTSIDE) {
+        return true;
+    }
+
+    if (clipStatus == AVD_GEOM_TRIANGLE_CLIP_STATUS_CLIPPED) {
+        AVD_ModelVertex *vPtrs[3] = {&vertices[0], &vertices[1], &vertices[2]};
+        AVD_Size clippedCount     = 0;
+        AVD_ModelVertex clipped[10][3];
+        PRIV_avdDrawListClipTriangle(vPtrs, clipRect, &clippedCount, clipped);
+
+        for (AVD_Size i = 0; i < clippedCount; ++i) {
+            PRIV_avdDrawListAddTriangle(drawList, clipped[i], textureHandle);
+        }
         return true;
     }
 
@@ -267,6 +372,8 @@ bool avdDrawListBegin(AVD_DrawList *drawList, AVD_UInt32 width, AVD_UInt32 heigh
     drawList->currentCommand.vertexCount   = 0;
     drawList->currentCommand.fontPxRange   = 0.0;
     drawList->currentCommand.textureHandle = NULL;
+    drawList->textureStackTop              = -1;
+    drawList->clipRectStackTop             = -1;
 
     return true;
 }
