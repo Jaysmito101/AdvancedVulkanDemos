@@ -154,56 +154,71 @@ static AVD_ModelVertex PRIV_avdDrawListInterpolateVertex(const AVD_ModelVertex *
 }
 
 static AVD_Bool PRIV_avdDrawListClipTriangle(
-    AVD_ModelVertex *vertices[3],
+    const AVD_ModelVertex vertices[3],
     AVD_DrawListClipRect clipRect,
     AVD_Size *clippedTriangleCount,
     AVD_ModelVertex clippedVertices[10][3])
 {
-    AVD_ModelVertex poly1[10];
-    AVD_ModelVertex poly2[10];
-    AVD_UInt32 polyCount = 3;
+    AVD_ASSERT(clippedTriangleCount != NULL);
+    AVD_ASSERT(clippedVertices != NULL);
 
-    poly1[0] = *vertices[0];
-    poly1[1] = *vertices[1];
-    poly1[2] = *vertices[2];
+    AVD_ModelVertex inputPoly[10];
+    AVD_ModelVertex outputPoly[10];
+    AVD_UInt32 inputCount = 3;
 
-    for (int e = 0; e < 4; ++e) {
-        AVD_UInt32 outCount       = 0;
+    inputPoly[0] = vertices[0];
+    inputPoly[1] = vertices[1];
+    inputPoly[2] = vertices[2];
+
+    for (AVD_UInt32 e = 0; e < 4; ++e) {
+        AVD_UInt32 outputCount    = 0;
         AVD_DrawListClipEdge edge = (AVD_DrawListClipEdge)e;
 
-        for (int i = 0; i < polyCount; ++i) {
-            int j                       = (i + 1) % polyCount;
-            const AVD_ModelVertex *cur  = &poly1[i];
-            const AVD_ModelVertex *next = &poly1[j];
+        if (inputCount == 0) {
+            break;
+        }
 
-            AVD_Float d1 = PRIV_avdDrawListGetClipDist(cur, clipRect, edge);
-            AVD_Float d2 = PRIV_avdDrawListGetClipDist(next, clipRect, edge);
+        for (AVD_UInt32 i = 0; i < inputCount; ++i) {
+            const AVD_ModelVertex *current = &inputPoly[i];
+            const AVD_ModelVertex *prev    = &inputPoly[(i + inputCount - 1) % inputCount];
 
-            if (d1 >= 0.0f && outCount < 10) {
-                poly2[outCount++] = *cur;
+            AVD_Float currentDist  = PRIV_avdDrawListGetClipDist(current, clipRect, edge);
+            AVD_Float prevDist     = PRIV_avdDrawListGetClipDist(prev, clipRect, edge);
+            AVD_Bool currentInside = currentDist >= 0.0f;
+            AVD_Bool prevInside    = prevDist >= 0.0f;
+
+            if (outputCount >= 10) {
+                break;
             }
-            if (((d1 >= 0.0f && d2 < 0.0f) || (d1 < 0.0f && d2 >= 0.0f)) && outCount < 10) {
-                AVD_Float t       = d1 / (d1 - d2);
-                poly2[outCount++] = PRIV_avdDrawListInterpolateVertex(cur, next, t);
+
+            if (currentInside) {
+                if (!prevInside) {
+                    AVD_Float t               = prevDist / (prevDist - currentDist);
+                    outputPoly[outputCount++] = PRIV_avdDrawListInterpolateVertex(prev, current, t);
+                }
+                outputPoly[outputCount++] = *current;
+            } else if (prevInside) {
+                AVD_Float t               = prevDist / (prevDist - currentDist);
+                outputPoly[outputCount++] = PRIV_avdDrawListInterpolateVertex(prev, current, t);
             }
         }
 
-        polyCount = outCount;
-        for (int i = 0; i < polyCount; ++i) {
-            poly1[i] = poly2[i];
-        }
-
-        if (polyCount == 0) {
-            *clippedTriangleCount = 0;
-            return true;
+        inputCount = outputCount;
+        for (AVD_UInt32 i = 0; i < inputCount; ++i) {
+            inputPoly[i] = outputPoly[i];
         }
     }
 
+    if (inputCount < 3) {
+        *clippedTriangleCount = 0;
+        return true;
+    }
+
     *clippedTriangleCount = 0;
-    for (int i = 1; i < polyCount - 1 && *clippedTriangleCount < 10; ++i) {
-        clippedVertices[*clippedTriangleCount][0] = poly1[0];
-        clippedVertices[*clippedTriangleCount][1] = poly1[i];
-        clippedVertices[*clippedTriangleCount][2] = poly1[i + 1];
+    for (AVD_UInt32 i = 1; i + 1 < inputCount && *clippedTriangleCount < 10; ++i) {
+        clippedVertices[*clippedTriangleCount][0] = inputPoly[0];
+        clippedVertices[*clippedTriangleCount][1] = inputPoly[i];
+        clippedVertices[*clippedTriangleCount][2] = inputPoly[i + 1];
         (*clippedTriangleCount)++;
     }
 
@@ -238,18 +253,6 @@ static AVD_Bool PRIV_avdDrawListAddTriangle(
         return true;
     }
 
-    if (clipStatus == AVD_GEOM_TRIANGLE_CLIP_STATUS_CLIPPED) {
-        AVD_ModelVertex *vPtrs[3] = {&vertices[0], &vertices[1], &vertices[2]};
-        AVD_Size clippedCount     = 0;
-        AVD_ModelVertex clipped[10][3];
-        PRIV_avdDrawListClipTriangle(vPtrs, clipRect, &clippedCount, clipped);
-
-        for (AVD_Size i = 0; i < clippedCount; ++i) {
-            PRIV_avdDrawListAddTriangle(drawList, clipped[i], textureHandle);
-        }
-        return true;
-    }
-
     if (textureHandle == NULL) {
         textureHandle = drawList->currentCommand.textureHandle;
     }
@@ -261,14 +264,28 @@ static AVD_Bool PRIV_avdDrawListAddTriangle(
             AVD_CHECK(PRIV_avdDrawListFinalizeCurrentCommand(drawList));
         }
     }
-
-    AVD_ModelVertexPacked packedVertex = {0};
-    for (int i = 0; i < 3; ++i) {
-        avdModelVertexPack(&vertices[i], &packedVertex);
-        avdListPushBack(&drawList->vertexData, &packedVertex);
-    }
-
     drawList->currentCommand.textureHandle = textureHandle;
+
+    if (clipStatus == AVD_GEOM_TRIANGLE_CLIP_STATUS_CLIPPED) {
+        AVD_Size clippedCount = 0;
+        AVD_ModelVertex clipped[10][3];
+        AVD_CHECK(PRIV_avdDrawListClipTriangle(vertices, clipRect, &clippedCount, clipped));
+
+        for (AVD_Size i = 0; i < clippedCount; ++i) {
+            AVD_ModelVertexPacked packedVertex = {0};
+            for (int j = 0; j < 3; ++j) {
+                avdModelVertexPack(&clipped[i][j], &packedVertex);
+                avdListPushBack(&drawList->vertexData, &packedVertex);
+            }
+        }
+
+    } else {
+        AVD_ModelVertexPacked packedVertex = {0};
+        for (int i = 0; i < 3; ++i) {
+            avdModelVertexPack(&vertices[i], &packedVertex);
+            avdListPushBack(&drawList->vertexData, &packedVertex);
+        }
+    }
 
     return true;
 }
