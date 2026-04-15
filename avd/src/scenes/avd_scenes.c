@@ -38,6 +38,7 @@ static bool PRIV_avdRegisterSceneApis(AVD_SceneManager *sceneManager)
     avdSceneBloomRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_BLOOM]);
     avdScene2DRadianceCascadesRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_2D_RADIANCE_CASCADES]);
     avdSceneDeccerCubesRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_DECCER_CUBES]);
+    avdSceneRasterizedGIRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_RASTERIZED_GI]);
     avdSceneSubsurfaceScatteringRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_SUBSURFACE_SCATTERING]);
     avdSceneEyeballsRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_EYEBALLS]);
     avdSceneRealisticHeadRegisterApi(&sceneManager->api[AVD_SCENE_TYPE_REALISTIC_HEAD]);
@@ -160,6 +161,8 @@ const char *avdSceneTypeToString(AVD_SceneType type)
             return "Eyeballs";
         case AVD_SCENE_TYPE_DECCER_CUBES:
             return "Deccer_Cubes";
+        case AVD_SCENE_TYPE_RASTERIZED_GI:
+            return "Rasterized_Global_Illumination";
         case AVD_SCENE_TYPE_SUBSURFACE_SCATTERING:
             return "Subsurface_Scattering";
         case AVD_SCENE_TYPE_REALISTIC_HEAD:

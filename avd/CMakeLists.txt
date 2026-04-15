@@ -85,6 +85,8 @@ add_executable(avd
     
     ./src/scenes/deccer_cubes/avd_scenes_deccer_cubes.c
     
+    ./src/scenes/rasterized_gi/avd_scenes_rasterized_gi.c
+    
     ./src/scenes/subsurface_scattering/avd_scenes_subsurface_scattering.c
     
     ./src/scenes/eyeballs/avd_scenes_eyeballs.c
