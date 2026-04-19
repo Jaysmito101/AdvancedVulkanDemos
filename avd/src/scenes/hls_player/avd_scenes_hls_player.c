@@ -4,6 +4,7 @@
 #include "audio/avd_audio.h"
 #include "audio/avd_audio_core.h"
 #include "avd_application.h"
+#include "common/avd_fps_camera.h"
 #include "core/avd_base.h"
 #include "core/avd_types.h"
 #include "core/avd_utils.h"
@@ -254,7 +255,7 @@ static bool PRIV_avdSceneHLSPlayerUpdateContexts(AVD_AppState *appState, AVD_Sce
             vkUpdateDescriptorSets(appState->vulkan.device, 2, descriptorWrite, 0, NULL);
         }
 
-        AVD_Float distanceFromCamera      = avdVec3Length(avdVec3Subtract(PRIV_avdHLSSceneSourcePositions[i], scene->cameraPosition));
+        AVD_Float distanceFromCamera      = avdVec3Length(avdVec3Subtract(PRIV_avdHLSSceneSourcePositions[i], scene->camera.cameraPosition));
         source->player.audioPlayer.volume = 10.0f / (distanceFromCamera * distanceFromCamera);
     }
 
@@ -333,15 +334,14 @@ bool avdSceneHLSPlayerInit(struct AVD_AppState *appState, union AVD_Scene *scene
         "Move around enjoy the shows!",
         24.0f));
 
-    hlsPlayer->sceneWidth      = (float)appState->renderer.sceneFramebuffer.width;
-    hlsPlayer->sceneHeight     = (float)appState->renderer.sceneFramebuffer.height;
-    hlsPlayer->cameraPosition  = avdVec3(0.0f, 15.0f, 60.0f);
-    hlsPlayer->cameraYaw       = AVD_PI; // looking toward -Z
-    hlsPlayer->cameraPitch     = 0.0f;
-    hlsPlayer->cameraDirection = avdVec3(
-        cosf(hlsPlayer->cameraPitch) * sinf(hlsPlayer->cameraYaw),
-        sinf(hlsPlayer->cameraPitch),
-        cosf(hlsPlayer->cameraPitch) * cosf(hlsPlayer->cameraYaw));
+    hlsPlayer->sceneWidth  = (float)appState->renderer.sceneFramebuffer.width;
+    hlsPlayer->sceneHeight = (float)appState->renderer.sceneFramebuffer.height;
+
+    avdFpsCameraInit(&hlsPlayer->camera);
+    avdFpsCameraSetPosition(&hlsPlayer->camera, avdVec3(0.0f, 15.0f, 60.0f));
+    avdFpsCameraSetYaw(&hlsPlayer->camera, AVD_PI);
+    hlsPlayer->camera.freezeAxis[1] = true;
+    hlsPlayer->camera.moveSpeed     = 40.0f;
 
     if (!hlsPlayer->isSupported) {
         return true;
@@ -429,23 +429,9 @@ void avdSceneHLSPlayerInputEvent(struct AVD_AppState *appState, union AVD_Scene 
                 AVD_SCENE_TYPE_MAIN_MENU,
                 appState);
         }
-    } else if (event->type == AVD_INPUT_EVENT_MOUSE_MOVE && appState->input.mouseButtonState[GLFW_MOUSE_BUTTON_LEFT]) {
-        float deltaX = appState->input.mouseDeltaX;
-        float deltaY = appState->input.mouseDeltaY;
-
-        const float sensitivity = 0.6f;
-        hlsPlayer->cameraYaw += deltaX * sensitivity;
-        hlsPlayer->cameraPitch -= deltaY * sensitivity;
-
-        hlsPlayer->cameraPitch = AVD_CLAMP(hlsPlayer->cameraPitch, -AVD_PI * 0.45f, AVD_PI * 0.45f);
-
-        hlsPlayer->cameraDirection.x = cosf(hlsPlayer->cameraPitch) * sinf(hlsPlayer->cameraYaw);
-        hlsPlayer->cameraDirection.y = sinf(hlsPlayer->cameraPitch);
-        hlsPlayer->cameraDirection.z = cosf(hlsPlayer->cameraPitch) * cosf(hlsPlayer->cameraYaw);
-
-        hlsPlayer->cameraDirection = avdVec3Normalize(hlsPlayer->cameraDirection);
-    } else if (event->type == AVD_INPUT_EVENT_MOUSE_SCROLL) {
-        hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(hlsPlayer->cameraDirection, 0.5f * event->mouseScroll.y));
+    } else if ((event->type == AVD_INPUT_EVENT_MOUSE_MOVE && appState->input.mouseButtonState[GLFW_MOUSE_BUTTON_LEFT]) ||
+               event->type == AVD_INPUT_EVENT_MOUSE_SCROLL) {
+        avdFpsCameraOnInputEvent(&hlsPlayer->camera, event, &appState->input);
     } else if (event->type == AVD_INPUT_EVENT_DRAG_N_DROP) {
         if (event->dragNDrop.count > 0) {
             AVD_LOG_INFO("Trying to load sources from: %s", event->dragNDrop.paths[0]);
@@ -472,35 +458,7 @@ bool avdSceneHLSPlayerUpdate(struct AVD_AppState *appState, union AVD_Scene *sce
     AVD_CHECK(PRIV_avdSceneHLSPlayerReceiveReadySegments(appState, hlsPlayer));
     AVD_CHECK(PRIV_avdSceneHLSPlayerUpdateContexts(appState, hlsPlayer));
 
-    {
-        const float moveSpeed = 40.0f * (AVD_Float)appState->framerate.deltaTime;
-        AVD_Vector3 forward   = hlsPlayer->cameraDirection;
-        AVD_Vector3 up        = avdVec3(0.0f, 1.0f, 0.0f);
-        AVD_Vector3 right     = avdVec3Normalize(avdVec3Cross(forward, up));
-
-        if (appState->input.keyState[GLFW_KEY_W]) {
-            forward.y                 = 0.0f;
-            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(forward, moveSpeed));
-        }
-        if (appState->input.keyState[GLFW_KEY_S]) {
-            forward.y                 = 0.0f;
-            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(forward, -moveSpeed));
-        }
-        if (appState->input.keyState[GLFW_KEY_A]) {
-            forward.y                 = 0.0f;
-            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(right, -moveSpeed));
-        }
-        if (appState->input.keyState[GLFW_KEY_D]) {
-            forward.y                 = 0.0f;
-            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(right, moveSpeed));
-        }
-        if (appState->input.keyState[GLFW_KEY_Q]) {
-            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(up, moveSpeed));
-        }
-        if (appState->input.keyState[GLFW_KEY_E]) {
-            hlsPlayer->cameraPosition = avdVec3Add(hlsPlayer->cameraPosition, avdVec3Scale(up, -moveSpeed));
-        }
-    }
+    avdFpsCameraUpdate(&hlsPlayer->camera, &appState->input, (AVD_Float)appState->framerate.deltaTime);
 
     return true;
 }
@@ -533,8 +491,8 @@ bool avdSceneHLSPlayerRender(struct AVD_AppState *appState, union AVD_Scene *sce
         AVD_HLSPlayerPushConstants pushConstants = {
             .activeSources   = 0,
             .textureIndices  = textureIndices,
-            .cameraPosition  = avdVec4FromVec3(hlsPlayer->cameraPosition, 1.0f),
-            .cameraDirection = avdVec4FromVec3(hlsPlayer->cameraDirection, 0.0f),
+            .cameraPosition  = avdVec4FromVec3(hlsPlayer->camera.cameraPosition, 1.0f),
+            .cameraDirection = avdVec4FromVec3(hlsPlayer->camera.cameraDirection, 0.0f),
         };
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, hlsPlayer->pipeline);
         vkCmdPushConstants(commandBuffer, hlsPlayer->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(pushConstants), &pushConstants);

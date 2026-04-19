@@ -15,6 +15,7 @@
 
 #include "vulkan/avd_vulkan_image.h"
 #include "vulkan/avd_vulkan_video.h"
+#include "common/avd_fps_camera.h"
 
 #define AVD_SCENE_HLS_PLAYER_MAX_SOURCES 4
 #define AVD_SCENE_HLS_PLAYER_SAVE_SEGMENTS_TO_DISK
@@ -53,10 +54,7 @@ typedef struct AVD_SceneHLSPlayer {
     AVD_HLSMediaCache mediaCache;
     AVD_HLSWorkerPool workerPool;
 
-    AVD_Vector3 cameraPosition;
-    AVD_Vector3 cameraDirection;
-    AVD_Float cameraYaw;
-    AVD_Float cameraPitch;
+    AVD_FpsCamera camera;
 
     bool isSupported;
     AVD_Vulkan *vulkan;
