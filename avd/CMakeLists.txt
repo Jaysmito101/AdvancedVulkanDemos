@@ -34,6 +34,7 @@ add_executable(avd
 
     ./src/common/avd_bloom.c
     ./src/common/avd_eyeball.c
+    ./src/common/avd_fps_camera.c
 
     ./src/shader/avd_shader_shaderc.c
     ./src/shader/avd_shader_slang.c
