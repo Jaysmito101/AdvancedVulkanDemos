@@ -168,3 +168,18 @@ const char *avdSceneTypeToString(AVD_SceneType type)
             return "Unknown_Scene_Type";
     }
 }
+
+AVD_SceneType avdSceneTypeFromString(const char *name)
+{
+    if (name == NULL) {
+        return AVD_SCENE_TYPE_COUNT;
+    }
+
+    for (int i = 0; i < AVD_SCENE_TYPE_COUNT; i++) {
+        if (strcmp(name, avdSceneTypeToString((AVD_SceneType)i)) == 0) {
+            return (AVD_SceneType)i;
+        }
+    }
+
+    return AVD_SCENE_TYPE_COUNT;
+}
