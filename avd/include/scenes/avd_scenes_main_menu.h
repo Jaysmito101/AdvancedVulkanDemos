@@ -16,6 +16,8 @@ typedef struct AVD_SceneMainMenu {
     AVD_SceneMainMenuCard cards[64];
     uint32_t cardCount;
     int32_t hoveredCard;
+    bool hoveredPreviousPageButton;
+    bool hoveredNextPageButton;
     uint32_t currentPage;
 
     VkDescriptorSetLayout descriptorSetLayout;
@@ -24,6 +26,8 @@ typedef struct AVD_SceneMainMenu {
     AVD_RenderableText creditsText;
     AVD_RenderableText githubLinkText;
     AVD_RenderableText pageNumberText;
+    AVD_RenderableText previousPageButtonText;
+    AVD_RenderableText nextPageButtonText;
 
     int32_t loadingCount;
 } AVD_SceneMainMenu;
