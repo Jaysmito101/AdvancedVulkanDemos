@@ -15,6 +15,7 @@ set TOOLCHAIN=vs
 set BUILD_DIR=build.vs
 set CMAKE_EXTRA_ARGS=
 set BUILD_EXTRA_ARGS=
+set "SCENE="
 
 :parse_args
 if "%1"=="" goto end_parse
@@ -41,6 +42,7 @@ if "%1"=="--ninja" (
     shift
     goto parse_args
 )
+if "%1"=="--scene" goto parse_scene
 if /i "%1"=="--help" goto show_help
 if /i "%1"=="-h" goto show_help
 if /i "%1"=="/?" goto show_help
@@ -69,6 +71,17 @@ if "%1"=="--build-opts" (
 echo Unknown argument: %1
 echo Use --help to see usage.
 exit /b 1
+
+:parse_scene
+shift
+if "%1"=="" (
+    echo Missing value for --scene.
+    echo Use --help to see usage.
+    exit /b 1
+)
+set "SCENE=%~1"
+shift
+goto parse_args
 
 :append_cmake_args
 if "%1"=="" goto end_parse
@@ -107,6 +120,8 @@ shift
 goto append_build_args
 
 :end_parse
+set "SCENE_ARG="
+if not "%SCENE%"=="" set "SCENE_ARG=--scene %SCENE%"
 
 cls
 
@@ -209,15 +224,15 @@ if %errorlevel% neq 0 (
 echo Running the program...
 if "%TOOLCHAIN%"=="mingw" OR "%TOOLCHAIN%"=="ninja" (
     if "%BUILD_TYPE%"=="Release" (
-        .\%BUILD_DIR%\avd\avd.exe
+        .\%BUILD_DIR%\avd\avd.exe %SCENE_ARG%
     ) else (
-        .\%BUILD_DIR%\avd\avd.exe
+        .\%BUILD_DIR%\avd\avd.exe %SCENE_ARG%
     )
 ) else (
     if "%BUILD_TYPE%"=="Release" (
-        .\%BUILD_DIR%\avd\Release\avd.exe
+        .\%BUILD_DIR%\avd\Release\avd.exe %SCENE_ARG%
     ) else (
-        .\%BUILD_DIR%\avd\Debug\avd.exe
+        .\%BUILD_DIR%\avd\Debug\avd.exe %SCENE_ARG%
     )
 )
 
@@ -237,11 +252,13 @@ echo   --release             Build in Release (default: Debug)
 echo   --vs                  Use Visual Studio generator (default)
 echo   --ninja               Use Ninja generator
 echo   --mingw               Use MinGW Makefiles generator
+echo   --scene Scene_Name    Start directly in the named scene
 echo   --cmake-opts ...      Pass options to CMake configure step
 echo   --build-opts ...      Pass options to CMake build step
 echo   -- ...                Pass remaining args as CMake configure options
 echo.
 echo Examples:
+echo   run.bat --scene Bloom
 echo   run.bat --ninja -- -DAVD_ENABLE_VULKAN_VIDEO=ON
 echo   run.bat --ninja --build-opts --target avd -j 8
 echo   run.bat --ninja -- -DAVD_ENABLE_VULKAN_VIDEO=ON --build-opts --target avd -j 8

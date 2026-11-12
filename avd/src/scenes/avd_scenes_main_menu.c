@@ -137,9 +137,11 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
 {
     AVD_SceneMainMenu *mainMenu = PRIV_avdSceneGetTypePtr(scene);
     AVD_LOG_INFO("Initializing main menu scene");
-    mainMenu->loadingCount = 0;
-    mainMenu->currentPage  = 0;
-    mainMenu->hoveredCard  = -1;
+    mainMenu->loadingCount              = 0;
+    mainMenu->currentPage               = 0;
+    mainMenu->hoveredCard               = -1;
+    mainMenu->hoveredPreviousPageButton = false;
+    mainMenu->hoveredNextPageButton     = false;
 
     AVD_CHECK(PRIV_avdSetupDescriptors(&mainMenu->descriptorSetLayout, &appState->vulkan));
     AVD_CHECK(PRIV_avdSetupMainMenuCards(mainMenu, appState));
@@ -172,6 +174,20 @@ bool avdSceneMainMenuInit(AVD_AppState *appState, AVD_Scene *scene)
         "RobotoCondensedRegular",
         "Page 1/1",
         16.0f));
+    AVD_CHECK(avdRenderableTextCreate(
+        &mainMenu->previousPageButtonText,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        "RobotoCondensedRegular",
+        "<",
+        48.0f));
+    AVD_CHECK(avdRenderableTextCreate(
+        &mainMenu->nextPageButtonText,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        "RobotoCondensedRegular",
+        ">",
+        48.0f));
 
     return true;
 }
@@ -185,6 +201,8 @@ void avdSceneMainMenuDestroy(AVD_AppState *appState, AVD_Scene *scene)
     avdRenderableTextDestroy(&mainMenu->creditsText, &appState->vulkan);
     avdRenderableTextDestroy(&mainMenu->githubLinkText, &appState->vulkan);
     avdRenderableTextDestroy(&mainMenu->pageNumberText, &appState->vulkan);
+    avdRenderableTextDestroy(&mainMenu->previousPageButtonText, &appState->vulkan);
+    avdRenderableTextDestroy(&mainMenu->nextPageButtonText, &appState->vulkan);
     vkDestroyDescriptorSetLayout(appState->vulkan.device, mainMenu->descriptorSetLayout, NULL);
     for (uint32_t i = 0; i < mainMenu->cardCount; i++)
         PRIV_avdDestroyMainMenuCard(&mainMenu->cards[i], &appState->vulkan);
@@ -234,7 +252,16 @@ void avdSceneMainMenuInputEvent(struct AVD_AppState *appState, union AVD_Scene *
         }
     } else if (event->type == AVD_INPUT_EVENT_MOUSE_BUTTON) {
         if (event->mouseButton.button == GLFW_MOUSE_BUTTON_LEFT && event->mouseButton.action == GLFW_PRESS) {
-            if (mainMenu->hoveredCard != -1) {
+            if (mainMenu->hoveredPreviousPageButton) {
+                if (mainMenu->currentPage > 0)
+                    mainMenu->currentPage--;
+                else
+                    mainMenu->currentPage = (mainMenu->cardCount + 5) / 6 - 1;
+            } else if (mainMenu->hoveredNextPageButton) {
+                mainMenu->currentPage++;
+                if (mainMenu->currentPage >= (mainMenu->cardCount + 5) / 6)
+                    mainMenu->currentPage = 0;
+            } else if (mainMenu->hoveredCard != -1) {
                 AVD_SceneMainMenuCard *card = &mainMenu->cards[mainMenu->hoveredCard];
                 avdSceneManagerSwitchToScene(
                     &appState->sceneManager,
@@ -335,8 +362,38 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
     uint32_t currentOffset         = mainMenu->currentPage * numCardsPerPage;
     uint32_t totalPages            = (mainMenu->cardCount + numCardsPerPage - 1) / numCardsPerPage;
 
+    static char pageIndicator[32];
+    snprintf(pageIndicator, sizeof(pageIndicator), "Page %d/%d", mainMenu->currentPage + 1, totalPages);
+    AVD_CHECK(avdRenderableTextUpdate(
+        &mainMenu->pageNumberText,
+        &appState->fontRenderer,
+        &appState->vulkan,
+        pageIndicator));
+
+    float pageIndicatorWidth, pageIndicatorHeight;
+    float previousPageButtonTextWidth, previousPageButtonTextHeight;
+    float nextPageButtonTextWidth, nextPageButtonTextHeight;
+    avdRenderableTextGetSize(&mainMenu->pageNumberText, &pageIndicatorWidth, &pageIndicatorHeight);
+    avdRenderableTextGetSize(&mainMenu->previousPageButtonText, &previousPageButtonTextWidth, &previousPageButtonTextHeight);
+    avdRenderableTextGetSize(&mainMenu->nextPageButtonText, &nextPageButtonTextWidth, &nextPageButtonTextHeight);
+
+    const float pageButtonWidth  = 64.0f;
+    const float pageButtonHeight = 128.0f;
+    float pageIndicatorX         = (frameWidth - pageIndicatorWidth) * 0.5f;
+    float cardGridCenterY        = offsetY + cardHeight + 40.0f;
+    float pageButtonY            = cardGridCenterY - pageButtonHeight * 0.5f;
+    float previousPageButtonX    = (offsetX - pageButtonWidth) * 0.5f;
+    float nextPageButtonX        = frameWidth - previousPageButtonX - pageButtonWidth;
+
     float mouseX = (appState->input.mouseX * 0.5f + 0.5f) * frameWidth;
-    float mouseY = frameHeight - minY / 2.0f - (appState->input.mouseY * 0.5f + 0.5f) * frameHeight;
+    float mouseY = (0.5f - appState->input.mouseY * 0.5f) * renderer->sceneFramebuffer.height - minY;
+
+    mainMenu->hoveredPreviousPageButton =
+        mouseX >= previousPageButtonX && mouseX <= previousPageButtonX + pageButtonWidth &&
+        mouseY >= pageButtonY && mouseY <= pageButtonY + pageButtonHeight;
+    mainMenu->hoveredNextPageButton =
+        mouseX >= nextPageButtonX && mouseX <= nextPageButtonX + pageButtonWidth &&
+        mouseY >= pageButtonY && mouseY <= pageButtonY + pageButtonHeight;
 
     mainMenu->hoveredCard = -1;
     for (uint32_t i = 0; i < numCardsPerPage; i++) {
@@ -383,34 +440,80 @@ bool avdSceneMainMenuRender(AVD_AppState *appState, AVD_Scene *scene)
             renderer->sceneFramebuffer.height);
     }
 
-    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer); // Scene/MainMenu/RenderUi
+    float buttonColorR = 0.16f;
+    float buttonColorG = 0.16f;
+    float buttonColorB = 0.17f;
+    avdUiDrawRect(
+        commandBuffer,
+        &appState->ui,
+        appState,
+        previousPageButtonX, pageButtonY,
+        pageButtonWidth, pageButtonHeight,
+        mainMenu->hoveredPreviousPageButton ? 0.20f : buttonColorR,
+        mainMenu->hoveredPreviousPageButton ? 0.20f : buttonColorG,
+        mainMenu->hoveredPreviousPageButton ? 0.21f : buttonColorB,
+        1.0f,
+        VK_NULL_HANDLE, 0, 0);
+    avdUiDrawRect(
+        commandBuffer,
+        &appState->ui,
+        appState,
+        nextPageButtonX, pageButtonY,
+        pageButtonWidth, pageButtonHeight,
+        mainMenu->hoveredNextPageButton ? 0.20f : buttonColorR,
+        mainMenu->hoveredNextPageButton ? 0.20f : buttonColorG,
+        mainMenu->hoveredNextPageButton ? 0.21f : buttonColorB,
+        1.0f,
+        VK_NULL_HANDLE, 0, 0);
 
-    // Draw the page indicator
-    static char pageIndicator[32];
-    snprintf(pageIndicator, sizeof(pageIndicator), "Page %d/%d", mainMenu->currentPage + 1, totalPages);
-    AVD_CHECK(avdRenderableTextUpdate(
-        &mainMenu->pageNumberText,
-        &appState->fontRenderer,
+    float previousPageButtonTextX = previousPageButtonX + pageButtonWidth * 0.5f -
+                                    (mainMenu->previousPageButtonText.boundsMinX + mainMenu->previousPageButtonText.boundsMaxX) * 0.5f;
+    float previousPageButtonTextY = pageButtonY + minY + pageButtonHeight * 0.5f - mainMenu->previousPageButtonText.charHeight +
+                                    previousPageButtonTextHeight -
+                                    (mainMenu->previousPageButtonText.boundsMinY + mainMenu->previousPageButtonText.boundsMaxY) * 0.5f;
+    float nextPageButtonTextX = nextPageButtonX + pageButtonWidth * 0.5f -
+                                (mainMenu->nextPageButtonText.boundsMinX + mainMenu->nextPageButtonText.boundsMaxX) * 0.5f;
+    float nextPageButtonTextY = pageButtonY + minY + pageButtonHeight * 0.5f - mainMenu->nextPageButtonText.charHeight +
+                                nextPageButtonTextHeight -
+                                (mainMenu->nextPageButtonText.boundsMinY + mainMenu->nextPageButtonText.boundsMaxY) * 0.5f;
+
+    avdRenderText(
         &appState->vulkan,
-        pageIndicator));
+        &appState->fontRenderer,
+        &mainMenu->previousPageButtonText,
+        commandBuffer,
+        previousPageButtonTextX,
+        previousPageButtonTextY,
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+        renderer->sceneFramebuffer.width,
+        renderer->sceneFramebuffer.height);
+    avdRenderText(
+        &appState->vulkan,
+        &appState->fontRenderer,
+        &mainMenu->nextPageButtonText,
+        commandBuffer,
+        nextPageButtonTextX,
+        nextPageButtonTextY,
+        1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+        renderer->sceneFramebuffer.width,
+        renderer->sceneFramebuffer.height);
 
-    float pageIndicatorWidth, pageIndicatorHeight;
-    avdRenderableTextGetSize(&mainMenu->pageNumberText, &pageIndicatorWidth, &pageIndicatorHeight);
+    AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
+
+    avdUiEnd(
+        commandBuffer,
+        &appState->ui,
+        appState);
 
     avdRenderText(
         &appState->vulkan,
         &appState->fontRenderer,
         &mainMenu->pageNumberText,
         commandBuffer,
-        (frameWidth - pageIndicatorWidth) * 0.5f, frameHeight - pageIndicatorHeight - 10.0f + minY,
+        pageIndicatorX, frameHeight - pageIndicatorHeight - 10.0f + minY,
         1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
         renderer->sceneFramebuffer.width,
         renderer->sceneFramebuffer.height);
-
-    avdUiEnd(
-        commandBuffer,
-        &appState->ui,
-        appState);
 
     AVD_DEBUG_VK_CMD_END_LABEL(commandBuffer);
     AVD_CHECK(avdEndSceneRenderPass(commandBuffer));

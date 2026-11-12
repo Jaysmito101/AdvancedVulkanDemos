@@ -46,5 +46,6 @@ typedef struct AVD_SceneAPI {
 } AVD_SceneAPI;
 
 const char *avdSceneTypeToString(AVD_SceneType type);
+AVD_SceneType avdSceneTypeFromString(const char *name);
 
 #endif // AVD_SCENES_BASE_H
