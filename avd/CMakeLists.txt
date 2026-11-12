@@ -26,6 +26,7 @@ add_executable(avd
     ./src/core/avd_aligned_buffer.c
 
     ./src/avd_main.c
+    ./src/avd_cli.c
     ./src/avd_application.c
 
     ./src/deps/avd_third_party_impls.c
