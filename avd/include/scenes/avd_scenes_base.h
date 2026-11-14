@@ -10,6 +10,7 @@
 
 typedef enum AVD_SceneType {
     AVD_SCENE_TYPE_MAIN_MENU,
+    AVD_SCENE_TYPE_EROSION_SIMULATION,
     AVD_SCENE_TYPE_REALISTIC_HEAD,
     AVD_SCENE_TYPE_SUBSURFACE_SCATTERING,
     AVD_SCENE_TYPE_HLS_PLAYER,
@@ -33,8 +34,9 @@ typedef bool (*AVD_SceneLoaderFn)(struct AVD_AppState *appState, union AVD_Scene
 typedef void (*AVD_SceneInputEventFn)(struct AVD_AppState *appState, union AVD_Scene *scene, AVD_InputEvent *event);
 
 typedef struct AVD_SceneAPI {
-    const char *displayName; // Name of the scene
-    const char *id;          // Unique identifier for the scene type
+    const char *displayName;    // Name of the scene
+    const char *id;             // Unique identifier for the scene type
+    const char *thumbnailAsset; // Optional image asset used by the main menu card
 
     AVD_SceneCheckIntegrityFn checkIntegrity;
     AVD_SceneInitFn init;

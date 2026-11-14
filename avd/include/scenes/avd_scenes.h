@@ -9,6 +9,7 @@
 #include "scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.h"
 #include "scenes/bloom/avd_scenes_bloom.h"
 #include "scenes/deccer_cubes/avd_scenes_deccer_cubes.h"
+#include "scenes/erosion_simulation/avd_scenes_erosion_simulation.h"
 #include "scenes/eyeballs/avd_scenes_eyeballs.h"
 #include "scenes/hls_player/avd_scenes_hls_player.h"
 #include "scenes/realistic_head/avd_scenes_realistic_head.h"
@@ -24,6 +25,7 @@ typedef union AVD_Scene {
     AVD_SceneBloom bloom;
     AVD_Scene2DRadianceCascades radianceCascades;
     AVD_SceneDeccerCubes deccerCubes;
+    AVD_SceneErosionSimulation erosionSimulation;
     AVD_SceneSubsurfaceScattering subsurfaceScattering;
     AVD_SceneEyeballs eyeballs;
     AVD_SceneRealisticHead realisticHead;

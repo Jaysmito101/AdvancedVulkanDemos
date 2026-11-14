@@ -84,9 +84,10 @@ static bool PRIV_avdSetupMainMenuCards(AVD_SceneMainMenu *mainMenu, AVD_AppState
         }
 
         card = &mainMenu->cards[mainMenu->cardCount++];
+        const char *thumbnailAsset = api[i].thumbnailAsset != NULL ? api[i].thumbnailAsset : api[i].id;
         AVD_CHECK(
             PRIV_avdSetupMainMenuCard(
-                api[i].id,
+                thumbnailAsset,
                 api[i].displayName,
                 (AVD_SceneType)i,
                 card,

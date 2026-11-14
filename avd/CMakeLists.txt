@@ -86,6 +86,8 @@ add_executable(avd
     ./src/scenes/2d_radiance_cascades/avd_scenes_2d_radiance_cascades.c
     
     ./src/scenes/deccer_cubes/avd_scenes_deccer_cubes.c
+
+    ./src/scenes/erosion_simulation/avd_scenes_erosion_simulation.c
     
     ./src/scenes/subsurface_scattering/avd_scenes_subsurface_scattering.c
     
