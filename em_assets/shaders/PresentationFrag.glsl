@@ -33,8 +33,8 @@ void main()
     }
 
     vec2 p = (inUV * 2.0 - 1.0); 
-    float aspectRatio = pushConstants.data.windowWidth / pushConstants.data.windowHeight;
-    p.x *= aspectRatio; 
+    float contentAspectRatio = pushConstants.data.framebufferWidth / pushConstants.data.framebufferHeight;
+    p.x *= contentAspectRatio;
 
     float aa = 2.0 / pushConstants.data.windowHeight;
 
